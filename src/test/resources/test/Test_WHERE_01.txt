@@ -1,0 +1,55 @@
+----WHERE_01:
+WHERE charlie.firstName = 'charlie' AND charlie.lastName = 'sheen' OR (charlie.lastName = 'Huber')
+------------------------------------------------------------
+
+----WHERE_02:
+WHERE (charlie.firstName = 'charlie' AND charlie.lastName = 'sheen') OR NOT (charlie.lastName = 'Huber')
+------------------------------------------------------------
+
+----WHERE_03:
+WHERE n:Swedish
+------------------------------------------------------------
+
+----WHERE_04:
+WHERE n.age < 30
+------------------------------------------------------------
+
+----WHERE_05:
+WHERE HAS(n.belt)
+------------------------------------------------------------
+
+----WHERE_06:
+WHERE n.name =~ 'Tob.*'
+------------------------------------------------------------
+
+----WHERE_07:
+WHERE others.name IN['Andreas', 'Peter'] AND (tobias)<--(others)
+------------------------------------------------------------
+
+----WHERE_08:
+WHERE n.name = 'Andres' AND type(r) =~ 'K.*'
+------------------------------------------------------------
+
+----WHERE_09:
+WHERE n.belt = 'white' OR n.belt IS NULL
+------------------------------------------------------------
+
+----WHERE_10:
+WHERE n.name = m.name AND type(r) =~ 'K.*'
+------------------------------------------------------------
+
+----WHERE_11:
+WHERE others.name IN extract(nd IN nodes(p) | nd.name)
+------------------------------------------------------------
+
+----WHERE_12:
+WHERE n IN nodes(p)
+------------------------------------------------------------
+
+----WHERE_13:
+WHERE r IN relationships(p)
+------------------------------------------------------------
+
+----WHERE_14:
+WHERE tobias.labelProp IN labels(n)
+------------------------------------------------------------

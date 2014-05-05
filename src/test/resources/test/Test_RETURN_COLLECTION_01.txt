@@ -1,0 +1,99 @@
+----COLLECTION_01:
+RETURN collect(nds.name)
+------------------------------------------------------------
+
+----COLLECTION_02:
+RETURN extract(n IN nds | n.name)
+------------------------------------------------------------
+
+----COLLECTION_03:
+RETURN extract(n IN nodes(p) | n.age) AS extracted
+------------------------------------------------------------
+
+----COLLECTION_04:
+RETURN extract(n IN nodes(p) | n.age) AS extracted
+------------------------------------------------------------
+
+----COLLECTION_05:
+RETURN filter(x IN a.array WHERE (length(x) = 3 OR length(x) > 5) AND NOT (x = 'hallo'))
+------------------------------------------------------------
+
+----COLLECTION_06:
+RETURN
+     tail(nodes(p))
+------------------------------------------------------------
+
+----COLLECTION_07:
+RETURN tail(tail(collect(nds.name)))
+------------------------------------------------------------
+
+----COLLECTION_08:
+RETURN tail(extract(n IN nodes(p) | n.age))
+------------------------------------------------------------
+
+----COLLECTION_09:
+RETURN tail(collect(friends.name))
+------------------------------------------------------------
+
+----COLLECTION_10:
+RETURN
+     tail(filter(n IN filter(y IN nodes(p) WHERE y.name = 'Hans') WHERE n.age > 30))
+------------------------------------------------------------
+
+----COLLECTION_11:
+RETURN
+     filter(r IN relationships(p) WHERE HAS(r.name))
+------------------------------------------------------------
+
+----COLLECTION_12:
+RETURN
+     filter(r IN relationships(p) WHERE HAS(r.name))
+------------------------------------------------------------
+
+----COLLECTION_13:
+RETURN
+     filter(r IN relationships(p) WHERE NOT r.name IS NULL)
+------------------------------------------------------------
+
+----COLLECTION_14:
+RETURN
+     labels(a)
+------------------------------------------------------------
+
+----COLLECTION_15:
+RETURN
+     filter(label IN labels(n) WHERE label = 'Address')
+------------------------------------------------------------
+
+----COLLECTION_16:
+RETURN
+     filter(label IN labels(n) WHERE label = 'Address')
+------------------------------------------------------------
+
+----COLLECTION_17:
+RETURN
+     filter(n IN nodes(p) WHERE n:Person)
+------------------------------------------------------------
+
+----COLLECTION_18:
+RETURN
+     reduce(totalAge = 0, n IN nodes(p) | totalAge + n.age) AS reduction
+------------------------------------------------------------
+
+----COLLECTION_19:
+RETURN
+     reduce(totalAge = 0, n IN tail(nodes(p)) | totalAge + n.age) AS reduction
+------------------------------------------------------------
+
+----COLLECTION_20:
+RETURN
+     reduce(totalAmount = a.amount, n IN nodes(p) | totalAmount + n.amount) AS reduction
+------------------------------------------------------------
+
+----COLLECTION_21:
+RETURN DISTINCT filter(x IN a.array WHERE (length(x) = 3 OR length(x) > 5) AND NOT (x = 'hallo'))
+------------------------------------------------------------
+
+----COLLECTION_22:
+RETURN extract(n IN nodes(p) | n.amount1 + n.amount2) AS totalAmounts
+------------------------------------------------------------
