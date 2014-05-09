@@ -17,12 +17,12 @@
 package test;
 
 import static org.junit.Assert.assertEquals;
-import iot.neo.jcypher.CypherWriter;
-import iot.neo.jcypher.clause.IClause;
-import iot.neo.jcypher.values.ValueElement;
-import iot.neo.jcypher.values.ValueWriter;
-import iot.neo.jcypher.writer.Format;
-import iot.neo.jcypher.writer.WriterContext;
+import iot.jcypher.CypherWriter;
+import iot.jcypher.clause.IClause;
+import iot.jcypher.values.ValueElement;
+import iot.jcypher.values.ValueWriter;
+import iot.jcypher.writer.Format;
+import iot.jcypher.writer.WriterContext;
 
 public class AbstractTestSuite {
 

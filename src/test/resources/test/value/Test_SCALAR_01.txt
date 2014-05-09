@@ -49,3 +49,7 @@ coalesce(last(nodes(p)), last(coll), actor.id)
 ----SCALAR_13:
 coalesce(last(nodes(p)), last(coll), coalesce(last(nodes(p)), last(coll)), a)
 ------------------------------------------------------------
+
+----SCALAR_14:
+length(p)
+------------------------------------------------------------

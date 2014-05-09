@@ -16,16 +16,16 @@
 
 package test;
 
-import iot.neo.jcypher.JC;
-import iot.neo.jcypher.values.JcCollection;
-import iot.neo.jcypher.values.JcNode;
-import iot.neo.jcypher.values.JcNumber;
-import iot.neo.jcypher.values.JcPath;
-import iot.neo.jcypher.values.JcRelation;
-import iot.neo.jcypher.values.JcPrimitive;
-import iot.neo.jcypher.values.JcString;
-import iot.neo.jcypher.values.ValueElement;
-import iot.neo.jcypher.writer.Format;
+import iot.jcypher.JC;
+import iot.jcypher.values.JcCollection;
+import iot.jcypher.values.JcNode;
+import iot.jcypher.values.JcNumber;
+import iot.jcypher.values.JcPath;
+import iot.jcypher.values.JcPrimitive;
+import iot.jcypher.values.JcRelation;
+import iot.jcypher.values.JcString;
+import iot.jcypher.values.ValueElement;
+import iot.jcypher.writer.Format;
 
 import org.junit.Ignore;
 import org.junit.Test;
@@ -180,7 +180,7 @@ public class ValueTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
-		str = new JcString("a string");
+		str = new JcString("str", "a string");
 		xpr = str.trimLeft();
 		
 		result = print(xpr, Format.PRETTY_1);
@@ -188,7 +188,7 @@ public class ValueTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
-		str = new JcString("a string");
+		str = new JcString("str", "a string");
 		xpr = str.trimRight().length();
 		
 		result = print(xpr, Format.PRETTY_1);
@@ -204,7 +204,7 @@ public class ValueTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
-		str = new JcString("a string");
+		str = new JcString("str", "a string");
 		xpr = str.upper();
 		
 		result = print(xpr, Format.PRETTY_1);
@@ -385,6 +385,13 @@ public class ValueTest extends AbstractTestSuite {
 		
 		result = print(xpr, Format.PRETTY_1);
 		testId = "SCALAR_13";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = p.length();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "SCALAR_14";
 		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 	
