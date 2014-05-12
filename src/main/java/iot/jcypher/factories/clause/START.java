@@ -20,7 +20,7 @@ import iot.jcypher.api.APIObjectAccess;
 import iot.jcypher.api.start.SFactory;
 import iot.jcypher.api.start.SNodeOrRelation;
 import iot.jcypher.ast.ASTNode;
-import iot.jcypher.clause.ClauseType;
+import iot.jcypher.ast.ClauseType;
 import iot.jcypher.values.JcNode;
 import iot.jcypher.values.JcRelation;
 

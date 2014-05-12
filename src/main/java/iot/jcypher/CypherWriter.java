@@ -18,7 +18,9 @@ package iot.jcypher;
 
 import iot.jcypher.api.APIObject;
 import iot.jcypher.api.APIObjectAccess;
+import iot.jcypher.api.IClause;
 import iot.jcypher.ast.ASTNode;
+import iot.jcypher.ast.ClauseType;
 import iot.jcypher.ast.collection.CollectExpression;
 import iot.jcypher.ast.collection.CollectionSpec;
 import iot.jcypher.ast.collection.DoEvalExpression;
@@ -63,8 +65,6 @@ import iot.jcypher.ast.start.PropertyOrQuery;
 import iot.jcypher.ast.start.StartExpression;
 import iot.jcypher.ast.union.UnionExpression;
 import iot.jcypher.ast.using.UsingExpression;
-import iot.jcypher.clause.ClauseType;
-import iot.jcypher.clause.IClause;
 import iot.jcypher.values.JcElement;
 import iot.jcypher.values.JcLabel;
 import iot.jcypher.values.JcNode;
@@ -78,6 +78,10 @@ import iot.jcypher.writer.WriterContext;
 
 public class CypherWriter {
 
+	public static void toCypherExpression(JcQuery query, WriterContext context) {
+		toCypherExpression(query.getClauses(), 0, context);
+	}
+	
 	public static void toCypherExpression(IClause[] clauses, int index, WriterContext context) {
 		int idx = index;
 		for (IClause clause : clauses) {

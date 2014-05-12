@@ -25,7 +25,7 @@ import iot.jcypher.api.predicate.Concat;
 import iot.jcypher.api.predicate.Concatenator;
 import iot.jcypher.api.predicate.IBeforePredicate;
 import iot.jcypher.ast.ASTNode;
-import iot.jcypher.clause.ClauseType;
+import iot.jcypher.ast.ClauseType;
 import iot.jcypher.factories.xpression.P;
 import iot.jcypher.values.IHas;
 import iot.jcypher.values.ValueElement;

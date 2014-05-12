@@ -28,7 +28,7 @@ import iot.jcypher.api.returns.RFactory;
 import iot.jcypher.api.returns.RSortable;
 import iot.jcypher.api.returns.RTerminal;
 import iot.jcypher.ast.ASTNode;
-import iot.jcypher.clause.ClauseType;
+import iot.jcypher.ast.ClauseType;
 import iot.jcypher.values.JcCollection;
 import iot.jcypher.values.JcValue;
 

@@ -17,8 +17,8 @@
 package iot.jcypher.api.union;
 
 import iot.jcypher.api.APIObject;
+import iot.jcypher.api.IClause;
 import iot.jcypher.ast.union.UnionExpression;
-import iot.jcypher.clause.IClause;
 
 public class UnionTerminal extends APIObject implements IClause {
 

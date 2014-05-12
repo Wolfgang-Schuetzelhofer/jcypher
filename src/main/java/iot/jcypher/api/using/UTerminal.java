@@ -17,8 +17,8 @@
 package iot.jcypher.api.using;
 
 import iot.jcypher.api.APIObject;
+import iot.jcypher.api.IClause;
 import iot.jcypher.ast.using.UsingExpression;
-import iot.jcypher.clause.IClause;
 
 public class UTerminal extends APIObject implements IClause {
 

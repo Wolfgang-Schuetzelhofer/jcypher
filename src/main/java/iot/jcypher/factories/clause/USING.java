@@ -21,7 +21,7 @@ import iot.jcypher.api.using.UFactory;
 import iot.jcypher.api.using.UsingIndex;
 import iot.jcypher.api.using.UsingScan;
 import iot.jcypher.ast.ASTNode;
-import iot.jcypher.clause.ClauseType;
+import iot.jcypher.ast.ClauseType;
 
 /**
  * <div color='red' style="font-size:24px;color:red"><b><i>JCYPHER CLAUSE</i></b></div>

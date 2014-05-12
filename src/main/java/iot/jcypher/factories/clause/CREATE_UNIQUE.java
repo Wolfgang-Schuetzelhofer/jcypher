@@ -21,7 +21,7 @@ import iot.jcypher.api.pattern.Node;
 import iot.jcypher.api.pattern.Path;
 import iot.jcypher.api.pattern.Relation;
 import iot.jcypher.ast.ASTNode;
-import iot.jcypher.clause.ClauseType;
+import iot.jcypher.ast.ClauseType;
 import iot.jcypher.factories.xpression.X;
 import iot.jcypher.values.JcNode;
 import iot.jcypher.values.JcPath;

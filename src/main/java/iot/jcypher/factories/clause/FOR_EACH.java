@@ -20,7 +20,7 @@ import iot.jcypher.api.APIObjectAccess;
 import iot.jcypher.api.collection.EachDoConcat;
 import iot.jcypher.api.collection.InCollection;
 import iot.jcypher.ast.ASTNode;
-import iot.jcypher.clause.ClauseType;
+import iot.jcypher.ast.ClauseType;
 import iot.jcypher.factories.xpression.F;
 import iot.jcypher.values.JcValue;
 

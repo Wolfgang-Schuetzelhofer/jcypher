@@ -17,8 +17,8 @@
 package iot.jcypher.ast.predicate;
 
 import iot.jcypher.ast.ASTNode;
+import iot.jcypher.ast.ClauseType;
 import iot.jcypher.ast.collection.CollectExpression;
-import iot.jcypher.clause.ClauseType;
 
 
 public class PredicateExpression extends ASTNode implements IPredicateHolder {

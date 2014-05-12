@@ -14,8 +14,12 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.clause;
+package iot.jcypher.ast;
 
-public interface IClause {
-
+public enum ClauseType {
+	START, MATCH, CREATE, CREATE_UNIQUE, USING_INDEX,
+	USING_SCAN, RETURN, WITH, WHERE, UNION, UNION_ALL,
+	CYPHER_NATIVE,
+	SET, DELETE, REMOVE, FOREACH,
+	CREATE_INDEX, DROP_INDEX
 }

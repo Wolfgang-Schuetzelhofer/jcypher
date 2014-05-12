@@ -18,7 +18,7 @@ package test;
 
 import static org.junit.Assert.assertEquals;
 import iot.jcypher.CypherWriter;
-import iot.jcypher.clause.IClause;
+import iot.jcypher.api.IClause;
 import iot.jcypher.values.ValueElement;
 import iot.jcypher.values.ValueWriter;
 import iot.jcypher.writer.Format;

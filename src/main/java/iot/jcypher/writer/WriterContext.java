@@ -16,7 +16,7 @@
 
 package iot.jcypher.writer;
 
-import iot.jcypher.clause.ClauseType;
+import iot.jcypher.ast.ClauseType;
 
 public class WriterContext {
 

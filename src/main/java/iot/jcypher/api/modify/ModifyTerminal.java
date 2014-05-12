@@ -17,8 +17,8 @@
 package iot.jcypher.api.modify;
 
 import iot.jcypher.api.APIObject;
+import iot.jcypher.api.IClause;
 import iot.jcypher.ast.modify.ModifyExpression;
-import iot.jcypher.clause.IClause;
 
 public class ModifyTerminal extends APIObject implements IClause {
 

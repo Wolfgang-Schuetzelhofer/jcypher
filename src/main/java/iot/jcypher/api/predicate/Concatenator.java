@@ -17,13 +17,13 @@
 package iot.jcypher.api.predicate;
 
 import iot.jcypher.api.APIObject;
+import iot.jcypher.api.IClause;
 import iot.jcypher.api.collection.ICollectExpression;
 import iot.jcypher.api.collection.IPredicateFunction;
 import iot.jcypher.ast.predicate.Predicate;
 import iot.jcypher.ast.predicate.PredicateConcatenator;
 import iot.jcypher.ast.predicate.PredicateExpression;
 import iot.jcypher.ast.predicate.PredicateConcatenator.ConcatOperator;
-import iot.jcypher.clause.IClause;
 
 public class Concatenator extends APIObject implements ICollectExpression, IPredicateFunction, IClause {
 

@@ -17,8 +17,8 @@
 package iot.jcypher.api.start;
 
 import iot.jcypher.api.APIObject;
+import iot.jcypher.api.IClause;
 import iot.jcypher.ast.start.StartExpression;
-import iot.jcypher.clause.IClause;
 
 public class StartPoint extends APIObject implements IClause {
 

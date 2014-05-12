@@ -22,7 +22,7 @@ import iot.jcypher.api.modify.ModifyFactory;
 import iot.jcypher.api.modify.ModifyTerminal;
 import iot.jcypher.api.modify.Set;
 import iot.jcypher.ast.ASTNode;
-import iot.jcypher.clause.ClauseType;
+import iot.jcypher.ast.ClauseType;
 import iot.jcypher.values.JcElement;
 import iot.jcypher.values.JcLabel;
 import iot.jcypher.values.JcProperty;

@@ -16,7 +16,7 @@
 
 package iot.jcypher.api.returns;
 
-import iot.jcypher.clause.IClause;
+import iot.jcypher.api.IClause;
 
 public interface IRElement extends IClause {
 

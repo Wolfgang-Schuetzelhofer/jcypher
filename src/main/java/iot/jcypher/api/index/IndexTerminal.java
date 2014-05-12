@@ -17,8 +17,8 @@
 package iot.jcypher.api.index;
 
 import iot.jcypher.api.APIObject;
+import iot.jcypher.api.IClause;
 import iot.jcypher.ast.index.IndexExpression;
-import iot.jcypher.clause.IClause;
 
 public class IndexTerminal extends APIObject implements IClause {
 

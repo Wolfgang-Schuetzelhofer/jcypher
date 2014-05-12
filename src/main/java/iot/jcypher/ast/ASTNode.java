@@ -16,7 +16,6 @@
 
 package iot.jcypher.ast;
 
-import iot.jcypher.clause.ClauseType;
 
 
 public class ASTNode {

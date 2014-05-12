@@ -17,8 +17,8 @@
 package iot.jcypher.api.collection;
 
 import iot.jcypher.api.APIObject;
+import iot.jcypher.api.IClause;
 import iot.jcypher.ast.collection.CollectExpression;
-import iot.jcypher.clause.IClause;
 
 
 public class DoConcat extends APIObject implements IClause {

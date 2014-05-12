@@ -20,7 +20,7 @@ import iot.jcypher.api.APIObjectAccess;
 import iot.jcypher.api.union.UnionFactory;
 import iot.jcypher.api.union.UnionTerminal;
 import iot.jcypher.ast.ASTNode;
-import iot.jcypher.clause.ClauseType;
+import iot.jcypher.ast.ClauseType;
 
 /**
  * <div color='red' style="font-size:24px;color:red"><b><i>JCYPHER CLAUSE</i></b></div>

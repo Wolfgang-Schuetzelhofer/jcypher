@@ -17,7 +17,7 @@
 package test;
 
 import iot.jcypher.JC;
-import iot.jcypher.clause.IClause;
+import iot.jcypher.api.IClause;
 import iot.jcypher.factories.clause.CREATE;
 import iot.jcypher.factories.clause.CREATE_INDEX;
 import iot.jcypher.factories.clause.CREATE_UNIQUE;

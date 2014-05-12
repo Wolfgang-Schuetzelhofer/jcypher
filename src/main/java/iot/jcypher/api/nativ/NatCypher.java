@@ -17,8 +17,8 @@
 package iot.jcypher.api.nativ;
 
 import iot.jcypher.api.APIObject;
+import iot.jcypher.api.IClause;
 import iot.jcypher.ast.nativ.NativeCypherExpression;
-import iot.jcypher.clause.IClause;
 
 public class NatCypher extends APIObject implements IClause {
 
