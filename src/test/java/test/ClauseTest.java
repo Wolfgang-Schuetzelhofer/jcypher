@@ -26,6 +26,7 @@ import iot.jcypher.factories.clause.DROP_INDEX;
 import iot.jcypher.factories.clause.FOR_EACH;
 import iot.jcypher.factories.clause.MATCH;
 import iot.jcypher.factories.clause.NATIVE;
+import iot.jcypher.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.factories.clause.RETURN;
 import iot.jcypher.factories.clause.START;
 import iot.jcypher.factories.clause.UNION;
@@ -295,6 +296,26 @@ public class ClauseTest extends AbstractTestSuite {
 		
 		result = print(clauses, Format.PRETTY_3);
 		testId = "MATCH_16";
+		assertQuery(testId, result, tdr.getTestData(testId));
+	}
+	
+	@Test
+	public void testOptionalMatch_01() {
+		String result;
+		String testId;
+		setDoPrint(true);
+		setDoAssert(true);
+		
+		TestDataReader tdr = new TestDataReader("/test/Test_OPTIONAL_MATCH_01.txt");
+		
+		JcNode a = new JcNode("a");
+		JcRelation r = new JcRelation("r");
+		
+		/*******************************/
+		IClause match = OPTIONAL_MATCH.node(a).relation(r).out().type("ACTS_IN").node();
+		
+		result = print(match, Format.PRETTY_1);
+		testId = "OPTIONAL_MATCH_01";
 		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 

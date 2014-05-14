@@ -160,6 +160,20 @@ public class CypherWriter {
 			PatternCypherWriter.toCypherExpression((PatternExpression)astNode, context);
 		}
 		
+		/*** OPTIONAL MATCH CLAUSE **************************************/
+		if (clauseType == ClauseType.OPTIONAL_MATCH) {
+			if (context.previousClause != ClauseType.OPTIONAL_MATCH) { // otherwise concat multiple matches
+				if (hasStart)
+					Pretty.writePreClauseSeparator(context);
+				context.buffer.append("OPTIONAL MATCH");
+				Pretty.writePostClauseSeparator(context);
+			} else {
+				context.buffer.append(',');
+				Pretty.writeStatementSeparator(context);
+			}
+			PatternCypherWriter.toCypherExpression((PatternExpression)astNode, context);
+		}
+		
 		/*** USING INDEX CLAUSE **************************************/
 		if (clauseType == ClauseType.USING_INDEX) {
 			if (hasStart)
