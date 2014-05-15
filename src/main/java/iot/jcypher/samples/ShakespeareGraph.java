@@ -20,6 +20,7 @@ import iot.jcypher.CypherWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.api.IClause;
 import iot.jcypher.factories.clause.CREATE;
+import iot.jcypher.factories.clause.START;
 import iot.jcypher.values.JcNode;
 import iot.jcypher.writer.Format;
 import iot.jcypher.writer.WriterContext;
@@ -51,6 +52,9 @@ public class ShakespeareGraph {
 		JcNode tyneAndWear = new JcNode("tyneAndWear");
 		JcNode england = new JcNode("england");
 		JcNode stratford = new JcNode("stratford");
+		
+		JcNode theater = new JcNode("theater");
+		JcNode bard = new JcNode("bard");
 		
 		query.setClauses(new IClause[] {
 				CREATE.node(shakespeare).property("firstname").value("William").property("lastname").value("Shakespeare"),
@@ -102,6 +106,18 @@ public class ShakespeareGraph {
 		
 		// map to Cypher
 		String cypher = toCypher(query, Format.PRETTY_3);
+		System.out.println(cypher);
+		System.out.println("--------------------");
+		
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				START.node(theater).byIndex("venue").property("name").value("Theatre Royal"),
+				START.node(newcastle).byIndex("city").property("name").value("Newcastle"),
+				START.node(bard).byIndex("author").property("lastname").value("Shakespeare")
+		});
+		
+		// map to Cypher
+		cypher = toCypher(query, Format.PRETTY_3);
 		System.out.println(cypher);
 		return;
 	}

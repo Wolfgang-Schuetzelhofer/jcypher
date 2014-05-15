@@ -772,7 +772,7 @@ public class ClauseTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
-		returns = RETURN.evalPredicate(
+		returns = RETURN.collection(
 				C.FILTER().fromAll(x).IN(a.collectionProperty("array")).WHERE().
 				BR_OPEN().valueOf(x.length()).EQUALS(3).OR().valueOf(x.length()).GT(5).
 				BR_CLOSE().AND().NOT().
@@ -820,7 +820,7 @@ public class ClauseTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
-		returns = RETURN.evalPredicate(
+		returns = RETURN.collection(
 				C.TAIL().FILTER().fromAll(n)
 				.IN(C.FILTER().fromAll(y).IN_nodes(p).WHERE().valueOf(y.property("name")).EQUALS("Hans"))
 				.WHERE().valueOf(n.property("age")).GT(30)
@@ -831,7 +831,7 @@ public class ClauseTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
-		returns = RETURN.evalPredicate(
+		returns = RETURN.collection(
 				C.FILTER().fromAll(r).IN(p.relations()).WHERE().has(r.property("name"))
 		);
 
@@ -840,7 +840,7 @@ public class ClauseTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
-		returns = RETURN.evalPredicate(
+		returns = RETURN.collection(
 				C.FILTER().fromAll(r).IN_relations(p).WHERE().has(r.property("name"))
 		);
 
@@ -849,7 +849,7 @@ public class ClauseTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
-		returns = RETURN.evalPredicate(
+		returns = RETURN.collection(
 				C.FILTER().fromAll(r).IN_relations(p).WHERE().NOT().valueOf(r.property("name")).IS_NULL()
 		);
 
@@ -867,7 +867,7 @@ public class ClauseTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
-		returns = RETURN.evalPredicate(
+		returns = RETURN.collection(
 				C.FILTER().fromAll(label).IN(n.labels()).WHERE().valueOf(label).EQUALS("Address")
 		);
 
@@ -876,7 +876,7 @@ public class ClauseTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
-		returns = RETURN.evalPredicate(
+		returns = RETURN.collection(
 				C.FILTER().fromAll(label).IN_labels(n).WHERE().valueOf(label).EQUALS("Address")
 		);
 
@@ -885,7 +885,7 @@ public class ClauseTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
-		returns = RETURN.evalPredicate(
+		returns = RETURN.collection(
 				C.FILTER().fromAll(n).IN_nodes(p).WHERE().has(n.label("Person"))
 		);
 
