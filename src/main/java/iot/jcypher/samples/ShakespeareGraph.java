@@ -20,8 +20,13 @@ import iot.jcypher.CypherWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.api.IClause;
 import iot.jcypher.factories.clause.CREATE;
+import iot.jcypher.factories.clause.MATCH;
+import iot.jcypher.factories.clause.RETURN;
 import iot.jcypher.factories.clause.START;
+import iot.jcypher.factories.clause.WHERE;
 import iot.jcypher.values.JcNode;
+import iot.jcypher.values.JcRelation;
+import iot.jcypher.values.JcString;
 import iot.jcypher.writer.Format;
 import iot.jcypher.writer.WriterContext;
 
@@ -55,6 +60,9 @@ public class ShakespeareGraph {
 		
 		JcNode theater = new JcNode("theater");
 		JcNode bard = new JcNode("bard");
+		JcRelation w = new JcRelation("w");
+		JcNode play = new JcNode("play");
+		JcString playTitle = new JcString("playTitle");
 		
 		query.setClauses(new IClause[] {
 				CREATE.node(shakespeare).property("firstname").value("William").property("lastname").value("Shakespeare"),
@@ -113,7 +121,13 @@ public class ShakespeareGraph {
 		query.setClauses(new IClause[] {
 				START.node(theater).byIndex("venue").property("name").value("Theatre Royal"),
 				START.node(newcastle).byIndex("city").property("name").value("Newcastle"),
-				START.node(bard).byIndex("author").property("lastname").value("Shakespeare")
+				START.node(bard).byIndex("author").property("lastname").value("Shakespeare"),
+				MATCH.node(newcastle).relation().in().maxHops(2).type("STREET").type("CITY").node(theater)
+							.relation().in().type("VENUE").node().relation().out().type("PERFORMANCE_OF")
+							.node().relation().out().type("PRODUCTION_OF").node(play)
+							.relation(w).in().type("WROTE_PLAY").node(bard),
+				WHERE.valueOf(w.property("year")).GT(1608),
+				RETURN.DISTINCT().value(play.property("title")).AS(playTitle)
 		});
 		
 		// map to Cypher
