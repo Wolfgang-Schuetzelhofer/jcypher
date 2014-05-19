@@ -72,4 +72,29 @@ public class FUNCTION {
 		public static final Function NODES = new Function("nodes(", ")", FTYPE.Path.NODES);
 		public static final Function RELATIONS = new Function("relationships(", ")", FTYPE.Path.RELATIONS);
 	}
+	
+	/*********************************************/
+	public static class Math {
+		public static final Function ABS = new Function("abs(", ")", FTYPE.Math.ABS);
+		public static final Function ACOS = new Function("acos(", ")", FTYPE.Math.ACOS);
+		public static final Function ASIN = new Function("asin(", ")", FTYPE.Math.ASIN);
+		public static final Function ATAN = new Function("atan(", ")", FTYPE.Math.ATAN);
+		public static final Function COS = new Function("cos(", ")", FTYPE.Math.COS);
+		public static final Function COT = new Function("cot(", ")", FTYPE.Math.COT);
+		public static final Function DEGREES = new Function("degrees(", ")", FTYPE.Math.DEGREES);
+		public static final Function RADIANS = new Function("radians(", ")", FTYPE.Math.RADIANS);
+		public static final Function E = new Function("e(", ")", FTYPE.Math.E);
+		public static final Function EXP = new Function("exp(", ")", FTYPE.Math.EXP);
+		public static final Function FLOOR = new Function("floor(", ")", FTYPE.Math.FLOOR);
+		public static final Function HAVERSIN = new Function("haversin(", ")", FTYPE.Math.HAVERSIN);
+		public static final Function LOG = new Function("log(", ")", FTYPE.Math.LOG);
+		public static final Function LOG10 = new Function("log10(", ")", FTYPE.Math.LOG10);
+		public static final Function PI = new Function("pi(", ")", FTYPE.Math.PI);
+		public static final Function RAND = new Function("rand(", ")", FTYPE.Math.RAND);
+		public static final Function ROUND = new Function("round(", ")", FTYPE.Math.ROUND);
+		public static final Function SIGN = new Function("sign(", ")", FTYPE.Math.SIGN);
+		public static final Function SIN = new Function("sin(", ")", FTYPE.Math.SIN);
+		public static final Function SQRT = new Function("sqrt(", ")", FTYPE.Math.SQRT);
+		public static final Function TAN = new Function("tan(", ")", FTYPE.Math.TAN);
+	}
 }

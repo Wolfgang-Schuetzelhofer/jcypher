@@ -53,4 +53,12 @@ public class FTYPE {
 	public enum Path {
 		NODES, RELATIONS
 	}
+	
+	/*****************************/
+	public enum Math {
+		ABS, ACOS, ASIN, ATAN, COS, COT,
+		DEGREES, RADIANS, E, EXP, FLOOR, HAVERSIN,
+		LOG, LOG10, PI, RAND, ROUND, SIGN, SIN,
+		SQRT, TAN
+	}
 }

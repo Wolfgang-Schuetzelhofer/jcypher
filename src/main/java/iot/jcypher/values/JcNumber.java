@@ -40,7 +40,7 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber(String name) {
-		this(name, 0, null, null);
+		this(name, null, null, null);
 	}
 	
 	/**
@@ -160,5 +160,14 @@ public class JcNumber extends JcPrimitive {
 	public JcNumber enclose() {
 		return new JcNumber(null, this,
 				new FunctionInstance(FUNCTION.Common.ENCLOSE, 1));
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>access mathematical functions</i></div>
+	 * <br/>
+	 */
+	public MathFunctions math() {
+		return new MathFunctions(this);
 	}
 }

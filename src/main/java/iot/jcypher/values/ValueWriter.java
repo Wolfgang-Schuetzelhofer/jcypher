@@ -93,8 +93,9 @@ public class ValueWriter {
 			boolean nameWritten = false;
 			if (valueElem instanceof JcValue) {
 				if (((JcValue)valueElem).getName() != null) {
-					// exception for JcString having name and value set
-					if (!(valueElem instanceof JcString && ((JcString)valueElem).getValue() != null)) {
+					// exception for JcString and JcNumber having name and value set
+					if (!((valueElem instanceof JcString || valueElem instanceof JcNumber) &&
+							((JcPrimitive)valueElem).getValue() != null)) {
 						context.buffer.append(((JcValue)valueElem).getName());
 						nameWritten = true;
 					}

@@ -24,6 +24,7 @@ import iot.jcypher.values.JcPath;
 import iot.jcypher.values.JcPrimitive;
 import iot.jcypher.values.JcRelation;
 import iot.jcypher.values.JcString;
+import iot.jcypher.values.MATH;
 import iot.jcypher.values.ValueElement;
 import iot.jcypher.writer.Format;
 
@@ -459,6 +460,176 @@ public class ValueTest extends AbstractTestSuite {
 		result = print(xpr, Format.PRETTY_1);
 		testId = "COLLECTION_03";
 		assertQuery(testId, result, tdr.getTestData(testId));
+	}
+	
+	@Test
+	public void testMathFunctions_01() {
+		String result;
+		String testId;
+		setDoPrint(true);
+		setDoAssert(true);
+
+		TestDataReader tdr = new TestDataReader("/test/value/Test_MATH_FUNCTIONS_01.txt");
+		
+		ValueElement xpr;
+		JcNode n = new JcNode("n");
+		JcNode a = new JcNode("a");
+		JcNode e = new JcNode("e");
+		JcNumber num = new JcNumber("num", 0.5);
+		JcNumber pi = new JcNumber("pi", 3.14159);
+		JcNumber num2 = new JcNumber("num2", 2);
+		JcNumber num27 = new JcNumber("num27", 27);
+		JcNumber num180 = new JcNumber("num180", 180);
+		JcNumber num256 = new JcNumber("num256", 256);
+
+		/*******************************/
+		xpr = a.numberProperty("age").minus(e.numberProperty("age")).math().abs();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_01";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num.math().acos();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_02";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num.math().asin();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_03";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num.math().atan();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_04";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num.math().cos();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_05";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = pi.math().degrees();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_06";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = MATH.e();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_07";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num2.math().exp();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_08";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = n.numberProperty("number").math().exp();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_09";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num.math().floor();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_10";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num.math().haversin();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_11";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num27.math().log();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_12";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num27.math().log10();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_13";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = MATH.pi();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_14";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num180.math().radians();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_15";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = MATH.rand();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_16";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = pi.math().round();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_17";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num.math().sign();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_18";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num.math().sin();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_19";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num256.math().sqrt();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_20";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num.math().tan();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_21";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		return;
 	}
 }
 
