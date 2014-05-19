@@ -232,6 +232,9 @@ public class ValueTest extends AbstractTestSuite {
 		JcNode n = new JcNode("n");
 		JcNode a = new JcNode("a");
 		JcNode b = new JcNode("b");
+		JcString str = new JcString("str", "42");
+		JcString str2 = new JcString("str2", "11.5");
+		
 		ValueElement xpr;
 
 		/*******************************/
@@ -275,6 +278,34 @@ public class ValueTest extends AbstractTestSuite {
 		
 		result = print(xpr, Format.PRETTY_1);
 		testId = "NUMBER_06";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = str.toInt();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "NUMBER_07";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = str2.toFloat();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "NUMBER_08";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = a.numberProperty("amount").mod(3);
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "NUMBER_09";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = a.numberProperty("amount").mod(b.numberProperty("modVal"));
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "NUMBER_10";
 		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 	

@@ -30,7 +30,7 @@ public class OPTYPE {
 	
 	/*****************************/
 	public enum Number {
-		PLUS, MINUS, MULT, DIV
+		PLUS, MINUS, MULT, DIV, MOD
 	}
 	
 	/*****************************/

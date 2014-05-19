@@ -40,7 +40,27 @@ public class ValueElement implements IFragment {
 	 */
 	public JcString str() {
 		return new JcString(null, this,
-				new FunctionInstance(FUNCTION.String.STR, 1));
+				new FunctionInstance(FUNCTION.Common.STR, 1));
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>convert the argument to an integer, return a <b>JcNumber</b>, if the conversion fails return NULL</i></div>
+	 * <br/>
+	 */
+	public JcNumber toInt() {
+		return new JcNumber(null, this,
+				new FunctionInstance(FUNCTION.Common.TOINT, 1));
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>convert the argument to a float, return a <b>JcNumber</b>, if the conversion fails return NULL</i></div>
+	 * <br/>
+	 */
+	public JcNumber toFloat() {
+		return new JcNumber(null, this,
+				new FunctionInstance(FUNCTION.Common.TOFLOAT, 1));
 	}
 
 	ValueElement getPredecessor() {

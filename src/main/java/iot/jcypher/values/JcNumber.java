@@ -134,6 +134,24 @@ public class JcNumber extends JcPrimitive {
 	
 	/**
 	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>return the remainder of dividing one number by another, return a <b>JcNumber</b></i></div>
+	 * <br/>
+	 */
+	public JcNumber mod(Number val) {
+		return new JcNumber(val, this, OPERATOR.Number.MOD);
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>return the remainder of dividing one number by another, return a <b>JcNumber</b></i></div>
+	 * <br/>
+	 */
+	public JcNumber mod(JcNumber val) {
+		return new JcNumber(val, this, OPERATOR.Number.MOD);
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
 	 * <div color='red' style="font-size:18px;color:red"><i>enclose an expression with brackets</i></div>
 	 * <div color='red' style="font-size:18px;color:red"><i>e.g. <b>a.numberProperty("amount").div(b.numberProperty("amount"))<br/>.enclose().mult(2)</b></i></div>
 	 * <div color='red' style="font-size:18px;color:red"><i>maps to an expression <b>(a.amount / b.amount) * 2</b></i></div>

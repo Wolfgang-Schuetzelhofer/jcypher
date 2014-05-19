@@ -21,12 +21,12 @@ public class FTYPE {
 	/*****************************/
 	public enum String {
 		TRIM, REPLACE, SUBSTRING, LEFT, RIGHT, LTRIM, RTRIM,
-		LOWER, UPPER, STR
+		LOWER, UPPER
 	}
 	
 	/*****************************/
 	public enum Common {
-		ENCLOSE, TIMESTAMP, COALESCE
+		ENCLOSE, TIMESTAMP, COALESCE, STR, TOINT, TOFLOAT
 	}
 	
 	/*****************************/

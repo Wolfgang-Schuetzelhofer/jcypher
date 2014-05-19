@@ -31,7 +31,6 @@ public class FUNCTION {
 		public static final Function RIGHT = new Function("right(", ")", FTYPE.String.RIGHT);
 		public static final Function LOWER = new Function("lower(", ")", FTYPE.String.LOWER);
 		public static final Function UPPER = new Function("upper(", ")", FTYPE.String.UPPER);
-		public static final Function STR = new Function("str(", ")", FTYPE.String.STR);
 	}
 	
 	/*********************************************/
@@ -39,6 +38,9 @@ public class FUNCTION {
 		public static final Function ENCLOSE = new Function("(", ")", FTYPE.Common.ENCLOSE);
 		public static final Function TIMESTAMP = new Function("timestamp(", ")", FTYPE.Common.TIMESTAMP);
 		public static final Function COALESCE = new Function("coalesce(", ")", FTYPE.Common.COALESCE);
+		public static final Function STR = new Function("str(", ")", FTYPE.Common.STR);
+		public static final Function TOINT = new Function("toInt(", ")", FTYPE.Common.TOINT);
+		public static final Function TOFLOAT = new Function("toFloat(", ")", FTYPE.Common.TOFLOAT);
 	}
 	
 	/*********************************************/
