@@ -55,4 +55,25 @@ public class MATH {
 		return new JcNumber(null, null,
 				new FunctionInstance(FUNCTION.Math.RAND));
 	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>return the arctangent2 of a set of coordinates (x, y), in radians;</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>specify the x coordinate</i></div>
+	 * <br/>
+	 */
+	public static Atan2 atan2_x(Number xval) {
+		JcNumber sub = new JcNumber(xval, null, null);
+		return new Atan2(sub);
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>return the arctangent2 of a set of coordinates (x, y), in radians;</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>specify the x coordinate</i></div>
+	 * <br/>
+	 */
+	public static Atan2 atan2_x(JcNumber xval) {
+		return new Atan2(xval);
+	}
 }

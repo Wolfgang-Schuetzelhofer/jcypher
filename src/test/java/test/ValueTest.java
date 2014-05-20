@@ -235,6 +235,8 @@ public class ValueTest extends AbstractTestSuite {
 		JcNode b = new JcNode("b");
 		JcString str = new JcString("str", "42");
 		JcString str2 = new JcString("str2", "11.5");
+		JcNumber num4 = new JcNumber("num4", 4);
+		JcNumber num2 = new JcNumber("num2", 2);
 		
 		ValueElement xpr;
 
@@ -307,6 +309,34 @@ public class ValueTest extends AbstractTestSuite {
 		
 		result = print(xpr, Format.PRETTY_1);
 		testId = "NUMBER_10";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = a.numberProperty("amount").pow(3);
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "NUMBER_11";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = a.numberProperty("amount").pow(b.numberProperty("exponent"));
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "NUMBER_12";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num4.pow(2);
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "NUMBER_13";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = num4.pow(num2);
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "NUMBER_14";
 		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 	
@@ -627,6 +657,34 @@ public class ValueTest extends AbstractTestSuite {
 		
 		result = print(xpr, Format.PRETTY_1);
 		testId = "MATH_21";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = MATH.atan2_x(0.5).y(0.6);
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_22";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = MATH.atan2_x(a.numberProperty("x_coord")).y(0.6);
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_23";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = MATH.atan2_x(a.numberProperty("x_coord")).y(a.numberProperty("y_coord"));
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_24";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = MATH.atan2_x(0.5).y(e.numberProperty("y_coord"));
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "MATH_25";
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		return;

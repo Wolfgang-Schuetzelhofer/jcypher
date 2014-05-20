@@ -42,6 +42,7 @@ public class OPERATOR {
 		public static final Operator MULT = new Operator("*", " * ", OPTYPE.Number.MULT);
 		public static final Operator DIV = new Operator("/", " / ", OPTYPE.Number.DIV);
 		public static final Operator MOD = new Operator("%", " % ", OPTYPE.Number.MOD);
+		public static final Operator POW = new Operator("^", " ^ ", OPTYPE.Number.POW);
 	}
 	
 	/*********************************************/

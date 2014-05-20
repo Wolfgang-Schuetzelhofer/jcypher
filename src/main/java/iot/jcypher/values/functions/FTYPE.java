@@ -56,7 +56,7 @@ public class FTYPE {
 	
 	/*****************************/
 	public enum Math {
-		ABS, ACOS, ASIN, ATAN, COS, COT,
+		ABS, ACOS, ASIN, ATAN, ATAN2, COS, COT,
 		DEGREES, RADIANS, E, EXP, FLOOR, HAVERSIN,
 		LOG, LOG10, PI, RAND, ROUND, SIGN, SIN,
 		SQRT, TAN

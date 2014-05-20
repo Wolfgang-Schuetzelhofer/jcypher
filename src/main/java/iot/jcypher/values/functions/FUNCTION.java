@@ -79,6 +79,7 @@ public class FUNCTION {
 		public static final Function ACOS = new Function("acos(", ")", FTYPE.Math.ACOS);
 		public static final Function ASIN = new Function("asin(", ")", FTYPE.Math.ASIN);
 		public static final Function ATAN = new Function("atan(", ")", FTYPE.Math.ATAN);
+		public static final Function ATAN2 = new Function("atan2(", ")", FTYPE.Math.ATAN2);
 		public static final Function COS = new Function("cos(", ")", FTYPE.Math.COS);
 		public static final Function COT = new Function("cot(", ")", FTYPE.Math.COT);
 		public static final Function DEGREES = new Function("degrees(", ")", FTYPE.Math.DEGREES);

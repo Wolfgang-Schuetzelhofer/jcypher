@@ -152,6 +152,24 @@ public class JcNumber extends JcPrimitive {
 	
 	/**
 	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>return a number raised to the power of another number, return a <b>JcNumber</b></i></div>
+	 * <br/>
+	 */
+	public JcNumber pow(Number exponent) {
+		return new JcNumber(exponent, this, OPERATOR.Number.POW);
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>return a number raised to the power of another number, return a <b>JcNumber</b></i></div>
+	 * <br/>
+	 */
+	public JcNumber pow(JcNumber exponent) {
+		return new JcNumber(exponent, this, OPERATOR.Number.POW);
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
 	 * <div color='red' style="font-size:18px;color:red"><i>enclose an expression with brackets</i></div>
 	 * <div color='red' style="font-size:18px;color:red"><i>e.g. <b>a.numberProperty("amount").div(b.numberProperty("amount"))<br/>.enclose().mult(2)</b></i></div>
 	 * <div color='red' style="font-size:18px;color:red"><i>maps to an expression <b>(a.amount / b.amount) * 2</b></i></div>
