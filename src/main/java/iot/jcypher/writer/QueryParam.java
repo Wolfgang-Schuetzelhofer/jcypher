@@ -1,5 +1,7 @@
 package iot.jcypher.writer;
 
+import java.util.ArrayList;
+
 public class QueryParam implements IQueryParam {
 
 	private String key;
@@ -12,6 +14,17 @@ public class QueryParam implements IQueryParam {
 		qp.setValue(value);
 		qp.setOrgName(name);
 		return qp;
+	}
+	
+	public static QueryParam createAddParam(String name, Object value, WriterContext context) {
+		if (context.extractParams) {
+			if (context.queryParams == null)
+				context.queryParams = new ArrayList<IQueryParam>();
+			QueryParam qp = QueryParam.createParam(name, value, context);
+			context.queryParams.add(qp);
+			return qp;
+		}
+		return null;
 	}
 	
 	public static void setParamIndex(int idx, WriterContext context) {

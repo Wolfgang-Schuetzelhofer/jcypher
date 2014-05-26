@@ -4,6 +4,9 @@ import iot.jcypher.JcQuery;
 import iot.jcypher.api.IClause;
 import iot.jcypher.api.pattern.Node;
 import iot.jcypher.factories.clause.CREATE;
+import iot.jcypher.factories.clause.MATCH;
+import iot.jcypher.factories.clause.RETURN;
+import iot.jcypher.factories.clause.WHERE;
 import iot.jcypher.values.JcNode;
 import iot.jcypher.values.JcRelation;
 import iot.jcypher.writer.Format;
@@ -27,6 +30,8 @@ public class JsonTest extends AbstractTestSuite {
 		JcNode n = new JcNode("n");
 		JcNode a = new JcNode("a");
 		JcRelation r = new JcRelation("r");
+		JcNode x = new JcNode("x");
+		JcNode friend = new JcNode("friend");
 		
 		/*******************************/
 		query = new JcQuery();
@@ -94,6 +99,19 @@ public class JsonTest extends AbstractTestSuite {
 					.property("name").value("connection")
 					.node(a)
 					.property("city").value("San Francisco")
+		});
+
+		//result = print(query, Format.PRETTY_1);
+		result = printJSON(query, Format.PRETTY_1);
+		testId = "CREATE_04";
+		//assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				 MATCH.node(x).property("name").value("I").relation(r).node(friend),
+				 WHERE.valueOf(friend.property("name")).EQUALS("you"),
+				 RETURN.value(r.type())
 		});
 
 		//result = print(query, Format.PRETTY_1);

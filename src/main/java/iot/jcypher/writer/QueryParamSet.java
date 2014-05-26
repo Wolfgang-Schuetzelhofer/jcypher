@@ -11,49 +11,49 @@ public class QueryParamSet implements IQueryParam {
 	
 	public static QueryParamSet createAddParamSet(WriterContext context) {
 		if (context.extractParams) {
-			context.currentParamSet = new QueryParamSet();
+			context.currentParamOrSet = new QueryParamSet();
 			StringBuilder sb = new StringBuilder();
 			sb.append("props_");
 			sb.append(context.getParamSetIndex());
-			context.currentParamSet.setKey(sb.toString());
-			return context.currentParamSet;
+			((QueryParamSet)context.currentParamOrSet).setKey(sb.toString());
+			return (QueryParamSet)context.currentParamOrSet;
 		}
 		return null;
 	}
 	
 	public static void finishParamSet(WriterContext context) {
 		if (context.extractParams) {
-			if (context.currentParamSet != null) {
+			if (context.currentParamOrSet instanceof QueryParamSet) {
 				if (context.queryParams == null)
 					context.queryParams = new ArrayList<IQueryParam>();
-				context.queryParams.add(context.currentParamSet);
-				if (context.currentParamSet.canUseSet())
+				context.queryParams.add(context.currentParamOrSet);
+				if (((QueryParamSet)context.currentParamOrSet).canUseSet())
 					context.incrementParamSetIndex();
-				context.currentParamSet = null;
+				context.currentParamOrSet = null;
 			}
 		}
 	}
 	
 	public static void disableUseSet(WriterContext context) {
-		if (context.currentParamSet != null)
-			context.currentParamSet.setCanUseSet(false);
+		if (context.currentParamOrSet instanceof QueryParamSet)
+			((QueryParamSet)context.currentParamOrSet).setCanUseSet(false);
 	}
 	
 	public static boolean canUseSet(WriterContext context) {
-		if (context.currentParamSet != null)
-			return context.currentParamSet.canUseSet();
+		if (context.currentParamOrSet instanceof QueryParamSet)
+			return ((QueryParamSet)context.currentParamOrSet).canUseSet();
 		return false;
 	}
 	
 	public static void addQueryParam(QueryParam param, WriterContext context) {
-		if (context.currentParamSet != null) {
-			context.currentParamSet.getQueryParams().add(param);
+		if (context.currentParamOrSet instanceof QueryParamSet) {
+			((QueryParamSet)context.currentParamOrSet).getQueryParams().add(param);
 		}
 	}
 	
 	public static QueryParamSet getCurrentSet(WriterContext context) {
-		if (context.currentParamSet != null) {
-			return context.currentParamSet;
+		if (context.currentParamOrSet instanceof QueryParamSet) {
+			return (QueryParamSet)context.currentParamOrSet;
 		}
 		return null;
 	}

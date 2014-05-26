@@ -29,7 +29,7 @@ public class WriterContext {
 	public ClauseType previousClause;
 	public boolean extractParams = true;
 	List<IQueryParam> queryParams;
-	QueryParamSet currentParamSet;
+	IQueryParam currentParamOrSet;
 	private int paramIndex = -1;
 	private int paramSetIndex = 0;
 	private int level = 0;

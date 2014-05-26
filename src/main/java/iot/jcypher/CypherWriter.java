@@ -550,8 +550,14 @@ public class CypherWriter {
 		private static void toCypherExpression(Object valueElement_Or_PrimitiveValue, WriterContext context) {
 			if (valueElement_Or_PrimitiveValue instanceof ValueElement)
 				ValueWriter.toValueExpression((ValueElement)valueElement_Or_PrimitiveValue, context);
-			else if (valueElement_Or_PrimitiveValue != null)
-				PrimitiveCypherWriter.writePrimitiveValue(valueElement_Or_PrimitiveValue, context);
+			else if (valueElement_Or_PrimitiveValue != null) {
+				if (context.extractParams) {
+					QueryParam qp = QueryParam.createAddParam(null,
+							valueElement_Or_PrimitiveValue, context);
+					PrimitiveCypherWriter.writeParameter(qp, context);
+				} else
+					PrimitiveCypherWriter.writePrimitiveValue(valueElement_Or_PrimitiveValue, context);
+			}
 		}
 	}
 	

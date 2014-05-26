@@ -58,6 +58,8 @@ public class JSONWriter {
 							writeAsSet(paramSet, generator);
 						else
 							writeAsParams(paramSet, generator);
+					} else if (iparam instanceof QueryParam) {
+						writeParam((QueryParam)iparam, generator);
 					}
 				}
 				generator.writeEnd();
@@ -83,6 +85,12 @@ public class JSONWriter {
 			writeLiteral(key, val, generator);
 		}
 		generator.writeEnd();
+	}
+	
+	private static void writeParam(QueryParam param, JsonGenerator generator) {
+		String key = param.getKey();
+		Object val = param.getValue();
+		writeLiteral(key, val, generator);
 	}
 
 	private static void writeLiteral(String key, Object val,
