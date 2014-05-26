@@ -74,6 +74,8 @@ import iot.jcypher.values.ValueAccess;
 import iot.jcypher.values.ValueElement;
 import iot.jcypher.values.ValueWriter;
 import iot.jcypher.writer.Pretty;
+import iot.jcypher.writer.QueryParam;
+import iot.jcypher.writer.QueryParamSet;
 import iot.jcypher.writer.WriterContext;
 
 public class CypherWriter {
@@ -773,10 +775,17 @@ public class CypherWriter {
 			context.buffer.append(property.getName());
 			context.buffer.append(':');
 			if (property.getValue() instanceof ValueElement) {
+				QueryParamSet.disableUseSet(context);
 				context.buffer.append(' ');
 				ValueWriter.toValueExpression((ValueElement)property.getValue(), context);
-			} else if (property.getValue() != null)
-				PrimitiveCypherWriter.writePrimitiveValue(property.getValue(), context);
+			} else if (property.getValue() != null) {
+				if (context.extractParams) {
+					QueryParam qp = QueryParam.createParam(property.getName(), property.getValue(), context);
+					QueryParamSet.addQueryParam(qp, context);
+					PrimitiveCypherWriter.writeParameter(qp, context);
+				} else
+					PrimitiveCypherWriter.writePrimitiveValue(property.getValue(), context);
+			}
 		}
 		
 		private static void toCypherExpression(PatternElement element, WriterContext context) {
@@ -842,13 +851,29 @@ public class CypherWriter {
 		private static void appendProperties(PatternElement element, WriterContext context) {
 			if (element.getProperties().size() > 0) {
 				context.buffer.append('{');
+				StringBuilder buf = context.buffer;
+				context.buffer = new StringBuilder();
 				int idx = 0;
+				QueryParamSet.createAddParamSet(context);
+				int paramIdx = QueryParam.getParamIndex(context);
 				for (PatternProperty property : element.getProperties()) {
 					if (idx > 0)
 						context.buffer.append(", ");
 					PatternCypherWriter.toCypherExpression(property, context);
 					idx++;
 				}
+				
+				if (context.extractParams && QueryParamSet.canUseSet(context) &&
+						QueryParamSet.getCurrentSet(context).getQueryParams().size() > 1) {
+					QueryParam.setParamIndex(paramIdx, context);
+					context.buffer = buf;
+					PrimitiveCypherWriter.writeParameterSet(QueryParamSet.getCurrentSet(context), context);
+				} else {
+					buf.append(context.buffer);
+					context.buffer = buf;
+				}
+				QueryParamSet.finishParamSet(context);
+				
 				context.buffer.append('}');
 			}
 		}
@@ -927,6 +952,16 @@ public class CypherWriter {
 			} else {
 				context.buffer.append(val.toString());
 			}
+		}
+		
+		private static void writeParameter(QueryParam param, WriterContext context) {
+			context.buffer.append('{');
+			context.buffer.append(param.getKey());
+			context.buffer.append('}');
+		}
+		
+		private static void writeParameterSet(QueryParamSet paramSet, WriterContext context) {
+			context.buffer.append(paramSet.getKey());
 		}
 	}
 }

@@ -18,6 +18,8 @@ package test;
 
 import static org.junit.Assert.assertEquals;
 import iot.jcypher.CypherWriter;
+import iot.jcypher.JSONWriter;
+import iot.jcypher.JcQuery;
 import iot.jcypher.api.IClause;
 import iot.jcypher.values.ValueElement;
 import iot.jcypher.values.ValueWriter;
@@ -69,6 +71,28 @@ public class AbstractTestSuite {
 		WriterContext context = new WriterContext();
 		context.cypherFormat = pretty;
 		ValueWriter.toValueExpression(valueElem, context);
+		if (this.print) {
+			System.out.println("");
+			System.out.println(context.buffer.toString());
+		}
+		return context.buffer.toString();
+	}
+	
+	protected String print(JcQuery query, Format pretty) {
+		WriterContext context = new WriterContext();
+		context.cypherFormat = pretty;
+		CypherWriter.toCypherExpression(query, context);
+		if (this.print) {
+			System.out.println("");
+			System.out.println(context.buffer.toString());
+		}
+		return context.buffer.toString();
+	}
+	
+	protected String printJSON(JcQuery query, Format pretty) {
+		WriterContext context = new WriterContext();
+		context.cypherFormat = pretty;
+		JSONWriter.toJSON(query, context);
 		if (this.print) {
 			System.out.println("");
 			System.out.println(context.buffer.toString());

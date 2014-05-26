@@ -16,6 +16,8 @@
 
 package iot.jcypher.writer;
 
+import java.util.List;
+
 import iot.jcypher.ast.ClauseType;
 
 public class WriterContext {
@@ -25,6 +27,11 @@ public class WriterContext {
 	public boolean inFunction = false;
 	public ClauseType currentClause;
 	public ClauseType previousClause;
+	public boolean extractParams = true;
+	List<IQueryParam> queryParams;
+	QueryParamSet currentParamSet;
+	private int paramIndex = -1;
+	private int paramSetIndex = 0;
 	private int level = 0;
 	
 	public void incrementLevel() {
@@ -35,11 +42,36 @@ public class WriterContext {
 		this.level--;
 	}
 	
+	public void resetLevel() {
+		this.level = 0;
+	}
+	
 	public String getLevelIndent() {
 		String indent = new String();
 		for (int i = 0; i < this.level;i++) {
 			indent = indent.concat(Pretty.INDENT);
 		}
 		return indent;
+	}
+	
+	int getParamIndex() {
+		return paramIndex;
+	}
+
+	void setParamIndex(int paramIndex) {
+		this.paramIndex = paramIndex;
+	}
+
+	int getNextParamIndex() {
+		this.paramIndex++;
+		return this.paramIndex;
+	}
+	
+	void incrementParamSetIndex() {
+		this.paramSetIndex++;
+	}
+	
+	int getParamSetIndex() {
+		return this.paramSetIndex;
 	}
 }
