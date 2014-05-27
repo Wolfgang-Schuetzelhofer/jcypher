@@ -6,6 +6,7 @@ import iot.jcypher.api.pattern.Node;
 import iot.jcypher.factories.clause.CREATE;
 import iot.jcypher.factories.clause.MATCH;
 import iot.jcypher.factories.clause.RETURN;
+import iot.jcypher.factories.clause.START;
 import iot.jcypher.factories.clause.WHERE;
 import iot.jcypher.values.JcNode;
 import iot.jcypher.values.JcRelation;
@@ -114,6 +115,50 @@ public class JsonTest extends AbstractTestSuite {
 				 RETURN.value(r.type())
 		});
 
+		//result = print(query, Format.PRETTY_1);
+		result = printJSON(query, Format.PRETTY_1);
+		testId = "CREATE_04";
+		//assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				START.node(n).byIndex("Persons").property("name").value("Tobias")
+		});
+		
+		//result = print(query, Format.PRETTY_1);
+		result = printJSON(query, Format.PRETTY_1);
+		testId = "CREATE_04";
+		//assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				START.node(n).byIndex("Persons").query("name:A")
+		});
+		
+		//result = print(query, Format.PRETTY_1);
+		result = printJSON(query, Format.PRETTY_1);
+		testId = "CREATE_04";
+		//assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				START.node(n).byId(0)
+		});
+		
+		//result = print(query, Format.PRETTY_1);
+		result = printJSON(query, Format.PRETTY_1);
+		testId = "CREATE_04";
+		//assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				START.relation(r).byId(2, 3)
+		});
+		
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
 		testId = "CREATE_04";

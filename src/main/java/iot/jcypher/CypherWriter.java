@@ -904,24 +904,45 @@ public class CypherWriter {
 				context.buffer.append('(');
 				PropertyOrQuery poq = sx.getPropertyOrQuery();
 				if (poq.getLuceneQuery() != null) {
-					context.buffer.append('\"');
-					context.buffer.append(poq.getLuceneQuery());
-					context.buffer.append('\"');
-				}
-				else if (poq.getPropertyValue() != null) {
+					if (context.extractParams) {
+						QueryParam qp = QueryParam.createAddParam(null,
+								poq.getLuceneQuery(), context);
+						PrimitiveCypherWriter.writeParameter(qp, context);
+					} else {
+						context.buffer.append('"');
+						context.buffer.append(poq.getLuceneQuery());
+						context.buffer.append('"');
+					}
+				} else if (poq.getPropertyValue() != null) {
 					context.buffer.append(poq.getPropertyName());
 					context.buffer.append(" = ");
-					PrimitiveCypherWriter.writePrimitiveValue(poq.getPropertyValue(), context);
+					if (context.extractParams) {
+						QueryParam qp = QueryParam.createAddParam(null,
+								poq.getPropertyValue(), context);
+						PrimitiveCypherWriter.writeParameter(qp, context);
+					} else
+						PrimitiveCypherWriter.writePrimitiveValue(poq.getPropertyValue(), context);
 				}
 				context.buffer.append(')');
 			} else if (sx.getIndexOrId().getIds() != null) {
 				context.buffer.append('(');
-				boolean first = true;
-				for (Long id : sx.getIndexOrId().getIds()) {
-					if (!first)
-						context.buffer.append(", ");
-					context.buffer.append(id.toString());
-					first = false;
+				if (context.extractParams) {
+					Object val;
+					if (sx.getIndexOrId().getIds().size() == 1)
+						val = sx.getIndexOrId().getIds().get(0);
+					else
+						val = sx.getIndexOrId().getIds();
+					QueryParam qp = QueryParam.createAddParam(null,
+							val, context);
+					PrimitiveCypherWriter.writeParameter(qp, context);
+				} else {
+					boolean first = true;
+					for (Long id : sx.getIndexOrId().getIds()) {
+						if (!first)
+							context.buffer.append(", ");
+						context.buffer.append(id.toString());
+						first = false;
+					}
 				}
 				context.buffer.append(')');
 			}

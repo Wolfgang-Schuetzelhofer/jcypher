@@ -108,6 +108,29 @@ public class JSONWriter {
 				generator.write(key, (Float)val);
 		} else if (val instanceof Boolean)
 			generator.write(key, (Boolean)val);
+		else if (val instanceof List<?>) {
+			generator.writeStartArray(key);
+			for (Object v : (List<?>)val) {
+				writeLiteral(v, generator);
+			}
+			generator.writeEnd();
+		}
+	}
+	
+	private static void writeLiteral(Object val, JsonGenerator generator) {
+		if (val instanceof String)
+			generator.write(val.toString());
+		else if (val instanceof Number) {
+			if (val instanceof Long)
+				generator.write((Long)val);
+			else if (val instanceof Integer)
+				generator.write((Integer)val);
+			else if (val instanceof Double)
+				generator.write((Double)val);
+			else if (val instanceof Float)
+				generator.write((Float)val);
+		} else if (val instanceof Boolean)
+			generator.write((Boolean)val);
 	}
 
 	private static void reInitContext(WriterContext context) {
