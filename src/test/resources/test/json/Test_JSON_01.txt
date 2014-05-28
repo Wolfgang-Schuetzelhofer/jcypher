@@ -1,0 +1,20 @@
+----JSON_01:
+
+{
+    "query":"CREATE (shakespeare{firstname:'William', lastname:'Shakespeare'}), (juliusCaesar{title:'Julius Caesar'})"
+}
+------------------------------------------------------------
+
+----JSON_02:
+
+{
+    "query":"CREATE (shakespeare{props_0}), (juliusCaesar{title:{param_0}})",
+    "params":{
+        "props_0":{
+            "firstname":"William",
+            "lastname":"Shakespeare"
+        },
+        "param_0":"Julius Caesar"
+    }
+}
+------------------------------------------------------------

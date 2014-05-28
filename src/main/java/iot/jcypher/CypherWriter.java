@@ -551,7 +551,7 @@ public class CypherWriter {
 			if (valueElement_Or_PrimitiveValue instanceof ValueElement)
 				ValueWriter.toValueExpression((ValueElement)valueElement_Or_PrimitiveValue, context);
 			else if (valueElement_Or_PrimitiveValue != null) {
-				if (context.extractParams) {
+				if (QueryParam.isExtractParams(context)) {
 					QueryParam qp = QueryParam.createAddParam(null,
 							valueElement_Or_PrimitiveValue, context);
 					PrimitiveCypherWriter.writeParameter(qp, context);
@@ -785,7 +785,7 @@ public class CypherWriter {
 				context.buffer.append(' ');
 				ValueWriter.toValueExpression((ValueElement)property.getValue(), context);
 			} else if (property.getValue() != null) {
-				if (context.extractParams) {
+				if (QueryParam.isExtractParams(context)) {
 					QueryParam qp = QueryParam.createParam(property.getName(), property.getValue(), context);
 					QueryParamSet.addQueryParam(qp, context);
 					PrimitiveCypherWriter.writeParameter(qp, context);
@@ -869,7 +869,7 @@ public class CypherWriter {
 					idx++;
 				}
 				
-				if (context.extractParams && QueryParamSet.canUseSet(context) &&
+				if (QueryParam.isExtractParams(context) && QueryParamSet.canUseSet(context) &&
 						QueryParamSet.getCurrentSet(context).getQueryParams().size() > 1) {
 					QueryParam.setParamIndex(paramIdx, context);
 					context.buffer = buf;
@@ -904,7 +904,7 @@ public class CypherWriter {
 				context.buffer.append('(');
 				PropertyOrQuery poq = sx.getPropertyOrQuery();
 				if (poq.getLuceneQuery() != null) {
-					if (context.extractParams) {
+					if (QueryParam.isExtractParams(context)) {
 						QueryParam qp = QueryParam.createAddParam(null,
 								poq.getLuceneQuery(), context);
 						PrimitiveCypherWriter.writeParameter(qp, context);
@@ -916,7 +916,7 @@ public class CypherWriter {
 				} else if (poq.getPropertyValue() != null) {
 					context.buffer.append(poq.getPropertyName());
 					context.buffer.append(" = ");
-					if (context.extractParams) {
+					if (QueryParam.isExtractParams(context)) {
 						QueryParam qp = QueryParam.createAddParam(null,
 								poq.getPropertyValue(), context);
 						PrimitiveCypherWriter.writeParameter(qp, context);
@@ -926,7 +926,7 @@ public class CypherWriter {
 				context.buffer.append(')');
 			} else if (sx.getIndexOrId().getIds() != null) {
 				context.buffer.append('(');
-				if (context.extractParams) {
+				if (QueryParam.isExtractParams(context)) {
 					Object val;
 					if (sx.getIndexOrId().getIds().size() == 1)
 						val = sx.getIndexOrId().getIds().get(0);

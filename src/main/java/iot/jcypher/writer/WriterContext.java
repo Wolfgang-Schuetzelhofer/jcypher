@@ -27,7 +27,7 @@ public class WriterContext {
 	public boolean inFunction = false;
 	public ClauseType currentClause;
 	public ClauseType previousClause;
-	public boolean extractParams = true;
+	boolean extractParams = false;
 	List<IQueryParam> queryParams;
 	IQueryParam currentParamOrSet;
 	private int paramIndex = -1;

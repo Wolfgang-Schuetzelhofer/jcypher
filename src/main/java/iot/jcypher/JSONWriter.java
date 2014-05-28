@@ -14,8 +14,6 @@ import javax.json.Json;
 import javax.json.stream.JsonGenerator;
 import javax.json.stream.JsonGeneratorFactory;
 
-import org.junit.internal.matchers.ThrowableCauseMatcher;
-
 public class JSONWriter {
 
 	private static JsonGeneratorFactory prettyGeneratorFactory;
@@ -23,6 +21,8 @@ public class JSONWriter {
 	public static void toJSON(JcQuery query, WriterContext context) {
 		Format cf = context.cypherFormat;
 		context.cypherFormat = Format.NONE;
+		boolean extract = QueryParam.isExtractParams(context);
+		QueryParam.setExtractParams(query.isExtractParams(), context);
 		CypherWriter.toCypherExpression(query, context);
 		context.cypherFormat = cf;
 		String cypher = context.buffer.toString();
@@ -43,11 +43,14 @@ public class JSONWriter {
 
 		generator.flush();
 		context.buffer.append(sw.getBuffer());
+		
+		// reset to original
+		QueryParam.setExtractParams(extract, context);
 	}
 	
 	private static void writeQueryParams(WriterContext context,
 			JsonGenerator generator) {
-		if (context.extractParams) {
+		if (QueryParam.isExtractParams(context)) {
 			List<IQueryParam> params = QueryParamSet.getQueryParams(context);
 			if (params != null) {
 				generator.writeStartObject("params");

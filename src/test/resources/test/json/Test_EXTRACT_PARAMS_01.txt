@@ -1,0 +1,117 @@
+----EXTRACT_01:
+
+{
+    "query":"CREATE (n:Person{props_0})",
+    "params":{
+        "props_0":{
+            "name":"Andres",
+            "title":"Developer"
+        }
+    }
+}
+------------------------------------------------------------
+
+----EXTRACT_02:
+
+{
+    "query":"CREATE (n:Person{name:{param_0}, title: a.title})",
+    "params":{
+        "param_0":"Andres"
+    }
+}
+------------------------------------------------------------
+
+----EXTRACT_03:
+
+{
+    "query":"CREATE (n:Person{props_0})",
+    "params":{
+        "props_0":{
+            "name":"Andres",
+            "age":21,
+            "amount":320.53
+        }
+    }
+}
+------------------------------------------------------------
+
+----EXTRACT_04:
+
+{
+    "query":"CREATE (n:Person{name:{param_0}, age:{param_1}, amount: a.amount})",
+    "params":{
+        "param_0":"Andres",
+        "param_1":21
+    }
+}
+------------------------------------------------------------
+
+----EXTRACT_05:
+
+{
+    "query":"CREATE (n:Person{name:{param_0}, age:{param_1}, amount: a.amount})-[r:LINK{props_0}]->(a{city:{param_2}})",
+    "params":{
+        "param_0":"Andres",
+        "param_1":21,
+        "props_0":{
+            "marked":true,
+            "name":"connection"
+        },
+        "param_2":"San Francisco"
+    }
+}
+------------------------------------------------------------
+
+----EXTRACT_06:
+
+{
+    "query":"MATCH (x{name:{param_0}})-[r]-(friend) WHERE friend.name = {param_1} RETURN type(r)",
+    "params":{
+        "param_0":"I",
+        "param_1":"you"
+    }
+}
+------------------------------------------------------------
+
+----EXTRACT_07:
+
+{
+    "query":"START n = node:Persons(name = {param_0})",
+    "params":{
+        "param_0":"Tobias"
+    }
+}
+------------------------------------------------------------
+
+----EXTRACT_08:
+
+{
+    "query":"START n = node:Persons({param_0})",
+    "params":{
+        "param_0":"name:A"
+    }
+}
+------------------------------------------------------------
+
+----EXTRACT_09:
+
+{
+    "query":"START n = node({param_0})",
+    "params":{
+        "param_0":0
+    }
+}
+------------------------------------------------------------
+
+----EXTRACT_10:
+
+{
+    "query":"START r = relationship({param_0})",
+    "params":{
+        "param_0":[
+            2,
+            3
+        ]
+    }
+}
+------------------------------------------------------------

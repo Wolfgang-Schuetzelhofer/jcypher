@@ -23,6 +23,7 @@ import iot.jcypher.api.IClause;
  */
 public class JcQuery {
 
+	private boolean extractParams = true;
 	private IClause clauses[];
 
 	/**
@@ -46,5 +47,27 @@ public class JcQuery {
 	 */
 	public void setClauses(IClause[] clauses) {
 		this.clauses = clauses;
+	}
+
+	/**
+	 * This has an effect only when the query is mapped to JSON.
+	 * <br/>If extractParams is true, literals are replaced with parameters 
+	 * in order to speed up queries in repeated scenarios.
+	 * <br/>Defaults to true.
+	 * @return
+	 */
+	public boolean isExtractParams() {
+		return extractParams;
+	}
+
+	/**
+	 * This has an effect only when the query is mapped to JSON.
+	 * <br/>If extractParams is true, literals are replaced with parameters 
+	 * in order to speed up queries in repeated scenarios.
+	 * <br/>Defaults to true.
+	 * @param extractParams
+	 */
+	public void setExtractParams(boolean extractParams) {
+		this.extractParams = extractParams;
 	}
 }

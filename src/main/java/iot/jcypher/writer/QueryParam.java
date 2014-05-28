@@ -35,6 +35,14 @@ public class QueryParam implements IQueryParam {
 		return context.getParamIndex();
 	}
 	
+	public static boolean isExtractParams(WriterContext context) {
+		return context.extractParams;
+	}
+
+	public static void setExtractParams(boolean extractParams, WriterContext context) {
+		context.extractParams = extractParams;
+	}
+	
 	public String getKey() {
 		return key;
 	}

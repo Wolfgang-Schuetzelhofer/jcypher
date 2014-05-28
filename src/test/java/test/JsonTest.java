@@ -2,7 +2,6 @@ package test;
 
 import iot.jcypher.JcQuery;
 import iot.jcypher.api.IClause;
-import iot.jcypher.api.pattern.Node;
 import iot.jcypher.factories.clause.CREATE;
 import iot.jcypher.factories.clause.MATCH;
 import iot.jcypher.factories.clause.RETURN;
@@ -25,7 +24,7 @@ public class JsonTest extends AbstractTestSuite {
 		setDoPrint(true);
 		setDoAssert(true);
 
-		TestDataReader tdr = new TestDataReader("/test/Test_CREATE_01.txt");
+		TestDataReader tdr = new TestDataReader("/test/json/Test_EXTRACT_PARAMS_01.txt");
 		
 		JcQuery query;
 		JcNode n = new JcNode("n");
@@ -44,8 +43,8 @@ public class JsonTest extends AbstractTestSuite {
 
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
-		testId = "CREATE_04";
-		//assertQuery(testId, result, tdr.getTestData(testId));
+		testId = "EXTRACT_01";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
 		query = new JcQuery();
@@ -57,8 +56,8 @@ public class JsonTest extends AbstractTestSuite {
 
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
-		testId = "CREATE_04";
-		//assertQuery(testId, result, tdr.getTestData(testId));
+		testId = "EXTRACT_02";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
 		query = new JcQuery();
@@ -71,8 +70,8 @@ public class JsonTest extends AbstractTestSuite {
 
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
-		testId = "CREATE_04";
-		//assertQuery(testId, result, tdr.getTestData(testId));
+		testId = "EXTRACT_03";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
 		query = new JcQuery();
@@ -85,8 +84,8 @@ public class JsonTest extends AbstractTestSuite {
 
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
-		testId = "CREATE_04";
-		//assertQuery(testId, result, tdr.getTestData(testId));
+		testId = "EXTRACT_04";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
 		query = new JcQuery();
@@ -104,8 +103,8 @@ public class JsonTest extends AbstractTestSuite {
 
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
-		testId = "CREATE_04";
-		//assertQuery(testId, result, tdr.getTestData(testId));
+		testId = "EXTRACT_05";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
 		query = new JcQuery();
@@ -117,8 +116,8 @@ public class JsonTest extends AbstractTestSuite {
 
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
-		testId = "CREATE_04";
-		//assertQuery(testId, result, tdr.getTestData(testId));
+		testId = "EXTRACT_06";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
 		query = new JcQuery();
@@ -128,8 +127,8 @@ public class JsonTest extends AbstractTestSuite {
 		
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
-		testId = "CREATE_04";
-		//assertQuery(testId, result, tdr.getTestData(testId));
+		testId = "EXTRACT_07";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
 		query = new JcQuery();
@@ -139,8 +138,8 @@ public class JsonTest extends AbstractTestSuite {
 		
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
-		testId = "CREATE_04";
-		//assertQuery(testId, result, tdr.getTestData(testId));
+		testId = "EXTRACT_08";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
 		query = new JcQuery();
@@ -150,8 +149,8 @@ public class JsonTest extends AbstractTestSuite {
 		
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
-		testId = "CREATE_04";
-		//assertQuery(testId, result, tdr.getTestData(testId));
+		testId = "EXTRACT_09";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
 		query = new JcQuery();
@@ -161,25 +160,44 @@ public class JsonTest extends AbstractTestSuite {
 		
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
-		testId = "CREATE_04";
-		//assertQuery(testId, result, tdr.getTestData(testId));
+		testId = "EXTRACT_10";
+		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 	
 	@Test
 	public void testJson_01() {
 		String result;
-		JcQuery query = new JcQuery();
+		String testId;
+		setDoPrint(true);
+		setDoAssert(true);
+
+		TestDataReader tdr = new TestDataReader("/test/json/Test_JSON_01.txt");
 		
 		JcNode shakespeare = new JcNode("shakespeare");
 		JcNode juliusCaesar = new JcNode("juliusCaesar");
 		
+		/*******************************/
+		JcQuery query = new JcQuery();
+		query.setExtractParams(false);
 		query.setClauses(new IClause[] {
 				CREATE.node(shakespeare).property("firstname").value("William").property("lastname").value("Shakespeare"),
 				CREATE.node(juliusCaesar).property("title").value("Julius Caesar")
 		});
 		
-		result = print(query, Format.PRETTY_3);
 		result = printJSON(query, Format.PRETTY_3);
+		testId = "JSON_01";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				CREATE.node(shakespeare).property("firstname").value("William").property("lastname").value("Shakespeare"),
+				CREATE.node(juliusCaesar).property("title").value("Julius Caesar")
+		});
+		
+		result = printJSON(query, Format.PRETTY_3);
+		testId = "JSON_02";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		return;
 	}
