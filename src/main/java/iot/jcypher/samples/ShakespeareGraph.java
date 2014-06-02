@@ -16,8 +16,6 @@
 
 package iot.jcypher.samples;
 
-import iot.jcypher.CypherWriter;
-import iot.jcypher.JSONWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.api.IClause;
 import iot.jcypher.factories.clause.CREATE;
@@ -29,7 +27,6 @@ import iot.jcypher.values.JcNode;
 import iot.jcypher.values.JcRelation;
 import iot.jcypher.values.JcString;
 import iot.jcypher.writer.Format;
-import iot.jcypher.writer.WriterContext;
 
 /**
  * This JCypher sample is constructing and querying the 'Shakespeare Graph',
@@ -114,12 +111,13 @@ public class ShakespeareGraph {
 		});
 		
 		// map to Cypher
-		String cypher = toCypher(query, Format.PRETTY_3);
+		String cypher = Util.toCypher(query, Format.PRETTY_3);
 		System.out.println("CYPHER --------------------");
 		System.out.println(cypher);
 		
 		// map to JSON
-		String json = toJSON(query, Format.PRETTY_3);
+		String json = Util.toJSON(query, Format.PRETTY_3);
+		System.out.println("");
 		System.out.println("JSON   --------------------");
 		System.out.println(json);
 		
@@ -137,28 +135,15 @@ public class ShakespeareGraph {
 		});
 		
 		// map to Cypher
-		cypher = toCypher(query, Format.PRETTY_3);
+		cypher = Util.toCypher(query, Format.PRETTY_3);
 		System.out.println("CYPHER --------------------");
 		System.out.println(cypher);
 		
 		// map to JSON
-		json = toJSON(query, Format.PRETTY_3);
+		json = Util.toJSON(query, Format.PRETTY_3);
+		System.out.println("");
 		System.out.println("JSON   --------------------");
 		System.out.println(json);
 		return;
-	}
-	
-	private static String toCypher(JcQuery query, Format pretty) {
-		WriterContext context = new WriterContext();
-		context.cypherFormat = pretty;
-		CypherWriter.toCypherExpression(query, context);
-		return context.buffer.toString();
-	}
-	
-	private static String toJSON(JcQuery query, Format pretty) {
-		WriterContext context = new WriterContext();
-		context.cypherFormat = pretty;
-		JSONWriter.toJSON(query, context);
-		return context.buffer.toString();
 	}
 }
