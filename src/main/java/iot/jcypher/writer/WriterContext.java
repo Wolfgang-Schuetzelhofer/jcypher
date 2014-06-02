@@ -30,6 +30,8 @@ public class WriterContext {
 	boolean extractParams = false;
 	List<IQueryParam> queryParams;
 	IQueryParam currentParamOrSet;
+	// vs. using cypher endpoint
+	boolean useTransactionalEndpoint = false;
 	private int paramIndex = -1;
 	private int paramSetIndex = 0;
 	private int level = 0;

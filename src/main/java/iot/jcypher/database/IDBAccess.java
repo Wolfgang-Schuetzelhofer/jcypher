@@ -14,27 +14,16 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.samples;
+package iot.jcypher.database;
 
-import iot.jcypher.CypherWriter;
-import iot.jcypher.JSONWriter;
+import java.util.Properties;
+
 import iot.jcypher.JcQuery;
-import iot.jcypher.writer.Format;
-import iot.jcypher.writer.WriterContext;
+import iot.jcypher.result.JcQueryResult;
 
-public class Util {
+public interface IDBAccess {
 
-	public static String toCypher(JcQuery query, Format pretty) {
-		WriterContext context = new WriterContext();
-		context.cypherFormat = pretty;
-		CypherWriter.toCypherExpression(query, context);
-		return context.buffer.toString();
-	}
+	public void initialize(Properties properties);
 	
-	public static String toJSON(JcQuery query, Format pretty) {
-		WriterContext context = new WriterContext();
-		context.cypherFormat = pretty;
-		JSONWriter.toJSON(query, context);
-		return context.buffer.toString();
-	}
+	public JcQueryResult execute(JcQuery query);
 }

@@ -14,27 +14,29 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.samples;
+package iot.jcypher.database;
 
-import iot.jcypher.CypherWriter;
-import iot.jcypher.JSONWriter;
-import iot.jcypher.JcQuery;
-import iot.jcypher.writer.Format;
-import iot.jcypher.writer.WriterContext;
+import java.lang.reflect.Method;
+import java.util.Properties;
 
-public class Util {
+public class DBAccessFactory {
 
-	public static String toCypher(JcQuery query, Format pretty) {
-		WriterContext context = new WriterContext();
-		context.cypherFormat = pretty;
-		CypherWriter.toCypherExpression(query, context);
-		return context.buffer.toString();
+	@SuppressWarnings("unchecked")
+	public static IDBAccess createRemoteDBAccess(Properties properties) {
+		IDBAccess dbAccess;
+		try {
+			Class<? extends IDBAccess> dbAccessClass =
+					(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.RemoteDBAccess");
+			Method init = dbAccessClass.getDeclaredMethod("initialize", new Class[] {Properties.class});
+			dbAccess = dbAccessClass.newInstance();
+			init.invoke(dbAccess, new Object[] {properties});
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
+		}
+		return dbAccess;
 	}
 	
-	public static String toJSON(JcQuery query, Format pretty) {
-		WriterContext context = new WriterContext();
-		context.cypherFormat = pretty;
-		JSONWriter.toJSON(query, context);
-		return context.buffer.toString();
+	public static IDBAccess createEmbeddedDBAccess(Properties properties) {
+		return null;
 	}
 }

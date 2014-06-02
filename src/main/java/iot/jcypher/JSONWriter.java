@@ -1,5 +1,6 @@
 package iot.jcypher;
 
+import iot.jcypher.writer.ContextAccess;
 import iot.jcypher.writer.Format;
 import iot.jcypher.writer.IQueryParam;
 import iot.jcypher.writer.QueryParam;
@@ -37,8 +38,10 @@ public class JSONWriter {
 			generator = Json.createGenerator(sw);
 		
 		generator.writeStartObject();
-		generator.write("query", cypher);
-		writeQueryParams(context, generator);
+		if (ContextAccess.useTransationalEndpoint(context))
+			writeStatements(new Statement[] {new Statement(context, cypher)}, generator);
+		else
+			writeQuery("query", cypher, context, generator);
 		generator.writeEnd();
 
 		generator.flush();
@@ -48,12 +51,31 @@ public class JSONWriter {
 		QueryParam.setExtractParams(extract, context);
 	}
 	
+	private static void writeStatements(Statement[] statements, JsonGenerator generator) {
+		generator.writeStartArray("statements");
+		for (Statement statement : statements) {
+			generator.writeStartObject();
+			writeQuery("statement", statement.cypher, statement.context, generator);
+			generator.writeEnd();
+		}
+		generator.writeEnd();
+	}
+
+	private static void writeQuery(String queryKey, String cypher,
+			WriterContext context, JsonGenerator generator) {
+		generator.write(queryKey, cypher);
+		writeQueryParams(context, generator);
+	}
+
 	private static void writeQueryParams(WriterContext context,
 			JsonGenerator generator) {
 		if (QueryParam.isExtractParams(context)) {
 			List<IQueryParam> params = QueryParamSet.getQueryParams(context);
 			if (params != null) {
-				generator.writeStartObject("params");
+				String paramsKey = "params";
+				if (ContextAccess.useTransationalEndpoint(context))
+					paramsKey = "parameters";
+				generator.writeStartObject(paramsKey);
 				for (IQueryParam iparam : params) {
 					if (iparam instanceof QueryParamSet) {
 						QueryParamSet paramSet = (QueryParamSet)iparam;
@@ -151,5 +173,18 @@ public class JSONWriter {
 			prettyGeneratorFactory = Json.createGeneratorFactory(prettyConfigMap);
 		}
 		return prettyGeneratorFactory;
+	}
+	
+	/*******************************************/
+	private static class Statement {
+		private WriterContext context;
+		private String cypher;
+		
+		private Statement(WriterContext context, String cypher) {
+			super();
+			this.context = context;
+			this.cypher = cypher;
+		}
+		
 	}
 }

@@ -14,23 +14,33 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.samples;
+package test;
 
 import iot.jcypher.JcQuery;
 import iot.jcypher.api.IClause;
+import iot.jcypher.database.DBAccessFactory;
+import iot.jcypher.database.DBProperties;
+import iot.jcypher.database.IDBAccess;
 import iot.jcypher.factories.clause.CREATE;
 import iot.jcypher.factories.clause.MATCH;
 import iot.jcypher.factories.clause.RETURN;
+import iot.jcypher.result.JcQueryResult;
 import iot.jcypher.values.JcNode;
-import iot.jcypher.writer.Format;
 
-/**
- * This JCypher sample is constructing and querying the 'Movie Database'.
- * It is based on the 'Movie Database' sample, provided in the Neo4j Manual in the Tutorials section
- */
-public class MovieDatabase {
+import java.util.Properties;
 
-	public static void main(String[] args) {
+import org.junit.Test;
+
+public class DBAccessTest {
+
+	//@Test
+	public void testCreateDB_01() {
+		
+		Properties props = new Properties();
+		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7475");
+		
+		IDBAccess dbAccess = DBAccessFactory.createRemoteDBAccess(props);
+		
 		JcNode matrix1 = new JcNode("matrix1");
 		JcNode matrix2 = new JcNode("matrix2");
 		JcNode matrix3 = new JcNode("matrix3");
@@ -38,10 +48,7 @@ public class MovieDatabase {
 		JcNode laurence = new JcNode("laurence");
 		JcNode carrieanne = new JcNode("carrieanne");
 		
-		/**
-		 * -----------------------------------------------------------------
-		 * Create the movie database
-		 */
+		/*******************************/
 		JcQuery query = new JcQuery();
 		query.setClauses(new IClause[] {
 				CREATE.node(matrix1).label("Movie")
@@ -69,35 +76,30 @@ public class MovieDatabase {
 				CREATE.node(carrieanne).relation().out().type("ACTS_IN").property("role").value("Trinity").node(matrix2),
 				CREATE.node(carrieanne).relation().out().type("ACTS_IN").property("role").value("Trinity").node(matrix3)
 		});
-		print(query, "CREATE MOVIE DATABASE", Format.PRETTY_3);
 		
-		/**
-		 * -----------------------------------------------------------------
-		 * Check how many nodes we have now
-		 */
-		JcNode n = new JcNode("n");
+		JcQueryResult result = dbAccess.execute(query);
 		
-		query = new JcQuery();
-		query.setClauses(new IClause[] {
-				MATCH.node(n),
-				RETURN.count().value(n)
-		});
-		print(query, "COUNT NODES", Format.PRETTY_3);
+		return;
 	}
 	
-	private static void print(JcQuery query, String title, Format format) {
-		System.out.println(title + " --------------------");
-		// map to Cypher
-		String cypher = Util.toCypher(query, format);
-		System.out.println("CYPHER --------------------");
-		System.out.println(cypher);
+	//@Test
+	public void testQueryDB_01() {
 		
-		// map to JSON
-		String json = Util.toJSON(query, format);
-		System.out.println("");
-		System.out.println("JSON   --------------------");
-		System.out.println(json);
+		Properties props = new Properties();
+		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7475");
 		
-		System.out.println("");
+		IDBAccess dbAccess = DBAccessFactory.createRemoteDBAccess(props);
+		
+		JcNode movie = new JcNode("movie");
+		
+		/*******************************/
+		JcQuery query = new JcQuery();
+		query.setClauses(new IClause[] {
+				MATCH.node(movie).label("Movie").property("title").value("The Matrix"),
+				RETURN.value(movie)
+		});
+		JcQueryResult result = dbAccess.execute(query);
+		
+		return;
 	}
 }
