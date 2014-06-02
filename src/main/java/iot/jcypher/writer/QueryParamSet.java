@@ -27,7 +27,8 @@ public class QueryParamSet implements IQueryParam {
 				if (context.queryParams == null)
 					context.queryParams = new ArrayList<IQueryParam>();
 				context.queryParams.add(context.currentParamOrSet);
-				if (((QueryParamSet)context.currentParamOrSet).canUseSet())
+				if (((QueryParamSet)context.currentParamOrSet).canUseSet() &&
+						((QueryParamSet)context.currentParamOrSet).getQueryParams().size() > 1)
 					context.incrementParamSetIndex();
 				context.currentParamOrSet = null;
 			}

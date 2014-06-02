@@ -3,6 +3,7 @@ package test;
 import iot.jcypher.JcQuery;
 import iot.jcypher.api.IClause;
 import iot.jcypher.factories.clause.CREATE;
+import iot.jcypher.factories.clause.DO;
 import iot.jcypher.factories.clause.MATCH;
 import iot.jcypher.factories.clause.RETURN;
 import iot.jcypher.factories.clause.START;
@@ -161,6 +162,28 @@ public class JsonTest extends AbstractTestSuite {
 		//result = print(query, Format.PRETTY_1);
 		result = printJSON(query, Format.PRETTY_1);
 		testId = "EXTRACT_10";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				RETURN.value(n).LIMIT(3).SKIP(1)
+		});
+		
+		//result = print(query, Format.PRETTY_1);
+		result = printJSON(query, Format.PRETTY_1);
+		testId = "EXTRACT_11";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				DO.SET(n.property("surname")).to("Taylor")
+		});
+		
+		//result = print(query, Format.PRETTY_1);
+		result = printJSON(query, Format.PRETTY_1);
+		testId = "EXTRACT_12";
 		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 	

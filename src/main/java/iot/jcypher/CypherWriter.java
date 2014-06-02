@@ -664,14 +664,24 @@ public class CypherWriter {
 			if (limit != -1) {
 				Pretty.writePreClauseSeparator(context);
 				context.buffer.append("LIMIT ");
-				context.buffer.append(limit);
+				if (QueryParam.isExtractParams(context)) {
+					QueryParam qp = QueryParam.createAddParam(null,
+							limit, context);
+					PrimitiveCypherWriter.writeParameter(qp, context);
+				} else
+					context.buffer.append(limit);
 			}
 			
 			int skip = rx.getSkip();
 			if (skip != -1) {
 				Pretty.writePreClauseSeparator(context);
 				context.buffer.append("SKIP ");
-				context.buffer.append(skip);
+				if (QueryParam.isExtractParams(context)) {
+					QueryParam qp = QueryParam.createAddParam(null,
+							skip, context);
+					PrimitiveCypherWriter.writeParameter(qp, context);
+				} else
+					context.buffer.append(skip);
 			}
 		}
 
@@ -702,9 +712,14 @@ public class CypherWriter {
 					ValueWriter.toValueExpression(mx.getToModify(), context);
 					if (mx.getModifyAction() == ModifyAction.SET)
 						context.buffer.append(" = ");
-					if (mx.getValue() != null)
-						PrimitiveCypherWriter.writePrimitiveValue(mx.getValue(), context);
-					else if (mx.getValueExpression() != null)
+					if (mx.getValue() != null) { // only in case of SET
+						if (QueryParam.isExtractParams(context)) {
+							QueryParam qp = QueryParam.createAddParam(null,
+									mx.getValue(), context);
+							PrimitiveCypherWriter.writeParameter(qp, context);
+						} else
+							PrimitiveCypherWriter.writePrimitiveValue(mx.getValue(), context);
+					} else if (mx.getValueExpression() != null)
 						ValueWriter.toValueExpression(mx.getValueExpression(), context);
 					else if (mx.isToNull())
 						context.buffer.append("NULL");
