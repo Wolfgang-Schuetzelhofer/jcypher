@@ -16,6 +16,7 @@
 
 package iot.jcypher.writer;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import iot.jcypher.ast.ClauseType;
@@ -32,6 +33,10 @@ public class WriterContext {
 	IQueryParam currentParamOrSet;
 	// vs. using cypher endpoint
 	boolean useTransactionalEndpoint = false;
+	
+	// allows to specify a number of resultDataContents for
+	// JSON output from the REST API
+	private List<String> resultDataContents;
 	private int paramIndex = -1;
 	private int paramSetIndex = 0;
 	private int level = 0;
@@ -75,5 +80,12 @@ public class WriterContext {
 	
 	int getParamSetIndex() {
 		return this.paramSetIndex;
+	}
+	
+	List<String> getResultDataContents() {
+		if (this.resultDataContents == null) {
+			this.resultDataContents = new ArrayList<String>();
+		}
+		return this.resultDataContents;
 	}
 }

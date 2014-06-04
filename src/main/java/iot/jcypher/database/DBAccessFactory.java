@@ -22,21 +22,33 @@ import java.util.Properties;
 public class DBAccessFactory {
 
 	@SuppressWarnings("unchecked")
-	public static IDBAccess createRemoteDBAccess(Properties properties) {
-		IDBAccess dbAccess;
+	public static IDBAccess createDBAccess(DBType dbType, Properties properties) {
+		Class<? extends IDBAccess> dbAccessClass = null;
+		IDBAccess dbAccess = null;
 		try {
-			Class<? extends IDBAccess> dbAccessClass =
-					(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.RemoteDBAccess");
-			Method init = dbAccessClass.getDeclaredMethod("initialize", new Class[] {Properties.class});
-			dbAccess = dbAccessClass.newInstance();
-			init.invoke(dbAccess, new Object[] {properties});
+			if (dbType == DBType.REMOTE) {
+				dbAccessClass =
+						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.RemoteDBAccess");
+			} else if (dbType == DBType.EMBEDDED) {
+				dbAccessClass =
+						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.embedded.EmbeddedDBAccess");
+			} else if (dbType == DBType.IN_MEMORY) {
+				dbAccessClass =
+						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.embedded.InMemoryDBAccess");
+			}
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
+		
+		if (dbAccessClass != null) {
+			try {
+				Method init = dbAccessClass.getDeclaredMethod("initialize", new Class[] {Properties.class});
+				dbAccess = dbAccessClass.newInstance();
+				init.invoke(dbAccess, new Object[] {properties});
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
+		}
 		return dbAccess;
-	}
-	
-	public static IDBAccess createEmbeddedDBAccess(Properties properties) {
-		return null;
 	}
 }

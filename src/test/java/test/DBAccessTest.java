@@ -16,16 +16,22 @@
 
 package test;
 
+import iot.jcypher.CypherWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.api.IClause;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
+import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.factories.clause.CREATE;
 import iot.jcypher.factories.clause.MATCH;
 import iot.jcypher.factories.clause.RETURN;
 import iot.jcypher.result.JcQueryResult;
+import iot.jcypher.result.Util;
 import iot.jcypher.values.JcNode;
+import iot.jcypher.values.JcPath;
+import iot.jcypher.values.JcRelation;
+import iot.jcypher.writer.Format;
 
 import java.util.Properties;
 
@@ -37,9 +43,10 @@ public class DBAccessTest {
 	public void testCreateDB_01() {
 		
 		Properties props = new Properties();
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7475");
+		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
+		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		IDBAccess dbAccess = DBAccessFactory.createRemoteDBAccess(props);
+		IDBAccess dbAccess = DBAccessFactory.createDBAccess(DBType.EMBEDDED, props);
 		
 		JcNode matrix1 = new JcNode("matrix1");
 		JcNode matrix2 = new JcNode("matrix2");
@@ -61,11 +68,14 @@ public class DBAccessTest {
 						.property("title").value("The Matrix Revolutions")
 						.property("year").value("2003-10-27"),
 				CREATE.node(keanu).label("Actor")
-						.property("name").value("Keanu Reeves"),
+						.property("name").value("Keanu Reeves")
+						.property("rating").value(5),
 				CREATE.node(laurence).label("Actor")
-						.property("name").value("Laurence Fishburne"),
+						.property("name").value("Laurence Fishburne")
+						.property("rating").value(6),
 				CREATE.node(carrieanne).label("Actor")
-						.property("name").value("Carrie-Anne Moss"),
+						.property("name").value("Carrie-Anne Moss")
+						.property("rating").value(7),
 				CREATE.node(keanu).relation().out().type("ACTS_IN").property("role").value("Neo").node(matrix1),
 				CREATE.node(keanu).relation().out().type("ACTS_IN").property("role").value("Neo").node(matrix2),
 				CREATE.node(keanu).relation().out().type("ACTS_IN").property("role").value("Neo").node(matrix3),
@@ -82,15 +92,23 @@ public class DBAccessTest {
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testQueryDB_01() {
+		String queryString;
+		JcQueryResult result;
+		String resultString;
 		
 		Properties props = new Properties();
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7475");
+		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
+		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		IDBAccess dbAccess = DBAccessFactory.createRemoteDBAccess(props);
+		IDBAccess dbAccess = DBAccessFactory.createDBAccess(DBType.EMBEDDED, props);
 		
 		JcNode movie = new JcNode("movie");
+		JcNode n = new JcNode("n");
+		JcNode m = new JcNode("m");
+		JcRelation r = new JcRelation("r");
+		JcPath p = new JcPath("p");
 		
 		/*******************************/
 		JcQuery query = new JcQuery();
@@ -98,7 +116,44 @@ public class DBAccessTest {
 				MATCH.node(movie).label("Movie").property("title").value("The Matrix"),
 				RETURN.value(movie)
 		});
-		JcQueryResult result = dbAccess.execute(query);
+//		queryString = iot.jcypher.samples.Util.toCypher(query, Format.PRETTY_1);
+//		result = dbAccess.execute(query);
+//		resultString = Util.writePretty(result.getJsonResult());
+//		System.out.println("------------------------------------------------------------------");
+//		System.out.println(queryString);
+//		System.out.println(resultString);
+		
+		/*******************************/
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				MATCH.node(n).relation(r).out().node(m),
+				RETURN.value(r),
+				RETURN.value(n),
+				RETURN.value(m),
+				RETURN.value(r.id()),
+				RETURN.value(n.id()),
+				RETURN.value(m.id())
+		});
+//		queryString = iot.jcypher.samples.Util.toCypher(query, Format.PRETTY_1);
+//		result = dbAccess.execute(query);
+//		resultString = Util.writePretty(result.getJsonResult());
+//		System.out.println("------------------------------------------------------------------");
+//		System.out.println(queryString);
+//		System.out.println(resultString);
+		
+		/*******************************/
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				MATCH.node(n).relation(r).out().node(),
+				//RETURN.value(n.property("name"))
+				RETURN.ALL()
+		});
+		queryString = iot.jcypher.samples.Util.toCypher(query, Format.PRETTY_1);
+		result = dbAccess.execute(query);
+		resultString = Util.writePretty(result.getJsonResult());
+		System.out.println("------------------------------------------------------------------");
+		System.out.println(queryString);
+		System.out.println(resultString);
 		
 		return;
 	}

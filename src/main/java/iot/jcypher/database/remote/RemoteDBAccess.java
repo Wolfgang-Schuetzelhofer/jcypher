@@ -24,8 +24,14 @@ import iot.jcypher.result.JcQueryResult;
 import iot.jcypher.writer.ContextAccess;
 import iot.jcypher.writer.WriterContext;
 
+import java.io.StringReader;
 import java.util.Properties;
 
+import javax.json.Json;
+import javax.json.JsonBuilderFactory;
+import javax.json.JsonObject;
+import javax.json.JsonReader;
+import javax.json.JsonReaderFactory;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -48,19 +54,30 @@ public class RemoteDBAccess implements IDBAccess {
 	@Override
 	public void initialize(Properties properties) {
 		this.properties = properties;
+		if (this.properties == null)
+			throw new RuntimeException("missing properties in database configuration");
+		if (this.properties.getProperty(DBProperties.SERVER_ROOT_URI) == null)
+			throw new RuntimeException("missing property: '" +
+					DBProperties.SERVER_ROOT_URI + "' in database configuration");
 	}
 
 	@Override
 	public JcQueryResult execute(JcQuery query) {
 		WriterContext context = new WriterContext();
+		// to create correct json for using transactional endpoint vs. using cypher endpoint
 		ContextAccess.setUseTransactionalEndpoint(true, context);
+		ContextAccess.getResultDataContents(context).add("rest");
+		ContextAccess.getResultDataContents(context).add("graph");
 		JSONWriter.toJSON(query, context);
 		String json = context.buffer.toString();
 		Builder iBuilder = getInvocationBuilder();
 		Response response = iBuilder.post(Entity.entity(json, MediaType.APPLICATION_JSON_TYPE));
 		StatusType status = response.getStatusInfo();
 		String result = response.readEntity(String.class);
-		return null;
+		StringReader sr = new StringReader(result);
+		JsonReader reader = Json.createReader(sr);
+		JsonObject jsonResult = reader.readObject();
+		return new JcQueryResult(jsonResult);
 	}
 
 	private synchronized Client getRestClient() {

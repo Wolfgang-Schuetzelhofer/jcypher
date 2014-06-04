@@ -56,6 +56,13 @@ public class JSONWriter {
 		for (Statement statement : statements) {
 			generator.writeStartObject();
 			writeQuery("statement", statement.cypher, statement.context, generator);
+			if (ContextAccess.getResultDataContents( statement.context).size() > 0) {
+				generator.writeStartArray("resultDataContents");
+				for (String contentDescription : ContextAccess.getResultDataContents( statement.context)) {
+					generator.write(contentDescription);
+				}
+				generator.writeEnd();
+			}
 			generator.writeEnd();
 		}
 		generator.writeEnd();

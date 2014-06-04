@@ -16,6 +16,19 @@
 
 package iot.jcypher.result;
 
+import javax.json.JsonObject;
+
 public class JcQueryResult {
 
+	private JsonObject jsonResult;
+
+	public JcQueryResult(JsonObject jsonResult) {
+		super();
+		this.jsonResult = jsonResult;
+	}
+
+	public JsonObject getJsonResult() {
+		return jsonResult;
+	}
+	
 }

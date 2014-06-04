@@ -18,12 +18,20 @@ package iot.jcypher.database;
 
 /**
  * Defines the keys of properties needed to configure database access.
- * @author wolfgang
- *
  */
 public interface DBProperties {
-	/**
-	 * Address (uri) of a remote database server.
-	 */
-	public static final String SERVER_ROOT_URI = "server.root.uri";
+	
+	/******************** properties for remote database access *********************/
+	/** REQUIRED - Address (uri) of a remote database server.	 */
+	public static final String SERVER_ROOT_URI = "server_root_uri";
+	
+	/******************** properties for embedded database access *********************/
+	/** REQUIRED - Directory of the embedded database. */
+	public static final String DATABASE_DIR = "database_dir";
+	/** OPTIONAL  e.g. "10M" */
+	public static final String NODESTORE_MAPPED_MAMORY_SIZE = "nodestore_mapped_memory_size";
+	/** OPTIONAL  e.g. "60" */
+	public static final String STRING_BLOCK_SIZE = "string_block_size";
+	/** OPTIONAL  e.g. "300" */
+	public static final String ARRAY_BLOCK_SIZE = "array_block_size";
 }
