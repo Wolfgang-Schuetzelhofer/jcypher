@@ -92,7 +92,7 @@ public class DBAccessTest {
 		return;
 	}
 	
-	@Test
+	//@Test
 	public void testQueryDB_01() {
 		String queryString;
 		JcQueryResult result;
