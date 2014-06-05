@@ -20,6 +20,7 @@ import iot.jcypher.JSONWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcQueryResult;
 import iot.jcypher.writer.ContextAccess;
 import iot.jcypher.writer.WriterContext;
@@ -41,6 +42,8 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
+
+import com.sun.corba.se.spi.orbutil.fsm.Guard.Result;
 
 public class RemoteDBAccess implements IDBAccess {
 
@@ -70,14 +73,37 @@ public class RemoteDBAccess implements IDBAccess {
 		ContextAccess.getResultDataContents(context).add("graph");
 		JSONWriter.toJSON(query, context);
 		String json = context.buffer.toString();
-		Builder iBuilder = getInvocationBuilder();
-		Response response = iBuilder.post(Entity.entity(json, MediaType.APPLICATION_JSON_TYPE));
-		StatusType status = response.getStatusInfo();
-		String result = response.readEntity(String.class);
-		StringReader sr = new StringReader(result);
-		JsonReader reader = Json.createReader(sr);
-		JsonObject jsonResult = reader.readObject();
-		return new JcQueryResult(jsonResult);
+		Response response = null;
+		Throwable exception = null;
+		try {
+			Builder iBuilder = getInvocationBuilder();
+			response = iBuilder.post(Entity.entity(json, MediaType.APPLICATION_JSON_TYPE));
+		} catch(Throwable e) {
+			exception = e;
+		}
+		
+		JsonObject jsonResult = null;
+		StatusType status = null;
+		if (exception == null) {
+			status = response.getStatusInfo();
+			String result = response.readEntity(String.class);
+			if (result != null && result.length() > 0) {
+				StringReader sr = new StringReader(result);
+				JsonReader reader = Json.createReader(sr);
+				jsonResult = reader.readObject();
+			}
+		}
+		JcQueryResult ret = new JcQueryResult(jsonResult);
+		if (exception != null) {
+			String typ = exception.getClass().getSimpleName();
+			String msg = exception.getLocalizedMessage();
+			ret.setGeneralError(new JcError(typ, msg));
+		} else if (status != null && status.getStatusCode() >= 400) {
+			String code = String.valueOf(status.getStatusCode());
+			String msg = status.getReasonPhrase();
+			ret.setGeneralError(new JcError(code, msg));
+		}
+		return ret;
 	}
 
 	private synchronized Client getRestClient() {

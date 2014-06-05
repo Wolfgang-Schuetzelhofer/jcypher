@@ -3,6 +3,7 @@ package iot.jcypher.database.embedded;
 import iot.jcypher.CypherWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcQueryResult;
 import iot.jcypher.writer.IQueryParam;
 import iot.jcypher.writer.QueryParam;
@@ -36,6 +37,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccess {
 
 	protected Properties properties;
 	private GraphDatabaseService graphDb;
+	private ExecutionEngine executionEngine;
 
 	@Override
 	public JcQueryResult execute(JcQuery query) {
@@ -46,44 +48,68 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccess {
 		Map<String, Object> paramsMap = createQueryParams(context);
 		JsonBuilderContext builderContext = new JsonBuilderContext();
     	initJsonBuilderContext(builderContext);
-		ExecutionEngine engine = new ExecutionEngine(getGraphDB());
+    	Throwable exception = null;
+    	ExecutionEngine engine = null;
+    	try {
+    		engine = getExecutionEngine();
+    	} catch(Throwable e) {
+    		exception = e;
+    	}
 		ExecutionResult result = null;
 		Transaction tx = null;
-		Throwable exception = null;
-		try {
-			tx = getGraphDB().beginTx();
-			if (paramsMap != null)
-				result = engine.execute(cypher, paramsMap);
-			else
-				result = engine.execute(cypher);
-		    tx.success();
-		    if (result != null) {
-				List<String> cols = result.columns();
-				addColumns(builderContext, cols);
-				ResourceIterator<Map<String, Object>> iter = result.iterator();
-				while(iter.hasNext()) {
-					// that is one row
-					Map<String, Object> row = iter.next();
-					addRow(builderContext, row, cols);
+		Throwable dbException = null;
+		if (engine != null) {
+			try {
+				tx = getGraphDB().beginTx();
+				if (paramsMap != null)
+					result = engine.execute(cypher, paramsMap);
+				else
+					result = engine.execute(cypher);
+			    tx.success();
+			    if (result != null) {
+					List<String> cols = result.columns();
+					addColumns(builderContext, cols);
+					ResourceIterator<Map<String, Object>> iter = result.iterator();
+					while(iter.hasNext()) {
+						// that is one row
+						Map<String, Object> row = iter.next();
+						addRow(builderContext, row, cols);
+					}
 				}
+			} catch (Throwable e) {
+				dbException = e;
+				if (tx != null)
+					tx.failure();
+			} finally {
+				if (tx != null)
+					tx.close();
 			}
-		} catch (Throwable e) {
-			exception = e;
-			if (tx != null)
-				tx.failure();
-		} finally {
-			if (tx != null)
-				tx.close();
 		}
 		
-		if (exception != null) {
-			
+		if (dbException != null) {
+			addDBError(builderContext, dbException);
 		}
 		
 		JsonObject jsonResult = builderContext.build();
-		return new JcQueryResult(jsonResult);
+		JcQueryResult ret = new JcQueryResult(jsonResult);
+		if (exception != null) {
+			String typ = exception.getClass().getSimpleName();
+			String msg = exception.getLocalizedMessage();
+			ret.setGeneralError(new JcError(typ, msg));
+		}
+		return ret;
 	}
 	
+	private void addDBError(JsonBuilderContext builderContext,
+			Throwable exception) {
+		String code = exception.getClass().getSimpleName();
+		String msg = exception.getLocalizedMessage();
+		JsonObjectBuilder errorObject = Json.createObjectBuilder();
+		errorObject.add("code", code);
+		errorObject.add("message", msg);
+		builderContext.errorsArray.add(errorObject);
+	}
+
 	private Map<String, Object> createQueryParams(WriterContext context) {
 		Map<String, Object> paramsMap = null;
 		if (QueryParam.isExtractParams(context)) {
@@ -137,6 +163,12 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccess {
 			registerShutdownHook(this.graphDb);
 		}
 		return this.graphDb;
+	}
+	
+	private synchronized ExecutionEngine getExecutionEngine() {
+		if (this.executionEngine == null)
+			this.executionEngine = new ExecutionEngine(getGraphDB());
+		return this.executionEngine;
 	}
 	
 	private void initJsonBuilderContext(JsonBuilderContext builderContext) {

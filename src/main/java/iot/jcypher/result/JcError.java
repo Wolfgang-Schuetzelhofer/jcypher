@@ -16,31 +16,20 @@
 
 package iot.jcypher.result;
 
-import javax.json.JsonObject;
+public class JcError {
 
-public class JcQueryResult {
-
-	private JsonObject jsonResult;
-	private JcError generalError;
-
-	public JcQueryResult(JsonObject jsonResult) {
-		super();
-		this.jsonResult = jsonResult;
-	}
-
-	public JsonObject getJsonResult() {
-		return jsonResult;
-	}
-
-	public JcError getGeneralError() {
-		return generalError;
-	}
+	private String codeOrType;
+	private String message;
 	
-	public void setGeneralError(JcError generalError) {
-		this.generalError = generalError;
+	public JcError(String codeOrType, String message) {
+		super();
+		this.codeOrType = codeOrType;
+		this.message = message;
 	}
-
-	public boolean hasErrors() {
-		return this.getGeneralError() != null;
+	public String getCodeOrType() {
+		return codeOrType;
+	}
+	public String getMessage() {
+		return message;
 	}
 }
