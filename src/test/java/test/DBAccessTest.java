@@ -35,11 +35,12 @@ import iot.jcypher.writer.Format;
 
 import java.util.Properties;
 
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class DBAccessTest {
+public class DBAccessTest extends AbstractTestSuite {
 
 	private static IDBAccess dbAccess;
 	
@@ -49,11 +50,25 @@ public class DBAccessTest {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.EMBEDDED, props);
+	}
+	
+	//@AfterClass
+	public static void after() {
+		if (dbAccess != null) {
+			dbAccess.close();
+			dbAccess = null;
+		}
 	}
 	
 	//@Test
-	public void testCreateDB_01() {
+	public void testDBAccess_01() {
+		//createDB_01();
+		queryDB_01();
+		return;
+	}
+	
+	private void createDB_01() {
 		
 		JcNode matrix1 = new JcNode("matrix1");
 		JcNode matrix2 = new JcNode("matrix2");
@@ -95,12 +110,12 @@ public class DBAccessTest {
 		});
 		
 		JcQueryResult result = dbAccess.execute(query);
-		
+		if (result.hasErrors())
+			printErrors(result);
 		return;
 	}
 	
-	//@Test
-	public void testQueryDB_01() {
+	private void queryDB_01() {
 		String queryString;
 		JcQueryResult result;
 		String resultString;
@@ -117,12 +132,14 @@ public class DBAccessTest {
 				MATCH.node(movie).label("Movie").property("title").value("The Matrix"),
 				RETURN.value(movie)
 		});
-		queryString = iot.jcypher.samples.Util.toCypher(query, Format.PRETTY_1);
-		result = dbAccess.execute(query);
-		resultString = Util.writePretty(result.getJsonResult());
-		System.out.println("------------------------------------------------------------------");
-		System.out.println(queryString);
-		System.out.println(resultString);
+//		queryString = iot.jcypher.samples.Util.toCypher(query, Format.PRETTY_1);
+//		result = dbAccess.execute(query);
+//		resultString = Util.writePretty(result.getJsonResult());
+//		System.out.println("------------------------------------------------------------------");
+//		if (result.hasErrors())
+//			printErrors(result);
+//		System.out.println(queryString);
+//		System.out.println(resultString);
 		
 		/*******************************/
 		query = new JcQuery();
@@ -139,6 +156,8 @@ public class DBAccessTest {
 //		result = dbAccess.execute(query);
 //		resultString = Util.writePretty(result.getJsonResult());
 //		System.out.println("------------------------------------------------------------------");
+//		if (result.hasErrors())
+//			printErrors(result);
 //		System.out.println(queryString);
 //		System.out.println(resultString);
 		
@@ -153,6 +172,8 @@ public class DBAccessTest {
 		result = dbAccess.execute(query);
 		resultString = Util.writePretty(result.getJsonResult());
 		System.out.println("------------------------------------------------------------------");
+		if (result.hasErrors())
+			printErrors(result);
 		System.out.println(queryString);
 		System.out.println(resultString);
 		

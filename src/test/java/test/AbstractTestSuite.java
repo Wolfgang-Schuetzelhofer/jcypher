@@ -17,10 +17,15 @@
 package test;
 
 import static org.junit.Assert.assertEquals;
+
+import java.util.List;
+
 import iot.jcypher.CypherWriter;
 import iot.jcypher.JSONWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.api.IClause;
+import iot.jcypher.result.JcError;
+import iot.jcypher.result.JcQueryResult;
 import iot.jcypher.values.ValueElement;
 import iot.jcypher.values.ValueWriter;
 import iot.jcypher.writer.Format;
@@ -98,5 +103,35 @@ public class AbstractTestSuite {
 			System.out.println(context.buffer.toString());
 		}
 		return context.buffer.toString();
+	}
+	
+	protected String printErrors(JcQueryResult result) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("---------------General Errors:");
+		appendErrorList(result.getGeneralErrors(), sb);
+		sb.append("\n---------------DB Errors:");
+		appendErrorList(result.getDBErrors(), sb);
+		sb.append("\n---------------end Errors:");
+		String str = sb.toString();
+		if (this.print) {
+			System.out.println("");
+			System.out.println(str);
+		}
+		return str;
+	}
+	
+	private void appendErrorList(List<JcError> errors, StringBuilder sb) {
+		int num = errors.size();
+		for (int i = 0; i < num; i++) {
+			JcError err = errors.get(i);
+			sb.append('\n');
+			if (i > 0) {
+				sb.append("-------------------\n");
+			}
+			sb.append("codeOrType: ");
+			sb.append(err.getCodeOrType());
+			sb.append("\nmessage: ");
+			sb.append(err.getMessage());
+		}
 	}
 }

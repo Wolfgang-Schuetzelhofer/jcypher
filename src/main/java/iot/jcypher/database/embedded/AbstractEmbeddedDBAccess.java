@@ -38,6 +38,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccess {
 	protected Properties properties;
 	private GraphDatabaseService graphDb;
 	private ExecutionEngine executionEngine;
+	private Thread shutdownHook;
 
 	@Override
 	public JcQueryResult execute(JcQuery query) {
@@ -95,11 +96,29 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccess {
 		if (exception != null) {
 			String typ = exception.getClass().getSimpleName();
 			String msg = exception.getLocalizedMessage();
-			ret.setGeneralError(new JcError(typ, msg));
+			ret.addGeneralError(new JcError(typ, msg));
 		}
 		return ret;
 	}
 	
+	@Override
+	public synchronized void close() {
+		if (this.shutdownHook != null) {
+			Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
+			this.shutdownHook = null;
+		}
+		
+		if (this.graphDb != null) {
+			try {
+				this.graphDb.shutdown();
+			} catch (Throwable e) {
+				// do nothing
+			}
+			this.graphDb = null;
+		}
+		this.executionEngine = null;
+	}
+
 	private void addDBError(JsonBuilderContext builderContext,
 			Throwable exception) {
 		String code = exception.getClass().getSimpleName();
@@ -160,7 +179,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccess {
 	protected synchronized GraphDatabaseService getGraphDB() {
 		if (this.graphDb == null) {
 			this.graphDb = createGraphDB();
-			registerShutdownHook(this.graphDb);
+			this.shutdownHook = registerShutdownHook(this.graphDb);
 		}
 		return this.graphDb;
 	}
@@ -273,16 +292,22 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccess {
 		}
 	}
 
-	private static void registerShutdownHook(final GraphDatabaseService gDb) {
+	private static Thread registerShutdownHook(final GraphDatabaseService gDb) {
 		// Registers a shutdown hook for the Neo4j instance so that it
 		// shuts down nicely when the VM exits (even if you "Ctrl-C" the
 		// running application).
-		Runtime.getRuntime().addShutdownHook(new Thread() {
+		Thread hook = new Thread() {
 			@Override
 			public void run() {
-				gDb.shutdown();
+				try {
+					gDb.shutdown();
+				} catch (Throwable e) {
+					// do nothing
+				}
 			}
-		});
+		};
+		Runtime.getRuntime().addShutdownHook(hook);
+		return hook;
 	}
 	
 	/*************************************************/

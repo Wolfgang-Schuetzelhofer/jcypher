@@ -16,12 +16,17 @@
 
 package iot.jcypher.result;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.json.JsonArray;
 import javax.json.JsonObject;
 
 public class JcQueryResult {
 
 	private JsonObject jsonResult;
-	private JcError generalError;
+	private List<JcError> generalErrors;
+	private List<JcError> dbErrors;
 
 	public JcQueryResult(JsonObject jsonResult) {
 		super();
@@ -32,15 +37,32 @@ public class JcQueryResult {
 		return jsonResult;
 	}
 
-	public JcError getGeneralError() {
-		return generalError;
+	public List<JcError> getGeneralErrors() {
+		if (this.generalErrors == null)
+			this.generalErrors = new ArrayList<JcError>();
+		return this.generalErrors;
 	}
 	
-	public void setGeneralError(JcError generalError) {
-		this.generalError = generalError;
+	public List<JcError> getDBErrors() {
+		if (this.dbErrors == null) {
+			this.dbErrors = new ArrayList<JcError>();
+			JsonObject obj = getJsonResult();
+			JsonArray errs = obj.getJsonArray("errors");
+			int size = errs.size();
+			for (int i = 0; i < size; i++) {
+				JsonObject err = errs.getJsonObject(i);
+				this.dbErrors.add(new JcError(err.getString("code"),
+						err.getString("message")));
+			}
+		}
+		return this.dbErrors;
+	}
+	
+	public void addGeneralError(JcError generalError) {
+		getGeneralErrors().add(generalError);
 	}
 
 	public boolean hasErrors() {
-		return this.getGeneralError() != null;
+		return !this.getGeneralErrors().isEmpty() || !this.getDBErrors().isEmpty();
 	}
 }

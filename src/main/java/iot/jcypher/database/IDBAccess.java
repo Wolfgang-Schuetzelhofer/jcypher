@@ -26,4 +26,6 @@ public interface IDBAccess {
 	public void initialize(Properties properties);
 	
 	public JcQueryResult execute(JcQuery query);
+	
+	public void close();
 }

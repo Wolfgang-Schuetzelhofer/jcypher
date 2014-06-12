@@ -43,6 +43,8 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
 
+import org.neo4j.graphdb.GraphDatabaseService;
+
 import com.sun.corba.se.spi.orbutil.fsm.Guard.Result;
 
 public class RemoteDBAccess implements IDBAccess {
@@ -53,6 +55,7 @@ public class RemoteDBAccess implements IDBAccess {
 	private Client restClient;
 	private WebTarget transactionalTarget;
 	private Invocation.Builder invocationBuilder;
+	private Thread shutdownHook;
 	
 	@Override
 	public void initialize(Properties properties) {
@@ -97,18 +100,34 @@ public class RemoteDBAccess implements IDBAccess {
 		if (exception != null) {
 			String typ = exception.getClass().getSimpleName();
 			String msg = exception.getLocalizedMessage();
-			ret.setGeneralError(new JcError(typ, msg));
+			ret.addGeneralError(new JcError(typ, msg));
 		} else if (status != null && status.getStatusCode() >= 400) {
 			String code = String.valueOf(status.getStatusCode());
 			String msg = status.getReasonPhrase();
-			ret.setGeneralError(new JcError(code, msg));
+			ret.addGeneralError(new JcError(code, msg));
 		}
 		return ret;
+	}
+
+	@Override
+	public synchronized void close() {
+		if (this.shutdownHook != null) {
+			Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
+			this.shutdownHook = null;
+		}
+		
+		if (this.restClient != null) {
+			this.restClient.close();
+			this.restClient = null;
+		}
+		this.transactionalTarget = null;
+		this.invocationBuilder = null;
 	}
 
 	private synchronized Client getRestClient() {
 		if (this.restClient == null) {
 			this.restClient = ClientBuilder.newClient();
+			this.shutdownHook = registerShutdownHook(this.restClient);
 		}
 		return this.restClient;
 	}
@@ -127,5 +146,23 @@ public class RemoteDBAccess implements IDBAccess {
 			this.invocationBuilder = getTransactionalTarget().request(MediaType.APPLICATION_JSON_TYPE);
 		}
 		return this.invocationBuilder;
+	}
+	
+	private static Thread registerShutdownHook(final Client client) {
+		// Registers a shutdown hook
+		// shuts down nicely when the VM exits (even if you "Ctrl-C" the
+		// running application).
+		Thread hook = new Thread() {
+			@Override
+			public void run() {
+				try {
+					client.close();
+				} catch (Throwable e) {
+					// do nothing
+				}
+			}
+		};
+		Runtime.getRuntime().addShutdownHook(hook);
+		return hook;
 	}
 }
