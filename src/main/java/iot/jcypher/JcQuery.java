@@ -16,7 +16,7 @@
 
 package iot.jcypher;
 
-import iot.jcypher.api.IClause;
+import iot.jcypher.query.api.IClause;
 
 /**
  * <div color='red' style="font-size:24px;color:red"><b><i>JCYPHER QUERY</i></b></div>

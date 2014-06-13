@@ -19,8 +19,8 @@ package iot.jcypher.samples;
 import iot.jcypher.CypherWriter;
 import iot.jcypher.JSONWriter;
 import iot.jcypher.JcQuery;
-import iot.jcypher.writer.Format;
-import iot.jcypher.writer.WriterContext;
+import iot.jcypher.query.writer.Format;
+import iot.jcypher.query.writer.WriterContext;
 
 public class Util {
 

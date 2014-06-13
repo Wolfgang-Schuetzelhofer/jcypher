@@ -17,16 +17,16 @@
 package iot.jcypher.samples;
 
 import iot.jcypher.JcQuery;
-import iot.jcypher.api.IClause;
-import iot.jcypher.factories.clause.CREATE;
-import iot.jcypher.factories.clause.MATCH;
-import iot.jcypher.factories.clause.RETURN;
-import iot.jcypher.factories.clause.START;
-import iot.jcypher.factories.clause.WHERE;
-import iot.jcypher.values.JcNode;
-import iot.jcypher.values.JcRelation;
-import iot.jcypher.values.JcString;
-import iot.jcypher.writer.Format;
+import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.factories.clause.CREATE;
+import iot.jcypher.query.factories.clause.MATCH;
+import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.factories.clause.START;
+import iot.jcypher.query.factories.clause.WHERE;
+import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.values.JcString;
+import iot.jcypher.query.writer.Format;
 
 /**
  * This JCypher sample is constructing and querying the 'Shakespeare Graph',

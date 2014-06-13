@@ -23,13 +23,13 @@ import java.util.List;
 import iot.jcypher.CypherWriter;
 import iot.jcypher.JSONWriter;
 import iot.jcypher.JcQuery;
-import iot.jcypher.api.IClause;
+import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.values.ValueElement;
+import iot.jcypher.query.values.ValueWriter;
+import iot.jcypher.query.writer.Format;
+import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcQueryResult;
-import iot.jcypher.values.ValueElement;
-import iot.jcypher.values.ValueWriter;
-import iot.jcypher.writer.Format;
-import iot.jcypher.writer.WriterContext;
 
 public class AbstractTestSuite {
 

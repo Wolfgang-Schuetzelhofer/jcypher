@@ -16,8 +16,8 @@
 
 package iot.jcypher;
 
-import iot.jcypher.values.ValueAccess;
-import iot.jcypher.values.ValueElement;
+import iot.jcypher.query.values.ValueAccess;
+import iot.jcypher.query.values.ValueElement;
 
 /**
  * <div color='red' style="font-size:24px;color:red"><b><i>JCYPHER FACTORY</i></b></div>

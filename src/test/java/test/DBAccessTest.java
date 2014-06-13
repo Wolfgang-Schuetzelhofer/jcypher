@@ -17,18 +17,18 @@
 package test;
 
 import iot.jcypher.JcQuery;
-import iot.jcypher.api.IClause;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
-import iot.jcypher.factories.clause.CREATE;
-import iot.jcypher.factories.clause.MATCH;
-import iot.jcypher.factories.clause.RETURN;
+import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.factories.clause.CREATE;
+import iot.jcypher.query.factories.clause.MATCH;
+import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.result.JcQueryResult;
 import iot.jcypher.result.Util;
-import iot.jcypher.values.JcNode;
-import iot.jcypher.values.JcRelation;
 
 import java.util.Properties;
 

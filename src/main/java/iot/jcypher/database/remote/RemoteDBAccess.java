@@ -19,20 +19,18 @@ package iot.jcypher.database.remote;
 import iot.jcypher.JSONWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.database.DBProperties;
-import iot.jcypher.database.IDBAccess;
+import iot.jcypher.database.internal.IDBAccessInit;
+import iot.jcypher.query.writer.ContextAccess;
+import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcQueryResult;
-import iot.jcypher.writer.ContextAccess;
-import iot.jcypher.writer.WriterContext;
 
 import java.io.StringReader;
 import java.util.Properties;
 
 import javax.json.Json;
-import javax.json.JsonBuilderFactory;
 import javax.json.JsonObject;
 import javax.json.JsonReader;
-import javax.json.JsonReaderFactory;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.Entity;
@@ -43,11 +41,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-
-import com.sun.corba.se.spi.orbutil.fsm.Guard.Result;
-
-public class RemoteDBAccess implements IDBAccess {
+public class RemoteDBAccess implements IDBAccessInit {
 
 	private static final String transactionalURLPostfix = "db/data/transaction/commit";
 	

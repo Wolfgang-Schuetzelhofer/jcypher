@@ -17,16 +17,16 @@
 package test;
 
 import iot.jcypher.JC;
-import iot.jcypher.values.JcCollection;
-import iot.jcypher.values.JcNode;
-import iot.jcypher.values.JcNumber;
-import iot.jcypher.values.JcPath;
-import iot.jcypher.values.JcPrimitive;
-import iot.jcypher.values.JcRelation;
-import iot.jcypher.values.JcString;
-import iot.jcypher.values.MATH;
-import iot.jcypher.values.ValueElement;
-import iot.jcypher.writer.Format;
+import iot.jcypher.query.values.JcCollection;
+import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcNumber;
+import iot.jcypher.query.values.JcPath;
+import iot.jcypher.query.values.JcPrimitive;
+import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.values.JcString;
+import iot.jcypher.query.values.MATH;
+import iot.jcypher.query.values.ValueElement;
+import iot.jcypher.query.writer.Format;
 
 import org.junit.Ignore;
 import org.junit.Test;

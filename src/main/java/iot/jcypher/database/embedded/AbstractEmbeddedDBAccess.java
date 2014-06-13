@@ -2,13 +2,13 @@ package iot.jcypher.database.embedded;
 
 import iot.jcypher.CypherWriter;
 import iot.jcypher.JcQuery;
-import iot.jcypher.database.IDBAccess;
+import iot.jcypher.database.internal.IDBAccessInit;
+import iot.jcypher.query.writer.IQueryParam;
+import iot.jcypher.query.writer.QueryParam;
+import iot.jcypher.query.writer.QueryParamSet;
+import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcQueryResult;
-import iot.jcypher.writer.IQueryParam;
-import iot.jcypher.writer.QueryParam;
-import iot.jcypher.writer.QueryParamSet;
-import iot.jcypher.writer.WriterContext;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -33,7 +33,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 
-public abstract class AbstractEmbeddedDBAccess implements IDBAccess {
+public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 
 	protected Properties properties;
 	private GraphDatabaseService graphDb;

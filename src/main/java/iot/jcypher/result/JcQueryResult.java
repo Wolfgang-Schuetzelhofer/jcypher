@@ -33,16 +33,26 @@ public class JcQueryResult {
 		this.jsonResult = jsonResult;
 	}
 
+	/**
+	 * @return the JsonObject representing the query result.
+	 */
 	public JsonObject getJsonResult() {
 		return jsonResult;
 	}
 
+	/**
+	 * @return a list of general errors (e.g. connection errors).
+	 */
 	public List<JcError> getGeneralErrors() {
 		if (this.generalErrors == null)
 			this.generalErrors = new ArrayList<JcError>();
 		return this.generalErrors;
 	}
 	
+	/**
+	 * @return a list of database errors
+	 * <br/>(the database was successfully accessed, but the query produced error(s)).
+	 */
 	public List<JcError> getDBErrors() {
 		if (this.dbErrors == null) {
 			this.dbErrors = new ArrayList<JcError>();
@@ -58,10 +68,17 @@ public class JcQueryResult {
 		return this.dbErrors;
 	}
 	
+	/**
+	 * Add a general (system) error
+	 * @param generalError
+	 */
 	public void addGeneralError(JcError generalError) {
 		getGeneralErrors().add(generalError);
 	}
 
+	/**
+	 * @return true, if the query result contains any error(s).
+	 */
 	public boolean hasErrors() {
 		return !this.getGeneralErrors().isEmpty() || !this.getDBErrors().isEmpty();
 	}

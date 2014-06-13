@@ -28,6 +28,8 @@ public interface DBProperties {
 	/******************** properties for embedded database access *********************/
 	/** REQUIRED - Directory of the embedded database. */
 	public static final String DATABASE_DIR = "database_dir";
+	
+	/******************** properties for embedded and in memory database access *********************/
 	/** OPTIONAL  e.g. "10M" */
 	public static final String NODESTORE_MAPPED_MAMORY_SIZE = "nodestore_mapped_memory_size";
 	/** OPTIONAL  e.g. "60" */

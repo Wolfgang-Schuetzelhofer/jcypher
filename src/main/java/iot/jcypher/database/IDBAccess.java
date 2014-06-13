@@ -16,16 +16,20 @@
 
 package iot.jcypher.database;
 
-import java.util.Properties;
-
 import iot.jcypher.JcQuery;
 import iot.jcypher.result.JcQueryResult;
 
 public interface IDBAccess {
 
-	public void initialize(Properties properties);
-	
+	/**
+	 * execute a query against a database
+	 * @param query a JcQuery
+	 * @return a JcQueryResult
+	 */
 	public JcQueryResult execute(JcQuery query);
 	
+	/**
+	 * close the database connection
+	 */
 	public void close();
 }

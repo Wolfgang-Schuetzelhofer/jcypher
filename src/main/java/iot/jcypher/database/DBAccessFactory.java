@@ -19,8 +19,21 @@ package iot.jcypher.database;
 import java.lang.reflect.Method;
 import java.util.Properties;
 
+/**
+ * A Factory for creating accessors to Neo4j databases.
+ *
+ */
 public class DBAccessFactory {
 
+	/**
+	 * create an IDBAccess (an accessor) for a specific database.
+	 * @param dbType the type of database to access. Can be
+	 * <br/>DBType.REMOTE or DBType.EMBEDDED or DBType.IN_MEMORY
+	 * @param properties to configure the database connection.
+	 * <br/>The appropriate database access class will pick the properties it needs.
+	 * <br/>See also: DBProperties interface for required and optional properties.
+	 * @return an instance of IDBAccess
+	 */
 	@SuppressWarnings("unchecked")
 	public static IDBAccess createDBAccess(DBType dbType, Properties properties) {
 		Class<? extends IDBAccess> dbAccessClass = null;
