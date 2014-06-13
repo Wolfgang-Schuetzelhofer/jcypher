@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Properties;
 
 import iot.jcypher.JcQuery;
+import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -31,7 +32,6 @@ import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
-import iot.jcypher.result.JcQueryResult;
 import iot.jcypher.result.Util;
 
 /**

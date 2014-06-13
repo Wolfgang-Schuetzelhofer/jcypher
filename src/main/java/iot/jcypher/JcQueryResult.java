@@ -14,7 +14,9 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.result;
+package iot.jcypher;
+
+import iot.jcypher.result.JcError;
 
 import java.util.ArrayList;
 import java.util.List;

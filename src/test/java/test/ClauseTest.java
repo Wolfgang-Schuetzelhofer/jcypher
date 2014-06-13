@@ -16,7 +16,7 @@
 
 package test;
 
-import iot.jcypher.JC;
+import iot.jcypher.query.JC;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.CREATE_INDEX;

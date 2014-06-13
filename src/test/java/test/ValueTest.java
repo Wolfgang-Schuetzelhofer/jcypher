@@ -16,7 +16,7 @@
 
 package test;
 
-import iot.jcypher.JC;
+import iot.jcypher.query.JC;
 import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
