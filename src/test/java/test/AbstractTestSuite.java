@@ -94,6 +94,13 @@ public class AbstractTestSuite {
 		return context.buffer.toString();
 	}
 	
+	protected void print(String resultString) {
+		if (this.print) {
+			System.out.println("");
+			System.out.println(resultString);
+		}
+	}
+	
 	protected String printJSON(JcQuery query, Format pretty) {
 		WriterContext context = new WriterContext();
 		context.cypherFormat = pretty;

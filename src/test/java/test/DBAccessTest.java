@@ -16,7 +16,6 @@
 
 package test;
 
-import iot.jcypher.CypherWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.api.IClause;
 import iot.jcypher.database.DBAccessFactory;
@@ -29,31 +28,33 @@ import iot.jcypher.factories.clause.RETURN;
 import iot.jcypher.result.JcQueryResult;
 import iot.jcypher.result.Util;
 import iot.jcypher.values.JcNode;
-import iot.jcypher.values.JcPath;
 import iot.jcypher.values.JcRelation;
-import iot.jcypher.writer.Format;
 
 import java.util.Properties;
 
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import util.TestDataReader;
 
 public class DBAccessTest extends AbstractTestSuite {
 
 	private static IDBAccess dbAccess;
 	
-	//@BeforeClass
+	@BeforeClass
 	public static void before() {
 		Properties props = new Properties();
+		
+		// properties for remote access and for embedded access
+		// (not needed for in memory access)
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.EMBEDDED, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 	}
 	
-	//@AfterClass
+	@AfterClass
 	public static void after() {
 		if (dbAccess != null) {
 			dbAccess.close();
@@ -61,9 +62,9 @@ public class DBAccessTest extends AbstractTestSuite {
 		}
 	}
 	
-	//@Test
+	@Test
 	public void testDBAccess_01() {
-		//createDB_01();
+		createDB_01();
 		queryDB_01();
 		return;
 	}
@@ -116,15 +117,18 @@ public class DBAccessTest extends AbstractTestSuite {
 	}
 	
 	private void queryDB_01() {
-		String queryString;
 		JcQueryResult result;
 		String resultString;
+		String testId;
+		
+		setDoPrint(true);
+		setDoAssert(true);
+
+		TestDataReader tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01.txt");
 		
 		JcNode movie = new JcNode("movie");
 		JcNode n = new JcNode("n");
-		JcNode m = new JcNode("m");
 		JcRelation r = new JcRelation("r");
-		JcPath p = new JcPath("p");
 		
 		/*******************************/
 		JcQuery query = new JcQuery();
@@ -132,34 +136,11 @@ public class DBAccessTest extends AbstractTestSuite {
 				MATCH.node(movie).label("Movie").property("title").value("The Matrix"),
 				RETURN.value(movie)
 		});
-//		queryString = iot.jcypher.samples.Util.toCypher(query, Format.PRETTY_1);
-//		result = dbAccess.execute(query);
-//		resultString = Util.writePretty(result.getJsonResult());
-//		System.out.println("------------------------------------------------------------------");
-//		if (result.hasErrors())
-//			printErrors(result);
-//		System.out.println(queryString);
-//		System.out.println(resultString);
-		
-		/*******************************/
-		query = new JcQuery();
-		query.setClauses(new IClause[] {
-				MATCH.node(n).relation(r).out().node(m),
-				RETURN.value(r),
-				RETURN.value(n),
-				RETURN.value(m),
-				RETURN.value(r.id()),
-				RETURN.value(n.id()),
-				RETURN.value(m.id())
-		});
-//		queryString = iot.jcypher.samples.Util.toCypher(query, Format.PRETTY_1);
-//		result = dbAccess.execute(query);
-//		resultString = Util.writePretty(result.getJsonResult());
-//		System.out.println("------------------------------------------------------------------");
-//		if (result.hasErrors())
-//			printErrors(result);
-//		System.out.println(queryString);
-//		System.out.println(resultString);
+		result = dbAccess.execute(query);
+		resultString = Util.writePretty(result.getJsonResult());
+		print(resultString);
+		testId = "ACCESS_01";
+		assertQuery(testId, resultString, tdr.getTestData(testId));
 		
 		/*******************************/
 		query = new JcQuery();
@@ -168,14 +149,11 @@ public class DBAccessTest extends AbstractTestSuite {
 				//RETURN.value(n.property("name"))
 				RETURN.ALL()
 		});
-		queryString = iot.jcypher.samples.Util.toCypher(query, Format.PRETTY_1);
 		result = dbAccess.execute(query);
 		resultString = Util.writePretty(result.getJsonResult());
-		System.out.println("------------------------------------------------------------------");
-		if (result.hasErrors())
-			printErrors(result);
-		System.out.println(queryString);
-		System.out.println(resultString);
+		print(resultString);
+		testId = "ACCESS_02";
+		assertQuery(testId, resultString, tdr.getTestData(testId));
 		
 		return;
 	}
