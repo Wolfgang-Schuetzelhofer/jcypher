@@ -27,6 +27,11 @@ import javax.json.stream.JsonGenerator;
 
 public class Util {
 
+	/**
+	 * write a JsonObject formatted in a pretty way into a String
+	 * @param jsonObject
+	 * @return a String containing the JSON
+	 */
 	public static String writePretty(JsonObject jsonObject) {
 		JsonWriterFactory factory = createPrettyWriterFactory();
 		StringWriter sw = new StringWriter();

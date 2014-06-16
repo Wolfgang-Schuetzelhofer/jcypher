@@ -19,7 +19,6 @@ public class Snippet_02 {
 	/**
 	 * create (map) CYPHER out of a JCypher query
 	 * @param query a JcQuery
-	 * @param pretty a 'FORMAT' enum controlling how the CYPHER output is formatted
 	 * @return a String containing the mapped CYPHER statements
 	 */
 	public static String toCypher(JcQuery query) {
@@ -27,7 +26,7 @@ public class Snippet_02 {
 		WriterContext context = new WriterContext();
 
 		/** if you omit the next line, the default formatting option Format.NONE is used
-		      Available 'pretty' format options are Format.PRETTY_1, Format.PRETTY_2 and Format.PRETTY_3*/
+		      Available 'pretty' format options are Format.PRETTY_1, Format.PRETTY_2, and Format.PRETTY_3*/
 		context.cypherFormat = Format.PRETTY_3;
 		
 		CypherWriter.toCypherExpression(query, context);

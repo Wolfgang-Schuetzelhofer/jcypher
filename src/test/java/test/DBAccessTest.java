@@ -35,6 +35,7 @@ import java.util.Properties;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import static org.junit.Assert.assertFalse;
 
 import util.TestDataReader;
 
@@ -113,6 +114,8 @@ public class DBAccessTest extends AbstractTestSuite {
 		JcQueryResult result = dbAccess.execute(query);
 		if (result.hasErrors())
 			printErrors(result);
+		assertFalse(result.hasErrors());
+		
 		return;
 	}
 	
