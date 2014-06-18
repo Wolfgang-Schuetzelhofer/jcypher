@@ -16,7 +16,12 @@
 
 package iot.jcypher;
 
+import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.result.JcError;
+import iot.jcypher.result.model.JcrNode;
+import iot.jcypher.result.model.JcrRelation;
+import iot.jcypher.result.util.ResultHandler;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,10 +34,12 @@ public class JcQueryResult {
 	private JsonObject jsonResult;
 	private List<JcError> generalErrors;
 	private List<JcError> dbErrors;
+	private ResultHandler resultHandler;
 
 	public JcQueryResult(JsonObject jsonResult) {
 		super();
 		this.jsonResult = jsonResult;
+		this.resultHandler = new ResultHandler(this);
 	}
 
 	/**
@@ -40,6 +47,14 @@ public class JcQueryResult {
 	 */
 	public JsonObject getJsonResult() {
 		return jsonResult;
+	}
+	
+	public JcrNode resultOf(JcNode node) {
+		return this.resultHandler.getNode(node);
+	}
+	
+	public JcrRelation resultOf(JcRelation relation) {
+		return this.resultHandler.getRelation(relation);
 	}
 
 	/**

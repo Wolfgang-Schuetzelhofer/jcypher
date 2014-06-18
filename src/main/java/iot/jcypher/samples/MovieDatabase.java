@@ -30,9 +30,13 @@ import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcPath;
+import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.Util;
+import iot.jcypher.result.model.JcrNode;
+import iot.jcypher.result.model.JcrRelation;
 
 /**
  * This JCypher sample is constructing and querying the 'Movie Database'.
@@ -48,9 +52,10 @@ public class MovieDatabase {
 		initDBConnection();
 		
 		/** execute queries against the database */
-		createMovieDatabase();
-		queryNodeCount();
-		queryMovies();
+//		createMovieDatabase();
+//		queryNodeCount();
+//		queryMovies();
+		queryMovieGraph();
 		
 		/** close the connection to a Neo4j database */
 		closeDBConnection();
@@ -169,6 +174,44 @@ public class MovieDatabase {
 	}
 	
 	/**
+	 * Query the entire graph
+	 */
+	static void queryMovieGraph() {
+		JcQuery query;
+		JcQueryResult result;
+		
+		String queryTitle = "MOVIE_GRAPH";
+		JcNode n = new JcNode("n");
+		JcRelation r = new JcRelation("r");
+		JcPath p = new JcPath("p");
+		
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				MATCH.path(p).node(n).relation(r).out().node(),
+				//RETURN.value(n.property("name"))
+				RETURN.ALL()
+		});
+		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
+	     This will show what normally is created in the background when accessing a Neo4j database*/
+		print(query, queryTitle, Format.PRETTY_3);
+		
+		/** execute the query against a Neo4j database */
+		result = dbAccess.execute(query);
+		if (result.hasErrors())
+			printErrors(result);
+		
+		/** print the JSON representation of the query result */
+		print(result, queryTitle);
+		
+		JcrNode nr = result.resultOf(n);
+		JcrRelation rr = result.resultOf(r);
+		List<JcrNode> all_n = nr.allResults();
+		List<JcrRelation> all_r = rr.allResults();
+		
+		return;
+	}
+	
+	/**
 	 * initialize connection to a Neo4j database
 	 */
 	private static void initDBConnection() {
@@ -182,7 +225,7 @@ public class MovieDatabase {
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
 		/** connect to an in memory database (no properties are required) */
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 		
 		/** connect to remote database via REST (SERVER_ROOT_URI property is needed) */
 		//dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);

@@ -232,7 +232,9 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			} else if (val instanceof Relationship) {
 				restObject = Json.createObjectBuilder();
 				Relationship relation = (Relationship)val;
+				restObject.add("start", "node/".concat(String.valueOf(relation.getStartNode().getId())));
 				restObject.add("self", "relationship/".concat(String.valueOf(relation.getId())));
+				restObject.add("end", "node/".concat(String.valueOf(relation.getEndNode().getId())));
 				RelationHolder rh = new RelationHolder(relation);
 				if (!relations.contains(rh)) {
 					RelationHolder.RelationNodes nds = rh.init(relation);
