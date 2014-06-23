@@ -16,6 +16,9 @@
 
 package iot.jcypher.query.api.pattern;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import iot.jcypher.query.api.APIObject;
 import iot.jcypher.query.ast.pattern.PatternExpression;
 import iot.jcypher.query.ast.pattern.PatternProperty;
@@ -43,6 +46,23 @@ public class Property<T> extends APIObject {
 		PatternExpression px = (PatternExpression)this.astNode;
 		PatternProperty prop = px.getLastElement().getLastProperty();
 		prop.setValue(value);
+		return this.element;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>specify a property value (of a node or relation) representing a list to be matched or created in a pattern;</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>takes primitive java values like Strings or Numbers</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. CREATE.node(n).property("numbers").<b>value(1, 2, 3)</b></i></div>
+	 * <br/>
+	 */
+	public <E> T value(E... value) {
+		PatternExpression px = (PatternExpression)this.astNode;
+		PatternProperty prop = px.getLastElement().getLastProperty();
+		List<E> list = new ArrayList<E>();
+		for (int i = 0; i < value.length;i++)
+			list.add(value[i]);
+		prop.setValue(list);
 		return this.element;
 	}
 	

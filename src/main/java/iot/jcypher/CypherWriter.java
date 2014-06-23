@@ -16,6 +16,8 @@
 
 package iot.jcypher;
 
+import java.util.List;
+
 import iot.jcypher.query.api.APIObject;
 import iot.jcypher.query.api.APIObjectAccess;
 import iot.jcypher.query.api.IClause;
@@ -991,6 +993,15 @@ public class CypherWriter {
 				context.buffer.append('\'');
 				context.buffer.append(val.toString());
 				context.buffer.append('\'');
+			} else if (val instanceof List<?>) {
+				context.buffer.append('[');
+				List<?> list = (List<?>)val;
+				for (int i = 0; i < list.size(); i++) {
+					if (i > 0)
+						context.buffer.append(", ");
+					PrimitiveCypherWriter.writePrimitiveValue(list.get(i), context);
+				}
+				context.buffer.append(']');
 			} else {
 				context.buffer.append(val.toString());
 			}

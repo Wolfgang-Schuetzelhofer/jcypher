@@ -16,6 +16,7 @@
 
 package iot.jcypher.samples;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Properties;
 
@@ -25,18 +26,22 @@ import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.graph.GrNode;
+import iot.jcypher.graph.GrRelation;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcPath;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.values.JcString;
+import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.Util;
-import iot.jcypher.result.model.JcrNode;
-import iot.jcypher.result.model.JcrRelation;
 
 /**
  * This JCypher sample is constructing and querying the 'Movie Database'.
@@ -54,6 +59,7 @@ public class MovieDatabase {
 		/** execute queries against the database */
 //		createMovieDatabase();
 //		queryNodeCount();
+//		queryLikes();
 //		queryMovies();
 		queryMovieGraph();
 		
@@ -89,11 +95,15 @@ public class MovieDatabase {
 						.property("title").value("The Matrix Revolutions")
 						.property("year").value("2003-10-27"),
 				CREATE.node(keanu).label("Actor")
-						.property("name").value("Keanu Reeves"),
+						.property("name").value("Keanu Reeves")
+						.property("like").value(8.5)
+						.property("numbers").value(1, 2, 3),
 				CREATE.node(laurence).label("Actor")
-						.property("name").value("Laurence Fishburne"),
+						.property("name").value("Laurence Fishburne")
+						.property("like").value(7),
 				CREATE.node(carrieanne).label("Actor")
-						.property("name").value("Carrie-Anne Moss"),
+						.property("name").value("Carrie-Anne Moss")
+						.property("like").value(8.3),
 				CREATE.node(keanu).relation().out().type("ACTS_IN").property("role").value("Neo").node(matrix1),
 				CREATE.node(keanu).relation().out().type("ACTS_IN").property("role").value("Neo").node(matrix2),
 				CREATE.node(keanu).relation().out().type("ACTS_IN").property("role").value("Neo").node(matrix3),
@@ -126,11 +136,12 @@ public class MovieDatabase {
 		
 		String queryTitle = "COUNT NODES";
 		JcNode n = new JcNode("n");
+		JcNumber nCount = new JcNumber("nCount");
 		
 		query = new JcQuery();
 		query.setClauses(new IClause[] {
 				MATCH.node(n),
-				RETURN.count().value(n)
+				RETURN.count().value(n).AS(nCount)
 		});
 		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
 	     This will show what normally is created in the background when accessing a Neo4j database*/
@@ -143,6 +154,46 @@ public class MovieDatabase {
 		
 		/** print the JSON representation of the query result */
 		print(result, queryTitle);
+		
+		List<BigDecimal> nr = result.resultOf(nCount);
+		return;
+	}
+	
+	static void queryLikes() {
+		JcQuery query;
+		JcQueryResult result;
+		
+		String queryTitle = "GATHER LIKES";
+		JcNode n = new JcNode("n");
+		JcNumber like = new JcNumber("like");
+		JcCollection nums = new JcCollection("nums");
+		JcString nm = new JcString("nm");
+		
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				MATCH.node(n).label("Actor"),
+				RETURN.value(n.property("like")).AS(like),
+				RETURN.value(n.property("numbers")).AS(nums),
+				RETURN.value(n.property("name")).AS(nm),
+				RETURN.value(n.property("name"))
+		});
+		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
+	     This will show what normally is created in the background when accessing a Neo4j database*/
+		print(query, queryTitle, Format.PRETTY_3);
+		
+		/** execute the query against a Neo4j database */
+		result = dbAccess.execute(query);
+		if (result.hasErrors())
+			printErrors(result);
+		
+		/** print the JSON representation of the query result */
+		print(result, queryTitle);
+		
+		List<BigDecimal> likes = result.resultOf(like);
+		List<List<?>> numbers = result.resultOf(nums);
+		List<?> names = result.resultOf(n.property("name"));
+		List<String> nms = result.resultOf(nm);
+		return;
 	}
 	
 	/**
@@ -203,10 +254,14 @@ public class MovieDatabase {
 		/** print the JSON representation of the query result */
 		print(result, queryTitle);
 		
-		JcrNode nr = result.resultOf(n);
-		JcrRelation rr = result.resultOf(r);
-		List<JcrNode> all_n = nr.allResults();
-		List<JcrRelation> all_r = rr.allResults();
+//		List<GrNode> nr = result.resultOf(n);
+		List<GrRelation> rr = result.resultOf(r);
+		GrNode sNode;
+		GrNode eNode;
+		for (GrRelation rel : rr) {
+			sNode = rel.getStartNode();
+			eNode = rel.getEndNode();
+		}
 		
 		return;
 	}

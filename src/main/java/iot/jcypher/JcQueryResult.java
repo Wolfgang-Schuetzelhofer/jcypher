@@ -16,13 +16,21 @@
 
 package iot.jcypher;
 
+import iot.jcypher.graph.GrAccess;
+import iot.jcypher.graph.GrNode;
+import iot.jcypher.graph.GrRelation;
+import iot.jcypher.graph.Graph;
+import iot.jcypher.query.values.JcBoolean;
+import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.values.JcString;
+import iot.jcypher.query.values.JcValue;
 import iot.jcypher.result.JcError;
-import iot.jcypher.result.model.JcrNode;
-import iot.jcypher.result.model.JcrRelation;
 import iot.jcypher.result.util.ResultHandler;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,6 +43,7 @@ public class JcQueryResult {
 	private List<JcError> generalErrors;
 	private List<JcError> dbErrors;
 	private ResultHandler resultHandler;
+	private Graph graph;
 
 	public JcQueryResult(JsonObject jsonResult) {
 		super();
@@ -49,12 +58,38 @@ public class JcQueryResult {
 		return jsonResult;
 	}
 	
-	public JcrNode resultOf(JcNode node) {
-		return this.resultHandler.getNode(node);
+	public List<GrNode> resultOf(JcNode node) {
+		return this.resultHandler.getNodes(node);
 	}
 	
-	public JcrRelation resultOf(JcRelation relation) {
-		return this.resultHandler.getRelation(relation);
+	public List<GrRelation> resultOf(JcRelation relation) {
+		return this.resultHandler.getRelations(relation);
+	}
+	
+	public List<BigDecimal> resultOf(JcNumber number) {
+		return this.resultHandler.getNumbers(number);
+	}
+	
+	public List<String> resultOf(JcString string) {
+		return this.resultHandler.getStrings(string);
+	}
+	
+	public List<Boolean> resultOf(JcBoolean bool) {
+		return this.resultHandler.getBooleans(bool);
+	}
+	
+	public List<List<?>> resultOf(JcCollection collection) {
+		return this.resultHandler.getCollections(collection);
+	}
+	
+	public List<?> resultOf(JcValue val) {
+		return this.resultHandler.getObjects(val);
+	}
+	
+	public Graph getGraph() {
+		if (this.graph == null)
+			this.graph = GrAccess.createGraph(this.resultHandler);
+		return this.graph;
 	}
 
 	/**

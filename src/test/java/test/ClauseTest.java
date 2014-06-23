@@ -1182,6 +1182,14 @@ public class ClauseTest extends AbstractTestSuite {
 
 		testId = "CREATE_08";
 		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		create = CREATE.node(n).label("Person").
+				property("numbers").value(1, 2, 3);
+
+		result = print(create, Format.PRETTY_1);
+		testId = "CREATE_09";
+		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 	
 	@Test

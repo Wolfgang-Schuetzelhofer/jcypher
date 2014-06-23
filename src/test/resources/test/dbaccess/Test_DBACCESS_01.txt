@@ -54,7 +54,9 @@
                             "self":"node/3"
                         },
                         {
-                            "self":"relationship/0"
+                            "start":"node/3",
+                            "self":"relationship/0",
+                            "end":"node/0"
                         }
                     ],
                     "graph":{
@@ -99,7 +101,9 @@
                             "self":"node/3"
                         },
                         {
-                            "self":"relationship/1"
+                            "start":"node/3",
+                            "self":"relationship/1",
+                            "end":"node/1"
                         }
                     ],
                     "graph":{
@@ -144,7 +148,9 @@
                             "self":"node/3"
                         },
                         {
-                            "self":"relationship/2"
+                            "start":"node/3",
+                            "self":"relationship/2",
+                            "end":"node/2"
                         }
                     ],
                     "graph":{
@@ -189,7 +195,9 @@
                             "self":"node/4"
                         },
                         {
-                            "self":"relationship/3"
+                            "start":"node/4",
+                            "self":"relationship/3",
+                            "end":"node/0"
                         }
                     ],
                     "graph":{
@@ -234,7 +242,9 @@
                             "self":"node/4"
                         },
                         {
-                            "self":"relationship/4"
+                            "start":"node/4",
+                            "self":"relationship/4",
+                            "end":"node/1"
                         }
                     ],
                     "graph":{
@@ -279,7 +289,9 @@
                             "self":"node/4"
                         },
                         {
-                            "self":"relationship/5"
+                            "start":"node/4",
+                            "self":"relationship/5",
+                            "end":"node/2"
                         }
                     ],
                     "graph":{
@@ -324,7 +336,9 @@
                             "self":"node/5"
                         },
                         {
-                            "self":"relationship/6"
+                            "start":"node/5",
+                            "self":"relationship/6",
+                            "end":"node/0"
                         }
                     ],
                     "graph":{
@@ -369,7 +383,9 @@
                             "self":"node/5"
                         },
                         {
-                            "self":"relationship/7"
+                            "start":"node/5",
+                            "self":"relationship/7",
+                            "end":"node/1"
                         }
                     ],
                     "graph":{
@@ -414,7 +430,9 @@
                             "self":"node/5"
                         },
                         {
-                            "self":"relationship/8"
+                            "start":"node/5",
+                            "self":"relationship/8",
+                            "end":"node/2"
                         }
                     ],
                     "graph":{

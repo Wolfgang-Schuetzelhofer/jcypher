@@ -185,6 +185,18 @@ public class JsonTest extends AbstractTestSuite {
 		result = printJSON(query, Format.PRETTY_1);
 		testId = "EXTRACT_12";
 		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				CREATE.node(n).label("Person")
+					.property("numbers").value("A", "B", "C")
+		});
+		
+		//result = print(query, Format.PRETTY_1);
+		result = printJSON(query, Format.PRETTY_1);
+		testId = "EXTRACT_13";
+		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 	
 	@Test
