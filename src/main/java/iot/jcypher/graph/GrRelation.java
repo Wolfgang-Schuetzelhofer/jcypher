@@ -18,24 +18,24 @@ package iot.jcypher.graph;
 
 import iot.jcypher.result.util.ResultHandler;
 
-public class GrRelation extends GrElement {
+public class GrRelation extends GrPropertyContainer {
 
 	private long startNodeId;
 	private long endNodeId;
 	
 	GrRelation(ResultHandler resultHandler, long id, String name,
-			long startNodeId, long endNodeId) {
-		super(resultHandler, id, name);
+			long startNodeId, long endNodeId, int rowIdx) {
+		super(resultHandler, id, name, rowIdx);
 		this.startNodeId = startNodeId;
 		this.endNodeId = endNodeId;
 	}
 
 	public GrNode getStartNode() {
-		return this.resultHandler.getNode(this.startNodeId);
+		return this.resultHandler.getNode(this.startNodeId, this.rowIndex);
 	}
 	
 	public GrNode getEndNode() {
-		return this.resultHandler.getNode(this.endNodeId);
+		return this.resultHandler.getNode(this.endNodeId, this.rowIndex);
 	}
 	
 }

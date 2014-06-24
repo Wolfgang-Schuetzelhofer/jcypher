@@ -18,10 +18,11 @@ package iot.jcypher.graph;
 
 import iot.jcypher.result.util.ResultHandler;
 
-public class GrNode extends GrElement {
+public class GrNode extends GrPropertyContainer {
 
-	GrNode(ResultHandler resultHandler, long id, String name) {
-		super(resultHandler, id, name);
+	GrNode(ResultHandler resultHandler, long id, String name,
+			int rowIdx) {
+		super(resultHandler, id, name, rowIdx);
 	}
 
 }

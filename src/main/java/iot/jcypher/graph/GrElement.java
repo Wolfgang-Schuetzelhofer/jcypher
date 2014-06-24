@@ -21,18 +21,11 @@ import iot.jcypher.result.util.ResultHandler;
 public abstract class GrElement {
 
 	protected ResultHandler resultHandler;
-	private long id;
-	private String name;
+	protected int rowIndex;
 
-	GrElement(ResultHandler resultHandler, long id, String name) {
+	GrElement(ResultHandler resultHandler, int rowIdx) {
 		super();
 		this.resultHandler = resultHandler;
-		this.id = id;
-		this.name = name;
+		this.rowIndex = rowIdx;
 	}
-
-	public long getId() {
-		return id;
-	}
-	
 }

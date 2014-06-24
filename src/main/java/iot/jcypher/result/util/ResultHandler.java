@@ -19,6 +19,7 @@ package iot.jcypher.result.util;
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrNode;
+import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
@@ -32,12 +33,14 @@ import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueWriter;
 import iot.jcypher.query.writer.WriterContext;
 
+import java.lang.annotation.ElementType;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.json.JsonArray;
 import javax.json.JsonNumber;
@@ -77,12 +80,14 @@ public class ResultHandler {
 			if (colIdx == -1)
 				throw new RuntimeException("no result column: " + colKey);
 			Iterator<JsonValue> it = getDataIterator();
+			int rowIdx = -1;
 			while(it.hasNext()) { // iterate over rows
+				rowIdx++;
 				JsonObject dataObject = (JsonObject) it.next();
 				ElementInfo ei = getElementInfo(dataObject, colIdx);
 				GrNode rNode = getNodesById().get(ei.id);
 				if (rNode == null) {
-					rNode = GrAccess.createNode(this, ei.id, colKey);
+					rNode = GrAccess.createNode(this, ei.id, colKey, rowIdx);
 					getNodesById().put(ei.id, rNode);
 				}
 				rNodes.add(rNode);
@@ -106,14 +111,16 @@ public class ResultHandler {
 			if (colIdx == -1)
 				throw new RuntimeException("no result column: " + colKey);
 			Iterator<JsonValue> it = getDataIterator();
+			int rowIdx = -1;
 			while(it.hasNext()) { // iterate over rows
+				rowIdx++;
 				JsonObject dataObject = (JsonObject) it.next();
 				ElementInfo ei = getElementInfo(dataObject, colIdx);
 				RelationInfo ri = getRelationInfo(dataObject, colIdx);
 				GrRelation rRelation = getRelationsById().get(ei.id);
 				if (rRelation == null) {
 					rRelation = GrAccess.createRelation(this, ei.id, colKey,
-							ri.startNodeId, ri.endNodeId);
+							ri.startNodeId, ri.endNodeId, rowIdx);
 					getRelationsById().put(ei.id, rRelation);
 				}
 				rRelations.add(rRelation);
@@ -145,7 +152,7 @@ public class ResultHandler {
 		return this.getValues(val);
 	}
 	
-	public GrNode getNode(long id) {
+	public GrNode getNode(long id, int rowIdx) {
 		GrNode rNode = getNodesById().get(id);
 		if (rNode == null) {
 			// first resolve unresolved columns, so the column name is set
@@ -159,9 +166,13 @@ public class ResultHandler {
 					boolean isNodeColumn = false;
 					while(it.hasNext()) { // iterate over just one row
 						JsonObject dataObject = (JsonObject) it.next();
-						if (isColumnOfType(ElemType.NODE, dataObject, colIdx)) {
-							isNodeColumn = true;
-						}
+						ElementInfo ei = getElementInfo(dataObject, colIdx);
+						if (ei != null) { // relation or node
+							if (ElemType.NODE == ei.type) {
+								isNodeColumn = true;
+							}
+						} else
+							getUnresolvedColumns().remove(colKey);
 						break;
 					}
 					if (isNodeColumn) {
@@ -171,24 +182,63 @@ public class ResultHandler {
 						rNode = getNodesById().get(id);
 						if (rNode != null)
 							return rNode;
-					} else
-						getUnresolvedColumns().remove(colKey);
+					}
 				}
 			}
 		}
 		if (rNode == null) {
-			rNode = GrAccess.createNode(this, id, null);
+			rNode = GrAccess.createNode(this, id, null, rowIdx);
 			getNodesById().put(id, rNode);
 		}
 		return rNode;
 	}
 	
-	private GrNode resolveUptoNode(long id) {
-		Iterator<JsonValue> it = getDataIterator();
-		while(it.hasNext()) { // iterate over rows
-			JsonObject dataObject = (JsonObject) it.next();
-			JsonObject graphObject = getGraphOject(dataObject);
-			JsonArray nodesArray = graphObject.getJsonArray("nodes");
+	public List<GrProperty> getNodeProperties(long nodeId, int rowIndex) {
+		List<GrProperty> props = new ArrayList<GrProperty>();
+		JsonObject propertiesObject = getPropertiesObject(nodeId, rowIndex, ElemType.NODE);
+		Iterator<Entry<String, JsonValue>> esIt = propertiesObject.entrySet().iterator();
+		while (esIt.hasNext()) {
+			Entry<String, JsonValue> entry = esIt.next();
+			GrProperty prop = GrAccess.createProperty(entry.getKey());
+			prop.setValue(convertJsonValue(entry.getValue()));
+			props.add(prop);
+		}
+		return props;
+	}
+	
+	public List<GrProperty> getRelationProperties(long relationId, int rowIndex) {
+		List<GrProperty> props = new ArrayList<GrProperty>();
+		JsonObject propertiesObject = getPropertiesObject(relationId, rowIndex, ElemType.RELATION);
+		Iterator<Entry<String, JsonValue>> esIt = propertiesObject.entrySet().iterator();
+		while (esIt.hasNext()) {
+			Entry<String, JsonValue> entry = esIt.next();
+			GrProperty prop = GrAccess.createProperty(entry.getKey());
+			prop.setValue(convertJsonValue(entry.getValue()));
+			props.add(prop);
+		}
+		return props;
+	}
+	
+	private JsonObject getPropertiesObject(long id, int rowIndex, ElemType typ) {
+		JsonObject graphObject = getGraphObject(rowIndex);
+		JsonArray elemsArray = null;
+		if (typ == ElemType.NODE)
+			elemsArray = graphObject.getJsonArray("nodes");
+		else if (typ == ElemType.RELATION)
+			elemsArray = graphObject.getJsonArray("relationships");
+		int sz = elemsArray.size();
+		for (int i = 0; i < sz; i++) {
+			JsonObject elem = elemsArray.getJsonObject(i);
+			String idStr = elem.getString("id");
+			long elemId;
+			try {
+				elemId = Long.parseLong(idStr);
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
+			if (id == elemId) {
+				return elem.getJsonObject("properties");
+			}
 		}
 		return null;
 	}
@@ -290,16 +340,11 @@ public class ResultHandler {
 		return dataObject.getJsonArray("rest");
 	}
 	
-	private JsonObject getGraphOject(JsonObject dataObject) {
+	private JsonObject getGraphObject(int rowIndex) {
+		JsonObject jsres = this.queryResult.getJsonResult();
+		JsonArray datas = ((JsonObject)jsres.getJsonArray("results").get(0)).getJsonArray("data");
+		JsonObject dataObject = datas.getJsonObject(rowIndex);
 		return dataObject.getJsonObject("graph");
-	}
-	
-	private ElementInfo getElementInfo(JsonObject dataObject, int colIdx) {
-		JsonArray restArray = getRestArray(dataObject);
-		JsonObject restObject = restArray.getJsonObject(colIdx);
-		String selfString = restObject.getString("self");
-		ElementInfo ei = ElementInfo.parse(selfString);
-		return ei;
 	}
 	
 	private RelationInfo getRelationInfo(JsonObject dataObject, int colIdx) {
@@ -311,7 +356,7 @@ public class ResultHandler {
 		return ri;
 	}
 	
-	private boolean isColumnOfType(ElemType typ, JsonObject dataObject, int colIdx) {
+	private ElementInfo getElementInfo(JsonObject dataObject, int colIdx) {
 		JsonArray restArray = getRestArray(dataObject);
 		JsonValue obj = restArray.get(colIdx);
 		if (obj.getValueType() == ValueType.OBJECT) {
@@ -320,17 +365,43 @@ public class ResultHandler {
 				String selfString = restObject.getString("self");
 				if (selfString != null) {
 					ElementInfo ei = ElementInfo.parse(selfString);
-					return ei.type == typ;
+					return ei;
 				}
 			}
 		}
-		return false;
+		return null;
 	}
 	
 	private void addValue(JsonObject dataObject, int colIdx, ValueList<?> vals) {
 		JsonArray restArray = getRestArray(dataObject);
 		JsonValue restVal = restArray.get(colIdx);
 		vals.add(restVal);
+	}
+
+	private static Object convertJsonValue(JsonValue val) {
+		Object ret = null;
+		ValueType typ = val.getValueType();
+		if (typ == ValueType.NUMBER)
+			ret = ((JsonNumber)val).bigDecimalValue();
+		else if (typ == ValueType.STRING)
+			ret = ((JsonString)val).getString();
+		else if (typ == ValueType.FALSE)
+			ret = Boolean.FALSE;
+		else if (typ == ValueType.TRUE)
+			ret = Boolean.TRUE;
+		else if (typ == ValueType.ARRAY) {
+			JsonArray arr = (JsonArray)val;
+			List<Object> vals = new ArrayList<Object>();
+			int sz = arr.size();
+			for (int i = 0; i < sz; i++) {
+				JsonValue v = arr.get(i);
+				vals.add(convertJsonValue(v));
+			}
+			ret = vals;
+		} else if (typ == ValueType.OBJECT) {
+			//JsonObject obj = (JsonObject)val;
+		}
+		return ret;
 	}
 
 	/**************************************/
@@ -386,33 +457,11 @@ public class ResultHandler {
 	private static class ValueList<T> {
 		private List<T> values = new ArrayList<T>();
 		
-		private void add (JsonValue val) {
-			this.addTo(val, this.values);
-		}
-		
 		@SuppressWarnings("unchecked")
-		private <E> void addTo (JsonValue val, List<E> list) {
-			ValueType typ = val.getValueType();
-			if (typ == ValueType.NUMBER)
-				list.add((E) ((JsonNumber)val).bigDecimalValue());
-			else if (typ == ValueType.STRING)
-				list.add((E) ((JsonString)val).getString());
-			else if (typ == ValueType.FALSE)
-				list.add((E) Boolean.FALSE);
-			else if (typ == ValueType.TRUE)
-				list.add((E) Boolean.TRUE);
-			else if (typ == ValueType.ARRAY) {
-				JsonArray arr = (JsonArray)val;
-				List<Object> vals = new ArrayList<Object>();
-				int sz = arr.size();
-				for (int i = 0; i < sz; i++) {
-					JsonValue v = arr.get(i);
-					this.addTo(v, vals);
-				}
-				list.add((E) vals);
-			} else if (typ == ValueType.OBJECT) {
-				//JsonObject obj = (JsonObject)val;
-			}
+		private void add (JsonValue val) {
+			Object v = convertJsonValue(val);
+			if (v != null)
+				this.values.add((T) v);
 		}
 	}
 }

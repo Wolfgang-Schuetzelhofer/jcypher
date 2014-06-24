@@ -27,6 +27,7 @@ import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrNode;
+import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.CREATE;
@@ -259,8 +260,12 @@ public class MovieDatabase {
 		GrNode sNode;
 		GrNode eNode;
 		for (GrRelation rel : rr) {
+			List<GrProperty> rprops = rel.getProperties();
 			sNode = rel.getStartNode();
 			eNode = rel.getEndNode();
+			List<GrProperty> sprops = sNode.getProperties();
+			List<GrProperty> eprops = eNode.getProperties();
+			String tst = null;
 		}
 		
 		return;

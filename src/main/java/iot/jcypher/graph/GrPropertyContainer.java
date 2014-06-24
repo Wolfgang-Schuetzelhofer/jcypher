@@ -16,25 +16,40 @@
 
 package iot.jcypher.graph;
 
+import java.util.List;
+
 import iot.jcypher.result.util.ResultHandler;
 
-public class GrAccess {
+public abstract class GrPropertyContainer extends GrElement {
 
-	public static GrNode createNode(ResultHandler rh, long id, String name,
+	private long id;
+	/** result column name, optional */
+	private String name;
+	private List<GrProperty> properties;
+
+	GrPropertyContainer(ResultHandler resultHandler, long id, String name,
 			int rowIdx) {
-		return new GrNode(rh, id, name, rowIdx);
+		super(resultHandler, rowIdx);
+		this.id = id;
+		this.name = name;
+	}
+
+	public long getId() {
+		return id;
+	}
+
+	public List<GrProperty> getProperties() {
+		if (this.properties == null)
+			this.properties = resolveProperties();
+		return this.properties;
+	}
+
+	private List<GrProperty> resolveProperties() {
+		if (this instanceof GrNode)
+			return this.resultHandler.getNodeProperties(this.id, this.rowIndex);
+		else if (this instanceof GrRelation)
+			return this.resultHandler.getRelationProperties(this.id, this.rowIndex);
+		return null;
 	}
 	
-	public static GrRelation createRelation(ResultHandler rh, long id, String name,
-			long startNodeId, long endNodeId, int rowIdx) {
-		return new GrRelation(rh, id, name, startNodeId, endNodeId, rowIdx);
-	}
-	
-	public static GrProperty createProperty(String name) {
-		return new GrProperty(name);
-	}
-	
-	public static Graph createGraph(ResultHandler resultHandler) {
-		return new Graph(resultHandler);
-	}
 }
