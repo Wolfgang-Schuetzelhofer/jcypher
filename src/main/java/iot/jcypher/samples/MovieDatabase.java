@@ -27,6 +27,7 @@ import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrNode;
+import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.query.api.IClause;
@@ -238,9 +239,14 @@ public class MovieDatabase {
 		JcPath p = new JcPath("p");
 		
 		query = new JcQuery();
+//		query.setClauses(new IClause[] {
+//				MATCH.path(p).node(n).relation(r).out().node(),
+//				//RETURN.value(n.property("name"))
+//				RETURN.ALL()
+//		});
 		query.setClauses(new IClause[] {
-				MATCH.path(p).node(n).relation(r).out().node(),
-				//RETURN.value(n.property("name"))
+				MATCH.path(p).node().relation().out().type("ACTS_IN").node()
+						.relation().in().type("ACTS_IN").node(),
 				RETURN.ALL()
 		});
 		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
@@ -255,10 +261,25 @@ public class MovieDatabase {
 		/** print the JSON representation of the query result */
 		print(result, queryTitle);
 		
-//		List<GrNode> nr = result.resultOf(n);
-		List<GrRelation> rr = result.resultOf(r);
 		GrNode sNode;
 		GrNode eNode;
+		
+		List<GrPath> pr = result.resultOf(p);
+		for (GrPath path : pr) {
+			List<GrRelation> rels = path.getRelations();
+			for (GrRelation rel : rels) {
+				List<GrProperty> props = rel.getProperties();
+				props = props;
+			}
+			sNode = path.getStartNode();
+			eNode = path.getEndNode();
+			List<GrProperty> sprops = sNode.getProperties();
+			List<GrProperty> eprops = eNode.getProperties();
+			String tst = null;
+		}
+		
+//		List<GrNode> nr = result.resultOf(n);
+		List<GrRelation> rr = result.resultOf(r);
 		for (GrRelation rel : rr) {
 			List<GrProperty> rprops = rel.getProperties();
 			sNode = rel.getStartNode();
@@ -285,7 +306,7 @@ public class MovieDatabase {
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
 		/** connect to an in memory database (no properties are required) */
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.EMBEDDED, props);
 		
 		/** connect to remote database via REST (SERVER_ROOT_URI property is needed) */
 		//dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);

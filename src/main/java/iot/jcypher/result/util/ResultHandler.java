@@ -19,12 +19,14 @@ package iot.jcypher.result.util;
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrNode;
+import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
+import iot.jcypher.query.values.JcPath;
 import iot.jcypher.query.values.JcProperty;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.values.JcString;
@@ -33,7 +35,6 @@ import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueWriter;
 import iot.jcypher.query.writer.WriterContext;
 
-import java.lang.annotation.ElementType;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,6 +57,7 @@ public class ResultHandler {
 	private Map<Long, GrRelation> relationsById;
 	private Map<String, List<GrNode>> nodeColumns;
 	private Map<String, List<GrRelation>> relationColumns;
+	private Map<String, List<GrPath>> pathColumns;
 	@SuppressWarnings("rawtypes")
 	private Map<String, ValueList> valueColumns;
 	private List<String> columns;
@@ -87,7 +89,7 @@ public class ResultHandler {
 				ElementInfo ei = getElementInfo(dataObject, colIdx);
 				GrNode rNode = getNodesById().get(ei.id);
 				if (rNode == null) {
-					rNode = GrAccess.createNode(this, ei.id, colKey, rowIdx);
+					rNode = GrAccess.createNode(this, ei.id, rowIdx);
 					getNodesById().put(ei.id, rNode);
 				}
 				rNodes.add(rNode);
@@ -119,7 +121,7 @@ public class ResultHandler {
 				RelationInfo ri = getRelationInfo(dataObject, colIdx);
 				GrRelation rRelation = getRelationsById().get(ei.id);
 				if (rRelation == null) {
-					rRelation = GrAccess.createRelation(this, ei.id, colKey,
+					rRelation = GrAccess.createRelation(this, ei.id,
 							ri.startNodeId, ri.endNodeId, rowIdx);
 					getRelationsById().put(ei.id, rRelation);
 				}
@@ -130,6 +132,54 @@ public class ResultHandler {
 		}
 		
 		return rRelations;
+	}
+	
+	public List<GrPath> getPaths(JcPath path) {
+		String colKey =  ValueAccess.getName(path);
+		List<GrPath> rPaths = getPathColumns().get(colKey);
+		if (rPaths == null) {
+			rPaths = new ArrayList<GrPath>();
+			int colIdx = getColumnIndex(colKey);
+			if (colIdx == -1)
+				throw new RuntimeException("no result column: " + colKey);
+			Iterator<JsonValue> it = getDataIterator();
+			int rowIdx = -1;
+			while(it.hasNext()) { // iterate over rows
+				rowIdx++;
+				JsonObject dataObject = (JsonObject) it.next();
+				JsonObject pathObject = getPathObject(dataObject, colIdx);
+				String str = pathObject.getString("start");
+				long startId = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
+				str = pathObject.getString("end");
+				long endId = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
+				JsonArray rels = pathObject.getJsonArray("relationships");
+				JsonArray nodes = null;
+				List<Long> relIds = new ArrayList<Long>();
+				int sz = rels.size();
+				long sid;
+				long eid = startId;
+				for (int i = 0; i < sz; i++) {
+					String rel = rels.getString(i);
+					long rid = Long.parseLong(rel.substring(rel.lastIndexOf('/') + 1));
+					GrRelation rRelation = getRelationsById().get(rid);
+					if (rRelation == null) {
+						if (nodes == null)
+							nodes = pathObject.getJsonArray("nodes");
+						sid = eid;
+						str = nodes.getString(i + 1);
+						eid = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
+						rRelation = GrAccess.createRelation(this, rid,
+								sid, eid, rowIdx);
+						getRelationsById().put(rid, rRelation);
+					}
+					relIds.add(Long.valueOf(rid));
+				}
+				GrPath rPath = GrAccess.createPath(this, startId, endId, relIds, rowIdx);
+				rPaths.add(rPath);
+			}
+			getPathColumns().put(colKey, rPaths);
+		}
+		return rPaths;
 	}
 	
 	public List<BigDecimal> getNumbers(JcNumber number) {
@@ -155,7 +205,7 @@ public class ResultHandler {
 	public GrNode getNode(long id, int rowIdx) {
 		GrNode rNode = getNodesById().get(id);
 		if (rNode == null) {
-			// first resolve unresolved columns, so the column name is set
+			// first resolve unresolved columns
 			if (getUnresolvedColumns().size() > 0) {
 				List<String> ucols = new ArrayList<String>();
 				ucols.addAll(getUnresolvedColumns());
@@ -187,10 +237,14 @@ public class ResultHandler {
 			}
 		}
 		if (rNode == null) {
-			rNode = GrAccess.createNode(this, id, null, rowIdx);
+			rNode = GrAccess.createNode(this, id, rowIdx);
 			getNodesById().put(id, rNode);
 		}
 		return rNode;
+	}
+	
+	public GrRelation getRelation(long id) {
+		return getRelationsById().get(id);
 	}
 	
 	public List<GrProperty> getNodeProperties(long nodeId, int rowIndex) {
@@ -279,6 +333,12 @@ public class ResultHandler {
 		if (this.relationColumns == null)
 			this.relationColumns = new HashMap<String, List<GrRelation>>();
 		return this.relationColumns;
+	}
+	
+	private Map<String, List<GrPath>> getPathColumns() {
+		if (this.pathColumns == null)
+			this.pathColumns = new HashMap<String, List<GrPath>>();
+		return this.pathColumns;
 	}
 	
 	@SuppressWarnings("rawtypes")
@@ -370,6 +430,11 @@ public class ResultHandler {
 			}
 		}
 		return null;
+	}
+	
+	private JsonObject getPathObject(JsonObject dataObject, int colIdx) {
+		JsonArray restArray = getRestArray(dataObject);
+		return restArray.getJsonObject(colIdx);
 	}
 	
 	private void addValue(JsonObject dataObject, int colIdx, ValueList<?> vals) {

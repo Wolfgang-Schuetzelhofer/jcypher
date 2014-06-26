@@ -44,6 +44,7 @@ import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
@@ -258,6 +259,33 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 					addNode(nds.endNode, nodes);
 					relations.add(rh);
 				}
+			} else if (val instanceof Path) {
+				restObject = Json.createObjectBuilder();
+				Path path = (Path)val;
+				restObject.add("start", "node/".concat(String.valueOf(path.startNode().getId())));
+				JsonArrayBuilder pNodesArray = Json.createArrayBuilder();
+				Iterator<Node> nit = path.nodes().iterator();
+				while (nit.hasNext()) {
+					Node node = nit.next();
+					pNodesArray.add("node/".concat(String.valueOf(node.getId())));
+					addNode(node, nodes);
+				}
+				restObject.add("nodes", pNodesArray);
+				restObject.add("length", path.length());
+				JsonArrayBuilder pRelationsArray = Json.createArrayBuilder();
+				Iterator<Relationship> rit = path.relationships().iterator();
+				while (rit.hasNext()) {
+					Relationship relation = rit.next();
+					pRelationsArray.add("relationship/".concat(String.valueOf(relation.getId())));
+					RelationHolder rh = new RelationHolder(relation);
+					if (!relations.contains(rh)) {
+						rh.init(relation);
+						// nodes have already been added for the path
+						relations.add(rh);
+					}
+				}
+				restObject.add("relationships", pRelationsArray);
+				restObject.add("end", "node/".concat(String.valueOf(path.endNode().getId())));
 			} else {
 				restValue = val;
 			}
@@ -284,7 +312,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		builderContext.dataArray.add(rowObject);
 	}
 	
-	private void writeLiteralValue(Object val, JsonArrayBuilder array) {
+	private static void writeLiteralValue(Object val, JsonArrayBuilder array) {
 		if (val instanceof String)
 			array.add(val.toString());
 		else if (val instanceof Number) {
@@ -296,8 +324,38 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 				array.add(((Double)val).doubleValue());
 			else if (val instanceof Float)
 				array.add(((Float)val).floatValue());
-		} else if (val instanceof Boolean)
+		} else if (val instanceof Boolean) {
 			array.add(((Boolean)val).booleanValue());
+		} else if (val != null && val.getClass().isArray()) {
+			JsonArrayBuilder jsarr = Json.createArrayBuilder();
+			if (val instanceof int[]) {
+				int[] arr = (int[])val;
+				for (int v : arr) {
+					writeLiteralValue(v, jsarr);
+				}
+			} else if (val instanceof long[]) {
+				long[] arr = (long[])val;
+				for (long v : arr) {
+					writeLiteralValue(v, jsarr);
+				}
+			} else if (val instanceof float[]) {
+				float[] arr = (float[])val;
+				for (float v : arr) {
+					writeLiteralValue(v, jsarr);
+				}
+			} else if (val instanceof double[]) {
+				double[] arr = (double[])val;
+				for (double v : arr) {
+					writeLiteralValue(v, jsarr);
+				}
+			} else {
+				Object[] arr = (Object[])val;
+				for (Object v : arr) {
+					writeLiteralValue(v, jsarr);
+				}
+			}
+			array.add(jsarr);
+		}
 	}
 	
 	private void addNode(Node node, List<NodeHolder> nodes) {
@@ -309,7 +367,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			}
 		}
 	}
-
+	
 	private static Thread registerShutdownHook(final GraphDatabaseService gDb) {
 		// Registers a shutdown hook for the Neo4j instance so that it
 		// shuts down nicely when the VM exits (even if you "Ctrl-C" the
@@ -380,7 +438,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			this.nodeObject = nd;
 		}
 		
-		private void writeLiteral(String key, Object val, JsonObjectBuilder props) {
+		private static void writeLiteral(String key, Object val, JsonObjectBuilder props) {
 			if (val instanceof String)
 				props.add(key, val.toString());
 			else if (val instanceof Number) {
@@ -392,8 +450,38 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 					props.add(key, ((Double)val).doubleValue());
 				else if (val instanceof Float)
 					props.add(key, ((Float)val).floatValue());
-			} else if (val instanceof Boolean)
+			} else if (val instanceof Boolean) {
 				props.add(key, ((Boolean)val).booleanValue());
+			} else if (val != null && val.getClass().isArray()) {
+				JsonArrayBuilder jsarr = Json.createArrayBuilder();
+				if (val instanceof int[]) {
+					int[] arr = (int[])val;
+					for (int v : arr) {
+						writeLiteralValue(v, jsarr);
+					}
+				} else if (val instanceof long[]) {
+					long[] arr = (long[])val;
+					for (long v : arr) {
+						writeLiteralValue(v, jsarr);
+					}
+				} else if (val instanceof float[]) {
+					float[] arr = (float[])val;
+					for (float v : arr) {
+						writeLiteralValue(v, jsarr);
+					}
+				} else if (val instanceof double[]) {
+					double[] arr = (double[])val;
+					for (double v : arr) {
+						writeLiteralValue(v, jsarr);
+					}
+				} else {
+					Object[] arr = (Object[])val;
+					for (Object v : arr) {
+						writeLiteralValue(v, jsarr);
+					}
+				}
+				props.add(key, jsarr);
+			}
 		}
 
 		@Override

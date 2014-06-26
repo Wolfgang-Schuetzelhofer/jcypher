@@ -16,18 +16,28 @@
 
 package iot.jcypher.graph;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import iot.jcypher.result.util.ResultHandler;
 
-public class GrRelation extends GrPropertyContainer {
+public class GrPath {
 
+	private ResultHandler resultHandler;
+	private int rowIndex;
+	
 	private long startNodeId;
 	private long endNodeId;
+	private List<Long> relationIds;
 	
-	GrRelation(ResultHandler resultHandler, long id,
-			long startNodeId, long endNodeId, int rowIdx) {
-		super(resultHandler, id, rowIdx);
+	GrPath(ResultHandler resultHandler, long startNodeId,
+			long endNodeId, List<Long> relationIds, int rowIndex) {
+		super();
+		this.resultHandler = resultHandler;
+		this.rowIndex = rowIndex;
 		this.startNodeId = startNodeId;
 		this.endNodeId = endNodeId;
+		this.relationIds = relationIds;
 	}
 
 	public GrNode getStartNode() {
@@ -38,4 +48,11 @@ public class GrRelation extends GrPropertyContainer {
 		return this.resultHandler.getNode(this.endNodeId, this.rowIndex);
 	}
 	
+	public List<GrRelation> getRelations() {
+		List<GrRelation> rels = new ArrayList<GrRelation>(this.relationIds.size());
+		for (Long rid : this.relationIds) {
+			rels.add(this.resultHandler.getRelation(rid.longValue()));
+		}
+		return rels;
+	}
 }

@@ -18,12 +18,14 @@ package iot.jcypher;
 
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrNode;
+import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.graph.Graph;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
+import iot.jcypher.query.values.JcPath;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.JcValue;
@@ -64,6 +66,10 @@ public class JcQueryResult {
 	
 	public List<GrRelation> resultOf(JcRelation relation) {
 		return this.resultHandler.getRelations(relation);
+	}
+	
+	public List<GrPath> resultOf(JcPath path) {
+		return this.resultHandler.getPaths(path);
 	}
 	
 	public List<BigDecimal> resultOf(JcNumber number) {

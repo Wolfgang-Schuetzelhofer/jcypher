@@ -16,18 +16,24 @@
 
 package iot.jcypher.graph;
 
+import java.util.List;
+
 import iot.jcypher.result.util.ResultHandler;
 
 public class GrAccess {
 
-	public static GrNode createNode(ResultHandler rh, long id, String name,
-			int rowIdx) {
-		return new GrNode(rh, id, name, rowIdx);
+	public static GrNode createNode(ResultHandler rh, long id, int rowIdx) {
+		return new GrNode(rh, id, rowIdx);
 	}
 	
-	public static GrRelation createRelation(ResultHandler rh, long id, String name,
+	public static GrRelation createRelation(ResultHandler rh, long id,
 			long startNodeId, long endNodeId, int rowIdx) {
-		return new GrRelation(rh, id, name, startNodeId, endNodeId, rowIdx);
+		return new GrRelation(rh, id, startNodeId, endNodeId, rowIdx);
+	}
+	
+	public static GrPath createPath(ResultHandler rh,
+			long startNodeId, long endNodeId, List<Long> relIds, int rowIdx) {
+		return new GrPath(rh, startNodeId, endNodeId, relIds, rowIdx);
 	}
 	
 	public static GrProperty createProperty(String name) {

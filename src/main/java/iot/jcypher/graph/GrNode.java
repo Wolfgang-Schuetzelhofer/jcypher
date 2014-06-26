@@ -20,9 +20,8 @@ import iot.jcypher.result.util.ResultHandler;
 
 public class GrNode extends GrPropertyContainer {
 
-	GrNode(ResultHandler resultHandler, long id, String name,
-			int rowIdx) {
-		super(resultHandler, id, name, rowIdx);
+	GrNode(ResultHandler resultHandler, long id, int rowIdx) {
+		super(resultHandler, id, rowIdx);
 	}
 
 }

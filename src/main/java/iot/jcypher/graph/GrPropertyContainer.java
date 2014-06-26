@@ -23,15 +23,11 @@ import iot.jcypher.result.util.ResultHandler;
 public abstract class GrPropertyContainer extends GrElement {
 
 	private long id;
-	/** result column name, optional */
-	private String name;
 	private List<GrProperty> properties;
 
-	GrPropertyContainer(ResultHandler resultHandler, long id, String name,
-			int rowIdx) {
+	GrPropertyContainer(ResultHandler resultHandler, long id, int rowIdx) {
 		super(resultHandler, rowIdx);
 		this.id = id;
-		this.name = name;
 	}
 
 	public long getId() {
