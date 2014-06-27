@@ -14,18 +14,10 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.graph;
+package iot.jcypher.graph.internal;
 
-import iot.jcypher.result.util.ResultHandler;
+import iot.jcypher.graph.SyncState;
 
-public abstract class GrElement extends GrPersistentStateNotifier {
-
-	protected ResultHandler resultHandler;
-	protected int rowIndex;
-
-	GrElement(ResultHandler resultHandler, int rowIdx) {
-		super();
-		this.resultHandler = resultHandler;
-		this.rowIndex = rowIdx;
-	}
+public interface ChangeListener {
+	public void changed(Object theChanged, SyncState oldState, SyncState newState);
 }

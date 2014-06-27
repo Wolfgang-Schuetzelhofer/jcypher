@@ -22,6 +22,7 @@ public class GrRelation extends GrPropertyContainer {
 
 	private long startNodeId;
 	private long endNodeId;
+	private String type;
 	
 	GrRelation(ResultHandler resultHandler, long id,
 			long startNodeId, long endNodeId, int rowIdx) {
@@ -36,6 +37,16 @@ public class GrRelation extends GrPropertyContainer {
 	
 	public GrNode getEndNode() {
 		return this.resultHandler.getNode(this.endNodeId, this.rowIndex);
+	}
+
+	/**
+	 * Note: Relations must have exactly one type
+	 * @return the type of the Relation
+	 */
+	public String getType() {
+		if (this.type == null)
+			this.type = this.resultHandler.getRelationType(getId(), this.rowIndex);
+		return this.type;
 	}
 	
 }

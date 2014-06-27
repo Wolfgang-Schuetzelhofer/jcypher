@@ -40,7 +40,15 @@ public class GrAccess {
 		return new GrProperty(name);
 	}
 	
+	public static GrLabel createLabel(String name) {
+		return new GrLabel(name);
+	}
+	
 	public static Graph createGraph(ResultHandler resultHandler) {
 		return new Graph(resultHandler);
+	}
+	
+	public static void setState(GrPersistentStateNotifier pn, SyncState state) {
+		pn.setSyncState(state);
 	}
 }

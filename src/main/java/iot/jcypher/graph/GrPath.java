@@ -55,4 +55,8 @@ public class GrPath {
 		}
 		return rels;
 	}
+	
+	public int getLength() {
+		return this.relationIds.size();
+	}
 }

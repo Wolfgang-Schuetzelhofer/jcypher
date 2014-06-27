@@ -18,10 +18,12 @@ package iot.jcypher.result.util;
 
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.graph.GrAccess;
+import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrRelation;
+import iot.jcypher.graph.SyncState;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
@@ -90,6 +92,7 @@ public class ResultHandler {
 				GrNode rNode = getNodesById().get(ei.id);
 				if (rNode == null) {
 					rNode = GrAccess.createNode(this, ei.id, rowIdx);
+					GrAccess.setState(rNode, SyncState.SYNC);
 					getNodesById().put(ei.id, rNode);
 				}
 				rNodes.add(rNode);
@@ -123,6 +126,7 @@ public class ResultHandler {
 				if (rRelation == null) {
 					rRelation = GrAccess.createRelation(this, ei.id,
 							ri.startNodeId, ri.endNodeId, rowIdx);
+					GrAccess.setState(rRelation, SyncState.SYNC);
 					getRelationsById().put(ei.id, rRelation);
 				}
 				rRelations.add(rRelation);
@@ -170,6 +174,7 @@ public class ResultHandler {
 						eid = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
 						rRelation = GrAccess.createRelation(this, rid,
 								sid, eid, rowIdx);
+						GrAccess.setState(rRelation, SyncState.SYNC);
 						getRelationsById().put(rid, rRelation);
 					}
 					relIds.add(Long.valueOf(rid));
@@ -238,6 +243,7 @@ public class ResultHandler {
 		}
 		if (rNode == null) {
 			rNode = GrAccess.createNode(this, id, rowIdx);
+			GrAccess.setState(rNode, SyncState.SYNC);
 			getNodesById().put(id, rNode);
 		}
 		return rNode;
@@ -245,6 +251,26 @@ public class ResultHandler {
 	
 	public GrRelation getRelation(long id) {
 		return getRelationsById().get(id);
+	}
+	
+	public String getRelationType(long relationId, int rowIndex) {
+		JsonObject graphObject = getGraphObject(rowIndex);
+		JsonArray elemsArray = graphObject.getJsonArray("relationships");
+		int sz = elemsArray.size();
+		for (int i = 0; i < sz; i++) {
+			JsonObject elem = elemsArray.getJsonObject(i);
+			String idStr = elem.getString("id");
+			long elemId;
+			try {
+				elemId = Long.parseLong(idStr);
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
+			if (relationId == elemId) {
+				return elem.getString("type");
+			}
+		}
+		return null;
 	}
 	
 	public List<GrProperty> getNodeProperties(long nodeId, int rowIndex) {
@@ -255,9 +281,22 @@ public class ResultHandler {
 			Entry<String, JsonValue> entry = esIt.next();
 			GrProperty prop = GrAccess.createProperty(entry.getKey());
 			prop.setValue(convertJsonValue(entry.getValue()));
+			GrAccess.setState(prop, SyncState.SYNC);
 			props.add(prop);
 		}
 		return props;
+	}
+	
+	public List<GrLabel> getNodeLabels(long nodeId, int rowIndex) {
+		List<GrLabel> labels = new ArrayList<GrLabel>();
+		JsonArray labelsArray = getNodeLabelsObject(nodeId, rowIndex);
+		int sz = labelsArray.size();
+		for (int i = 0; i < sz; i++) {
+			GrLabel label = GrAccess.createLabel(labelsArray.getString(i));
+			GrAccess.setState(label, SyncState.SYNC);
+			labels.add(label);
+		}
+		return labels;
 	}
 	
 	public List<GrProperty> getRelationProperties(long relationId, int rowIndex) {
@@ -268,6 +307,7 @@ public class ResultHandler {
 			Entry<String, JsonValue> entry = esIt.next();
 			GrProperty prop = GrAccess.createProperty(entry.getKey());
 			prop.setValue(convertJsonValue(entry.getValue()));
+			GrAccess.setState(prop, SyncState.SYNC);
 			props.add(prop);
 		}
 		return props;
@@ -292,6 +332,26 @@ public class ResultHandler {
 			}
 			if (id == elemId) {
 				return elem.getJsonObject("properties");
+			}
+		}
+		return null;
+	}
+	
+	private JsonArray getNodeLabelsObject(long id, int rowIndex) {
+		JsonObject graphObject = getGraphObject(rowIndex);
+		JsonArray elemsArray = graphObject.getJsonArray("nodes");
+		int sz = elemsArray.size();
+		for (int i = 0; i < sz; i++) {
+			JsonObject elem = elemsArray.getJsonObject(i);
+			String idStr = elem.getString("id");
+			long elemId;
+			try {
+				elemId = Long.parseLong(idStr);
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
+			if (id == elemId) {
+				return elem.getJsonArray("labels");
 			}
 		}
 		return null;
@@ -400,10 +460,14 @@ public class ResultHandler {
 		return dataObject.getJsonArray("rest");
 	}
 	
-	private JsonObject getGraphObject(int rowIndex) {
+	private JsonObject getDataObject(int rowIndex) {
 		JsonObject jsres = this.queryResult.getJsonResult();
 		JsonArray datas = ((JsonObject)jsres.getJsonArray("results").get(0)).getJsonArray("data");
-		JsonObject dataObject = datas.getJsonObject(rowIndex);
+		return datas.getJsonObject(rowIndex);
+	}
+	
+	private JsonObject getGraphObject(int rowIndex) {
+		JsonObject dataObject = getDataObject(rowIndex);
 		return dataObject.getJsonObject("graph");
 	}
 	

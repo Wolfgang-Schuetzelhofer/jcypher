@@ -16,12 +16,50 @@
 
 package iot.jcypher.graph;
 
+import iot.jcypher.graph.internal.ChangeListener;
 import iot.jcypher.result.util.ResultHandler;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class GrNode extends GrPropertyContainer {
 
+	private List<GrLabel> labels;
+	private LabelChangeListener labelChangeListener;
+	
 	GrNode(ResultHandler resultHandler, long id, int rowIdx) {
 		super(resultHandler, id, rowIdx);
 	}
 
+	/**
+	 * @return an unmodifiable list of node labels
+	 */
+	public List<GrLabel> getLabels() {
+		if (this.labels == null) {
+			this.labels = this.resultHandler.getNodeLabels(getId(), this.rowIndex);
+			if (this.labelChangeListener == null)
+				this.labelChangeListener = new LabelChangeListener();
+			for (GrLabel label : this.labels) {
+				label.addChangeListener(this.labelChangeListener);
+			}
+		}
+
+		// Build a new Array
+			// to allow iterating over the labels with a for loop and to remove labels.
+			// That is done by calling remove() on the label,
+			// which leads to removing the label from this.labels
+			// That may not break the for loop
+		ArrayList<GrLabel> list = new ArrayList<GrLabel>(this.labels);
+		return Collections.unmodifiableList(list);
+	}
+
+	/********************************************/
+	private class LabelChangeListener implements ChangeListener {
+
+		@Override
+		public void changed(Object theChanged, SyncState oldState,
+				SyncState newState) {
+		}
+	}
 }
