@@ -16,7 +16,8 @@
 
 package iot.jcypher.graph;
 
-public class GrLabel extends GrPersistentStateNotifier {
+
+public class GrLabel extends PersistableItem {
 	
 	private String name;
 
@@ -29,21 +30,12 @@ public class GrLabel extends GrPersistentStateNotifier {
 	public String getName() {
 		return name;
 	}
-
-	public void setName(String name) {
-		this.name = name;
-	}
 	
-	/**
-	 * removes this label
-	 */
-	public void remove() {
-		SyncState oldState = this.syncState;
-		if (this.syncState == SyncState.NEW || this.syncState == SyncState.NEW_REMOVED)
-			this.syncState = SyncState.NEW_REMOVED;
-		else
-			this.syncState = SyncState.REMOVED;
-		if (oldState != this.syncState)
-			fireChanged(oldState, this.syncState);
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Label: ");
+		sb.append(this.name);
+		return sb.toString();
 	}
 }

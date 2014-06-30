@@ -18,7 +18,7 @@ package iot.jcypher.graph;
 
 import iot.jcypher.result.util.ResultHandler;
 
-public abstract class GrElement extends GrPersistentStateNotifier {
+public abstract class GrElement extends PersistableItem {
 
 	protected ResultHandler resultHandler;
 	protected int rowIndex;

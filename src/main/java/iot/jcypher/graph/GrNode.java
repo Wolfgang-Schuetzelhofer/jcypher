@@ -16,19 +16,16 @@
 
 package iot.jcypher.graph;
 
-import iot.jcypher.graph.internal.ChangeListener;
+import iot.jcypher.graph.internal.GrId;
 import iot.jcypher.result.util.ResultHandler;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class GrNode extends GrPropertyContainer {
 
-	private List<GrLabel> labels;
-	private LabelChangeListener labelChangeListener;
+	private LabelsContainer labelsContainer;
 	
-	GrNode(ResultHandler resultHandler, long id, int rowIdx) {
+	GrNode(ResultHandler resultHandler, GrId id, int rowIdx) {
 		super(resultHandler, id, rowIdx);
 	}
 
@@ -36,30 +33,81 @@ public class GrNode extends GrPropertyContainer {
 	 * @return an unmodifiable list of node labels
 	 */
 	public List<GrLabel> getLabels() {
-		if (this.labels == null) {
-			this.labels = this.resultHandler.getNodeLabels(getId(), this.rowIndex);
-			if (this.labelChangeListener == null)
-				this.labelChangeListener = new LabelChangeListener();
-			for (GrLabel label : this.labels) {
-				label.addChangeListener(this.labelChangeListener);
-			}
+		return getLabelsContainer().getElements();
+	}
+	
+	/**
+	 * add a new label, throw a RuntimeException if the label already exists
+	 * @param name of the label
+	 * @return the added label
+	 */
+	public GrLabel addLabel(String name) {
+		GrLabel lab = GrAccess.createLabel(name);
+		return getLabelsContainer().addElement(lab);
+	}
+	
+	protected boolean checkForLabelsSyncState() {
+		if (this.labelsContainer != null) {
+			return this.labelsContainer.checkForSyncState();
 		}
-
-		// Build a new Array
-			// to allow iterating over the labels with a for loop and to remove labels.
-			// That is done by calling remove() on the label,
-			// which leads to removing the label from this.labels
-			// That may not break the for loop
-		ArrayList<GrLabel> list = new ArrayList<GrLabel>(this.labels);
-		return Collections.unmodifiableList(list);
+		return true;
 	}
 
+	private List<GrLabel> resolveLabels() {
+		return this.resultHandler.getNodeLabels(getId(), this.rowIndex);
+	}
+	
+	private boolean containslabel(List<GrLabel> list,
+			GrLabel lab) {
+		String nm = lab.getName();
+		for (GrLabel l : list) {
+			if (l.getName().equals(nm))
+				return true;
+		}
+		return false;
+	}
+	
+	private LabelsContainer getLabelsContainer() {
+		if (this.labelsContainer == null)
+			this.labelsContainer = new LabelsContainer();
+		return this.labelsContainer;
+	}
+	
 	/********************************************/
-	private class LabelChangeListener implements ChangeListener {
+	private class LabelsContainer extends PersistableItemsContainer<GrLabel> {
 
 		@Override
-		public void changed(Object theChanged, SyncState oldState,
+		SyncState getContainerSyncState() {
+			return getSyncState();
+		}
+
+		@Override
+		void setContainerSyncState(SyncState syncState) {
+			setSyncState(syncState);
+		}
+
+		@Override
+		protected void fireContainerChanged(SyncState oldState,
 				SyncState newState) {
+			fireChanged(oldState, newState);
+		}
+
+		@Override
+		protected boolean checkContainerForSyncState() {
+			if (GrNode.this.checkForPropertiesSyncState()) {
+				return GrNode.this.checkForLabelsSyncState();
+			}
+			return false;
+		}
+
+		@Override
+		protected List<GrLabel> resolveElements() {
+			return resolveLabels();
+		}
+
+		@Override
+		protected boolean containsElement(List<GrLabel> elems, GrLabel elem) {
+			return containslabel(elems, elem);
 		}
 	}
 }

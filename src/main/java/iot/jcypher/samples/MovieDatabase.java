@@ -31,6 +31,7 @@ import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrRelation;
+import iot.jcypher.graph.Graph;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.MATCH;
@@ -265,6 +266,7 @@ public class MovieDatabase {
 		GrNode sNode;
 		GrNode eNode;
 		
+		Graph graph = result.getGraph();
 		List<GrPath> pr = result.resultOf(p);
 		for (GrPath path : pr) {
 			List<GrRelation> rels = path.getRelations();
@@ -276,8 +278,12 @@ public class MovieDatabase {
 				prop.setValue(false);
 				prop.remove();
 				eNode = rel.getEndNode();
+				GrLabel lab = eNode.addLabel("Superstar");
 				List<GrLabel> sLabels = sNode.getLabels();
 				List<GrLabel> eLabels = eNode.getLabels();
+				for (GrLabel el : eLabels) {
+					el.remove();
+				}
 				props = props;
 			}
 			sNode = path.getStartNode();

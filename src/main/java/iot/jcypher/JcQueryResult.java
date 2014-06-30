@@ -16,7 +16,6 @@
 
 package iot.jcypher;
 
-import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrRelation;
@@ -45,8 +44,6 @@ public class JcQueryResult {
 	private List<JcError> generalErrors;
 	private List<JcError> dbErrors;
 	private ResultHandler resultHandler;
-	private Graph graph;
-
 	public JcQueryResult(JsonObject jsonResult) {
 		super();
 		this.jsonResult = jsonResult;
@@ -60,14 +57,27 @@ public class JcQueryResult {
 		return jsonResult;
 	}
 	
+	/**
+	 * @param node
+	 * @return an unmodifiable list of nodes (i.e a result column)
+	 */
 	public List<GrNode> resultOf(JcNode node) {
 		return this.resultHandler.getNodes(node);
 	}
 	
+	/**
+	 * @param relation
+	 * @return an unmodifiable list of relations (i.e a result column)
+	 */
 	public List<GrRelation> resultOf(JcRelation relation) {
 		return this.resultHandler.getRelations(relation);
 	}
 	
+	/**
+	 * Note: After locally modifying the graph the result may be inconsistent with the changes
+	 * @param path
+	 * @return an unmodifiable list of paths (i.e a result column)
+	 */
 	public List<GrPath> resultOf(JcPath path) {
 		return this.resultHandler.getPaths(path);
 	}
@@ -93,9 +103,7 @@ public class JcQueryResult {
 	}
 	
 	public Graph getGraph() {
-		if (this.graph == null)
-			this.graph = GrAccess.createGraph(this.resultHandler);
-		return this.graph;
+		return this.resultHandler.getGraph();
 	}
 
 	/**

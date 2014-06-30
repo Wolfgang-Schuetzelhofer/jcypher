@@ -21,9 +21,26 @@ import iot.jcypher.result.util.ResultHandler;
 public class Graph {
 
 	private ResultHandler resultHandler;
+	private SyncState syncState;
 
 	Graph(ResultHandler resultHandler) {
 		super();
 		this.resultHandler = resultHandler;
+	}
+	
+	public GrNode createNode() {
+		return null;
+	}
+	
+	public GrRelation createRelation(String type, GrNode startNode, GrNode endNode) {
+		return null;
+	}
+
+	SyncState getSyncState() {
+		return syncState;
+	}
+
+	void setSyncState(SyncState syncState) {
+		this.syncState = syncState;
 	}
 }

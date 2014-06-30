@@ -23,7 +23,12 @@ import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrRelation;
+import iot.jcypher.graph.Graph;
+import iot.jcypher.graph.PersistableItem;
 import iot.jcypher.graph.SyncState;
+import iot.jcypher.graph.internal.ChangeListener;
+import iot.jcypher.graph.internal.GrId;
+import iot.jcypher.graph.internal.LocalId;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
@@ -39,6 +44,7 @@ import iot.jcypher.query.writer.WriterContext;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -54,9 +60,13 @@ import javax.json.JsonValue.ValueType;
 
 public class ResultHandler {
 
+	private Graph graph;
 	private JcQueryResult queryResult;
+	private NodeRelationListener nodeRelationListener;
 	private Map<Long, GrNode> nodesById;
+	private Map<Long, GrNode> changedNodesById;
 	private Map<Long, GrRelation> relationsById;
+	private Map<Long, GrRelation> changedRelationsById;
 	private Map<String, List<GrNode>> nodeColumns;
 	private Map<String, List<GrRelation>> relationColumns;
 	private Map<String, List<GrPath>> pathColumns;
@@ -71,11 +81,30 @@ public class ResultHandler {
 		this.queryResult = queryResult;
 	}
 	
-	public List<GrNode> getNodes(JcNode node) {
-		String colKey =  ValueAccess.getName(node);
-		return getNodes(colKey);
+	public Graph getGraph() {
+		if (this.graph == null) {
+			this.graph = GrAccess.createGraph(this);
+			GrAccess.setGraphState(this.graph, SyncState.SYNC);
+		}
+		return this.graph;
 	}
 	
+	public List<GrNode> getNodes(JcNode node) {
+		String colKey =  ValueAccess.getName(node);
+		List<GrNode> nds = getNodes(colKey);
+		nds = filterRemovedItems(nds);
+		return Collections.unmodifiableList(nds);
+	}
+	
+	private <T extends PersistableItem> List<T> filterRemovedItems(List<T> items) {
+		ArrayList<T> rItems = new ArrayList<T>();
+		for (T item : items) {
+			if (GrAccess.getState(item) != SyncState.REMOVED)
+				rItems.add(item);
+		}
+		return rItems;
+	}
+
 	private List<GrNode> getNodes(String colKey) {
 		List<GrNode> rNodes = getNodeColumns().get(colKey);
 		if (rNodes == null) {
@@ -91,8 +120,9 @@ public class ResultHandler {
 				ElementInfo ei = getElementInfo(dataObject, colIdx);
 				GrNode rNode = getNodesById().get(ei.id);
 				if (rNode == null) {
-					rNode = GrAccess.createNode(this, ei.id, rowIdx);
+					rNode = GrAccess.createNode(this, new GrId(ei.id), rowIdx);
 					GrAccess.setState(rNode, SyncState.SYNC);
+					GrAccess.addChangeListener(getNodeRelationListener(), rNode);
 					getNodesById().put(ei.id, rNode);
 				}
 				rNodes.add(rNode);
@@ -105,7 +135,9 @@ public class ResultHandler {
 	
 	public List<GrRelation> getRelations(JcRelation relation) {
 		String colKey =  ValueAccess.getName(relation);
-		return getRelations(colKey);
+		List<GrRelation> rels = getRelations(colKey);
+		rels = filterRemovedItems(rels);
+		return Collections.unmodifiableList(rels);
 	}
 	
 	private List<GrRelation> getRelations(String colKey) {
@@ -124,9 +156,10 @@ public class ResultHandler {
 				RelationInfo ri = getRelationInfo(dataObject, colIdx);
 				GrRelation rRelation = getRelationsById().get(ei.id);
 				if (rRelation == null) {
-					rRelation = GrAccess.createRelation(this, ei.id,
-							ri.startNodeId, ri.endNodeId, rowIdx);
+					rRelation = GrAccess.createRelation(this, new GrId(ei.id),
+							new GrId(ri.startNodeId), new GrId(ri.endNodeId), rowIdx);
 					GrAccess.setState(rRelation, SyncState.SYNC);
+					GrAccess.addChangeListener(getNodeRelationListener(), rRelation);
 					getRelationsById().put(ei.id, rRelation);
 				}
 				rRelations.add(rRelation);
@@ -158,7 +191,7 @@ public class ResultHandler {
 				long endId = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
 				JsonArray rels = pathObject.getJsonArray("relationships");
 				JsonArray nodes = null;
-				List<Long> relIds = new ArrayList<Long>();
+				List<GrId> relIds = new ArrayList<GrId>();
 				int sz = rels.size();
 				long sid;
 				long eid = startId;
@@ -172,19 +205,20 @@ public class ResultHandler {
 						sid = eid;
 						str = nodes.getString(i + 1);
 						eid = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
-						rRelation = GrAccess.createRelation(this, rid,
-								sid, eid, rowIdx);
+						rRelation = GrAccess.createRelation(this, new GrId(rid),
+								new GrId(sid), new GrId(eid), rowIdx);
 						GrAccess.setState(rRelation, SyncState.SYNC);
+						GrAccess.addChangeListener(getNodeRelationListener(), rRelation);
 						getRelationsById().put(rid, rRelation);
 					}
-					relIds.add(Long.valueOf(rid));
+					relIds.add(new GrId(rid));
 				}
-				GrPath rPath = GrAccess.createPath(this, startId, endId, relIds, rowIdx);
+				GrPath rPath = GrAccess.createPath(this, new GrId(startId), new GrId(endId), relIds, rowIdx);
 				rPaths.add(rPath);
 			}
 			getPathColumns().put(colKey, rPaths);
 		}
-		return rPaths;
+		return Collections.unmodifiableList(rPaths);
 	}
 	
 	public List<BigDecimal> getNumbers(JcNumber number) {
@@ -207,7 +241,19 @@ public class ResultHandler {
 		return this.getValues(val);
 	}
 	
-	public GrNode getNode(long id, int rowIdx) {
+	public GrNode getNode(GrId id, int rowIdx) {
+		if (id instanceof LocalId)
+			return getLocalNode(id.getId());
+		else
+			return getNode(id.getId(), rowIdx);
+	}
+	
+	private GrNode getLocalNode(long id) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	private GrNode getNode(long id, int rowIdx) {
 		GrNode rNode = getNodesById().get(id);
 		if (rNode == null) {
 			// first resolve unresolved columns
@@ -242,15 +288,19 @@ public class ResultHandler {
 			}
 		}
 		if (rNode == null) {
-			rNode = GrAccess.createNode(this, id, rowIdx);
+			rNode = GrAccess.createNode(this, new GrId(id), rowIdx);
 			GrAccess.setState(rNode, SyncState.SYNC);
+			GrAccess.addChangeListener(getNodeRelationListener(), rNode);
 			getNodesById().put(id, rNode);
 		}
 		return rNode;
 	}
 	
-	public GrRelation getRelation(long id) {
-		return getRelationsById().get(id);
+	public GrRelation getRelation(GrId id) {
+		if (id instanceof LocalId) {
+			return null;
+		} else
+			return getRelationsById().get(id.getId());
 	}
 	
 	public String getRelationType(long relationId, int rowIndex) {
@@ -273,7 +323,14 @@ public class ResultHandler {
 		return null;
 	}
 	
-	public List<GrProperty> getNodeProperties(long nodeId, int rowIndex) {
+	public List<GrProperty> getNodeProperties(GrId nodeId, int rowIndex) {
+		if (nodeId instanceof LocalId)
+			return new ArrayList<GrProperty>();
+		else
+			return getNodeProperties(nodeId.getId(), rowIndex);
+	}
+	
+	private List<GrProperty> getNodeProperties(long nodeId, int rowIndex) {
 		List<GrProperty> props = new ArrayList<GrProperty>();
 		JsonObject propertiesObject = getPropertiesObject(nodeId, rowIndex, ElemType.NODE);
 		Iterator<Entry<String, JsonValue>> esIt = propertiesObject.entrySet().iterator();
@@ -299,7 +356,14 @@ public class ResultHandler {
 		return labels;
 	}
 	
-	public List<GrProperty> getRelationProperties(long relationId, int rowIndex) {
+	public List<GrProperty> getRelationProperties(GrId relationId, int rowIndex) {
+		if (relationId instanceof LocalId)
+			return new ArrayList<GrProperty>();
+		else
+			return getRelationProperties(relationId.getId(), rowIndex);
+	}
+	
+	private List<GrProperty> getRelationProperties(long relationId, int rowIndex) {
 		List<GrProperty> props = new ArrayList<GrProperty>();
 		JsonObject propertiesObject = getPropertiesObject(relationId, rowIndex, ElemType.RELATION);
 		Iterator<Entry<String, JsonValue>> esIt = propertiesObject.entrySet().iterator();
@@ -506,6 +570,12 @@ public class ResultHandler {
 		JsonValue restVal = restArray.get(colIdx);
 		vals.add(restVal);
 	}
+	
+	private NodeRelationListener getNodeRelationListener() {
+		if (this.nodeRelationListener == null)
+			this.nodeRelationListener = new NodeRelationListener();
+		return this.nodeRelationListener;
+	}
 
 	private static Object convertJsonValue(JsonValue val) {
 		Object ret = null;
@@ -592,5 +662,47 @@ public class ResultHandler {
 			if (v != null)
 				this.values.add((T) v);
 		}
+	}
+	
+	/**************************************/
+	private class NodeRelationListener implements ChangeListener {
+
+		@Override
+		public void changed(Object theChanged, SyncState oldState,
+				SyncState newState) {
+			boolean possiblyReturnedToSync = false;
+			
+			if (newState == SyncState.CHANGED) {
+				if (theChanged instanceof GrNode) {
+					if (changedNodesById == null)
+						changedNodesById = new HashMap<Long, GrNode>();
+					changedNodesById.put(((GrNode)theChanged).getId(), (GrNode)theChanged);
+				} else if (theChanged instanceof GrRelation) {
+					if (changedRelationsById == null)
+						changedRelationsById = new HashMap<Long, GrRelation>();
+					changedRelationsById.put(((GrRelation)theChanged).getId(), (GrRelation)theChanged);
+				}
+				if (GrAccess.getGraphState(getGraph()) == SyncState.SYNC)
+					GrAccess.setGraphState(getGraph(), SyncState.CHANGED);
+			} else if (newState == SyncState.SYNC) {
+				if (theChanged instanceof GrNode) {
+					if (changedNodesById != null)
+						changedNodesById.remove(((GrNode)theChanged).getId());
+				} else if (theChanged instanceof GrRelation) {
+					if (changedRelationsById != null)
+						changedRelationsById.remove(((GrRelation)theChanged).getId());
+				}
+				if ((changedNodesById == null || changedNodesById.size() == 0) &&
+						(changedRelationsById == null || changedRelationsById.size() == 0))
+					possiblyReturnedToSync = true;
+			}
+			
+			if (possiblyReturnedToSync) {
+				// TODO check for new elements
+				if (GrAccess.getGraphState(getGraph()) == SyncState.CHANGED)
+					GrAccess.setGraphState(getGraph(), SyncState.SYNC);
+			}
+		}
+		
 	}
 }

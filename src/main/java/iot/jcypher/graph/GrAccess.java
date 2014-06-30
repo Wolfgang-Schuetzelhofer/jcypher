@@ -18,21 +18,23 @@ package iot.jcypher.graph;
 
 import java.util.List;
 
+import iot.jcypher.graph.internal.ChangeListener;
+import iot.jcypher.graph.internal.GrId;
 import iot.jcypher.result.util.ResultHandler;
 
 public class GrAccess {
 
-	public static GrNode createNode(ResultHandler rh, long id, int rowIdx) {
+	public static GrNode createNode(ResultHandler rh, GrId id, int rowIdx) {
 		return new GrNode(rh, id, rowIdx);
 	}
 	
-	public static GrRelation createRelation(ResultHandler rh, long id,
-			long startNodeId, long endNodeId, int rowIdx) {
+	public static GrRelation createRelation(ResultHandler rh, GrId id,
+			GrId startNodeId, GrId endNodeId, int rowIdx) {
 		return new GrRelation(rh, id, startNodeId, endNodeId, rowIdx);
 	}
 	
 	public static GrPath createPath(ResultHandler rh,
-			long startNodeId, long endNodeId, List<Long> relIds, int rowIdx) {
+			GrId startNodeId, GrId endNodeId, List<GrId> relIds, int rowIdx) {
 		return new GrPath(rh, startNodeId, endNodeId, relIds, rowIdx);
 	}
 	
@@ -48,7 +50,27 @@ public class GrAccess {
 		return new Graph(resultHandler);
 	}
 	
-	public static void setState(GrPersistentStateNotifier pn, SyncState state) {
-		pn.setSyncState(state);
+	public static void setState(PersistableItem item, SyncState state) {
+		item.setSyncState(state);
+	}
+	
+	public static SyncState getState(PersistableItem item) {
+		return item.getSyncState();
+	}
+	
+	public static void setGraphState(Graph graph, SyncState state) {
+		graph.setSyncState(state);
+	}
+	
+	public static SyncState getGraphState(Graph graph) {
+		return graph.getSyncState();
+	}
+	
+	public static void addChangeListener(ChangeListener listener, PersistableItem item) {
+		item.addChangeListener(listener);
+	}
+	
+	public static void removeChangeListener(ChangeListener listener, PersistableItem item) {
+		item.removeChangeListener(listener);
 	}
 }

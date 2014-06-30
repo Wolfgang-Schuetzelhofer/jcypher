@@ -21,10 +21,23 @@ import iot.jcypher.graph.internal.ChangeListener;
 import java.util.ArrayList;
 import java.util.List;
 
-abstract class GrPersistentStateNotifier {
+public abstract class PersistableItem {
 	
 	private List<ChangeListener> changeListeners;
 	protected SyncState syncState;
+	
+	/**
+	 * removes this item
+	 */
+	public void remove() {
+		SyncState oldState = this.syncState;
+		if (this.syncState == SyncState.NEW || this.syncState == SyncState.NEW_REMOVED)
+			this.syncState = SyncState.NEW_REMOVED;
+		else
+			this.syncState = SyncState.REMOVED;
+		if (oldState != this.syncState)
+			fireChanged(oldState, this.syncState);
+	}
 	
 	void addChangeListener(ChangeListener listener) {
 		if (this.changeListeners == null)

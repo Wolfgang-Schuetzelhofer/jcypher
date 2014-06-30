@@ -19,6 +19,7 @@ package iot.jcypher.graph;
 import java.util.ArrayList;
 import java.util.List;
 
+import iot.jcypher.graph.internal.GrId;
 import iot.jcypher.result.util.ResultHandler;
 
 public class GrPath {
@@ -26,12 +27,12 @@ public class GrPath {
 	private ResultHandler resultHandler;
 	private int rowIndex;
 	
-	private long startNodeId;
-	private long endNodeId;
-	private List<Long> relationIds;
+	private GrId startNodeId;
+	private GrId endNodeId;
+	private List<GrId> relationIds;
 	
-	GrPath(ResultHandler resultHandler, long startNodeId,
-			long endNodeId, List<Long> relationIds, int rowIndex) {
+	GrPath(ResultHandler resultHandler, GrId startNodeId,
+			GrId endNodeId, List<GrId> relationIds, int rowIndex) {
 		super();
 		this.resultHandler = resultHandler;
 		this.rowIndex = rowIndex;
@@ -50,8 +51,8 @@ public class GrPath {
 	
 	public List<GrRelation> getRelations() {
 		List<GrRelation> rels = new ArrayList<GrRelation>(this.relationIds.size());
-		for (Long rid : this.relationIds) {
-			rels.add(this.resultHandler.getRelation(rid.longValue()));
+		for (GrId rid : this.relationIds) {
+			rels.add(this.resultHandler.getRelation(rid));
 		}
 		return rels;
 	}

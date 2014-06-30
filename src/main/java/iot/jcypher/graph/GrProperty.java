@@ -16,7 +16,8 @@
 
 package iot.jcypher.graph;
 
-public class GrProperty extends GrPersistentStateNotifier {
+
+public class GrProperty extends PersistableItem {
 
 	private String name;
 	private Object value;
@@ -47,17 +48,18 @@ public class GrProperty extends GrPersistentStateNotifier {
 				fireChanged(oldState, this.syncState);
 		}
 	}
-	
-	/**
-	 * removes this property
-	 */
-	public void remove() {
-		SyncState oldState = this.syncState;
-		if (this.syncState == SyncState.NEW || this.syncState == SyncState.NEW_REMOVED)
-			this.syncState = SyncState.NEW_REMOVED;
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("Property: ");
+		sb.append(this.name);
+		sb.append(" = ");
+		if (this.value != null)
+			sb.append(this.value);
 		else
-			this.syncState = SyncState.REMOVED;
-		if (oldState != this.syncState)
-			fireChanged(oldState, this.syncState);
+			sb.append("null");
+		return sb.toString();
 	}
+	
 }

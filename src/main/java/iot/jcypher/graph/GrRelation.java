@@ -16,16 +16,17 @@
 
 package iot.jcypher.graph;
 
+import iot.jcypher.graph.internal.GrId;
 import iot.jcypher.result.util.ResultHandler;
 
 public class GrRelation extends GrPropertyContainer {
 
-	private long startNodeId;
-	private long endNodeId;
+	private GrId startNodeId;
+	private GrId endNodeId;
 	private String type;
 	
-	GrRelation(ResultHandler resultHandler, long id,
-			long startNodeId, long endNodeId, int rowIdx) {
+	GrRelation(ResultHandler resultHandler, GrId id,
+			GrId startNodeId, GrId endNodeId, int rowIdx) {
 		super(resultHandler, id, rowIdx);
 		this.startNodeId = startNodeId;
 		this.endNodeId = endNodeId;
