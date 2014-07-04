@@ -64,8 +64,10 @@ public class ResultHandler {
 	private JcQueryResult queryResult;
 	private NodeRelationListener nodeRelationListener;
 	private Map<Long, GrNode> nodesById;
+	// contains changed and removed (deleted) nodes
 	private Map<Long, GrNode> changedNodesById;
 	private Map<Long, GrRelation> relationsById;
+	// contains changed and removed (deleted) relations
 	private Map<Long, GrRelation> changedRelationsById;
 	private Map<String, List<GrNode>> nodeColumns;
 	private Map<String, List<GrRelation>> relationColumns;
@@ -672,7 +674,7 @@ public class ResultHandler {
 				SyncState newState) {
 			boolean possiblyReturnedToSync = false;
 			
-			if (newState == SyncState.CHANGED) {
+			if (newState == SyncState.CHANGED || newState == SyncState.REMOVED) {
 				if (theChanged instanceof GrNode) {
 					if (changedNodesById == null)
 						changedNodesById = new HashMap<Long, GrNode>();

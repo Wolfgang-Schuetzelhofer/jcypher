@@ -20,16 +20,25 @@ public class JcError {
 
 	private String codeOrType;
 	private String message;
+	private String additionalInfo;
 	
-	public JcError(String codeOrType, String message) {
+	public JcError(String codeOrType, String message, String info) {
 		super();
 		this.codeOrType = codeOrType;
 		this.message = message;
+		this.additionalInfo = info;
 	}
 	public String getCodeOrType() {
 		return codeOrType;
 	}
 	public String getMessage() {
 		return message;
+	}
+	/**
+	 * may be null
+	 * @return
+	 */
+	public String getAdditionalInfo() {
+		return additionalInfo;
 	}
 }

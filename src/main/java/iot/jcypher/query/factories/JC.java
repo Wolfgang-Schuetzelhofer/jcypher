@@ -14,7 +14,7 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.query;
+package iot.jcypher.query.factories;
 
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;

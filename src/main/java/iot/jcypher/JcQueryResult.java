@@ -127,8 +127,11 @@ public class JcQueryResult {
 			int size = errs.size();
 			for (int i = 0; i < size; i++) {
 				JsonObject err = errs.getJsonObject(i);
+				String info = null;
+				if (err.containsKey("info"))
+					info = err.getString("info");
 				this.dbErrors.add(new JcError(err.getString("code"),
-						err.getString("message")));
+						err.getString("message"), info));
 			}
 		}
 		return this.dbErrors;

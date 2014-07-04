@@ -19,6 +19,7 @@ package iot.jcypher.database.embedded;
 import iot.jcypher.CypherWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
+import iot.jcypher.database.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
 import iot.jcypher.query.writer.IQueryParam;
 import iot.jcypher.query.writer.QueryParam;
@@ -26,6 +27,8 @@ import iot.jcypher.query.writer.QueryParamSet;
 import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.result.JcError;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -99,8 +102,13 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 				if (tx != null)
 					tx.failure();
 			} finally {
-				if (tx != null)
-					tx.close();
+				if (tx != null) {
+					try {
+						tx.close();
+					} catch(Throwable e1) {
+						dbException = e1;
+					}
+				}
 			}
 		}
 		
@@ -113,7 +121,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		if (exception != null) {
 			String typ = exception.getClass().getSimpleName();
 			String msg = exception.getLocalizedMessage();
-			ret.addGeneralError(new JcError(typ, msg));
+			ret.addGeneralError(new JcError(typ, msg, DBUtil.getStacktrace(exception)));
 		}
 		return ret;
 	}
@@ -143,6 +151,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		JsonObjectBuilder errorObject = Json.createObjectBuilder();
 		errorObject.add("code", code);
 		errorObject.add("message", msg);
+		errorObject.add("info", DBUtil.getStacktrace(exception));
 		builderContext.errorsArray.add(errorObject);
 	}
 

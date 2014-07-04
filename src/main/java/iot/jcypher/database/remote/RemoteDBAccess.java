@@ -20,6 +20,7 @@ import iot.jcypher.JSONWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.DBProperties;
+import iot.jcypher.database.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
 import iot.jcypher.query.writer.ContextAccess;
 import iot.jcypher.query.writer.WriterContext;
@@ -94,11 +95,11 @@ public class RemoteDBAccess implements IDBAccessInit {
 		if (exception != null) {
 			String typ = exception.getClass().getSimpleName();
 			String msg = exception.getLocalizedMessage();
-			ret.addGeneralError(new JcError(typ, msg));
+			ret.addGeneralError(new JcError(typ, msg, DBUtil.getStacktrace(exception)));
 		} else if (status != null && status.getStatusCode() >= 400) {
 			String code = String.valueOf(status.getStatusCode());
 			String msg = status.getReasonPhrase();
-			ret.addGeneralError(new JcError(code, msg));
+			ret.addGeneralError(new JcError(code, msg, null));
 		}
 		return ret;
 	}

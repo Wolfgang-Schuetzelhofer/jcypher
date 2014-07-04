@@ -129,7 +129,7 @@ public abstract class PersistableItemsContainer<T extends PersistableItem> {
 					setContainerSyncState(SyncState.CHANGED);
 				// possibly reverts the CHANGED state
 			} else if (getContainerSyncState() == SyncState.CHANGED
-					&& newState == SyncState.NEW_REMOVED) {
+					&& (newState == SyncState.NEW_REMOVED || newState == SyncState.SYNC)) {
 				if (checkContainerForSyncState())
 					setContainerSyncState(SyncState.SYNC);
 			}

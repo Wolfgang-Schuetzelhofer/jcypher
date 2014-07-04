@@ -34,8 +34,10 @@ import iot.jcypher.graph.GrRelation;
 import iot.jcypher.graph.Graph;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.CREATE;
+import iot.jcypher.query.factories.clause.DO;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
@@ -65,7 +67,8 @@ public class MovieDatabase {
 //		queryNodeCount();
 //		queryLikes();
 //		queryMovies();
-		queryMovieGraph();
+//		queryMovieGraph();
+		queryMovieGraph_01();
 		
 		/** close the connection to a Neo4j database */
 		closeDBConnection();
@@ -309,6 +312,51 @@ public class MovieDatabase {
 		return;
 	}
 	
+	static void queryMovieGraph_01() {
+		JcQuery query;
+		JcQueryResult result;
+		
+		String queryTitle = "MOVIE_GRAPH";
+		JcNode n = new JcNode("n");
+		JcRelation r = new JcRelation("r");
+		JcPath p = new JcPath("p");
+		
+		query = new JcQuery();
+		query.setClauses(new IClause[] {
+				START.node(n).byId(4),
+				DO.DELETE(n)
+		});
+//		query.setClauses(new IClause[] {
+//				MATCH.path(p).node().relation().out().type("ACTS_IN").node()
+//						.relation().in().type("ACTS_IN").node(),
+//				RETURN.ALL()
+//		});
+		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
+	     This will show what normally is created in the background when accessing a Neo4j database*/
+		print(query, queryTitle, Format.PRETTY_3);
+		
+		/** execute the query against a Neo4j database */
+		result = dbAccess.execute(query);
+		if (result.hasErrors())
+			printErrors(result);
+		
+		/** print the JSON representation of the query result */
+		print(result, queryTitle);
+		
+		GrNode sNode;
+		GrNode eNode;
+		
+		Graph graph = result.getGraph();
+		List<GrPath> pr = result.resultOf(p);
+		for (GrPath path : pr) {
+			sNode = path.getStartNode();
+			sNode.remove();
+			String tst = null;
+		}
+		
+		return;
+	}
+	
 	/**
 	 * initialize connection to a Neo4j database
 	 */
@@ -402,6 +450,10 @@ public class MovieDatabase {
 			sb.append(err.getCodeOrType());
 			sb.append("\nmessage: ");
 			sb.append(err.getMessage());
+			if (err.getAdditionalInfo() != null) {
+				sb.append("\nadditional info: ");
+				sb.append(err.getAdditionalInfo());
+			}
 		}
 	}
 }
