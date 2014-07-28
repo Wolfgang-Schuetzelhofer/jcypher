@@ -78,16 +78,18 @@ public class ResultHandler {
 	// only needed to lookup nodes and relations
 	private List<String> unResolvedColumns;
 
+	/**
+	 * construct a ResultHandler initialized with a queryResult
+	 * @param queryResult
+	 */
 	public ResultHandler(JcQueryResult queryResult) {
 		super();
 		this.queryResult = queryResult;
+		this.graph = GrAccess.createGraph(this);
+		GrAccess.setGraphState(this.graph, SyncState.SYNC);
 	}
 	
 	public Graph getGraph() {
-		if (this.graph == null) {
-			this.graph = GrAccess.createGraph(this);
-			GrAccess.setGraphState(this.graph, SyncState.SYNC);
-		}
 		return this.graph;
 	}
 	

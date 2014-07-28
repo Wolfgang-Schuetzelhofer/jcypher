@@ -83,7 +83,7 @@ public abstract class GrPropertyContainer extends GrElement {
 		return null;
 	}
 	
-	protected boolean checkForPropertiesSyncState() {
+	protected boolean testForSyncState() {
 		if (this.propertiesContainer != null) {
 			return this.propertiesContainer.checkForSyncState();
 		}
@@ -111,7 +111,7 @@ public abstract class GrPropertyContainer extends GrElement {
 
 		@Override
 		protected boolean checkContainerForSyncState() {
-			return GrPropertyContainer.this.checkForPropertiesSyncState();
+			return testForSyncState();
 		}
 
 		@Override

@@ -67,8 +67,8 @@ public class MovieDatabase {
 //		queryNodeCount();
 //		queryLikes();
 //		queryMovies();
-//		queryMovieGraph();
-		queryMovieGraph_01();
+		queryMovieGraph();
+//		queryMovieGraph_01();
 		
 		/** close the connection to a Neo4j database */
 		closeDBConnection();
@@ -271,6 +271,7 @@ public class MovieDatabase {
 		
 		Graph graph = result.getGraph();
 		List<GrPath> pr = result.resultOf(p);
+		// TODO extract as unit test, check states
 		for (GrPath path : pr) {
 			List<GrRelation> rels = path.getRelations();
 			for (GrRelation rel : rels) {

@@ -46,11 +46,15 @@ public class GrNode extends GrPropertyContainer {
 		return getLabelsContainer().addElement(lab);
 	}
 	
-	protected boolean checkForLabelsSyncState() {
-		if (this.labelsContainer != null) {
-			return this.labelsContainer.checkForSyncState();
+	@Override
+	protected boolean testForSyncState() {
+		if (super.testForSyncState()) {
+			if (this.labelsContainer != null) {
+				return this.labelsContainer.checkForSyncState();
+			}
+			return true;
 		}
-		return true;
+		return false;
 	}
 
 	private List<GrLabel> resolveLabels() {
@@ -94,10 +98,7 @@ public class GrNode extends GrPropertyContainer {
 
 		@Override
 		protected boolean checkContainerForSyncState() {
-			if (GrNode.this.checkForPropertiesSyncState()) {
-				return GrNode.this.checkForLabelsSyncState();
-			}
-			return false;
+			return testForSyncState();
 		}
 
 		@Override
