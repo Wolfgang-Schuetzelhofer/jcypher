@@ -33,6 +33,11 @@ public class GrAccess {
 		return new GrRelation(rh, id, startNodeId, endNodeId, rowIdx);
 	}
 	
+	public static GrRelation createRelation(ResultHandler rh, GrId id,
+			GrId startNodeId, GrId endNodeId, String type) {
+		return new GrRelation(rh, id, startNodeId, endNodeId, type);
+	}
+	
 	public static GrPath createPath(ResultHandler rh,
 			GrId startNodeId, GrId endNodeId, List<GrId> relIds, int rowIdx) {
 		return new GrPath(rh, startNodeId, endNodeId, relIds, rowIdx);
@@ -72,5 +77,13 @@ public class GrAccess {
 	
 	public static void removeChangeListener(ChangeListener listener, PersistableItem item) {
 		item.removeChangeListener(listener);
+	}
+	
+	public static GrId getGrId(GrPropertyContainer pc) {
+		return pc.getGrId();
+	}
+	
+	public static void notifyState(PersistableItem item) {
+		item.notifyState();
 	}
 }

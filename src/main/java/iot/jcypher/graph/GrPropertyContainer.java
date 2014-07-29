@@ -31,6 +31,10 @@ public abstract class GrPropertyContainer extends GrElement {
 		this.id = id;
 		this.syncState = SyncState.NEW;
 	}
+	
+	GrId getGrId() {
+		return this.id;
+	}
 
 	public long getId() {
 		return this.id.getId();

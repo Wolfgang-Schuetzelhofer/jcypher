@@ -31,6 +31,14 @@ public class GrRelation extends GrPropertyContainer {
 		this.startNodeId = startNodeId;
 		this.endNodeId = endNodeId;
 	}
+	
+	GrRelation(ResultHandler resultHandler, GrId id,
+			GrId startNodeId, GrId endNodeId, String typ) {
+		super(resultHandler, id, -1);
+		this.startNodeId = startNodeId;
+		this.endNodeId = endNodeId;
+		this.type = typ;
+	}
 
 	public GrNode getStartNode() {
 		return this.resultHandler.getNode(this.startNodeId, this.rowIndex);

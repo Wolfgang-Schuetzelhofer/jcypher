@@ -16,6 +16,11 @@
 
 package iot.jcypher.graph;
 
+import java.util.HashMap;
+import java.util.Map;
+
+import iot.jcypher.graph.internal.LocalId;
+import iot.jcypher.result.util.LocalIdBuilder;
 import iot.jcypher.result.util.ResultHandler;
 
 public class Graph {
@@ -28,12 +33,23 @@ public class Graph {
 		this.resultHandler = resultHandler;
 	}
 	
+	/**
+	 * create a node in the graph
+	 * @return a GrNode
+	 */
 	public GrNode createNode() {
-		return null;
+		return this.resultHandler.getLocalElements().createNode();
 	}
 	
+	/**
+	 * create a relation in the graph
+	 * @param type
+	 * @param startNode
+	 * @param endNode
+	 * @return a GrRelation
+	 */
 	public GrRelation createRelation(String type, GrNode startNode, GrNode endNode) {
-		return null;
+		return this.resultHandler.getLocalElements().createRelation(type, startNode, endNode);
 	}
 
 	SyncState getSyncState() {

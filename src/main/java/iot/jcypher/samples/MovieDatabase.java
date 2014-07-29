@@ -67,8 +67,9 @@ public class MovieDatabase {
 //		queryNodeCount();
 //		queryLikes();
 //		queryMovies();
-		queryMovieGraph();
+//		queryMovieGraph();
 //		queryMovieGraph_01();
+		queryMovieGraph_02();
 		
 		/** close the connection to a Neo4j database */
 		closeDBConnection();
@@ -354,6 +355,67 @@ public class MovieDatabase {
 			sNode.remove();
 			String tst = null;
 		}
+		
+		return;
+	}
+	
+	/**
+	 * Query the entire graph
+	 */
+	static void queryMovieGraph_02() {
+		JcQuery query;
+		JcQueryResult result;
+		
+		String queryTitle = "MOVIE_GRAPH_02";
+		JcNode n = new JcNode("n");
+		JcRelation r = new JcRelation("r");
+		JcPath p = new JcPath("p");
+		
+		query = new JcQuery();
+//		query.setClauses(new IClause[] {
+//				MATCH.path(p).node(n).relation(r).out().node(),
+//				//RETURN.value(n.property("name"))
+//				RETURN.ALL()
+//		});
+		query.setClauses(new IClause[] {
+				MATCH.path(p).node().relation().out().type("ACTS_IN").node()
+						.relation().in().type("ACTS_IN").node(),
+				RETURN.ALL()
+		});
+		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
+	     This will show what normally is created in the background when accessing a Neo4j database*/
+		print(query, queryTitle, Format.PRETTY_3);
+		
+		/** execute the query against a Neo4j database */
+		result = dbAccess.execute(query);
+		if (result.hasErrors())
+			printErrors(result);
+		
+		/** print the JSON representation of the query result */
+		print(result, queryTitle);
+		
+		GrNode sNode;
+		GrNode eNode;
+		GrRelation relat;
+		
+		Graph graph = result.getGraph();
+		sNode = graph.createNode();
+		eNode = graph.createNode();
+		relat = graph.createRelation("LocalRelation", sNode, eNode);
+		
+		GrProperty prop = sNode.addProperty("state", "NEW");
+		GrLabel lab = eNode.addLabel("Person");
+		List<GrProperty> props = sNode.getProperties();
+		List<GrLabel> labs = eNode.getLabels();
+		
+		prop.remove();
+		lab.remove();
+		props = sNode.getProperties();
+		labs = eNode.getLabels();
+
+		sNode.remove();
+		eNode.remove();
+		relat.remove();
 		
 		return;
 	}

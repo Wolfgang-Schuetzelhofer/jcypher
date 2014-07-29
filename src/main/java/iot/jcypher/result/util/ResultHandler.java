@@ -61,6 +61,7 @@ import javax.json.JsonValue.ValueType;
 public class ResultHandler {
 
 	private Graph graph;
+	private LocalElements localElements;
 	private JcQueryResult queryResult;
 	private NodeRelationListener nodeRelationListener;
 	private Map<Long, GrNode> nodesById;
@@ -85,10 +86,15 @@ public class ResultHandler {
 	public ResultHandler(JcQueryResult queryResult) {
 		super();
 		this.queryResult = queryResult;
+		this.localElements = new LocalElements();
 		this.graph = GrAccess.createGraph(this);
 		GrAccess.setGraphState(this.graph, SyncState.SYNC);
 	}
 	
+	public LocalElements getLocalElements() {
+		return localElements;
+	}
+
 	public Graph getGraph() {
 		return this.graph;
 	}
@@ -253,8 +259,7 @@ public class ResultHandler {
 	}
 	
 	private GrNode getLocalNode(long id) {
-		// TODO Auto-generated method stub
-		return null;
+		return this.localElements.getNode(id);
 	}
 
 	private GrNode getNode(long id, int rowIdx) {
@@ -302,26 +307,32 @@ public class ResultHandler {
 	
 	public GrRelation getRelation(GrId id) {
 		if (id instanceof LocalId) {
-			return null;
+			return getLocalRelation(id.getId());
 		} else
 			return getRelationsById().get(id.getId());
 	}
 	
+	private GrRelation getLocalRelation(long id) {
+		return this.localElements.getRelation(id);
+	}
+
 	public String getRelationType(long relationId, int rowIndex) {
-		JsonObject graphObject = getGraphObject(rowIndex);
-		JsonArray elemsArray = graphObject.getJsonArray("relationships");
-		int sz = elemsArray.size();
-		for (int i = 0; i < sz; i++) {
-			JsonObject elem = elemsArray.getJsonObject(i);
-			String idStr = elem.getString("id");
-			long elemId;
-			try {
-				elemId = Long.parseLong(idStr);
-			} catch (Throwable e) {
-				throw new RuntimeException(e);
-			}
-			if (relationId == elemId) {
-				return elem.getString("type");
+		if (rowIndex >= 0) {
+			JsonObject graphObject = getGraphObject(rowIndex);
+			JsonArray elemsArray = graphObject.getJsonArray("relationships");
+			int sz = elemsArray.size();
+			for (int i = 0; i < sz; i++) {
+				JsonObject elem = elemsArray.getJsonObject(i);
+				String idStr = elem.getString("id");
+				long elemId;
+				try {
+					elemId = Long.parseLong(idStr);
+				} catch (Throwable e) {
+					throw new RuntimeException(e);
+				}
+				if (relationId == elemId) {
+					return elem.getString("type");
+				}
 			}
 		}
 		return null;
@@ -350,12 +361,14 @@ public class ResultHandler {
 	
 	public List<GrLabel> getNodeLabels(long nodeId, int rowIndex) {
 		List<GrLabel> labels = new ArrayList<GrLabel>();
-		JsonArray labelsArray = getNodeLabelsObject(nodeId, rowIndex);
-		int sz = labelsArray.size();
-		for (int i = 0; i < sz; i++) {
-			GrLabel label = GrAccess.createLabel(labelsArray.getString(i));
-			GrAccess.setState(label, SyncState.SYNC);
-			labels.add(label);
+		if (rowIndex >= 0) {
+			JsonArray labelsArray = getNodeLabelsObject(nodeId, rowIndex);
+			int sz = labelsArray.size();
+			for (int i = 0; i < sz; i++) {
+				GrLabel label = GrAccess.createLabel(labelsArray.getString(i));
+				GrAccess.setState(label, SyncState.SYNC);
+				labels.add(label);
+			}
 		}
 		return labels;
 	}
@@ -696,17 +709,90 @@ public class ResultHandler {
 					if (changedRelationsById != null)
 						changedRelationsById.remove(((GrRelation)theChanged).getId());
 				}
+			}  else if (newState == SyncState.NEW) {
+				if (GrAccess.getGraphState(getGraph()) == SyncState.SYNC)
+					GrAccess.setGraphState(getGraph(), SyncState.CHANGED);
+			}  else if (newState == SyncState.NEW_REMOVED) {
+				if (theChanged instanceof GrNode) {
+					localElements.removeNode(((GrNode)theChanged).getId());
+				} else if (theChanged instanceof GrRelation) {
+					localElements.removeRelation(((GrRelation)theChanged).getId());
+				}
+			}
+			
+			if (newState == SyncState.SYNC || newState == SyncState.NEW_REMOVED) {
 				if ((changedNodesById == null || changedNodesById.size() == 0) &&
-						(changedRelationsById == null || changedRelationsById.size() == 0))
+						(changedRelationsById == null || changedRelationsById.size() == 0) &&
+						localElements.isEmpty())
 					possiblyReturnedToSync = true;
 			}
 			
-			if (possiblyReturnedToSync) {
-				// TODO check for new elements
-				if (GrAccess.getGraphState(getGraph()) == SyncState.CHANGED)
-					GrAccess.setGraphState(getGraph(), SyncState.SYNC);
+			if (possiblyReturnedToSync && GrAccess.getGraphState(getGraph()) == SyncState.CHANGED) {
+				GrAccess.setGraphState(getGraph(), SyncState.SYNC);
 			}
 		}
+	}
+	
+	/**************************************/
+	public class LocalElements {
+		private LocalIdBuilder nodeIdBuilder;
+		private LocalIdBuilder relationIdBuilder;
 		
+		private Map<Long, GrNode> localNodesById;
+		private Map<Long, GrRelation> localRelationsById;
+		
+		public GrNode createNode() {
+			if (this.nodeIdBuilder == null)
+				this.nodeIdBuilder = new LocalIdBuilder();
+			LocalId lid =new LocalId(this.nodeIdBuilder.getId());
+			GrNode node = GrAccess.createNode(ResultHandler.this, lid, -1);
+			if (this.localNodesById == null)
+				this.localNodesById = new HashMap<Long, GrNode>();
+			GrAccess.addChangeListener(getNodeRelationListener(), node);
+			this.localNodesById.put(lid.getId(), node);
+			GrAccess.notifyState(node);
+			return node;
+		}
+		
+		public GrRelation createRelation(String type, GrNode startNode, GrNode endNode) {
+			if (this.relationIdBuilder == null)
+				this.relationIdBuilder = new LocalIdBuilder();
+			LocalId lid =new LocalId(this.relationIdBuilder.getId());
+			GrRelation relation = GrAccess.createRelation(ResultHandler.this, lid,
+					GrAccess.getGrId(startNode), GrAccess.getGrId(endNode), type);
+			if (this.localRelationsById == null)
+				this.localRelationsById = new HashMap<Long, GrRelation>();
+			GrAccess.addChangeListener(getNodeRelationListener(), relation);
+			this.localRelationsById.put(lid.getId(), relation);
+			GrAccess.notifyState(relation);
+			return relation;
+		}
+		
+		private GrNode getNode(long id) {
+			if (this.localNodesById != null)
+				return this.localNodesById.get(id);
+			return null;
+		}
+		
+		private GrRelation getRelation(long id) {
+			if (this.localRelationsById != null)
+				return this.localRelationsById.get(id);
+			return null;
+		}
+		
+		private void removeNode(long id) {
+			if (this.localNodesById != null)
+				this.localNodesById.remove(id);
+		}
+		
+		private void removeRelation(long id) {
+			if (this.localRelationsById != null)
+				this.localRelationsById.remove(id);
+		}
+		
+		private boolean isEmpty() {
+			return (this.localNodesById == null || this.localNodesById.size() == 0) &&
+					(this.localRelationsById == null || this.localRelationsById.size() == 0);
+		}
 	}
 }
