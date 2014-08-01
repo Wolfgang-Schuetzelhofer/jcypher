@@ -24,6 +24,7 @@ import iot.jcypher.query.writer.QueryParamSet;
 import iot.jcypher.query.writer.WriterContext;
 
 import java.io.StringWriter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -34,6 +35,45 @@ import javax.json.stream.JsonGeneratorFactory;
 public class JSONWriter {
 
 	private static JsonGeneratorFactory prettyGeneratorFactory;
+	
+	public static void toJSON(List<JcQuery> queries, WriterContext context) {
+		List<Statement> statements = new ArrayList<Statement>(queries.size());
+		Format cf = context.cypherFormat;
+		context.cypherFormat = Format.NONE;
+		boolean useTxEndpoint = ContextAccess.useTransationalEndpoint(context);
+		// needed for multiple statements
+		ContextAccess.setUseTransactionalEndpoint(true, context);
+		boolean extract = QueryParam.isExtractParams(context);
+		for (JcQuery query : queries) {
+			WriterContext ctxt = ContextAccess.cloneContext(context);
+			QueryParam.setExtractParams(query.isExtractParams(), ctxt);
+			CypherWriter.toCypherExpression(query, ctxt);
+			String cypher = ctxt.buffer.toString();
+			reInitContext(ctxt);
+			statements.add(new Statement(ctxt, cypher));
+		}
+		context.cypherFormat = cf;
+		
+		StringWriter sw = new StringWriter();
+		JsonGenerator generator;
+		if (context.cypherFormat != Format.NONE) {
+			JsonGeneratorFactory gf = getPrettyGeneratorFactory();
+			generator = gf.createGenerator(sw);
+		} else
+			generator = Json.createGenerator(sw);
+		
+		generator.writeStartObject();
+		Statement[] statementsArray = statements.toArray(new Statement[statements.size()]);
+		writeStatements(statementsArray, generator);
+		generator.writeEnd();
+
+		generator.flush();
+		context.buffer.append(sw.getBuffer());
+		
+		// reset to original
+		QueryParam.setExtractParams(extract, context);
+		ContextAccess.setUseTransactionalEndpoint(useTxEndpoint, context);
+	}
 	
 	public static void toJSON(JcQuery query, WriterContext context) {
 		Format cf = context.cypherFormat;

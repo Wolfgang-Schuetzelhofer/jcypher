@@ -27,6 +27,8 @@ import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.result.JcError;
 
 import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import javax.json.Json;
@@ -61,16 +63,23 @@ public class RemoteDBAccess implements IDBAccessInit {
 			throw new RuntimeException("missing property: '" +
 					DBProperties.SERVER_ROOT_URI + "' in database configuration");
 	}
-
+	
 	@Override
 	public JcQueryResult execute(JcQuery query) {
+		List<JcQuery> qList = new ArrayList<JcQuery>();
+		qList.add(query);
+		List<JcQueryResult> qrList = execute(qList);
+		return qrList.get(0);
+	}
+
+	@Override
+	public List<JcQueryResult> execute(List<JcQuery> queries) {
 		WriterContext context = new WriterContext();
-		// to create correct json for using transactional endpoint vs. using cypher endpoint
-		ContextAccess.setUseTransactionalEndpoint(true, context);
 		ContextAccess.getResultDataContents(context).add("rest");
 		ContextAccess.getResultDataContents(context).add("graph");
-		JSONWriter.toJSON(query, context);
+		JSONWriter.toJSON(queries, context);
 		String json = context.buffer.toString();
+
 		Response response = null;
 		Throwable exception = null;
 		try {
@@ -91,15 +100,20 @@ public class RemoteDBAccess implements IDBAccessInit {
 				jsonResult = reader.readObject();
 			}
 		}
-		JcQueryResult ret = new JcQueryResult(jsonResult);
-		if (exception != null) {
-			String typ = exception.getClass().getSimpleName();
-			String msg = exception.getLocalizedMessage();
-			ret.addGeneralError(new JcError(typ, msg, DBUtil.getStacktrace(exception)));
-		} else if (status != null && status.getStatusCode() >= 400) {
-			String code = String.valueOf(status.getStatusCode());
-			String msg = status.getReasonPhrase();
-			ret.addGeneralError(new JcError(code, msg, null));
+		
+		List<JcQueryResult> ret = new ArrayList<JcQueryResult>(queries.size());
+		for (int i = 0; i < queries.size(); i++) {
+			JcQueryResult qr = new JcQueryResult(jsonResult, i);
+			ret.add(qr);
+			if (exception != null) {
+				String typ = exception.getClass().getSimpleName();
+				String msg = exception.getLocalizedMessage();
+				qr.addGeneralError(new JcError(typ, msg, DBUtil.getStacktrace(exception)));
+			} else if (status != null && status.getStatusCode() >= 400) {
+				String code = String.valueOf(status.getStatusCode());
+				String msg = status.getReasonPhrase();
+				qr.addGeneralError(new JcError(code, msg, null));
+			}
 		}
 		return ret;
 	}

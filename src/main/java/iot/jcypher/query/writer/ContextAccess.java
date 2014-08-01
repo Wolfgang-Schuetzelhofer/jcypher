@@ -15,4 +15,12 @@ public class ContextAccess {
 	public static List<String> getResultDataContents(WriterContext context) {
 		return context.getResultDataContents();
 	}
+	
+	public static WriterContext cloneContext(WriterContext ctxt) {
+		WriterContext ret = new WriterContext();
+		ret.cypherFormat = ctxt.cypherFormat;
+		ret.extractParams = ctxt.extractParams;
+		ret.useTransactionalEndpoint = ctxt.useTransactionalEndpoint;
+		return ret;
+	}
 }

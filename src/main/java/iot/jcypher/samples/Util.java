@@ -19,6 +19,7 @@ package iot.jcypher.samples;
 import iot.jcypher.CypherWriter;
 import iot.jcypher.JSONWriter;
 import iot.jcypher.JcQuery;
+import iot.jcypher.query.writer.ContextAccess;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.WriterContext;
 
@@ -33,6 +34,7 @@ public class Util {
 	
 	public static String toJSON(JcQuery query, Format pretty) {
 		WriterContext context = new WriterContext();
+		//ContextAccess.setUseTransactionalEndpoint(true, context);
 		context.cypherFormat = pretty;
 		JSONWriter.toJSON(query, context);
 		return context.buffer.toString();

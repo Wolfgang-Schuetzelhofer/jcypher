@@ -16,11 +16,6 @@
 
 package iot.jcypher.graph;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import iot.jcypher.graph.internal.LocalId;
-import iot.jcypher.result.util.LocalIdBuilder;
 import iot.jcypher.result.util.ResultHandler;
 
 public class Graph {
@@ -31,6 +26,17 @@ public class Graph {
 	Graph(ResultHandler resultHandler) {
 		super();
 		this.resultHandler = resultHandler;
+	}
+	
+	/**
+	 * create an empty graph
+	 * @return
+	 */
+	public static Graph create() {
+		ResultHandler rh = new ResultHandler(null, -1);
+		Graph ret = rh.getGraph();
+		ret.setSyncState(SyncState.NEW);
+		return ret;
 	}
 	
 	/**
@@ -50,6 +56,21 @@ public class Graph {
 	 */
 	public GrRelation createRelation(String type, GrNode startNode, GrNode endNode) {
 		return this.resultHandler.getLocalElements().createRelation(type, startNode, endNode);
+	}
+	
+	/**
+	 * @return true, if the graph contains new or modified elements,
+	 * or if elements of the graph were removed.
+	 */
+	public boolean isModified() {
+		if (this.syncState == SyncState.NEW)
+			return !this.resultHandler.getLocalElements().isEmpty();
+		return this.syncState != SyncState.SYNC;
+	}
+	
+	public void store() {
+		if (isModified())
+			this.resultHandler.store();
 	}
 
 	SyncState getSyncState() {

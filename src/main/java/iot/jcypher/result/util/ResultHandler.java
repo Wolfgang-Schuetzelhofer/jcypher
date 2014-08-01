@@ -63,6 +63,8 @@ public class ResultHandler {
 	private Graph graph;
 	private LocalElements localElements;
 	private JcQueryResult queryResult;
+	// needed to support multiple queries
+	private int queryIndex;
 	private NodeRelationListener nodeRelationListener;
 	private Map<Long, GrNode> nodesById;
 	// contains changed and removed (deleted) nodes
@@ -82,10 +84,12 @@ public class ResultHandler {
 	/**
 	 * construct a ResultHandler initialized with a queryResult
 	 * @param queryResult
+	 * @param queryIndex
 	 */
-	public ResultHandler(JcQueryResult queryResult) {
+	public ResultHandler(JcQueryResult queryResult, int queryIndex) {
 		super();
 		this.queryResult = queryResult;
+		this.queryIndex = queryIndex;
 		this.localElements = new LocalElements();
 		this.graph = GrAccess.createGraph(this);
 		GrAccess.setGraphState(this.graph, SyncState.SYNC);
@@ -505,7 +509,8 @@ public class ResultHandler {
 		if (this.columns == null) {
 			this.columns = new ArrayList<String>();
 			JsonObject jsres = this.queryResult.getJsonResult();
-			JsonArray cols = ((JsonObject)jsres.getJsonArray("results").get(0)).getJsonArray("columns");
+			JsonArray cols = ((JsonObject)jsres.getJsonArray("results").get(
+					this.queryIndex)).getJsonArray("columns");
 			int sz = cols.size();
 			for (int i = 0;i < sz; i++) {
 				this.columns.add(cols.getString(i));
@@ -533,7 +538,8 @@ public class ResultHandler {
 	
 	private Iterator<JsonValue> getDataIterator() {
 		JsonObject jsres = this.queryResult.getJsonResult();
-		JsonArray datas = ((JsonObject)jsres.getJsonArray("results").get(0)).getJsonArray("data");
+		JsonArray datas = ((JsonObject)jsres.getJsonArray("results").get(
+				this.queryIndex)).getJsonArray("data");
 		return datas.iterator();
 	}
 	
@@ -543,7 +549,8 @@ public class ResultHandler {
 	
 	private JsonObject getDataObject(int rowIndex) {
 		JsonObject jsres = this.queryResult.getJsonResult();
-		JsonArray datas = ((JsonObject)jsres.getJsonArray("results").get(0)).getJsonArray("data");
+		JsonArray datas = ((JsonObject)jsres.getJsonArray("results").get(
+				this.queryIndex)).getJsonArray("data");
 		return datas.getJsonObject(rowIndex);
 	}
 	
@@ -618,6 +625,10 @@ public class ResultHandler {
 			//JsonObject obj = (JsonObject)val;
 		}
 		return ret;
+	}
+	
+	public void store() {
+		// TODO
 	}
 
 	/**************************************/
@@ -790,7 +801,7 @@ public class ResultHandler {
 				this.localRelationsById.remove(id);
 		}
 		
-		private boolean isEmpty() {
+		public boolean isEmpty() {
 			return (this.localNodesById == null || this.localNodesById.size() == 0) &&
 					(this.localRelationsById == null || this.localRelationsById.size() == 0);
 		}

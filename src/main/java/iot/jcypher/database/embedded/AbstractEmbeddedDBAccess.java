@@ -27,8 +27,6 @@ import iot.jcypher.query.writer.QueryParamSet;
 import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.result.JcError;
 
-import java.io.ByteArrayOutputStream;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -62,11 +60,23 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 
 	@Override
 	public JcQueryResult execute(JcQuery query) {
-		WriterContext context = new WriterContext();
-		QueryParam.setExtractParams(query.isExtractParams(), context);
-		CypherWriter.toCypherExpression(query, context);
-		String cypher = context.buffer.toString();
-		Map<String, Object> paramsMap = createQueryParams(context);
+		List<JcQuery> qList = new ArrayList<JcQuery>();
+		qList.add(query);
+		List<JcQueryResult> qrList = execute(qList);
+		return qrList.get(0);
+	}
+	
+	@Override
+	public List<JcQueryResult> execute(List<JcQuery> queries) {
+		List<Statement> statements = new ArrayList<Statement>(queries.size());
+		for (JcQuery query : queries) {
+			WriterContext context = new WriterContext();
+			QueryParam.setExtractParams(query.isExtractParams(), context);
+			CypherWriter.toCypherExpression(query, context);
+			String cypher = context.buffer.toString();
+			Map<String, Object> paramsMap = createQueryParams(context);
+			statements.add(new Statement(cypher, paramsMap));
+		}
 		JsonBuilderContext builderContext = new JsonBuilderContext();
     	initJsonBuilderContext(builderContext);
     	Throwable exception = null;
@@ -82,12 +92,13 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		if (engine != null) {
 			try {
 				tx = getGraphDB().beginTx();
-				if (paramsMap != null)
-					result = engine.execute(cypher, paramsMap);
-				else
-					result = engine.execute(cypher);
-			    tx.success();
-			    if (result != null) {
+				for (Statement statement : statements) {
+					if (statement.parameterMap != null)
+						result = engine.execute(statement.cypher, statement.parameterMap);
+					else
+						result = engine.execute(statement.cypher);
+					
+			    	addInnerResultsAndDataArray(builderContext);
 					List<String> cols = result.columns();
 					addColumns(builderContext, cols);
 					ResourceIterator<Map<String, Object>> iter = result.iterator();
@@ -97,6 +108,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 						addRow(builderContext, row, cols);
 					}
 				}
+				tx.success();
 			} catch (Throwable e) {
 				dbException = e;
 				if (tx != null)
@@ -115,13 +127,17 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		if (dbException != null) {
 			addDBError(builderContext, dbException);
 		}
-		
 		JsonObject jsonResult = builderContext.build();
-		JcQueryResult ret = new JcQueryResult(jsonResult);
-		if (exception != null) {
-			String typ = exception.getClass().getSimpleName();
-			String msg = exception.getLocalizedMessage();
-			ret.addGeneralError(new JcError(typ, msg, DBUtil.getStacktrace(exception)));
+		
+		List<JcQueryResult> ret = new ArrayList<JcQueryResult>(queries.size());
+		for (int i = 0; i < queries.size(); i++) {
+			JcQueryResult qr = new JcQueryResult(jsonResult, i);
+			ret.add(qr);
+			if (exception != null) {
+				String typ = exception.getClass().getSimpleName();
+				String msg = exception.getLocalizedMessage();
+				qr.addGeneralError(new JcError(typ, msg, DBUtil.getStacktrace(exception)));
+			}
 		}
 		return ret;
 	}
@@ -220,8 +236,13 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		builderContext.resultObject = Json.createObjectBuilder();
 		builderContext.resultsArray = Json.createArrayBuilder();
 		builderContext.errorsArray = Json.createArrayBuilder();
-		builderContext.innerResultsObject = Json.createObjectBuilder();
-		builderContext.dataArray = Json.createArrayBuilder();
+		builderContext.innerResultsObjects = new ArrayList<JsonObjectBuilder>();
+		builderContext.dataArrays = new ArrayList<JsonArrayBuilder>();
+	}
+	
+	private void addInnerResultsAndDataArray(JsonBuilderContext builderContext) {
+		builderContext.innerResultsObjects.add(Json.createObjectBuilder());
+		builderContext.dataArrays.add(Json.createArrayBuilder());
 	}
 	
 	private void addColumns(JsonBuilderContext builderContext, List<String> cols) {
@@ -229,7 +250,8 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		for (String col : cols) {
 			columns.add(col);
 		}
-		builderContext.innerResultsObject.add("columns", columns);
+		builderContext.innerResultsObjects.get(
+				builderContext.innerResultsObjects.size() - 1).add("columns", columns);
 	}
 	
 	private void addRow(JsonBuilderContext builderContext, Map<String, Object> row,
@@ -318,7 +340,8 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		graphObject.add("nodes", nodesArray);
 		graphObject.add("relationships", relationsArray);
 		rowObject.add("graph", graphObject);
-		builderContext.dataArray.add(rowObject);
+		builderContext.dataArrays.get(
+				builderContext.dataArrays.size() - 1).add(rowObject);
 	}
 	
 	private static void writeLiteralValue(Object val, JsonArrayBuilder array) {
@@ -400,12 +423,14 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		private JsonObjectBuilder resultObject;
 		private JsonArrayBuilder resultsArray;
 		private JsonArrayBuilder errorsArray;
-		private JsonObjectBuilder innerResultsObject;
-		private JsonArrayBuilder dataArray;
+		private List<JsonObjectBuilder> innerResultsObjects;
+		private List<JsonArrayBuilder> dataArrays;
 		
 		private JsonObject build() {
-			this.innerResultsObject.add("data", this.dataArray);
-			this.resultsArray.add(this.innerResultsObject);
+			for (int i = 0; i < this.innerResultsObjects.size(); i++) {
+				this.innerResultsObjects.get(i).add("data", this.dataArrays.get(i));
+				this.resultsArray.add(this.innerResultsObjects.get(i));
+			}
 			this.resultObject.add("results", this.resultsArray);
 			this.resultObject.add("errors", this.errorsArray);
 			return this.resultObject.build();
@@ -589,6 +614,18 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		private static class RelationNodes {
 			private Node startNode;
 			private Node endNode;
+		}
+	}
+	
+	/*******************************************/
+	private static class Statement {
+		private String cypher;
+		private Map<String, Object> parameterMap;
+		
+		private Statement(String cypher, Map<String, Object> parameterMap) {
+			super();
+			this.cypher = cypher;
+			this.parameterMap = parameterMap;
 		}
 	}
 }

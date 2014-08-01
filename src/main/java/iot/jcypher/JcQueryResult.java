@@ -44,10 +44,11 @@ public class JcQueryResult {
 	private List<JcError> generalErrors;
 	private List<JcError> dbErrors;
 	private ResultHandler resultHandler;
-	public JcQueryResult(JsonObject jsonResult) {
+	
+	public JcQueryResult(JsonObject jsonResult, int queryIndex) {
 		super();
 		this.jsonResult = jsonResult;
-		this.resultHandler = new ResultHandler(this);
+		this.resultHandler = new ResultHandler(this, queryIndex);
 	}
 
 	/**

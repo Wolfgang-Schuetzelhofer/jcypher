@@ -16,6 +16,8 @@
 
 package iot.jcypher.database;
 
+import java.util.List;
+
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
 
@@ -27,6 +29,13 @@ public interface IDBAccess {
 	 * @return a JcQueryResult
 	 */
 	public JcQueryResult execute(JcQuery query);
+	
+	/**
+	 * execute a list of queries against a database
+	 * @param queries
+	 * @return a list of 'JcQueryResult's
+	 */
+	public List<JcQueryResult> execute(List<JcQuery> queries);
 	
 	/**
 	 * close the database connection
