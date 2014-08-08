@@ -16,11 +16,11 @@
 
 package iot.jcypher.graph;
 
-import java.util.List;
-
 import iot.jcypher.graph.internal.ChangeListener;
 import iot.jcypher.graph.internal.GrId;
 import iot.jcypher.result.util.ResultHandler;
+
+import java.util.List;
 
 public class GrAccess {
 
@@ -83,7 +83,25 @@ public class GrAccess {
 		return pc.getGrId();
 	}
 	
+	public static void setGrId(GrId grId, GrPropertyContainer pc) {
+		pc.setGrId(grId);
+	}
+	
 	public static void notifyState(PersistableItem item) {
 		item.notifyState();
+	}
+	
+	public static List<GrProperty> getModifiedProperties(GrPropertyContainer container) {
+		PersistableItemsContainer<GrProperty> icont = container.getPropertiesContainer();
+		return icont.getModifiedElements();
+	}
+	
+	public static List<GrLabel> getModifiedLabels(GrNode node) {
+		PersistableItemsContainer<GrLabel> lcont = node.getLabelsContainer();
+		return lcont.getModifiedElements();
+	}
+	
+	public static void setToSynchronized(PersistableItem item) {
+		item.setToSynchronized();
 	}
 }

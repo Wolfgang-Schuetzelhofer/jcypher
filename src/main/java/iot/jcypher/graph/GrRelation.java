@@ -57,5 +57,11 @@ public class GrRelation extends GrPropertyContainer {
 			this.type = this.resultHandler.getRelationType(getId(), this.rowIndex);
 		return this.type;
 	}
+
+	@Override
+	void setToSynchronized() {
+		super.setToSynchronized();
+		setSyncState(SyncState.SYNC);
+	}
 	
 }

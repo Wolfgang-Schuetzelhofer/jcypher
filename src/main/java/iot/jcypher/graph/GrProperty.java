@@ -48,6 +48,11 @@ public class GrProperty extends PersistableItem {
 				fireChanged(oldState, this.syncState);
 		}
 	}
+	
+	@Override
+	void setToSynchronized() {
+		setSyncState(SyncState.SYNC);
+	}
 
 	@Override
 	public String toString() {

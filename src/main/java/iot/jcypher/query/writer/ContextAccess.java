@@ -21,6 +21,9 @@ public class ContextAccess {
 		ret.cypherFormat = ctxt.cypherFormat;
 		ret.extractParams = ctxt.extractParams;
 		ret.useTransactionalEndpoint = ctxt.useTransactionalEndpoint;
+		for (String contentType : ctxt.getResultDataContents()) {
+			ret.getResultDataContents().add(contentType);
+		}
 		return ret;
 	}
 }

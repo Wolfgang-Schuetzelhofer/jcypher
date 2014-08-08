@@ -16,12 +16,15 @@
 
 package iot.jcypher.result.util;
 
+import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
+import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrProperty;
+import iot.jcypher.graph.GrPropertyContainer;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.graph.Graph;
 import iot.jcypher.graph.PersistableItem;
@@ -29,8 +32,17 @@ import iot.jcypher.graph.SyncState;
 import iot.jcypher.graph.internal.ChangeListener;
 import iot.jcypher.graph.internal.GrId;
 import iot.jcypher.graph.internal.LocalId;
+import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.api.pattern.Node;
+import iot.jcypher.query.api.pattern.Relation;
+import iot.jcypher.query.api.start.StartPoint;
+import iot.jcypher.query.factories.clause.CREATE;
+import iot.jcypher.query.factories.clause.DO;
+import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
+import iot.jcypher.query.values.JcElement;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcPath;
@@ -40,10 +52,14 @@ import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueWriter;
+import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.WriterContext;
+import iot.jcypher.result.JcError;
+import iot.jcypher.result.Util;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -60,6 +76,8 @@ import javax.json.JsonValue.ValueType;
 
 public class ResultHandler {
 
+	private IDBAccess dbAccess;
+	
 	private Graph graph;
 	private LocalElements localElements;
 	private JcQueryResult queryResult;
@@ -86,8 +104,9 @@ public class ResultHandler {
 	 * @param queryResult
 	 * @param queryIndex
 	 */
-	public ResultHandler(JcQueryResult queryResult, int queryIndex) {
+	public ResultHandler(JcQueryResult queryResult, int queryIndex, IDBAccess dbAccess) {
 		super();
+		this.dbAccess = dbAccess;
 		this.queryResult = queryResult;
 		this.queryIndex = queryIndex;
 		this.localElements = new LocalElements();
@@ -627,8 +646,98 @@ public class ResultHandler {
 		return ret;
 	}
 	
-	public void store() {
-		// TODO
+	public List<JcError> store() {
+		QueryBuilder queryBuilder = new QueryBuilder();
+		List<JcQuery> queries = queryBuilder.buildUpdateAndRemoveQueries();
+		
+		Map<GrNode, JcNumber> createdNodeToIdMap = new HashMap<GrNode, JcNumber>();
+		Map<GrRelation, JcNumber> createdRelationToIdMap = new HashMap<GrRelation, JcNumber>();
+		queries.add(queryBuilder.buildCreateQuery(createdNodeToIdMap,
+				createdRelationToIdMap));
+		Util.printQueries(queries, "UPDATE", Format.PRETTY_1);
+		
+		List<JcError> errors = new ArrayList<JcError>();
+		if (queries.size() > 0) {
+			List<JcQueryResult> results = dbAccess.execute(queries);
+			Util.printResults(results, "UPDATE", Format.PRETTY_1);
+			errors.addAll(Util.collectErrors(results));
+			if (errors.isEmpty()) { // success
+				this.setToSynchronized(results, createdNodeToIdMap,
+						createdRelationToIdMap);
+			}
+		}
+		return errors;
+	}
+	
+	private void setToSynchronized(List<JcQueryResult> results,
+			Map<GrNode, JcNumber> createdNodeToIdMap,
+			Map<GrRelation, JcNumber> createdRelationToIdMap) {
+		
+		List<Long> toRemove = new ArrayList<Long>();
+		Iterator<Entry<Long, GrNode>> nbyId = this.getNodesById().entrySet().iterator();
+		while(nbyId.hasNext()) {
+			Entry<Long, GrNode> entry = nbyId.next();
+			checkRemovedSetSynchronized(toRemove, entry.getValue(), entry.getKey());
+		}
+		for (Long id : toRemove) {
+			this.getNodesById().remove(id);
+		}
+		this.changedNodesById = null;
+		
+		toRemove.clear();
+		Iterator<Entry<Long, GrRelation>> rbyId = this.getRelationsById().entrySet().iterator();
+		while(rbyId.hasNext()) {
+			Entry<Long, GrRelation> entry = rbyId.next();
+			checkRemovedSetSynchronized(toRemove, entry.getValue(), entry.getKey());
+		}
+		for (Long id : toRemove) {
+			this.getRelationsById().remove(id);
+		}
+		this.changedRelationsById = null;
+		
+		JcQueryResult createResult = results.get(results.size() - 1);
+		Iterator<Entry<GrNode, JcNumber>> nit = createdNodeToIdMap.entrySet().iterator();
+		while(nit.hasNext()) {
+			Entry<GrNode, JcNumber> entry = nit.next();
+			long id = exchangeGrId(entry.getKey(), entry.getValue(), createResult);
+			GrAccess.setToSynchronized(entry.getKey());
+			this.getNodesById().put(Long.valueOf(id), entry.getKey());
+		}
+		
+		Iterator<Entry<GrRelation, JcNumber>> rit = createdRelationToIdMap.entrySet().iterator();
+		while (rit.hasNext()) {
+			Entry<GrRelation, JcNumber> entry = rit.next();
+			long id = exchangeGrId(entry.getKey(), entry.getValue(), createResult);
+			GrAccess.setToSynchronized(entry.getKey());
+			this.getRelationsById().put(Long.valueOf(id), entry.getKey());
+		}
+		this.localElements.clear();
+		
+		GrAccess.setGraphState(getGraph(), SyncState.SYNC);
+		
+	}
+	
+	private void checkRemovedSetSynchronized(List<Long> toRemove,
+			PersistableItem item, Long id) {
+		if (GrAccess.getState(item) == SyncState.REMOVED)
+			toRemove.add(id);
+		else if (GrAccess.getState(item) != SyncState.SYNC)
+			GrAccess.setToSynchronized(item);
+	}
+	
+	/**
+	 * @param pc
+	 * @param jcId
+	 * @param createResult
+	 * @return the id
+	 */
+	private long exchangeGrId(GrPropertyContainer pc, JcNumber jcId,
+			JcQueryResult createResult) {
+		List<BigDecimal> bdIds = createResult.resultOf(jcId);
+		long id = bdIds.get(0).longValue();
+		GrId grId = new GrId(id);
+		GrAccess.setGrId(grId, pc);
+		return id;
 	}
 
 	/**************************************/
@@ -745,6 +854,274 @@ public class ResultHandler {
 	}
 	
 	/**************************************/
+	private class QueryBuilder {
+		
+		/**
+		 * @param createdNodeIds
+		 * @return a Query to create elements
+		 */
+		JcQuery buildCreateQuery(Map<GrNode, JcNumber> createdNodeToIdMap,
+				Map<GrRelation, JcNumber> createdRelationToIdMap) {
+			List<GrNode2JcNode> nodesToCreate = new ArrayList<GrNode2JcNode>();
+			List<IClause> createNodeClauses = new ArrayList<IClause>();
+			Map<GrNode, JcNode> localNodeMap = new HashMap<GrNode, JcNode>();
+			for (GrNode node : localElements.getLocalNodes()) {
+				addCreateNodeClause(node, createNodeClauses,
+						localNodeMap, nodesToCreate);
+			}
+			
+			List<GrRelation2JcRelation> relationsToCreate = new ArrayList<GrRelation2JcRelation>();
+			List<IClause> startNodeClauses = new ArrayList<IClause>();
+			List<IClause> createRelationClauses = new ArrayList<IClause>();
+			Map<GrNode, JcNode> dbNodeMap = new HashMap<GrNode, JcNode>();
+			for (GrRelation relation : localElements.getLocalRelations()) {
+				addCreateRelationClause(relation, createRelationClauses,
+						localNodeMap, dbNodeMap, startNodeClauses, relationsToCreate);
+			}
+			List<IClause> clauses = startNodeClauses;
+			clauses.addAll(createNodeClauses);
+			clauses.addAll(createRelationClauses);
+			for (GrNode2JcNode grn2jcn : nodesToCreate) {
+				JcNumber nid = new JcNumber("NID_".concat(ValueAccess.getName(grn2jcn.jcNode)));
+				createdNodeToIdMap.put(grn2jcn.grNode, nid);
+				clauses.add(RETURN.value(grn2jcn.jcNode.id()).AS(nid));
+			}
+			for (GrRelation2JcRelation grr2jcr : relationsToCreate) {
+				JcNumber rid = new JcNumber("RID_".concat(ValueAccess.getName(grr2jcr.jcRelation)));
+				createdRelationToIdMap.put(grr2jcr.grRelation, rid);
+				clauses.add(RETURN.value(grr2jcr.jcRelation.id()).AS(rid));
+			}
+			IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+			JcQuery ret = new JcQuery();
+			ret.setClauses(clausesArray);
+			return ret;
+		}
+		
+		List<JcQuery> buildUpdateAndRemoveQueries() {
+			List<JcQuery> ret = new ArrayList<JcQuery>();
+			List<GrPropertyContainer> removedNodes = new ArrayList<GrPropertyContainer>();
+			if (changedNodesById != null) {
+				Iterator<GrNode> nit = changedNodesById.values().iterator();
+				while (nit.hasNext()) {
+					GrNode node = nit.next();
+					SyncState state = GrAccess.getState(node);
+					if (state == SyncState.CHANGED) {
+						ret.add(buildChangedNodeOrRelationQuery(node));
+					} else if (state == SyncState.REMOVED) {
+						removedNodes.add(node);
+					}
+				}
+			}
+			
+			List<GrPropertyContainer> removedRelations = new ArrayList<GrPropertyContainer>();
+			if (changedRelationsById != null) {
+				Iterator<GrRelation> rit = changedRelationsById.values().iterator();
+				while (rit.hasNext()) {
+					GrRelation relation = rit.next();
+					SyncState state = GrAccess.getState(relation);
+					if (state == SyncState.CHANGED) {
+						ret.add(buildChangedNodeOrRelationQuery(relation));
+					} else if (state == SyncState.REMOVED) {
+						removedRelations.add(relation);
+					}
+				}
+			}
+			
+			if (removedRelations.size() > 0)
+				ret.add(buildRemovedNodeOrRelationQuery(removedRelations));
+			if (removedNodes.size() > 0)
+				ret.add(buildRemovedNodeOrRelationQuery(removedNodes));
+			
+			return ret;
+		}
+		
+		private void addCreateNodeClause(GrNode node,
+				List<IClause> clauses, Map<GrNode, JcNode> localNodeMap,
+				List<GrNode2JcNode> nodesToCreate) {
+			String nm = "ln_".concat(String.valueOf(clauses.size()));
+			JcNode n = new JcNode(nm);
+			nodesToCreate.add(new GrNode2JcNode(node, n));
+			Node create = CREATE.node(n);
+			for (GrLabel label : node.getLabels()) {
+				create = create.label(label.getName());
+			}
+			for (GrProperty prop : node.getProperties()) {
+				create = create.property(prop.getName()).value(prop.getValue());
+			}
+			clauses.add(create);
+			localNodeMap.put(node, n);
+		}
+
+		private void addCreateRelationClause(GrRelation relation,
+				List<IClause> createRelationClauses,
+				Map<GrNode, JcNode> localNodeMap, Map<GrNode, JcNode> dbNodeMap,
+				List<IClause> startNodeClauses, List<GrRelation2JcRelation> relationsToCreate) {
+			String nm = "lr_".concat(String.valueOf(createRelationClauses.size()));
+			JcRelation r = new JcRelation(nm);
+			relationsToCreate.add(new GrRelation2JcRelation(relation, r));
+			GrNode sNode = relation.getStartNode();
+			GrNode eNode = relation.getEndNode();
+			JcNode sn = getNode(sNode, localNodeMap, dbNodeMap, startNodeClauses);
+			JcNode en = getNode(eNode, localNodeMap, dbNodeMap, startNodeClauses);
+			Relation create = CREATE.node(sn).relation(r).out();
+			if (relation.getType() != null)
+				create = create.type(relation.getType());
+			for (GrProperty prop : relation.getProperties()) {
+				create = create.property(prop.getName()).value(prop.getValue());
+			}
+			createRelationClauses.add(create.node(en));
+		}
+		
+		private JcNode getNode(GrNode grNode, Map<GrNode, JcNode> localNodeMap,
+				Map<GrNode, JcNode> dbNodeMap, List<IClause> startNodeClauses) {
+			GrId grId = GrAccess.getGrId(grNode);
+			JcNode n;
+			if (grId instanceof LocalId) {
+				n = localNodeMap.get(grNode);
+			} else {
+				n = dbNodeMap.get(grNode);
+				if (n == null) {
+					String nm = "rn_".concat(String.valueOf(startNodeClauses.size()));
+					n = new JcNode(nm);
+					StartPoint start = START.node(n).byId(grId.getId());
+					startNodeClauses.add(start);
+					dbNodeMap.put(grNode, n);
+				}
+			}
+			return n;
+		}
+
+		private JcQuery buildRemovedNodeOrRelationQuery(List<GrPropertyContainer> elements) {
+			List<IClause> clauses = new ArrayList<IClause>();
+			List<String> elemNames = new ArrayList<String>(elements.size());
+			for (int i = 0; i < elements.size(); i++) {
+				String nm = "elem_".concat(String.valueOf(i));
+				elemNames.add(nm);
+				if (elements.get(0) instanceof GrNode) {
+					JcNode elem = new JcNode(nm);
+					clauses.add(START.node(elem).byId(elements.get(i).getId()));
+				} else if (elements.get(0) instanceof GrRelation) {
+					JcRelation elem = new JcRelation(nm);
+					clauses.add(START.relation(elem).byId(elements.get(i).getId()));
+				}
+			}
+			for (String nm : elemNames) {
+				JcElement elem = null;
+				if (elements.get(0) instanceof GrNode)
+					elem = new JcNode(nm);
+				else if (elements.get(0) instanceof GrRelation)
+					elem = new JcRelation(nm);
+				clauses.add(DO.DELETE(elem));
+			}
+			
+			
+			IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+			JcQuery query = new JcQuery();
+			//query.setExtractParams(false);
+			query.setClauses(clausesArray);
+			return query;
+		}
+
+		private JcQuery buildChangedNodeOrRelationQuery(GrPropertyContainer element) {
+			List<IClause> clauses = new ArrayList<IClause>();
+			clauses.add(buildStartClause(element));
+			clauses.addAll(buildChangedPropertiesClauses(element));
+			clauses.addAll(buildChangedLabelsClauses(element));
+			IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+			JcQuery query = new JcQuery();
+			query.setClauses(clausesArray);
+			return query;
+		}
+
+		private Collection<? extends IClause> buildChangedLabelsClauses(
+				GrPropertyContainer element) {
+			List<IClause> ret = new ArrayList<IClause>();
+			if (element instanceof GrNode) {
+				GrNode node = (GrNode)element;
+				List<GrLabel> modified = GrAccess.getModifiedLabels(node);
+				Iterator<GrLabel> lit = modified.iterator();
+				while (lit.hasNext()) {
+					GrLabel lab = lit.next();
+					SyncState state = GrAccess.getState(lab);
+					JcNode elem = new JcNode("elem");
+					IClause c = null;
+					// a label can only be created and added or it can be removed
+					// but a label can never be changed
+					if (state == SyncState.NEW) {
+						c = DO.SET(elem.label(lab.getName()));
+					} else if (state == SyncState.REMOVED) {
+						c = DO.REMOVE(elem.label(lab.getName()));
+					}
+					ret.add(c);
+				}
+			}
+			return ret;
+		}
+
+		private Collection<? extends IClause> buildChangedPropertiesClauses(
+				GrPropertyContainer element) {
+			List<IClause> ret = new ArrayList<IClause>();
+			List<GrProperty> modified = GrAccess.getModifiedProperties(element);
+			Iterator<GrProperty> pit = modified.iterator();
+			while(pit.hasNext()) {
+				GrProperty prop = pit.next();
+				SyncState state = GrAccess.getState(prop);
+				JcElement elem = null;
+				if (element instanceof GrNode)
+					elem = new JcNode("elem");
+				else
+					elem = new JcRelation("elem");
+				
+				IClause c = null;
+				if (state == SyncState.CHANGED || state == SyncState.NEW) {
+					c = DO.SET(elem.property(prop.getName())).to(prop.getValue());
+				} else if (state == SyncState.REMOVED) {
+					c = DO.REMOVE(elem.property(prop.getName()));
+				}
+				ret.add(c);
+			}
+			return ret;
+		}
+
+		private IClause buildStartClause(GrPropertyContainer element) {
+			long id = element.getId();
+			IClause ret = null;
+			if (element instanceof GrNode) {
+				JcNode elem = new JcNode("elem");
+				ret = START.node(elem).byId(id);
+			} else if (element instanceof GrRelation) {
+				JcRelation elem = new JcRelation("elem");
+				ret = START.relation(elem).byId(id);
+			}
+			return ret;
+		}
+		
+		/*************************************/
+		private class GrNode2JcNode {
+			private GrNode grNode;
+			private JcNode jcNode;
+			
+			private GrNode2JcNode(GrNode grNode, JcNode jcNode) {
+				super();
+				this.grNode = grNode;
+				this.jcNode = jcNode;
+			}
+		}
+		
+		/*************************************/
+		private class GrRelation2JcRelation {
+			private GrRelation grRelation;
+			private JcRelation jcRelation;
+			
+			private GrRelation2JcRelation(GrRelation grRelation, JcRelation jcRelation) {
+				super();
+				this.grRelation = grRelation;
+				this.jcRelation = jcRelation;
+			}
+		}
+	}
+	
+	/**************************************/
 	public class LocalElements {
 		private LocalIdBuilder nodeIdBuilder;
 		private LocalIdBuilder relationIdBuilder;
@@ -799,6 +1176,33 @@ public class ResultHandler {
 		private void removeRelation(long id) {
 			if (this.localRelationsById != null)
 				this.localRelationsById.remove(id);
+		}
+		
+		private List<GrNode> getLocalNodes() {
+			List<GrNode> ret = new ArrayList<GrNode>();
+			if (this.localNodesById != null) {
+				for (GrNode node : this.localNodesById.values()) {
+					ret.add(node);
+				}
+			}
+			return ret;
+		}
+		
+		private List<GrRelation> getLocalRelations() {
+			List<GrRelation> ret = new ArrayList<GrRelation>();
+			if (this.localRelationsById != null) {
+				for (GrRelation relation : this.localRelationsById.values()) {
+					ret.add(relation);
+				}
+			}
+			return ret;
+		}
+		
+		private void clear() {
+			this.nodeIdBuilder = null;
+			this.localNodesById = null;
+			this.relationIdBuilder = null;
+			this.localRelationsById = null;
 		}
 		
 		public boolean isEmpty() {

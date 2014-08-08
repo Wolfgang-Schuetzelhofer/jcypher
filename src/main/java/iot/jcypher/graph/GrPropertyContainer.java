@@ -35,6 +35,10 @@ public abstract class GrPropertyContainer extends GrElement {
 	GrId getGrId() {
 		return this.id;
 	}
+	
+	void setGrId(GrId grId) {
+		this.id = grId;
+	}
 
 	public long getId() {
 		return this.id.getId();
@@ -45,6 +49,19 @@ public abstract class GrPropertyContainer extends GrElement {
 	 */
 	public List<GrProperty> getProperties() {
 		return getPropertiesContainer().getElements();
+	}
+	
+	/**
+	 * return a property
+	 * @param propertyName
+	 * @return a GrProperty
+	 */
+	public GrProperty getProperty(String propertyName) {
+		for (GrProperty prop : getProperties()) {
+			if (prop.getName().equals(propertyName))
+				return prop;
+		}
+		return null;
 	}
 	
 	/**
@@ -63,7 +80,7 @@ public abstract class GrPropertyContainer extends GrElement {
 		return this.resultHandler.getGraph();
 	}
 	
-	private PropertiesContainer getPropertiesContainer() {
+	PropertiesContainer getPropertiesContainer() {
 		if (this.propertiesContainer == null)
 			this.propertiesContainer = new PropertiesContainer();
 		return this.propertiesContainer;
@@ -94,6 +111,12 @@ public abstract class GrPropertyContainer extends GrElement {
 		return true;
 	}
 	
+	@Override
+	void setToSynchronized() {
+		if (this.propertiesContainer != null)
+			this.propertiesContainer.setToSynchronized();
+	}
+
 	/********************************************/
 	private class PropertiesContainer extends PersistableItemsContainer<GrProperty> {
 

@@ -71,10 +71,18 @@ public class GrNode extends GrPropertyContainer {
 		return false;
 	}
 	
-	private LabelsContainer getLabelsContainer() {
+	LabelsContainer getLabelsContainer() {
 		if (this.labelsContainer == null)
 			this.labelsContainer = new LabelsContainer();
 		return this.labelsContainer;
+	}
+	
+	@Override
+	void setToSynchronized() {
+		if (this.labelsContainer != null)
+			this.labelsContainer.setToSynchronized();
+		super.setToSynchronized();
+		setSyncState(SyncState.SYNC);
 	}
 	
 	/********************************************/

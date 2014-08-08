@@ -16,6 +16,8 @@
 
 package iot.jcypher.query.values;
 
+import iot.jcypher.query.values.operators.OPERATOR;
+
 public class JcValue extends ValueElement {
 	
 	private String name;
@@ -38,6 +40,15 @@ public class JcValue extends ValueElement {
 		this.name = name;
 	}
 
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>return a JcCollection representing elements of the receivers type</i></div>
+	 * <br/>
+	 */
+	public JcCollection asCollection() {
+		return new JcCollection(this.name);
+	}
+	
 	String getName() {
 		return name;
 	}

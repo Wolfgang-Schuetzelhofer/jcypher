@@ -16,6 +16,7 @@
 
 package iot.jcypher;
 
+import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrRelation;
@@ -45,10 +46,10 @@ public class JcQueryResult {
 	private List<JcError> dbErrors;
 	private ResultHandler resultHandler;
 	
-	public JcQueryResult(JsonObject jsonResult, int queryIndex) {
+	public JcQueryResult(JsonObject jsonResult, int queryIndex, IDBAccess dbAccess) {
 		super();
 		this.jsonResult = jsonResult;
-		this.resultHandler = new ResultHandler(this, queryIndex);
+		this.resultHandler = new ResultHandler(this, queryIndex, dbAccess);
 	}
 
 	/**

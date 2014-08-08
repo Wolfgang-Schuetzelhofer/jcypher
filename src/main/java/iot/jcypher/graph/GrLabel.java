@@ -32,6 +32,11 @@ public class GrLabel extends PersistableItem {
 	}
 	
 	@Override
+	void setToSynchronized() {
+		setSyncState(SyncState.SYNC);
+	}
+
+	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Label: ");

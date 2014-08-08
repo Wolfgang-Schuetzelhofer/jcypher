@@ -131,7 +131,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		
 		List<JcQueryResult> ret = new ArrayList<JcQueryResult>(queries.size());
 		for (int i = 0; i < queries.size(); i++) {
-			JcQueryResult qr = new JcQueryResult(jsonResult, i);
+			JcQueryResult qr = new JcQueryResult(jsonResult, i, this);
 			ret.add(qr);
 			if (exception != null) {
 				String typ = exception.getClass().getSimpleName();

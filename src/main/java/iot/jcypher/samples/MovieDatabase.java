@@ -17,6 +17,7 @@
 package iot.jcypher.samples;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -63,13 +64,15 @@ public class MovieDatabase {
 		initDBConnection();
 		
 		/** execute queries against the database */
-//		createMovieDatabase();
+		createMovieDatabase();
+		createAdditionalNodes();
 //		queryNodeCount();
 //		queryLikes();
 //		queryMovies();
 //		queryMovieGraph();
-//		queryMovieGraph_01();
-		queryMovieGraph_02();
+//		queryMovieGraph_error_01();
+//		queryMovieGraph_02();
+		queryMovieGraph_modify();
 		
 		/** close the connection to a Neo4j database */
 		closeDBConnection();
@@ -121,6 +124,46 @@ public class MovieDatabase {
 				CREATE.node(carrieanne).relation().out().type("ACTS_IN").property("role").value("Trinity").node(matrix1),
 				CREATE.node(carrieanne).relation().out().type("ACTS_IN").property("role").value("Trinity").node(matrix2),
 				CREATE.node(carrieanne).relation().out().type("ACTS_IN").property("role").value("Trinity").node(matrix3)
+		});
+		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
+		     This will show what normally is created in the background when accessing a Neo4j database*/
+		print(query, queryTitle, Format.PRETTY_3);
+		
+		/** execute the query against a Neo4j database */
+		JcQueryResult result = dbAccess.execute(query);
+		if (result.hasErrors())
+			printErrors(result);
+		
+		/** print the JSON representation of the query result */
+		print(result, queryTitle);
+	}
+	
+	/**
+	 * Create additional nodes in the movie database
+	 */
+	static void createAdditionalNodes() {
+		JcNode escape_plan = new JcNode("escape_plan");
+		JcNode arnie = new JcNode("arnie");
+		JcNode sylvester = new JcNode("sylvester");
+		
+		/**
+		 * -----------------------------------------------------------------
+		 * Create the movie database
+		 */
+		String queryTitle = "CREATE ADDITIONAL NODES";
+		JcQuery query = new JcQuery();
+		query.setClauses(new IClause[] {
+				CREATE.node(escape_plan).label("Movie")
+						.property("title").value("Escape Plan")
+						.property("year").value("2013-03-31"),
+				CREATE.node(arnie).label("Actor")
+						.property("name").value("Arnold Schwarzenegger")
+						.property("like").value(9.0),
+				CREATE.node(sylvester).label("Actor")
+						.property("name").value("Sylvester Stalone")
+						.property("like").value(9.0),
+				CREATE.node(arnie).relation().out().type("ACTS_IN").property("role").value("Prisoner").node(escape_plan),
+				CREATE.node(sylvester).relation().out().type("ACTS_IN").property("role").value("Prisoner").node(escape_plan)
 		});
 		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
 		     This will show what normally is created in the background when accessing a Neo4j database*/
@@ -314,7 +357,7 @@ public class MovieDatabase {
 		return;
 	}
 	
-	static void queryMovieGraph_01() {
+	static void queryMovieGraph_error_01() {
 		JcQuery query;
 		JcQueryResult result;
 		
@@ -420,6 +463,135 @@ public class MovieDatabase {
 		return;
 	}
 	
+	static void queryMovieGraph_modify() {
+		JcQuery query;
+		JcQueryResult result;
+		
+		String queryTitle = "MOVIE_GRAPH";
+		JcNode n = new JcNode("n");
+		JcRelation r = new JcRelation("r");
+		JcPath p = new JcPath("p");
+		
+		query = new JcQuery();
+//		query.setClauses(new IClause[] {
+//				MATCH.path(p).node(n).relation(r).out().node(),
+//				//RETURN.value(n.property("name"))
+//				RETURN.ALL()
+//		});
+		query.setClauses(new IClause[] {
+				MATCH.path(p).node().relation().out().type("ACTS_IN").node(),
+						//.relation().in().type("ACTS_IN").node(),
+				RETURN.ALL()
+		});
+		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
+	     This will show what normally is created in the background when accessing a Neo4j database*/
+		print(query, queryTitle, Format.PRETTY_3);
+		
+		/** execute the query against a Neo4j database */
+		result = dbAccess.execute(query);
+		if (result.hasErrors())
+			printErrors(result);
+		
+		/** print the JSON representation of the query result */
+		print(result, queryTitle);
+		
+		GrNode sNode;
+		GrNode eNode;
+		GrNode sNode_2;
+		GrNode eNode_2;
+		GrNode eNode_3;
+		
+		List<GrPath> pr = result.resultOf(p);
+		GrPath path = pr.get(0);
+		List<GrRelation> rels = path.getRelations();
+		GrRelation rel = rels.get(0);
+		List<GrProperty> props = rel.getProperties();
+		String typ = rel.getType();
+		sNode = rel.getStartNode();
+		sNode_2 = sNode;
+		sNode.addProperty("loaded", true);
+		sNode.addLabel("Superstar");
+		eNode = rel.getEndNode();
+		eNode.addLabel("BestMovie");
+		GrProperty eProp = eNode.getProperties().get(0);
+		eProp.remove();
+		List<GrLabel> sLabels = sNode.getLabels();
+		List<GrProperty> sProps = sNode.getProperties();
+		List<GrLabel> eLabels = eNode.getLabels();
+		List<GrProperty> eProps = eNode.getProperties();
+		
+		List<String> actorNames = new ArrayList<String>();
+		GrRelation rel1 = null;
+		GrRelation rel2 = null;
+		for (GrPath pth : pr) {
+			for (GrRelation rl : pth.getRelations()) {
+				GrNode sn = rl.getStartNode();
+				for (GrProperty prp : sn.getProperties()) {
+					if (prp.getName().equals("name")) {
+						String actorName = prp.getValue().toString();
+						if (!actorNames.contains(actorName))
+							actorNames.add(actorName);
+					}
+					if (prp.getName().equals("name") && prp.getValue().equals("Arnold Schwarzenegger")) {
+						rel1 = rl;
+						break;
+					}
+					if (prp.getName().equals("name") && prp.getValue().equals("Sylvester Stalone")) {
+						rel2 = rl;
+						break;
+					}
+				}
+			}
+		}
+		
+		sNode = rel1.getStartNode();
+		eNode = rel1.getEndNode();
+		sProps = sNode.getProperties();
+		eProps = eNode.getProperties();
+		GrNode s2Node = rel2.getStartNode();
+		GrNode e2Node = rel2.getEndNode();
+		List<GrProperty> s2Props = s2Node.getProperties();
+		List<GrProperty> e2Props = e2Node.getProperties();
+		rel1.remove();
+		rel2.remove();
+		sNode.remove();
+		eNode.remove();
+		s2Node.remove();
+		e2Node.remove();
+		
+		Graph graph = result.getGraph();
+		
+		eNode_2 = graph.createNode();
+		eNode_2.addLabel("Shop");
+		eNode_2.addProperty("name", "Metro");
+		GrRelation relNew = graph.createRelation("SHOPS_AT", sNode_2, eNode_2);
+		relNew.addProperty("frequency", "daily");
+		
+		eNode_3 = graph.createNode();
+		eNode_3.addLabel("Restaurant");
+		eNode_3.addProperty("name", "Steak House");
+		GrRelation relNew_2 = graph.createRelation("EATS_AT", sNode_2, eNode_3);
+		relNew_2.addProperty("frequency", "weekly");
+		
+		if (graph.isModified()) {
+			List<JcError> errs = graph.store();
+			if (!errs.isEmpty())
+				printErrors(errs);
+		}
+		
+		boolean modified = graph.isModified();
+
+//		sNode = path.getStartNode();
+//		eNode = path.getEndNode();
+//		sProps = sNode.getProperties();
+//		eProps = eNode.getProperties();
+//		sLabels = sNode.getLabels();
+//		eLabels = eNode.getLabels();
+//		String tst = null;
+		
+		return;
+	}
+	
 	/**
 	 * initialize connection to a Neo4j database
 	 */
@@ -434,7 +606,7 @@ public class MovieDatabase {
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
 		/** connect to an in memory database (no properties are required) */
-		dbAccess = DBAccessFactory.createDBAccess(DBType.EMBEDDED, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		
 		/** connect to remote database via REST (SERVER_ROOT_URI property is needed) */
 		//dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
@@ -495,6 +667,20 @@ public class MovieDatabase {
 		appendErrorList(result.getGeneralErrors(), sb);
 		sb.append("\n---------------DB Errors:");
 		appendErrorList(result.getDBErrors(), sb);
+		sb.append("\n---------------end Errors:");
+		String str = sb.toString();
+		System.out.println("");
+		System.out.println(str);
+	}
+	
+	/**
+	 * print errors to System.out
+	 * @param result
+	 */
+	private static void printErrors(List<JcError> errors) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("---------------Errors:");
+		appendErrorList(errors, sb);
 		sb.append("\n---------------end Errors:");
 		String str = sb.toString();
 		System.out.println("");

@@ -16,6 +16,10 @@
 
 package iot.jcypher.graph;
 
+import java.util.List;
+
+import iot.jcypher.database.IDBAccess;
+import iot.jcypher.result.JcError;
 import iot.jcypher.result.util.ResultHandler;
 
 public class Graph {
@@ -30,10 +34,11 @@ public class Graph {
 	
 	/**
 	 * create an empty graph
-	 * @return
+	 * @param dbAccess the database on which to perform updates of the graph
+	 * @return the empty graph model
 	 */
-	public static Graph create() {
-		ResultHandler rh = new ResultHandler(null, -1);
+	public static Graph create(IDBAccess dbAccess) {
+		ResultHandler rh = new ResultHandler(null, -1, dbAccess);
 		Graph ret = rh.getGraph();
 		ret.setSyncState(SyncState.NEW);
 		return ret;
@@ -68,9 +73,10 @@ public class Graph {
 		return this.syncState != SyncState.SYNC;
 	}
 	
-	public void store() {
+	public List<JcError> store() {
 		if (isModified())
-			this.resultHandler.store();
+			return this.resultHandler.store();
+		return null;
 	}
 
 	SyncState getSyncState() {

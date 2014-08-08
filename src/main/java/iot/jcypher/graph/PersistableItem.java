@@ -78,4 +78,6 @@ public abstract class PersistableItem {
 	void setSyncState(SyncState syncState) {
 		this.syncState = syncState;
 	}
+	
+	abstract void setToSynchronized();
 }
