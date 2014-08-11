@@ -16,6 +16,10 @@
 
 package iot.jcypher.graph;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+import java.util.Arrays;
+
 
 public class GrProperty extends PersistableItem {
 
@@ -37,8 +41,18 @@ public class GrProperty extends PersistableItem {
 	}
 
 	public void setValue(Object value) {
+		Object val = value;
+		if (val.getClass().isArray()) {
+			int length = Array.getLength(val);
+			ArrayList<Object> list = new ArrayList<>();
+		    for (int i = 0; i < length; i ++) {
+		        Object arrayElement = Array.get(val, i);
+		        list.add(arrayElement);
+		    }
+		    val = list;
+		}
 		Object oldVal = this.value;
-		this.value = value;
+		this.value = val;
 		// don't change syncState NEW on first setting a property value
 		if (oldVal != null && oldVal != this.value) {
 			SyncState oldState = this.syncState;

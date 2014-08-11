@@ -16,11 +16,6 @@
 
 package iot.jcypher.samples;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.DBAccessFactory;
@@ -29,26 +24,23 @@ import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
-import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.graph.Graph;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.CREATE;
-import iot.jcypher.query.factories.clause.DO;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
-import iot.jcypher.query.factories.clause.START;
-import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
-import iot.jcypher.query.values.JcPath;
-import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.query.values.JcString;
-import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.Util;
+
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
 
 /**
  * This JCypher sample is constructing and querying the 'Movie Database'.
@@ -64,15 +56,11 @@ public class MovieDatabase {
 		initDBConnection();
 		
 		/** execute queries against the database */
-		createMovieDatabase();
+		createMovieDatabaseByQuery();
+//		createMovieDatabaseByGraphModel();
 		createAdditionalNodes();
-//		queryNodeCount();
-//		queryLikes();
-//		queryMovies();
-//		queryMovieGraph();
-//		queryMovieGraph_error_01();
-//		queryMovieGraph_02();
-		queryMovieGraph_modify();
+		queryNodeCount();
+		queryMovieGraph();
 		
 		/** close the connection to a Neo4j database */
 		closeDBConnection();
@@ -81,7 +69,7 @@ public class MovieDatabase {
 	/**
 	 * Create the movie database
 	 */
-	static void createMovieDatabase() {
+	static void createMovieDatabaseByQuery() {
 		JcNode matrix1 = new JcNode("matrix1");
 		JcNode matrix2 = new JcNode("matrix2");
 		JcNode matrix3 = new JcNode("matrix3");
@@ -136,6 +124,69 @@ public class MovieDatabase {
 		
 		/** print the JSON representation of the query result */
 		print(result, queryTitle);
+	}
+	
+	/**
+	 * Create the movie database
+	 */
+	static void createMovieDatabaseByGraphModel() {
+Graph graph = Graph.create(dbAccess);
+		
+		GrNode matrix1 = graph.createNode();
+		matrix1.addLabel("Movie");
+		matrix1.addProperty("title", "The Matrix");
+		matrix1.addProperty("year", "1999-03-31");
+		
+		GrNode matrix2 = graph.createNode();
+		matrix2.addLabel("Movie");
+		matrix2.addProperty("title", "The Matrix Reloaded");
+		matrix2.addProperty("year", "2003-05-07");
+		
+		GrNode matrix3 = graph.createNode();
+		matrix3.addLabel("Movie");
+		matrix3.addProperty("title", "The Matrix Revolutions");
+		matrix3.addProperty("year", "2003-10-27");
+		
+		GrNode keanu = graph.createNode();
+		keanu.addLabel("Actor");
+		keanu.addProperty("name", "Keanu Reeves");
+		keanu.addProperty("rating", 8.5);
+		keanu.addProperty("numbers", new int[]{1,2,3});
+		
+		GrNode laurence = graph.createNode();
+		laurence.addLabel("Actor");
+		laurence.addProperty("name", "Laurence Fishburne");
+		laurence.addProperty("rating", 7);
+		
+		GrNode carrieanne = graph.createNode();
+		carrieanne.addLabel("Actor");
+		carrieanne.addProperty("name", "Carrie-Anne Moss");
+		carrieanne.addProperty("rating", 8.3);
+		
+		GrRelation rel = graph.createRelation("ACTS_IN", keanu, matrix1);
+		rel.addProperty("role", "Neo");
+		rel = graph.createRelation("ACTS_IN", keanu, matrix2);
+		rel.addProperty("role", "Neo");
+		rel = graph.createRelation("ACTS_IN", keanu, matrix3);
+		rel.addProperty("role", "Neo");
+		
+		rel = graph.createRelation("ACTS_IN", laurence, matrix1);
+		rel.addProperty("role", "Morpheus");
+		rel = graph.createRelation("ACTS_IN", laurence, matrix2);
+		rel.addProperty("role", "Morpheus");
+		rel = graph.createRelation("ACTS_IN", laurence, matrix3);
+		rel.addProperty("role", "Morpheus");
+		
+		rel = graph.createRelation("ACTS_IN", carrieanne, matrix1);
+		rel.addProperty("role", "Trinity");
+		rel = graph.createRelation("ACTS_IN", carrieanne, matrix2);
+		rel.addProperty("role", "Trinity");
+		rel = graph.createRelation("ACTS_IN", carrieanne, matrix3);
+		rel.addProperty("role", "Trinity");
+		
+		List<JcError> errors = graph.store();
+		if (!errors.isEmpty())
+			printErrors(errors);
 	}
 	
 	/**
@@ -207,59 +258,24 @@ public class MovieDatabase {
 		print(result, queryTitle);
 		
 		List<BigDecimal> nr = result.resultOf(nCount);
-		return;
-	}
-	
-	static void queryLikes() {
-		JcQuery query;
-		JcQueryResult result;
-		
-		String queryTitle = "GATHER LIKES";
-		JcNode n = new JcNode("n");
-		JcNumber like = new JcNumber("like");
-		JcCollection nums = new JcCollection("nums");
-		JcString nm = new JcString("nm");
-		
-		query = new JcQuery();
-		query.setClauses(new IClause[] {
-				MATCH.node(n).label("Actor"),
-				RETURN.value(n.property("like")).AS(like),
-				RETURN.value(n.property("numbers")).AS(nums),
-				RETURN.value(n.property("name")).AS(nm),
-				RETURN.value(n.property("name"))
-		});
-		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
-	     This will show what normally is created in the background when accessing a Neo4j database*/
-		print(query, queryTitle, Format.PRETTY_3);
-		
-		/** execute the query against a Neo4j database */
-		result = dbAccess.execute(query);
-		if (result.hasErrors())
-			printErrors(result);
-		
-		/** print the JSON representation of the query result */
-		print(result, queryTitle);
-		
-		List<BigDecimal> likes = result.resultOf(like);
-		List<List<?>> numbers = result.resultOf(nums);
-		List<?> names = result.resultOf(n.property("name"));
-		List<String> nms = result.resultOf(nm);
+		System.out.println(nr.get(0));
 		return;
 	}
 	
 	/**
-	 * Query all movies
+	 * Query the entire graph
 	 */
-	static void queryMovies() {
-		JcQuery query;
-		JcQueryResult result;
+	static void queryMovieGraph() {
 		
-		String queryTitle = "MOVIES";
+		String queryTitle = "MOVIE_GRAPH";
 		JcNode movie = new JcNode("movie");
+		JcNode actor = new JcNode("actor");
 		
-		query = new JcQuery();
+		/*******************************/
+		JcQuery query = new JcQuery();
 		query.setClauses(new IClause[] {
-				MATCH.node(movie).label("Movie"),
+				MATCH.node(actor).label("Actor").relation().out().type("ACTS_IN").node(movie),
+				RETURN.value(actor),
 				RETURN.value(movie)
 		});
 		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
@@ -267,327 +283,18 @@ public class MovieDatabase {
 		print(query, queryTitle, Format.PRETTY_3);
 		
 		/** execute the query against a Neo4j database */
-		result = dbAccess.execute(query);
-		if (result.hasErrors())
-			printErrors(result);
-		
-		/** print the JSON representation of the query result */
-		print(result, queryTitle);
-	}
-	
-	/**
-	 * Query the entire graph
-	 */
-	static void queryMovieGraph() {
-		JcQuery query;
-		JcQueryResult result;
-		
-		String queryTitle = "MOVIE_GRAPH";
-		JcNode n = new JcNode("n");
-		JcRelation r = new JcRelation("r");
-		JcPath p = new JcPath("p");
-		
-		query = new JcQuery();
-//		query.setClauses(new IClause[] {
-//				MATCH.path(p).node(n).relation(r).out().node(),
-//				//RETURN.value(n.property("name"))
-//				RETURN.ALL()
-//		});
-		query.setClauses(new IClause[] {
-				MATCH.path(p).node().relation().out().type("ACTS_IN").node()
-						.relation().in().type("ACTS_IN").node(),
-				RETURN.ALL()
-		});
-		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
-	     This will show what normally is created in the background when accessing a Neo4j database*/
-		print(query, queryTitle, Format.PRETTY_3);
-		
-		/** execute the query against a Neo4j database */
-		result = dbAccess.execute(query);
+		JcQueryResult result = dbAccess.execute(query);
 		if (result.hasErrors())
 			printErrors(result);
 		
 		/** print the JSON representation of the query result */
 		print(result, queryTitle);
 		
-		GrNode sNode;
-		GrNode eNode;
+		List<GrNode> actors = result.resultOf(actor);
+		List<GrNode> movies = result.resultOf(movie);
 		
-		Graph graph = result.getGraph();
-		List<GrPath> pr = result.resultOf(p);
-		// TODO extract as unit test, check states
-		for (GrPath path : pr) {
-			List<GrRelation> rels = path.getRelations();
-			for (GrRelation rel : rels) {
-				List<GrProperty> props = rel.getProperties();
-				String typ = rel.getType();
-				sNode = rel.getStartNode();
-				GrProperty prop = sNode.addProperty("loaded", true);
-				prop.setValue(false);
-				prop.remove();
-				eNode = rel.getEndNode();
-				GrLabel lab = eNode.addLabel("Superstar");
-				List<GrLabel> sLabels = sNode.getLabels();
-				List<GrLabel> eLabels = eNode.getLabels();
-				for (GrLabel el : eLabels) {
-					el.remove();
-				}
-				props = props;
-			}
-			sNode = path.getStartNode();
-			eNode = path.getEndNode();
-			List<GrProperty> sprops = sNode.getProperties();
-			List<GrProperty> eprops = eNode.getProperties();
-			List<GrLabel> sLabels = sNode.getLabels();
-			List<GrLabel> eLabels = eNode.getLabels();
-			String tst = null;
-		}
-		
-//		List<GrNode> nr = result.resultOf(n);
-		List<GrRelation> rr = result.resultOf(r);
-		for (GrRelation rel : rr) {
-			List<GrProperty> rprops = rel.getProperties();
-			sNode = rel.getStartNode();
-			eNode = rel.getEndNode();
-			List<GrProperty> sprops = sNode.getProperties();
-			List<GrProperty> eprops = eNode.getProperties();
-			String tst = null;
-		}
-		
-		return;
-	}
-	
-	static void queryMovieGraph_error_01() {
-		JcQuery query;
-		JcQueryResult result;
-		
-		String queryTitle = "MOVIE_GRAPH";
-		JcNode n = new JcNode("n");
-		JcRelation r = new JcRelation("r");
-		JcPath p = new JcPath("p");
-		
-		query = new JcQuery();
-		query.setClauses(new IClause[] {
-				START.node(n).byId(4),
-				DO.DELETE(n)
-		});
-//		query.setClauses(new IClause[] {
-//				MATCH.path(p).node().relation().out().type("ACTS_IN").node()
-//						.relation().in().type("ACTS_IN").node(),
-//				RETURN.ALL()
-//		});
-		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
-	     This will show what normally is created in the background when accessing a Neo4j database*/
-		print(query, queryTitle, Format.PRETTY_3);
-		
-		/** execute the query against a Neo4j database */
-		result = dbAccess.execute(query);
-		if (result.hasErrors())
-			printErrors(result);
-		
-		/** print the JSON representation of the query result */
-		print(result, queryTitle);
-		
-		GrNode sNode;
-		GrNode eNode;
-		
-		Graph graph = result.getGraph();
-		List<GrPath> pr = result.resultOf(p);
-		for (GrPath path : pr) {
-			sNode = path.getStartNode();
-			sNode.remove();
-			String tst = null;
-		}
-		
-		return;
-	}
-	
-	/**
-	 * Query the entire graph
-	 */
-	static void queryMovieGraph_02() {
-		JcQuery query;
-		JcQueryResult result;
-		
-		String queryTitle = "MOVIE_GRAPH_02";
-		JcNode n = new JcNode("n");
-		JcRelation r = new JcRelation("r");
-		JcPath p = new JcPath("p");
-		
-		query = new JcQuery();
-//		query.setClauses(new IClause[] {
-//				MATCH.path(p).node(n).relation(r).out().node(),
-//				//RETURN.value(n.property("name"))
-//				RETURN.ALL()
-//		});
-		query.setClauses(new IClause[] {
-				MATCH.path(p).node().relation().out().type("ACTS_IN").node()
-						.relation().in().type("ACTS_IN").node(),
-				RETURN.ALL()
-		});
-		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
-	     This will show what normally is created in the background when accessing a Neo4j database*/
-		print(query, queryTitle, Format.PRETTY_3);
-		
-		/** execute the query against a Neo4j database */
-		result = dbAccess.execute(query);
-		if (result.hasErrors())
-			printErrors(result);
-		
-		/** print the JSON representation of the query result */
-		print(result, queryTitle);
-		
-		GrNode sNode;
-		GrNode eNode;
-		GrRelation relat;
-		
-		Graph graph = result.getGraph();
-		sNode = graph.createNode();
-		eNode = graph.createNode();
-		relat = graph.createRelation("LocalRelation", sNode, eNode);
-		
-		GrProperty prop = sNode.addProperty("state", "NEW");
-		GrLabel lab = eNode.addLabel("Person");
-		List<GrProperty> props = sNode.getProperties();
-		List<GrLabel> labs = eNode.getLabels();
-		
-		prop.remove();
-		lab.remove();
-		props = sNode.getProperties();
-		labs = eNode.getLabels();
-
-		sNode.remove();
-		eNode.remove();
-		relat.remove();
-		
-		return;
-	}
-	
-	static void queryMovieGraph_modify() {
-		JcQuery query;
-		JcQueryResult result;
-		
-		String queryTitle = "MOVIE_GRAPH";
-		JcNode n = new JcNode("n");
-		JcRelation r = new JcRelation("r");
-		JcPath p = new JcPath("p");
-		
-		query = new JcQuery();
-//		query.setClauses(new IClause[] {
-//				MATCH.path(p).node(n).relation(r).out().node(),
-//				//RETURN.value(n.property("name"))
-//				RETURN.ALL()
-//		});
-		query.setClauses(new IClause[] {
-				MATCH.path(p).node().relation().out().type("ACTS_IN").node(),
-						//.relation().in().type("ACTS_IN").node(),
-				RETURN.ALL()
-		});
-		/** map to CYPHER statements and map to JSON, print the mapping results to System.out.
-	     This will show what normally is created in the background when accessing a Neo4j database*/
-		print(query, queryTitle, Format.PRETTY_3);
-		
-		/** execute the query against a Neo4j database */
-		result = dbAccess.execute(query);
-		if (result.hasErrors())
-			printErrors(result);
-		
-		/** print the JSON representation of the query result */
-		print(result, queryTitle);
-		
-		GrNode sNode;
-		GrNode eNode;
-		GrNode sNode_2;
-		GrNode eNode_2;
-		GrNode eNode_3;
-		
-		List<GrPath> pr = result.resultOf(p);
-		GrPath path = pr.get(0);
-		List<GrRelation> rels = path.getRelations();
-		GrRelation rel = rels.get(0);
-		List<GrProperty> props = rel.getProperties();
-		String typ = rel.getType();
-		sNode = rel.getStartNode();
-		sNode_2 = sNode;
-		sNode.addProperty("loaded", true);
-		sNode.addLabel("Superstar");
-		eNode = rel.getEndNode();
-		eNode.addLabel("BestMovie");
-		GrProperty eProp = eNode.getProperties().get(0);
-		eProp.remove();
-		List<GrLabel> sLabels = sNode.getLabels();
-		List<GrProperty> sProps = sNode.getProperties();
-		List<GrLabel> eLabels = eNode.getLabels();
-		List<GrProperty> eProps = eNode.getProperties();
-		
-		List<String> actorNames = new ArrayList<String>();
-		GrRelation rel1 = null;
-		GrRelation rel2 = null;
-		for (GrPath pth : pr) {
-			for (GrRelation rl : pth.getRelations()) {
-				GrNode sn = rl.getStartNode();
-				for (GrProperty prp : sn.getProperties()) {
-					if (prp.getName().equals("name")) {
-						String actorName = prp.getValue().toString();
-						if (!actorNames.contains(actorName))
-							actorNames.add(actorName);
-					}
-					if (prp.getName().equals("name") && prp.getValue().equals("Arnold Schwarzenegger")) {
-						rel1 = rl;
-						break;
-					}
-					if (prp.getName().equals("name") && prp.getValue().equals("Sylvester Stalone")) {
-						rel2 = rl;
-						break;
-					}
-				}
-			}
-		}
-		
-		sNode = rel1.getStartNode();
-		eNode = rel1.getEndNode();
-		sProps = sNode.getProperties();
-		eProps = eNode.getProperties();
-		GrNode s2Node = rel2.getStartNode();
-		GrNode e2Node = rel2.getEndNode();
-		List<GrProperty> s2Props = s2Node.getProperties();
-		List<GrProperty> e2Props = e2Node.getProperties();
-		rel1.remove();
-		rel2.remove();
-		sNode.remove();
-		eNode.remove();
-		s2Node.remove();
-		e2Node.remove();
-		
-		Graph graph = result.getGraph();
-		
-		eNode_2 = graph.createNode();
-		eNode_2.addLabel("Shop");
-		eNode_2.addProperty("name", "Metro");
-		GrRelation relNew = graph.createRelation("SHOPS_AT", sNode_2, eNode_2);
-		relNew.addProperty("frequency", "daily");
-		
-		eNode_3 = graph.createNode();
-		eNode_3.addLabel("Restaurant");
-		eNode_3.addProperty("name", "Steak House");
-		GrRelation relNew_2 = graph.createRelation("EATS_AT", sNode_2, eNode_3);
-		relNew_2.addProperty("frequency", "weekly");
-		
-		if (graph.isModified()) {
-			List<JcError> errs = graph.store();
-			if (!errs.isEmpty())
-				printErrors(errs);
-		}
-		
-		boolean modified = graph.isModified();
-
-//		sNode = path.getStartNode();
-//		eNode = path.getEndNode();
-//		sProps = sNode.getProperties();
-//		eProps = eNode.getProperties();
-//		sLabels = sNode.getLabels();
-//		eLabels = eNode.getLabels();
-//		String tst = null;
+		print(actors, true);
+		print(movies, true);
 		
 		return;
 	}
@@ -655,6 +362,41 @@ public class MovieDatabase {
 		System.out.println("RESULT OF QUERY: " + title + " --------------------");
 		String resultString = Util.writePretty(queryResult.getJsonResult());
 		System.out.println(resultString);
+	}
+	
+	private static void print(List<GrNode> nodes, boolean distinct) {
+		List<Long> ids = new ArrayList<Long>();
+		StringBuilder sb = new StringBuilder();
+		boolean firstNode = true;
+		for (GrNode node : nodes) {
+			if (!ids.contains(node.getId()) || !distinct) {
+				ids.add(node.getId());
+				if (!firstNode)
+					sb.append("\n");
+				else
+					firstNode = false;
+				sb.append("---NODE---:\n");
+				sb.append('[');
+				sb.append(node.getId());
+				sb.append(']');
+				for (GrLabel label : node.getLabels()) {
+					sb.append(", ");
+					sb.append(label.getName());
+				}
+				sb.append("\n");
+				boolean first = true;
+				for (GrProperty prop : node.getProperties()) {
+					if (!first)
+						sb.append(", ");
+					else
+						first = false;
+					sb.append(prop.getName());
+					sb.append(" = ");
+					sb.append(prop.getValue());
+				}
+			}
+		}
+		System.out.println(sb.toString());
 	}
 	
 	/**

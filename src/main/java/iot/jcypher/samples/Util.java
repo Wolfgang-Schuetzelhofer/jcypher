@@ -16,14 +16,13 @@
 
 package iot.jcypher.samples;
 
-import java.util.List;
-
 import iot.jcypher.CypherWriter;
 import iot.jcypher.JSONWriter;
 import iot.jcypher.JcQuery;
-import iot.jcypher.query.writer.ContextAccess;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.WriterContext;
+
+import java.util.List;
 
 public class Util {
 

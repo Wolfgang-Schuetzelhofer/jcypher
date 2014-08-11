@@ -52,7 +52,6 @@ import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueWriter;
-import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.Util;
@@ -646,20 +645,18 @@ public class ResultHandler {
 		return ret;
 	}
 	
+	/**
+	 * Update the underlying database with changes made on the graph
+	 * @return a list of errors, which is empty if no errors occurred
+	 */
 	public List<JcError> store() {
-		QueryBuilder queryBuilder = new QueryBuilder();
-		List<JcQuery> queries = queryBuilder.buildUpdateAndRemoveQueries();
-		
 		Map<GrNode, JcNumber> createdNodeToIdMap = new HashMap<GrNode, JcNumber>();
 		Map<GrRelation, JcNumber> createdRelationToIdMap = new HashMap<GrRelation, JcNumber>();
-		queries.add(queryBuilder.buildCreateQuery(createdNodeToIdMap,
-				createdRelationToIdMap));
-		Util.printQueries(queries, "UPDATE", Format.PRETTY_1);
-		
+		List<JcQuery> queries = createUpdateQueries(createdNodeToIdMap, createdRelationToIdMap);
 		List<JcError> errors = new ArrayList<JcError>();
 		if (queries.size() > 0) {
 			List<JcQueryResult> results = dbAccess.execute(queries);
-			Util.printResults(results, "UPDATE", Format.PRETTY_1);
+//			Util.printResults(results, "UPDATE", Format.PRETTY_1);
 			errors.addAll(Util.collectErrors(results));
 			if (errors.isEmpty()) { // success
 				this.setToSynchronized(results, createdNodeToIdMap,
@@ -667,6 +664,28 @@ public class ResultHandler {
 			}
 		}
 		return errors;
+	}
+	
+	/**
+	 * create a list of queries which would apply the changes of the graph to the
+	 * underlying database. You can use it to have a look which queries will be executed
+	 * by a store operation.
+	 * @return a list of JcQueries
+	 */
+	public List<JcQuery> createUpdateQueries() {
+		Map<GrNode, JcNumber> createdNodeToIdMap = new HashMap<GrNode, JcNumber>();
+		Map<GrRelation, JcNumber> createdRelationToIdMap = new HashMap<GrRelation, JcNumber>();
+		return createUpdateQueries(createdNodeToIdMap, createdRelationToIdMap);
+	}
+	
+	private List<JcQuery> createUpdateQueries(Map<GrNode, JcNumber> createdNodeToIdMap,
+			Map<GrRelation, JcNumber> createdRelationToIdMap) {
+		QueryBuilder queryBuilder = new QueryBuilder();
+		List<JcQuery> queries = queryBuilder.buildUpdateAndRemoveQueries();
+		queries.add(queryBuilder.buildCreateQuery(createdNodeToIdMap,
+				createdRelationToIdMap));
+//		Util.printQueries(queries, "UPDATE", Format.PRETTY_1);
+		return queries;
 	}
 	
 	private void setToSynchronized(List<JcQueryResult> results,
