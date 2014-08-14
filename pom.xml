@@ -1,15 +1,72 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>iot.neo</groupId>
+	<groupId>net.iot-solutions.graphdb</groupId>
 	<artifactId>jcypher</artifactId>
-	<version>1.0.0</version>
+	<version>1.1.0-SNAPSHOT</version>
+
+	<name>${project.groupId}:${project.artifactId}</name>
+	<description> Provides seamlessly integrated Java access to graph databases (Neo4J) 
+	at different levels of abstraction.</description>
+	<url>https://github.com/Wolfgang-Schuetzelhofer/jcypher/wiki</url>
+
+	<licenses>
+		<license>
+			<name>The Apache License, Version 2.0</name>
+			<url>http://www.apache.org/licenses/LICENSE-2.0.txt</url>
+		</license>
+	</licenses>
+
+	<developers>
+		<developer>
+			<name>Wolfgang Schuetzelhofer</name>
+			<email>wschuetzelhofer@gmail.com</email>
+			<organization>IoT-Solutions e.U.</organization>
+			<organizationUrl>https://github.com/Wolfgang-Schuetzelhofer</organizationUrl>
+		</developer>
+	</developers>
+
+	<scm>
+		<connection>scm:git:git@github.com:Wolfgang-Schuetzelhofer/jcypher.git</connection>
+		<developerConnection>scm:git:git@github.com:Wolfgang-Schuetzelhofer/jcypher.git</developerConnection>
+		<url>git@github.com:Wolfgang-Schuetzelhofer/jcypher.git</url>
+	</scm>
+
+	<profiles>
+		<profile>
+			<id>release</id>
+			<build>
+				<plugins>
+					<!-- plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-source-plugin</artifactId>
+						<version>2.3</version>
+						<configuration>
+							<attach>false</attach>
+						</configuration>
+					</plugin-->
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-javadoc-plugin</artifactId>
+						<version>2.9.1</version>
+						<executions>
+							<execution>
+								<id>attach-javadocs</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+	</profiles>
 
 	<build>
 		<resources>
-			<resource><!-- include .java files in .jar -->
-				<directory>src/main/java</directory>
-			</resource>
+			<!-- include .java files in .jar -->
+			<!-- resource> <directory>src/main/java</directory> </resource -->
 		</resources>
 		<plugins>
 			<plugin>
@@ -20,6 +77,7 @@
 					<target>1.7</target>
 				</configuration>
 			</plugin>
+
 		</plugins>
 	</build>
 	<dependencies>
