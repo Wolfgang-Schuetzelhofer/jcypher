@@ -127,6 +127,20 @@ public class AbstractTestSuite {
 		return str;
 	}
 	
+	/**
+	 * print errors to System.out
+	 * @param result
+	 */
+	protected void printErrors(List<JcError> errors) {
+		StringBuilder sb = new StringBuilder();
+		sb.append("---------------Errors:");
+		appendErrorList(errors, sb);
+		sb.append("\n---------------end Errors:");
+		String str = sb.toString();
+		System.out.println("");
+		System.out.println(str);
+	}
+	
 	private void appendErrorList(List<JcError> errors, StringBuilder sb) {
 		int num = errors.size();
 		for (int i = 0; i < num; i++) {

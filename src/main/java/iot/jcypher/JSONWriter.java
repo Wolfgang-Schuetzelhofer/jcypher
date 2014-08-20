@@ -202,7 +202,8 @@ public class JSONWriter {
 				writeLiteral(v, generator);
 			}
 			generator.writeEnd();
-		}
+		} else if (val != null) // handle everything else as a string
+			generator.write(key, val.toString());
 	}
 	
 	private static void writeLiteral(Object val, JsonGenerator generator) {
@@ -219,6 +220,8 @@ public class JSONWriter {
 				generator.write((Float)val);
 		} else if (val instanceof Boolean)
 			generator.write((Boolean)val);
+		else if (val != null) // handle everything else as a string
+			generator.write(val.toString());
 	}
 
 	private static void reInitContext(WriterContext context) {

@@ -989,10 +989,8 @@ public class CypherWriter {
 	public static class PrimitiveCypherWriter {
 
 		public static void writePrimitiveValue(Object val, WriterContext context) {
-			if (val instanceof String) {
-				context.buffer.append('\'');
+			if (val instanceof Number) {
 				context.buffer.append(val.toString());
-				context.buffer.append('\'');
 			} else if (val instanceof List<?>) {
 				context.buffer.append('[');
 				List<?> list = (List<?>)val;
@@ -1003,7 +1001,9 @@ public class CypherWriter {
 				}
 				context.buffer.append(']');
 			} else {
+				context.buffer.append('\'');
 				context.buffer.append(val.toString());
+				context.buffer.append('\'');
 			}
 		}
 		

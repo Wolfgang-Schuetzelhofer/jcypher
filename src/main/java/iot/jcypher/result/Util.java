@@ -110,6 +110,13 @@ public class Util {
 		return errors;
 	}
 	
+	public static List<JcError> collectErrors(JcQueryResult result) {
+		List<JcError> errors = new ArrayList<JcError>();
+		errors.addAll(result.getGeneralErrors());
+		errors.addAll(result.getDBErrors());
+		return errors;
+	}
+	
 	private static void appendErrorList(List<JcError> errors, StringBuilder sb) {
 		int num = errors.size();
 		for (int i = 0; i < num; i++) {

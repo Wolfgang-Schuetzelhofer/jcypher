@@ -37,6 +37,19 @@ public class GrNode extends GrPropertyContainer {
 	}
 	
 	/**
+	 * return a label
+	 * @param labelName
+	 * @return a GrLabel
+	 */
+	public GrLabel getLabel(String labelName) {
+		for (GrLabel lab : getLabels()) {
+			if (lab.getName().equals(labelName))
+				return lab;
+		}
+		return null;
+	}
+	
+	/**
 	 * add a new label, throw a RuntimeException if the label already exists
 	 * @param name of the label
 	 * @return the added label
