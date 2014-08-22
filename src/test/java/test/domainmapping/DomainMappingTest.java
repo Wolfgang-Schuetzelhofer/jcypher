@@ -71,6 +71,12 @@ public class DomainMappingTest extends AbstractTestSuite{
 		clearMillis(cal);
 		keanu.setBirthDate(cal.getTime());
 		
+		Address addr = new Address();
+		addr.setCity("Vienna");
+		addr.setStreet("Main Street");
+		addr.setNumber(9);
+		keanu.setAddress(addr);
+		
 		Person laurence = new Person();
 		laurence.setFirstName("Laurence");
 		laurence.setLastName("Fishburne");
@@ -91,7 +97,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Person keanu_1;
 		try {
 			//keanu_1 = dc.loadById(Person.class, 0);
-			List<Person> persons = dc.loadByIds(Person.class, 0, 1);
+			List<Person> persons = dc.loadByIds(Person.class, 0, 2);
 			keanu_1 = persons.get(0);
 			String keanuStr = keanu_1.toString();
 			System.out.println(keanuStr);
@@ -99,8 +105,9 @@ public class DomainMappingTest extends AbstractTestSuite{
 			if (e instanceof JcResultException) {
 				errors = ((JcResultException)e).getErrors();
 				printErrors(errors);
+				return;
 			}
-			return;
+			throw e;
 		}
 		return;
 	}

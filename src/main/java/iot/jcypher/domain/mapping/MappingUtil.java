@@ -37,6 +37,44 @@ public class MappingUtil {
 		}
 	}
 	
+	public static long dateToLong(Date date) {
+		return date.getTime();
+	}
+	
+	public static Date longToDate(long millis) {
+		return new Date(millis);
+	}
+	
+	public static boolean mapsToProperty(Class<?> type) {
+		return type.isPrimitive() ||
+				String.class.isAssignableFrom(type) ||
+				Number.class.isAssignableFrom(type) ||
+				Boolean.class.isAssignableFrom(type) ||
+				Date.class.isAssignableFrom(type);
+	}
+	
+	public static boolean convertsToProperty(Class<?> type) {
+		return Date.class.isAssignableFrom(type);
+	}
+	
+	public static Object convertToProperty(Object value) {
+		if (value != null) {
+			if (Date.class.isAssignableFrom(value.getClass())) {
+				return dateToLong((Date) value);
+			}
+		}
+		return value;
+	}
+	
+	public static Object convertFromProperty(Object value, Class<?> targetType) {
+		if (value != null) {
+			if (Date.class.isAssignableFrom(targetType) && value instanceof Number) {
+				return longToDate(((Number)value).longValue());
+			}
+		}
+		return value;
+	}
+	
 	private static SimpleDateFormat getSimpleDateFormat() {
 		if (simpleDateFormat == null) {
 			simpleDateFormat =

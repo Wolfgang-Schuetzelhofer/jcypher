@@ -50,18 +50,23 @@ public class FieldMapping {
 			prepare(domainObject);
 			
 			Object value = this.field.get(domainObject);
-			if (value instanceof Date) {
-				value = MappingUtil.dateToString((Date) value);
-			}
-			GrProperty prop = rNode.getProperty(this.propertyName);
-			if (prop != null) {
-				if (!prop.getValue().equals(value)) {
-					prop.remove();
-					prop = null;
+			Class<?> typ = this.field.getType();
+			if (MappingUtil.mapsToProperty(typ)) {
+				if (MappingUtil.convertsToProperty(typ))
+					value = MappingUtil.convertToProperty(value);
+				GrProperty prop = rNode.getProperty(this.propertyName);
+				if (prop != null) {
+					if (!prop.getValue().equals(value)) {
+						prop.remove();
+						prop = null;
+					}
 				}
+				if (prop == null)
+					rNode.addProperty(this.propertyName, value);
+			} else {
+				
 			}
-			if (prop == null)
-				rNode.addProperty(this.propertyName, value);
+			
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
@@ -75,9 +80,9 @@ public class FieldMapping {
 			GrProperty prop = rNode.getProperty(this.propertyName);
 			if (prop != null) {
 				Object propValue = prop.getValue();
-				if (Date.class.isAssignableFrom(this.field.getType())) {
-					propValue = MappingUtil.stringToDate(propValue.toString());
-				}
+				Class<?> typ = this.field.getType();
+				if (MappingUtil.convertsToProperty(typ))
+					propValue = MappingUtil.convertFromProperty(propValue, typ);
 				if (!propValue.equals(value)) {
 					this.field.set(domainObject, propValue);
 				}
@@ -85,6 +90,45 @@ public class FieldMapping {
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
+	}
+	
+	/**
+	 * 
+	 * @return the value of the field, if this value cannot be mapped to a property,
+	 * but must be mapped to a seperate node connected via a relation, else return null.
+	 */
+	public Object getObjectNeedingRelation(Object domainObject) {
+		try {
+			prepare(domainObject);
+			Class<?> typ = this.field.getType();
+			if (!MappingUtil.mapsToProperty(typ)) {
+				Object value = this.field.get(domainObject);
+				return value;
+			}
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
+		}
+		return null;
+	}
+	
+	/**
+	 * 
+	 * @return true, if this firled cannot be mapped to a property,
+	 * but must be mapped to a seperate node connected via a relation, else return false.
+	 */
+	public boolean needsRelation() {
+		Class<?> typ = this.field.getType();
+		return !MappingUtil.mapsToProperty(typ);
+	}
+	
+	public String getFieldName() {
+		if (this.fieldName == null)
+			this.fieldName = this.field.getName();
+		return this.fieldName;
+	}
+	
+	public Class<?> getFieldType () {
+		return this.field.getType();
 	}
 
 	private void prepare(Object domainObject) throws NoSuchFieldException, SecurityException {
