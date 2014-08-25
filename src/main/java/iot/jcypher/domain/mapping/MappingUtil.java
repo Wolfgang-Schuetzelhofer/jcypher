@@ -50,17 +50,16 @@ public class MappingUtil {
 				String.class.isAssignableFrom(type) ||
 				Number.class.isAssignableFrom(type) ||
 				Boolean.class.isAssignableFrom(type) ||
-				Date.class.isAssignableFrom(type);
-	}
-	
-	public static boolean convertsToProperty(Class<?> type) {
-		return Date.class.isAssignableFrom(type);
+				Date.class.isAssignableFrom(type) ||
+				Enum.class.isAssignableFrom(type);
 	}
 	
 	public static Object convertToProperty(Object value) {
 		if (value != null) {
 			if (Date.class.isAssignableFrom(value.getClass())) {
 				return dateToLong((Date) value);
+			} else if (Enum.class.isAssignableFrom(value.getClass())) {
+				return ((Enum<?>)value).name();
 			}
 		}
 		return value;
@@ -70,11 +69,40 @@ public class MappingUtil {
 		if (value != null) {
 			if (Date.class.isAssignableFrom(targetType) && value instanceof Number) {
 				return longToDate(((Number)value).longValue());
+			} else if (Enum.class.isAssignableFrom(targetType)) {
+				Object[] enums=targetType.getEnumConstants();
+				for (int i = 0; i < enums.length; i++) {
+					if (((Enum<?>)enums[i]).name().equals(value.toString()))
+						return enums[i];
+				}
+				return value;
+			} else if (targetType.equals(value.getClass())) {
+				return value;
+			} else if (targetType.isPrimitive()) {
+				return convertToPrimitive(value, targetType);
+			} else if (targetType.isAssignableFrom(value.getClass())) {
+				return targetType.cast(value);
 			}
 		}
 		return value;
 	}
 	
+	private static Object convertToPrimitive(Object value, Class<?> targetType) {
+		if (targetType.equals(Short.TYPE))
+			return ((Number)value).shortValue();
+		else if (targetType.equals(Integer.TYPE))
+			return ((Number)value).intValue();
+		else if (targetType.equals(Long.TYPE))
+			return ((Number)value).longValue();
+		else if (targetType.equals(Float.TYPE))
+			return ((Number)value).floatValue();
+		else if (targetType.equals(Double.TYPE))
+			return ((Number)value).doubleValue();
+		else if (targetType.equals(Boolean.TYPE))
+			return ((Boolean)value).booleanValue();
+		return value;
+	}
+
 	private static SimpleDateFormat getSimpleDateFormat() {
 		if (simpleDateFormat == null) {
 			simpleDateFormat =

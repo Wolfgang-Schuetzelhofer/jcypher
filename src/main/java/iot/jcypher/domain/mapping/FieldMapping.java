@@ -52,8 +52,7 @@ public class FieldMapping {
 			Object value = this.field.get(domainObject);
 			Class<?> typ = this.field.getType();
 			if (MappingUtil.mapsToProperty(typ)) {
-				if (MappingUtil.convertsToProperty(typ))
-					value = MappingUtil.convertToProperty(value);
+				value = MappingUtil.convertToProperty(value);
 				GrProperty prop = rNode.getProperty(this.propertyName);
 				if (prop != null) {
 					if (!prop.getValue().equals(value)) {
@@ -63,8 +62,6 @@ public class FieldMapping {
 				}
 				if (prop == null)
 					rNode.addProperty(this.propertyName, value);
-			} else {
-				
 			}
 			
 		} catch (Throwable e) {
@@ -78,15 +75,23 @@ public class FieldMapping {
 			
 			Object value = this.field.get(domainObject);
 			GrProperty prop = rNode.getProperty(this.propertyName);
-			if (prop != null) {
+			if (prop != null && !this.needsRelation()) {
 				Object propValue = prop.getValue();
 				Class<?> typ = this.field.getType();
-				if (MappingUtil.convertsToProperty(typ))
-					propValue = MappingUtil.convertFromProperty(propValue, typ);
+				propValue = MappingUtil.convertFromProperty(propValue, typ);
 				if (!propValue.equals(value)) {
 					this.field.set(domainObject, propValue);
 				}
 			}
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public void setField(Object domainObject, Object value) {
+		try {
+			prepare(domainObject);
+			this.field.set(domainObject, value);
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
@@ -121,10 +126,8 @@ public class FieldMapping {
 		return !MappingUtil.mapsToProperty(typ);
 	}
 	
-	public String getFieldName() {
-		if (this.fieldName == null)
-			this.fieldName = this.field.getName();
-		return this.fieldName;
+	public String getPropertyOrRelationName() {
+		return this.propertyName;
 	}
 	
 	public Class<?> getFieldType () {

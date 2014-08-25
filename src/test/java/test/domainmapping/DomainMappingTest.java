@@ -61,6 +61,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	
 	@Test
 	public void testStoreDomainObject() {
+		List<JcError> errors;
 		DomainConfig dc = new DomainConfig(dbAccess);
 		
 		Person keanu = new Person();
@@ -77,6 +78,11 @@ public class DomainMappingTest extends AbstractTestSuite{
 		addr.setNumber(9);
 		keanu.setAddress(addr);
 		
+		Contact contact = new Contact();
+		contact.setType(ContactType.TELEPHONE);
+		contact.setNummer("12345");
+		keanu.setContact(contact);
+		
 		Person laurence = new Person();
 		laurence.setFirstName("Laurence");
 		laurence.setLastName("Fishburne");
@@ -89,15 +95,15 @@ public class DomainMappingTest extends AbstractTestSuite{
 		domainObjects.add(keanu);
 		domainObjects.add(laurence);
 		
-		List<JcError> errors = dc.store(domainObjects);
+		errors = dc.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
 		}
-		
+
 		Person keanu_1;
 		try {
 			//keanu_1 = dc.loadById(Person.class, 0);
-			List<Person> persons = dc.loadByIds(Person.class, 0, 2);
+			List<Person> persons = dc.loadByIds(Person.class, 0, 3);
 			keanu_1 = persons.get(0);
 			String keanuStr = keanu_1.toString();
 			System.out.println(keanuStr);

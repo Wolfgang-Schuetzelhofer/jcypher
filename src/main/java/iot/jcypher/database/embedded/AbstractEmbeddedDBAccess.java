@@ -329,7 +329,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			
 			if (restObject != null)
 				restArray.add(restObject);
-			if (restValue != null)
+			else
 				writeLiteralValue(restValue, restArray);
 		}
 		
@@ -351,7 +351,9 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 	}
 	
 	private static void writeLiteralValue(Object val, JsonArrayBuilder array) {
-		if (val instanceof String)
+		if (val == null)
+			array.addNull();
+		else if (val instanceof String)
 			array.add(val.toString());
 		else if (val instanceof Number) {
 			if (val instanceof Long)

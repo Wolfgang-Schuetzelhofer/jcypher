@@ -26,10 +26,13 @@ import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.graph.Graph;
 import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.api.pattern.Node;
+import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
 import iot.jcypher.result.Util;
@@ -90,41 +93,71 @@ public class DomainConfig {
 		}
 		
 		<T> List<T> loadByIds(Class<T> domainObjectClass, long... ids) {
-			TypeContext context = new TypeContext();
-			new ClosureCalculator().calculateTypeClosure(domainObjectClass,
-					context);
+			List<T> resultList = new ArrayList<T>();
+			
+			ClosureQueryContext context = new ClosureQueryContext(domainObjectClass);
+			new ClosureCalculator().calculateClosureQuery(context);
+			boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
 			
 			List<JcNode> nodes = new ArrayList<JcNode>(ids.length);
-			IClause[] clauses = new IClause[ids.length + 1];
 			
-			for (int i = 0; i < ids.length; i++) {
-				JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
-				nodes.add(n);
-				clauses[i] = START.node(n).byId(ids[i]);
-			}
-			clauses[ids.length] = RETURN.ALL();
-			
-			JcQuery query = new JcQuery();
-			query.setClauses(clauses);
-			JcQueryResult result = this.dbAccess.execute(query);
-			if (result.hasErrors()) {
-				List<JcError> errors = Util.collectErrors(result);
-				throw new JcResultException(errors);
+			if (repeat) {
+				JcQuery query;
+				String nm = NodePrefix.concat(String.valueOf(0));
+				List<JcQuery> queries = new ArrayList<JcQuery>();
+				for (int i = 0; i < ids.length; i++) {
+					query = new JcQuery();
+					JcNode n = new JcNode(nm);
+					List<IClause> clauses = new ArrayList<IClause>();
+					clauses.add(START.node(n).byId(ids[i]));
+					clauses.addAll(context.matchClauses);
+					clauses.add(RETURN.ALL());
+					IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+					query.setClauses(clausesArray);
+					queries.add(query);
+				}
+//				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
+				List<JcQueryResult> results = this.dbAccess.execute(queries);
+				List<JcError> errors = Util.collectErrors(results);
+				if (errors.size() > 0) {
+					throw new JcResultException(errors);
+				}
+//				Util.printResults(results, "CLOSURE", Format.PRETTY_1);
+				for (int i = 0; i < ids.length; i++) {
+					FillModelContext<T> fContext = new FillModelContext<T>(domainObjectClass,
+							results.get(i));
+					new ClosureCalculator().fillModel(fContext);
+					resultList.add(fContext.domainObject);
+				}
+			} else {
+				List<IClause> clauses = new ArrayList<IClause>();
+				for (int i = 0; i < ids.length; i++) {
+					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
+					nodes.add(n);
+					clauses.add(START.node(n).byId(ids[i]));
+				}
+				clauses.add(RETURN.ALL());
+				JcQuery query = new JcQuery();
+				IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+				query.setClauses(clausesArray);
+				JcQueryResult result = this.dbAccess.execute(query);
+				if (result.hasErrors()) {
+					List<JcError> errors = Util.collectErrors(result);
+					throw new JcResultException(errors);
+				}
+				for (int i = 0; i < nodes.size(); i++) {
+					GrNode rNode = result.resultOf(nodes.get(i)).get(0);
+					T obj = createFromGraph_OBSOLETE(domainObjectClass, rNode);
+					resultList.add(obj);
+					this.objectToIdMap.put(obj, rNode.getId());
+				}
 			}
 
-			List<T> ret = new ArrayList<T>(nodes.size());
-			for (int i = 0; i < nodes.size(); i++) {
-				GrNode rNode = result.resultOf(nodes.get(i)).get(0);
-				T obj = createFromGraph(domainObjectClass, rNode);
-				ret.add(obj);
-				this.objectToIdMap.put(obj, rNode.getId());
-			}
-
-			return ret;
+			return resultList;
 		}
 		
 		Graph updateLocalGraph(List<Object> domainObjects) {
-			InstanceContext context = new InstanceContext();
+			UpdateContext context = new UpdateContext();
 			new ClosureCalculator().calculateClosure(domainObjects,
 					context);
 			Graph graph = null;
@@ -218,7 +251,7 @@ public class DomainConfig {
 			return graph;
 		}
 
-		private <T> T createFromGraph(Class<T> domainObjectClass, GrNode rNode) {
+		private <T> T createFromGraph_OBSOLETE(Class<T> domainObjectClass, GrNode rNode) {
 			ObjectMapping objectMapping = getObjectMappingFor(domainObjectClass);
 			T domainObject;
 			try {
@@ -249,14 +282,41 @@ public class DomainConfig {
 	
 	/**********************************************/
 	private class ClosureCalculator {
+		
+		private <T> void fillModel(FillModelContext<T> context) {
+			T domainObject = context.domainObject;
+			if (domainObject == null) {
+				try {
+					domainObject = context.domainObjectClass.newInstance();
+				} catch (Throwable e) {
+					throw new RuntimeException(e);
+				}
+				context.domainObject = domainObject;
+			}
+			context.currentObject = domainObject;
+			Step step = new Step();
+			step.fillModel(context, null, -1, -1);
+		}
+		
+		private void calculateClosureQuery(ClosureQueryContext context) {
+			boolean isDone = false;
+			Step step = new Step();
+			while (!isDone) {
+				isDone = step.calculateQuery(null, -1, context, -1);
+				if (context.currentMatchClause != null) {
+					context.addMatchClause(context.currentMatchClause);
+					context.currentMatchClause = null;
+				}
+			}
+		}
 
-		private void calculateClosure(List<Object> domainObjects, InstanceContext context) {
+		private void calculateClosure(List<Object> domainObjects, UpdateContext context) {
 			for (Object domainObject : domainObjects) {
 				recursiveCalculateClosure(domainObject, context);
 			}
 		}
 		
-		private void recursiveCalculateClosure(Object domainObject, InstanceContext context) {
+		private void recursiveCalculateClosure(Object domainObject, UpdateContext context) {
 			if (!context.domainObjects.contains(domainObject)) { // avoid infinite loops
 				context.domainObjects.add(domainObject);
 				ObjectMapping objectMapping = domainConfigHandler.getObjectMappingFor(domainObject.getClass());
@@ -264,7 +324,7 @@ public class DomainConfig {
 				for (FieldMapping fm : fMappings) {
 					Object obj = fm.getObjectNeedingRelation(domainObject);
 					if (obj != null) {
-						Relation relat = new Relation(fm.getFieldName(), domainObject, obj);
+						Relation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, obj);
 						context.relations.add(relat);
 						recursiveCalculateClosure(obj, context);
 					}
@@ -272,33 +332,185 @@ public class DomainConfig {
 			}
 		}
 		
-		private void calculateTypeClosure(Class<?> domainType, TypeContext context) {
-			if (!context.domainTypes.contains(domainType)) { // avoid infinite loops
-				context.domainTypes.add(domainType);
-				ObjectMapping objectMapping = domainConfigHandler.getObjectMappingFor(domainType);
-				List<FieldMapping> fMappings = objectMapping.getFieldMappings();
-				for (FieldMapping fm : fMappings) {
-					if (fm.needsRelation()) {
-						Class<?> typ = fm.getFieldType();
-						TypeRelation relat = new TypeRelation(fm.getFieldName(), domainType, typ);
-						context.relations.add(relat);
-						calculateTypeClosure(typ, context);
+		/**********************************************/
+		private class Step {
+			
+			private int subPathIndex = -1;
+			private Step next;
+			
+			private <T> boolean fillModel(FillModelContext<T> context, FieldMapping fm,
+					int fieldIndex, int level) {
+				boolean isNullNode = false;
+				if (!context.domainObjects.contains(context.currentObject)) {
+					context.domainObjects.add(context.currentObject);
+					String nnm = this.buildNodeName(fieldIndex, level);
+					JcNode n = new JcNode(nnm);
+					List<GrNode> resList = context.qResult.resultOf(n);
+					if (resList.size() > 0) { // a result node exists for this pattern
+						GrNode rNode = resList.get(0);
+						if (rNode != null) { // null values are supported
+							Class<?> doClass;
+							if (fm == null)
+								doClass = context.domainObjectClass;
+							else
+								doClass = fm.getFieldType();
+							ObjectMapping objectMapping = domainConfigHandler.getObjectMappingFor(doClass);
+							List<FieldMapping> fMappings = objectMapping.getFieldMappings();
+							int idx = -1;
+							for (FieldMapping fMap : fMappings) {
+								idx++;
+								if (fMap.needsRelation()) {
+									Object prev = context.currentObject;
+									Object domainObject;
+									try {
+										domainObject = fMap.getFieldType().newInstance();
+									} catch (Throwable e) {
+										throw new RuntimeException(e);
+									}
+									context.currentObject = domainObject;
+									boolean nodeIsNull = this.fillModel(context, fMap, idx, level + 1);
+									if (!nodeIsNull)
+										fMap.setField(prev, domainObject);
+									context.currentObject = prev;
+								} else {
+									fMap.mapToField(context.currentObject, rNode);
+								}
+							}
+						} else {
+							context.domainObjects.remove(context.currentObject);
+							isNullNode = true;
+						}
 					}
 				}
+				return isNullNode;
+			}
+			
+			/**
+			 * @param fm, null for the root step
+			 * @param context
+			 * @return true, if calculating query for the current path is done
+			 */
+			private boolean calculateQuery(FieldMapping fm, int fieldIndex, ClosureQueryContext context, int level) {
+				if (fm != null) // don't add a match for the start node itself
+					this.addToQuery(fm, fieldIndex, context, level);
+				Class<?> doClass;
+				if (fm == null)
+					doClass = context.domainObjectClass;
+				else
+					doClass = fm.getFieldType();
+				ObjectMapping objectMapping = domainConfigHandler.getObjectMappingFor(doClass);
+				List<FieldMapping> fMappings = objectMapping.getFieldMappings();
+				boolean walkedToIndex = this.subPathIndex == -1;
+				boolean subPathWalked = false;
+				int idx = -1;
+				for (FieldMapping fMap : fMappings) {
+					idx++;
+					if (!walkedToIndex) {
+						if (idx != this.subPathIndex) // until subPathIndex is reached
+							continue;
+						else
+							walkedToIndex = true;
+					}
+					
+					if (fMap.needsRelation()) {
+						boolean needToComeBack = false;
+						if (!subPathWalked) {
+							if (this.next == null)
+								this.next = new Step();
+							boolean isDone = this.next.calculateQuery(fMap, idx, context, level + 1);
+							if (!isDone) { // sub path not finished
+								needToComeBack = true;
+							} else {
+								this.next = null;
+								subPathWalked = true;
+							}
+						} else {
+							needToComeBack = true;
+						}
+						
+						if (needToComeBack) {
+							this.subPathIndex = idx;
+							return false;
+						}
+					}
+				}
+				return true;
+			}
+			
+			private void addToQuery(FieldMapping fm, int fieldIndex, ClosureQueryContext context, int level) {
+				if (context.currentMatchClause == null) {
+					JcNode n = new JcNode(DomainConfigHandler.NodePrefix.concat(String.valueOf(0)));
+					context.currentMatchClause = OPTIONAL_MATCH.node(n);
+				}
+				
+				JcNode n = new JcNode(this.buildNodeName(fieldIndex, level));
+				context.currentMatchClause.relation().out().type(fm.getPropertyOrRelationName())
+				.node(n);
+			}
+			
+			private String buildNodeName(int fieldIndex, int level) {
+				// format of node name: n_x_y_z
+				// x: index of the match clause
+				// y: level of the current step within the query path
+				// z: index of the field within the parent
+				StringBuilder sb = new StringBuilder();
+				sb.append(DomainConfigHandler.NodePrefix);
+				sb.append(0);
+				if (level >= 0) {
+					sb.append('_');
+					sb.append(level);
+					sb.append('_');
+					sb.append(fieldIndex);
+				}
+				
+				return sb.toString();
 			}
 		}
 	}
 	
 	/***********************************/
-	private class InstanceContext {
+	private class FillModelContext<T> {
+		private JcQueryResult qResult;
+		private Class<T> domainObjectClass;
+		private T domainObject;
+		private Object currentObject;
 		private List<Object> domainObjects = new ArrayList<Object>();
-		private List<Relation> relations = new ArrayList<Relation>();
+		
+		FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult) {
+			super();
+			this.domainObjectClass = domainObjectClass;
+			this.qResult = qResult;
+		}
 	}
 	
 	/***********************************/
-	private class TypeContext {
-		private List<Class<?>> domainTypes = new ArrayList<Class<?>>();
-		private List<TypeRelation> relations = new ArrayList<TypeRelation>();
+	private class ClosureQueryContext {
+		private Class<?> domainObjectClass;
+		private List<IClause> matchClauses;
+		private Node currentMatchClause;
+		
+		ClosureQueryContext(Class<?> domainObjectClass) {
+			super();
+			this.domainObjectClass = domainObjectClass;
+		}
+		
+		private int getClauseIndex() {
+			if(this.matchClauses == null)
+				return 0;
+			return this.matchClauses.size();
+		}
+		
+		private void addMatchClause(IClause clause) {
+			if (this.matchClauses == null)
+				this.matchClauses = new ArrayList<IClause>();
+			this.matchClauses.add(clause);
+		}
+	}
+	
+	/***********************************/
+	private class UpdateContext {
+		private List<Object> domainObjects = new ArrayList<Object>();
+		private List<Relation> relations = new ArrayList<Relation>();
 	}
 	
 	/***********************************/
@@ -341,55 +553,6 @@ public class DomainConfig {
 				if (other.start != null)
 					return false;
 			} else if (!start.equals(other.start))
-				return false;
-			if (type == null) {
-				if (other.type != null)
-					return false;
-			} else if (!type.equals(other.type))
-				return false;
-			return true;
-		}
-	}
-	
-	/***********************************/
-	private class TypeRelation {
-		private String type;
-		private Class<?> start;
-		private Class<?> end;
-		
-		TypeRelation(String type, Class<?> start, Class<?> end) {
-			super();
-			this.type = type;
-			this.start = start;
-			this.end = end;
-		}
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((end == null) ? 0 : end.getName().hashCode());
-			result = prime * result + ((start == null) ? 0 : start.getName().hashCode());
-			result = prime * result + ((type == null) ? 0 : type.hashCode());
-			return result;
-		}
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			TypeRelation other = (TypeRelation) obj;
-			if (end == null) {
-				if (other.end != null)
-					return false;
-			} else if (!end.getName().equals(other.end.getName()))
-				return false;
-			if (start == null) {
-				if (other.start != null)
-					return false;
-			} else if (!start.getName().equals(other.start.getName()))
 				return false;
 			if (type == null) {
 				if (other.type != null)

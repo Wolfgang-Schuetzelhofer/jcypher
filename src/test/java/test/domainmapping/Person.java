@@ -8,6 +8,7 @@ public class Person {
 	private String lastName;
 	private Date birthDate;
 	private Address address;
+	private Contact contact;
 	
 	public String getFirstName() {
 		return firstName;
@@ -33,6 +34,12 @@ public class Person {
 	public void setAddress(Address address) {
 		this.address = address;
 	}
+	public Contact getContact() {
+		return contact;
+	}
+	public void setContact(Contact contact) {
+		this.contact = contact;
+	}
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -44,6 +51,10 @@ public class Person {
 		if (this.address != null) {
 			sb.append(' ');
 			sb.append(this.address.toString());
+		}
+		if (this.contact != null) {
+			sb.append(' ');
+			sb.append(this.contact.toString());
 		}
 		return sb.toString();
 	}

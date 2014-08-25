@@ -131,7 +131,9 @@ public class ResultHandler {
 	private <T extends PersistableItem> List<T> filterRemovedItems(List<T> items) {
 		ArrayList<T> rItems = new ArrayList<T>();
 		for (T item : items) {
-			if (GrAccess.getState(item) != SyncState.REMOVED)
+			if (item == null)
+				rItems.add(item);
+			else if (GrAccess.getState(item) != SyncState.REMOVED)
 				rItems.add(item);
 		}
 		return rItems;
@@ -150,12 +152,15 @@ public class ResultHandler {
 				rowIdx++;
 				JsonObject dataObject = (JsonObject) it.next();
 				ElementInfo ei = getElementInfo(dataObject, colIdx);
-				GrNode rNode = getNodesById().get(ei.id);
-				if (rNode == null) {
-					rNode = GrAccess.createNode(this, new GrId(ei.id), rowIdx);
-					GrAccess.setState(rNode, SyncState.SYNC);
-					GrAccess.addChangeListener(getNodeRelationListener(), rNode);
-					getNodesById().put(ei.id, rNode);
+				GrNode rNode = null;
+				if (!ei.isNull) {
+					rNode = getNodesById().get(ei.id);
+					if (rNode == null) {
+						rNode = GrAccess.createNode(this, new GrId(ei.id), rowIdx);
+						GrAccess.setState(rNode, SyncState.SYNC);
+						GrAccess.addChangeListener(getNodeRelationListener(), rNode);
+						getNodesById().put(ei.id, rNode);
+					}
 				}
 				rNodes.add(rNode);
 			}
@@ -184,15 +189,18 @@ public class ResultHandler {
 			while(it.hasNext()) { // iterate over rows
 				rowIdx++;
 				JsonObject dataObject = (JsonObject) it.next();
+				GrRelation rRelation = null;
 				ElementInfo ei = getElementInfo(dataObject, colIdx);
-				RelationInfo ri = getRelationInfo(dataObject, colIdx);
-				GrRelation rRelation = getRelationsById().get(ei.id);
-				if (rRelation == null) {
-					rRelation = GrAccess.createRelation(this, new GrId(ei.id),
-							new GrId(ri.startNodeId), new GrId(ri.endNodeId), rowIdx);
-					GrAccess.setState(rRelation, SyncState.SYNC);
-					GrAccess.addChangeListener(getNodeRelationListener(), rRelation);
-					getRelationsById().put(ei.id, rRelation);
+				if (!ei.isNull) {
+					RelationInfo ri = getRelationInfo(dataObject, colIdx);
+					rRelation = getRelationsById().get(ei.id);
+					if (rRelation == null) {
+						rRelation = GrAccess.createRelation(this, new GrId(ei.id),
+								new GrId(ri.startNodeId), new GrId(ri.endNodeId), rowIdx);
+						GrAccess.setState(rRelation, SyncState.SYNC);
+						GrAccess.addChangeListener(getNodeRelationListener(), rRelation);
+						getRelationsById().put(ei.id, rRelation);
+					}
 				}
 				rRelations.add(rRelation);
 			}
@@ -299,7 +307,7 @@ public class ResultHandler {
 					while(it.hasNext()) { // iterate over just one row
 						JsonObject dataObject = (JsonObject) it.next();
 						ElementInfo ei = getElementInfo(dataObject, colIdx);
-						if (ei != null) { // relation or node
+						if (ei != null && !ei.isNull) { // relation or node
 							if (ElemType.NODE == ei.type) {
 								isNodeColumn = true;
 							}
@@ -598,6 +606,9 @@ public class ResultHandler {
 					return ei;
 				}
 			}
+		} else if (obj.getValueType() == ValueType.NULL) {
+			ElementInfo ei = ElementInfo.nullElement();
+			return ei;
 		}
 		return null;
 	}
@@ -768,9 +779,11 @@ public class ResultHandler {
 	private static class ElementInfo {
 		private long id;
 		private ElemType type;
+		private boolean isNull;
 		
 		private static ElementInfo parse(String selfString) {
 			ElementInfo ret = new ElementInfo();
+			ret.isNull = false;
 			int lidx = selfString.lastIndexOf('/');
 			ret.id = Long.parseLong(selfString.substring(lidx + 1));
 			String preString = selfString.substring(0, lidx);
@@ -786,6 +799,12 @@ public class ResultHandler {
 			else if ("relationship".equals(typeString))
 				ret.type = ElemType.RELATION;
 			
+			return ret;
+		}
+		
+		private static ElementInfo nullElement() {
+			ElementInfo ret = new ElementInfo();
+			ret.isNull = true;
 			return ret;
 		}
 	}
