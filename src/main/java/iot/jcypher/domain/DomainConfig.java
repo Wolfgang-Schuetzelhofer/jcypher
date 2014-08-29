@@ -32,7 +32,6 @@ import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
 import iot.jcypher.result.Util;
@@ -60,9 +59,7 @@ public class DomainConfig {
 	}
 	
 	public List<JcError> store(List<Object> domainObjects) {
-		Graph graph = this.domainConfigHandler.updateLocalGraph(domainObjects);
-		List<JcError> errors = graph.store();
-		return errors;
+		return this.domainConfigHandler.store(domainObjects);
 	}
 	
 	public <T> T loadById(Class<T> domainObjectClass, long id) {
@@ -82,6 +79,7 @@ public class DomainConfig {
 		private IDBAccess dbAccess;
 		private Map<Object, Long> objectToIdMap;
 		private Map<Relation, Long> relationToIdMap;
+		private Map<Long, List<Object>> idToObjectsMap;
 		private Map<Class<?>, ObjectMapping> mappings;
 
 		private DomainConfigHandler(IDBAccess dbAccess) {
@@ -89,105 +87,79 @@ public class DomainConfig {
 			this.dbAccess = dbAccess;
 			this.objectToIdMap = new HashMap<Object, Long>();
 			this.relationToIdMap = new HashMap<Relation, Long>();
+			this.idToObjectsMap = new HashMap<Long, List<Object>>();
 			this.mappings = new HashMap<Class<?>, ObjectMapping>();
 		}
 		
 		<T> List<T> loadByIds(Class<T> domainObjectClass, long... ids) {
-			List<T> resultList = new ArrayList<T>();
+			List<T> resultList;
 			
 			ClosureQueryContext context = new ClosureQueryContext(domainObjectClass);
 			new ClosureCalculator().calculateClosureQuery(context);
 			boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
 			
-			List<JcNode> nodes = new ArrayList<JcNode>(ids.length);
-			
-			if (repeat) {
-				JcQuery query;
-				String nm = NodePrefix.concat(String.valueOf(0));
-				List<JcQuery> queries = new ArrayList<JcQuery>();
-				for (int i = 0; i < ids.length; i++) {
-					query = new JcQuery();
-					JcNode n = new JcNode(nm);
-					List<IClause> clauses = new ArrayList<IClause>();
-					clauses.add(START.node(n).byId(ids[i]));
-					clauses.addAll(context.matchClauses);
-					clauses.add(RETURN.ALL());
-					IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
-					query.setClauses(clausesArray);
-					queries.add(query);
-				}
-//				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
-				List<JcQueryResult> results = this.dbAccess.execute(queries);
-				List<JcError> errors = Util.collectErrors(results);
-				if (errors.size() > 0) {
-					throw new JcResultException(errors);
-				}
-//				Util.printResults(results, "CLOSURE", Format.PRETTY_1);
-				for (int i = 0; i < ids.length; i++) {
-					FillModelContext<T> fContext = new FillModelContext<T>(domainObjectClass,
-							results.get(i));
-					new ClosureCalculator().fillModel(fContext);
-					resultList.add(fContext.domainObject);
-				}
-			} else {
-				List<IClause> clauses = new ArrayList<IClause>();
-				for (int i = 0; i < ids.length; i++) {
-					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
-					nodes.add(n);
-					clauses.add(START.node(n).byId(ids[i]));
-				}
-				clauses.add(RETURN.ALL());
-				JcQuery query = new JcQuery();
-				IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
-				query.setClauses(clausesArray);
-				JcQueryResult result = this.dbAccess.execute(query);
-				if (result.hasErrors()) {
-					List<JcError> errors = Util.collectErrors(result);
-					throw new JcResultException(errors);
-				}
-				for (int i = 0; i < nodes.size(); i++) {
-					GrNode rNode = result.resultOf(nodes.get(i)).get(0);
-					T obj = createFromGraph_OBSOLETE(domainObjectClass, rNode);
-					resultList.add(obj);
-					this.objectToIdMap.put(obj, rNode.getId());
-				}
+			if (repeat) { // has one or more match clauses
+				resultList = loadByIdsWithMatches(domainObjectClass, context, ids);
+			} else { // only simple start by id clauses are needed
+				resultList = loadByIdsSimple(domainObjectClass, ids);
 			}
 
 			return resultList;
 		}
 		
-		Graph updateLocalGraph(List<Object> domainObjects) {
+		List<JcError> store(List<Object> domainObjects) {
+			UpdateContext context = this.updateLocalGraph(domainObjects);
+			List<JcError> errors = context.graph.store();
+			Iterator<Entry<Object, GrNode>> it = context.domObj2Node.entrySet().iterator();
+			
+			while(it.hasNext()) {
+				Entry<Object, GrNode> entry = it.next();
+				objectToIdMap.put(entry.getKey(), entry.getValue().getId());
+				addToIdToObjectsMap(entry.getKey(), entry.getValue().getId());
+			}
+			
+			for (DomRelation2ResultRelation d2r : context.domRelation2Relations) {
+				relationToIdMap.put(d2r.domRelation, d2r.resultRelation.getId());
+			}
+			
+			return errors;
+		}
+		
+		private UpdateContext updateLocalGraph(List<Object> domainObjects) {
 			UpdateContext context = new UpdateContext();
 			new ClosureCalculator().calculateClosure(domainObjects,
 					context);
 			Graph graph = null;
 			Object domainObject;
-			Map<Integer, JcNode> nIndexMap = null;
-			Map<Integer, GrNode> rIndexMap = null;
+			Map<Integer, QueryNode2ResultNode> nodeIndexMap = null;
 			List<IClause> clauses = null;
 			for (int i = 0; i < context.domainObjects.size(); i++) {
 				domainObject = context.domainObjects.get(i);
 				Long id = this.objectToIdMap.get(domainObject);
 				if (id != null) { // object exists in graphdb
 					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
-					if (nIndexMap == null)
-						nIndexMap = new HashMap<Integer, JcNode>();
-					nIndexMap.put(new Integer(i), n);
+					QueryNode2ResultNode n2n = new QueryNode2ResultNode();
+					n2n.queryNode = n;
+					if (nodeIndexMap == null)
+						nodeIndexMap = new HashMap<Integer, QueryNode2ResultNode>();
+					nodeIndexMap.put(new Integer(i), n2n);
 					if (clauses == null)
 						clauses = new ArrayList<IClause>();
 					clauses.add(START.node(n).byId(id.longValue()));
 				}
 			}
-			Map<Integer, JcRelation> rnIndexMap = null;
-			Map<Integer, GrRelation> rrIndexMap = null;
+			
+			Map<Integer, QueryRelation2ResultRelation> relationIndexMap = null;
 			for (int i = 0; i < context.relations.size(); i++) {
 				Relation relat = context.relations.get(i);
 				Long id = this.relationToIdMap.get(relat);
 				if (id != null) { // relation exists in graphdb
 					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
-					if (rnIndexMap == null)
-						rnIndexMap = new HashMap<Integer, JcRelation>();
-					rnIndexMap.put(new Integer(i), r);
+					QueryRelation2ResultRelation r2r = new QueryRelation2ResultRelation();
+					r2r.queryRelation = r;
+					if (relationIndexMap == null)
+						relationIndexMap = new HashMap<Integer, QueryRelation2ResultRelation>();
+					relationIndexMap.put(new Integer(i), r2r);
 					clauses.add(START.relation(r).byId(id.longValue()));
 				}
 			}
@@ -203,19 +175,19 @@ public class DomainConfig {
 					throw new JcResultException(errors);
 				}
 				graph = result.getGraph();
-				if (nIndexMap != null)
-					rIndexMap = new HashMap<Integer, GrNode>(nIndexMap.size());
-				Iterator<Entry<Integer, JcNode>> nit = nIndexMap.entrySet().iterator();
-				while (nit.hasNext()) {
-					Entry<Integer, JcNode> entry = nit.next();
-					rIndexMap.put(entry.getKey(), result.resultOf(entry.getValue()).get(0));
+				if (nodeIndexMap != null) {
+					Iterator<Entry<Integer, QueryNode2ResultNode>> nit = nodeIndexMap.entrySet().iterator();
+					while (nit.hasNext()) {
+						Entry<Integer, QueryNode2ResultNode> entry = nit.next();
+						entry.getValue().resultNode = result.resultOf(entry.getValue().queryNode).get(0);
+					}
 				}
-				if (rnIndexMap != null)
-					rrIndexMap = new HashMap<Integer, GrRelation>(rnIndexMap.size());
-				Iterator<Entry<Integer, JcRelation>> rit = rnIndexMap.entrySet().iterator();
-				while (rit.hasNext()) {
-					Entry<Integer, JcRelation> entry = rit.next();
-					rrIndexMap.put(entry.getKey(), result.resultOf(entry.getValue()).get(0));
+				if (relationIndexMap != null) {
+					Iterator<Entry<Integer, QueryRelation2ResultRelation>> rit = relationIndexMap.entrySet().iterator();
+					while (rit.hasNext()) {
+						Entry<Integer, QueryRelation2ResultRelation> entry = rit.next();
+						entry.getValue().resultRelation = result.resultOf(entry.getValue().queryRelation).get(0);
+					}
 				}
 			}
 			// up to here, objects existing as nodes in the graphdb have been loaded
@@ -223,35 +195,161 @@ public class DomainConfig {
 			if (graph == null) // no nodes loaded from db
 				graph = Graph.create(this.dbAccess);
 			
-			Map<Object, GrNode> domObj2Node = new HashMap<Object, GrNode>(
+			context.domObj2Node = new HashMap<Object, GrNode>(
 					context.domainObjects.size());
+			context.domRelation2Relations = new ArrayList<DomRelation2ResultRelation>();
 			for (int i = 0; i < context.domainObjects.size(); i++) {
 				GrNode rNode = null;
-				if (rIndexMap != null) {
-					rNode = rIndexMap.get(i);
+				if (nodeIndexMap != null) {
+					rNode = nodeIndexMap.get(i).resultNode;
 				}
 				if (rNode == null)
 					rNode = graph.createNode();
 				
-				domObj2Node.put(context.domainObjects.get(i), rNode);
+				context.domObj2Node.put(context.domainObjects.get(i), rNode);
 				updateFromObject(context.domainObjects.get(i), rNode);
 			}
 			
 			for (int i = 0; i < context.relations.size(); i++) {
 				GrRelation rRelation = null;
-				if (rrIndexMap != null) {
-					rRelation = rrIndexMap.get(i);
+				if (relationIndexMap != null) {
+					rRelation = relationIndexMap.get(i).resultRelation;
 				}
 				if (rRelation == null) {
 					Relation relat = context.relations.get(i);
 					rRelation = graph.createRelation(relat.type,
-							domObj2Node.get(relat.start), domObj2Node.get(relat.end));
+							context.domObj2Node.get(relat.start), context.domObj2Node.get(relat.end));
+					DomRelation2ResultRelation d2r = new DomRelation2ResultRelation();
+					d2r.domRelation = relat;
+					d2r.resultRelation = rRelation;
+					context.domRelation2Relations.add(d2r);
 				}
 			}
-			return graph;
+			context.graph = graph;
+			return context;
+		}
+		
+		/**
+		 * has one or more match clauses
+		 * @param domainObjectClass
+		 * @param context
+		 * @param ids
+		 * @return
+		 */
+		@SuppressWarnings("unchecked")
+		private <T> List<T> loadByIdsWithMatches(Class<T> domainObjectClass,
+				ClosureQueryContext context, long... ids) {
+			List<T> resultList = new ArrayList<T>();
+			JcQuery query;
+			String nm = NodePrefix.concat(String.valueOf(0));
+			List<JcQuery> queries = new ArrayList<JcQuery>();
+			Map<Long, JcQueryResult> id2QueryResult = new HashMap<Long, JcQueryResult>();
+			List<Long> queryIds = new ArrayList<Long>();
+			Map<Long, T> id2Object = new HashMap<Long, T>();
+			for (int i = 0; i < ids.length; i++) {
+				T obj = null;
+				// synchronize for reentrancy
+				synchronized (domainConfigHandler.idToObjectsMap) {
+					// check if domain objects have already been loaded
+					obj = (T) checkForMappedObject(domainObjectClass, ids[i]);
+				}
+				if (obj != null) {
+					id2Object.put(ids[i], obj);
+				} else {
+					query = new JcQuery();
+					JcNode n = new JcNode(nm);
+					List<IClause> clauses = new ArrayList<IClause>();
+					clauses.add(START.node(n).byId(ids[i]));
+					clauses.addAll(context.matchClauses);
+					clauses.add(RETURN.ALL());
+					IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+					query.setClauses(clausesArray);
+					queries.add(query);
+					queryIds.add(ids[i]);
+				}
+			}
+			
+			if (queries.size() > 0) { // at least one node has to be loaded
+//				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
+				List<JcQueryResult> results = this.dbAccess.execute(queries);
+				List<JcError> errors = Util.collectErrors(results);
+				if (errors.size() > 0) {
+					throw new JcResultException(errors);
+				}
+//				Util.printResults(results, "CLOSURE", Format.PRETTY_1);
+				for (int i = 0; i < queries.size(); i++) {
+					id2QueryResult.put(queryIds.get(i), results.get(i));
+				}
+			}
+			
+			for (int i = 0; i < ids.length; i++) {
+				T obj = id2Object.get(ids[i]);
+				if (obj == null) { // need to load
+					FillModelContext<T> fContext = new FillModelContext<T>(domainObjectClass,
+							id2QueryResult.get(ids[i]));
+					new ClosureCalculator().fillModel(fContext);
+					obj = fContext.domainObject;
+				}
+				resultList.add(obj);
+			}
+			return resultList;
+		}
+		
+		/**
+		 * has start by id clauses only
+		 * @param domainObjectClass
+		 * @param ids
+		 * @return
+		 */
+		@SuppressWarnings("unchecked")
+		private <T> List<T> loadByIdsSimple(Class<T> domainObjectClass, long... ids) {
+			List<T> resultList = new ArrayList<T>();
+			List<IClause> clauses = new ArrayList<IClause>();
+			Map<Long, JcNode> id2QueryNode = new HashMap<Long, JcNode>();
+			Map<Long, T> id2Object = new HashMap<Long, T>();
+			for (int i = 0; i < ids.length; i++) {
+				T obj = null;
+				// synchronize for reentrancy
+				synchronized (domainConfigHandler.idToObjectsMap) {
+					// check if domain objects have already been loaded
+					obj = (T) checkForMappedObject(domainObjectClass, ids[i]);
+				}
+				if (obj != null) {
+					id2Object.put(ids[i], obj);
+				} else {
+					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
+					id2QueryNode.put(ids[i], n);
+					clauses.add(START.node(n).byId(ids[i]));
+				}
+			}
+			
+			JcQueryResult result = null;
+			if (clauses.size() > 0) { // one or more nodes are to be loaded
+				clauses.add(RETURN.ALL());
+				JcQuery query = new JcQuery();
+				IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+				query.setClauses(clausesArray);
+				result = this.dbAccess.execute(query);
+				if (result.hasErrors()) {
+					List<JcError> errors = Util.collectErrors(result);
+					throw new JcResultException(errors);
+				}
+			}
+			
+			for (int i = 0; i < ids.length; i++) {
+				T obj = id2Object.get(ids[i]);
+				if (obj == null) { // need to load
+					GrNode rNode = result.resultOf(id2QueryNode.get(ids[i])).get(0);
+					obj = createAndMapProperties(domainObjectClass, rNode);
+					addToIdToObjectsMap(obj, ids[i]);
+					this.objectToIdMap.put(obj, ids[i]);
+				}
+				resultList.add(obj);
+			}
+			return resultList;
 		}
 
-		private <T> T createFromGraph_OBSOLETE(Class<T> domainObjectClass, GrNode rNode) {
+		private <T> T createAndMapProperties(Class<T> domainObjectClass, GrNode rNode) {
 			ObjectMapping objectMapping = getObjectMappingFor(domainObjectClass);
 			T domainObject;
 			try {
@@ -260,14 +358,14 @@ public class DomainConfig {
 				throw new RuntimeException(e);
 			}
 			
-			objectMapping.mapToObject(domainObject, rNode);
+			objectMapping.mapPropertiesToObject(domainObject, rNode);
 			
 			return domainObject;
 		}
 
 		private void updateFromObject(Object domainObject, GrNode rNode) {
 			ObjectMapping objectMapping = getObjectMappingFor(domainObject.getClass());
-			objectMapping.mapFromObject(domainObject, rNode);
+			objectMapping.mapPropertiesFromObject(domainObject, rNode);
 		}
 		
 		private ObjectMapping getObjectMappingFor(Class<?> domainObjectClass) {
@@ -278,22 +376,39 @@ public class DomainConfig {
 			}
 			return objectMapping;
 		}
+
+		private Object checkForMappedObject (Class<?> doClass, Long id) {
+			List<Object> objs = idToObjectsMap.get(id);
+			if (objs != null) {
+				for (Object obj : objs) {
+					if (obj.getClass().equals(doClass)) {
+						return obj;
+					}
+				}
+			} else {
+				objs = new ArrayList<Object>();
+				idToObjectsMap.put(id, objs);
+			}
+			return null;
+		}
+		
+		private void addToIdToObjectsMap(Object obj, Long id) {
+			synchronized (idToObjectsMap) {
+				List<Object> objs = idToObjectsMap.get(id);
+				if (objs == null) {
+					objs = new ArrayList<Object>();
+					idToObjectsMap.put(id, objs);
+				}
+				if (!objs.contains(obj))
+					objs.add(obj);
+			}
+		}
 	}
 	
 	/**********************************************/
 	private class ClosureCalculator {
 		
 		private <T> void fillModel(FillModelContext<T> context) {
-			T domainObject = context.domainObject;
-			if (domainObject == null) {
-				try {
-					domainObject = context.domainObjectClass.newInstance();
-				} catch (Throwable e) {
-					throw new RuntimeException(e);
-				}
-				context.domainObject = domainObject;
-			}
-			context.currentObject = domainObject;
 			Step step = new Step();
 			step.fillModel(context, null, -1, -1);
 		}
@@ -338,48 +453,72 @@ public class DomainConfig {
 			private int subPathIndex = -1;
 			private Step next;
 			
+			/**
+			 * @param context
+			 * @param fm
+			 * @param fieldIndex
+			 * @param level
+			 * @return true, if this leads to a null value
+			 */
+			@SuppressWarnings("unchecked")
 			private <T> boolean fillModel(FillModelContext<T> context, FieldMapping fm,
 					int fieldIndex, int level) {
 				boolean isNullNode = false;
-				if (!context.domainObjects.contains(context.currentObject)) {
-					context.domainObjects.add(context.currentObject);
-					String nnm = this.buildNodeName(fieldIndex, level);
-					JcNode n = new JcNode(nnm);
-					List<GrNode> resList = context.qResult.resultOf(n);
-					if (resList.size() > 0) { // a result node exists for this pattern
-						GrNode rNode = resList.get(0);
-						if (rNode != null) { // null values are supported
-							Class<?> doClass;
-							if (fm == null)
-								doClass = context.domainObjectClass;
-							else
-								doClass = fm.getFieldType();
+				String nnm = this.buildNodeName(fieldIndex, level);
+				JcNode n = new JcNode(nnm);
+				List<GrNode> resList = context.qResult.resultOf(n);
+				if (resList.size() > 0) { // a result node exists for this pattern
+					GrNode rNode = resList.get(0);
+					if (rNode != null) { // null values are supported
+						Class<?> doClass;
+						if (fm == null)
+							doClass = context.domainObjectClass;
+						else
+							doClass = fm.getFieldType();
+						boolean performMapping = false;
+						Object domainObject = null;
+						// synchronize for reentrancy
+						synchronized (domainConfigHandler.idToObjectsMap) {
+							// check if a domain object has already been mapped to this node
+							domainObject = domainConfigHandler.checkForMappedObject(doClass, rNode.getId());
+							
+							if (domainObject == null) {
+								try {
+									domainObject = doClass.newInstance();
+								} catch (Throwable e) {
+									throw new RuntimeException(e);
+								}
+								List<Object> objs = domainConfigHandler.idToObjectsMap.get(rNode.getId());
+								objs.add(domainObject);
+								domainConfigHandler.objectToIdMap.put(domainObject, rNode.getId());
+								performMapping = true;
+							}
+						}
+						
+						if (fm == null) { // we are at the root level
+							context.domainObject = (T) domainObject;
+						}
+						
+						if (performMapping) {
 							ObjectMapping objectMapping = domainConfigHandler.getObjectMappingFor(doClass);
 							List<FieldMapping> fMappings = objectMapping.getFieldMappings();
 							int idx = -1;
 							for (FieldMapping fMap : fMappings) {
 								idx++;
 								if (fMap.needsRelation()) {
-									Object prev = context.currentObject;
-									Object domainObject;
-									try {
-										domainObject = fMap.getFieldType().newInstance();
-									} catch (Throwable e) {
-										throw new RuntimeException(e);
-									}
-									context.currentObject = domainObject;
+									context.currentObject = null;
 									boolean nodeIsNull = this.fillModel(context, fMap, idx, level + 1);
-									if (!nodeIsNull)
-										fMap.setField(prev, domainObject);
-									context.currentObject = prev;
+									if (!nodeIsNull && context.currentObject != null)
+										fMap.setField(domainObject, context.currentObject);
 								} else {
-									fMap.mapToField(context.currentObject, rNode);
+									fMap.mapPropertyToField(domainObject, rNode);
 								}
 							}
-						} else {
-							context.domainObjects.remove(context.currentObject);
-							isNullNode = true;
 						}
+						// set the object mapped to the actual field (fm)
+						context.currentObject = domainObject;
+					} else {
+						isNullNode = true;
 					}
 				}
 				return isNullNode;
@@ -474,7 +613,6 @@ public class DomainConfig {
 		private Class<T> domainObjectClass;
 		private T domainObject;
 		private Object currentObject;
-		private List<Object> domainObjects = new ArrayList<Object>();
 		
 		FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult) {
 			super();
@@ -511,6 +649,27 @@ public class DomainConfig {
 	private class UpdateContext {
 		private List<Object> domainObjects = new ArrayList<Object>();
 		private List<Relation> relations = new ArrayList<Relation>();
+		private Map<Object, GrNode> domObj2Node;
+		private List<DomRelation2ResultRelation> domRelation2Relations;
+		private Graph graph;
+	}
+	
+	/***********************************/
+	private class DomRelation2ResultRelation {
+		private Relation domRelation;
+		private GrRelation resultRelation;
+	}
+	
+	/***********************************/
+	private class QueryNode2ResultNode {
+		private JcNode queryNode;
+		private GrNode resultNode;
+	}
+	
+	/***********************************/
+	private class QueryRelation2ResultRelation {
+		private JcRelation queryRelation;
+		private GrRelation resultRelation;
 	}
 	
 	/***********************************/
@@ -560,6 +719,12 @@ public class DomainConfig {
 			} else if (!type.equals(other.type))
 				return false;
 			return true;
+		}
+
+		@Override
+		public String toString() {
+			return "Relation [type=" + type + ", start=" + start + ", end="
+					+ end + "]";
 		}
 	}
 }

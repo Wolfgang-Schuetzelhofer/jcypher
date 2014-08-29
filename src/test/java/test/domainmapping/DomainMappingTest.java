@@ -100,13 +100,20 @@ public class DomainMappingTest extends AbstractTestSuite{
 			printErrors(errors);
 		}
 
-		Person keanu_1;
+		Person keanu_1, lawrence_1;
+		Address addr_1;
 		try {
 			//keanu_1 = dc.loadById(Person.class, 0);
-			List<Person> persons = dc.loadByIds(Person.class, 0, 3);
-			keanu_1 = persons.get(0);
-			String keanuStr = keanu_1.toString();
-			System.out.println(keanuStr);
+//			List<Person> persons = dc.loadByIds(Person.class, 0, 3);
+			addr_1 = dc.loadById(Address.class, 1);
+			addr_1 = dc.loadById(Address.class, 1);
+			
+			DomainConfig dc1 = new DomainConfig(dbAccess);
+			keanu_1 = dc1.loadById(Person.class, 0);
+			keanu_1 = dc.loadById(Person.class, 0);
+			lawrence_1 = dc.loadById(Person.class, 3);
+			keanu_1.setFirstName("Keanu Kevin");
+			dc.store(keanu_1);
 		} catch (Exception e) {
 			if (e instanceof JcResultException) {
 				errors = ((JcResultException)e).getErrors();

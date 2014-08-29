@@ -45,7 +45,7 @@ public class FieldMapping {
 		this.propertyName = propertyName;
 	}
 	
-	public void mapFromField(Object domainObject, GrNode rNode) {
+	public void mapPropertyFromField(Object domainObject, GrNode rNode) {
 		try {
 			prepare(domainObject);
 			
@@ -69,7 +69,7 @@ public class FieldMapping {
 		}
 	}
 	
-	public void mapToField(Object domainObject, GrNode rNode) {
+	public void mapPropertyToField(Object domainObject, GrNode rNode) {
 		try {
 			prepare(domainObject);
 			

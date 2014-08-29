@@ -26,18 +26,18 @@ public class ObjectMapping {
 	private List<FieldMapping> fieldMappings = new ArrayList<FieldMapping>();
 	private NodeLabelMapping nodeLabelMapping;
 	
-	public void mapFromObject(Object domainObject, GrNode rNode) {
+	public void mapPropertiesFromObject(Object domainObject, GrNode rNode) {
 		if (this.nodeLabelMapping != null)
 			this.nodeLabelMapping.mapLabels(domainObject, rNode);
 			
 		for (FieldMapping fm : getFieldMappings()) {
-			fm.mapFromField(domainObject, rNode);
+			fm.mapPropertyFromField(domainObject, rNode);
 		}
 	}
 	
-	public void mapToObject(Object domainObject, GrNode rNode) {
+	public void mapPropertiesToObject(Object domainObject, GrNode rNode) {
 		for (FieldMapping fm : getFieldMappings()) {
-			fm.mapToField(domainObject, rNode);
+			fm.mapPropertyToField(domainObject, rNode);
 		}
 	}
 
