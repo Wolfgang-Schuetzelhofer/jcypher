@@ -464,7 +464,8 @@ public class DomainConfig {
 			private <T> boolean fillModel(FillModelContext<T> context, FieldMapping fm,
 					int fieldIndex, int level) {
 				boolean isNullNode = false;
-				String nnm = this.buildNodeName(fieldIndex, level);
+				String nnm = this.buildNodeOrRelationName(fieldIndex, level,
+						DomainConfigHandler.NodePrefix);
 				JcNode n = new JcNode(nnm);
 				List<GrNode> resList = context.qResult.resultOf(n);
 				if (resList.size() > 0) { // a result node exists for this pattern
@@ -508,8 +509,19 @@ public class DomainConfig {
 								if (fMap.needsRelation()) {
 									context.currentObject = null;
 									boolean nodeIsNull = this.fillModel(context, fMap, idx, level + 1);
-									if (!nodeIsNull && context.currentObject != null)
+									if (!nodeIsNull && context.currentObject != null) {
 										fMap.setField(domainObject, context.currentObject);
+										String rnm = this.buildNodeOrRelationName(idx, level + 1,
+												DomainConfigHandler.RelationPrefix);
+										JcRelation r = new JcRelation(rnm);
+										List<GrRelation> relList = context.qResult.resultOf(r);
+										// relation must exist, because the related object exists 
+										GrRelation rel = relList.get(0);
+										domainConfigHandler.relationToIdMap.put(
+												new Relation(fMap.getPropertyOrRelationName(),
+														domainObject,
+														context.currentObject), rel.getId());
+									}
 								} else {
 									fMap.mapPropertyToField(domainObject, rNode);
 								}
@@ -582,25 +594,27 @@ public class DomainConfig {
 					context.currentMatchClause = OPTIONAL_MATCH.node(n);
 				}
 				
-				JcNode n = new JcNode(this.buildNodeName(fieldIndex, level));
-				context.currentMatchClause.relation().out().type(fm.getPropertyOrRelationName())
+				JcNode n = new JcNode(this.buildNodeOrRelationName(fieldIndex, level,
+						DomainConfigHandler.NodePrefix));
+				JcRelation r = new JcRelation(this.buildNodeOrRelationName(fieldIndex, level,
+						DomainConfigHandler.RelationPrefix));
+				context.currentMatchClause.relation(r).out().type(fm.getPropertyOrRelationName())
 				.node(n);
 			}
 			
-			private String buildNodeName(int fieldIndex, int level) {
+			private String buildNodeOrRelationName(int fieldIndex, int level, String prefix) {
 				// format of node name: n_x_y_z
 				// x: index of the match clause
 				// y: level of the current step within the query path
 				// z: index of the field within the parent
 				StringBuilder sb = new StringBuilder();
-				sb.append(DomainConfigHandler.NodePrefix);
-				sb.append(0);
+				sb.append(prefix);
 				if (level >= 0) {
-					sb.append('_');
 					sb.append(level);
 					sb.append('_');
 					sb.append(fieldIndex);
-				}
+				} else
+					sb.append(0);
 				
 				return sb.toString();
 			}
