@@ -25,7 +25,7 @@ import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
-import iot.jcypher.domain.DomainConfig;
+import iot.jcypher.domain.DomainAccess;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
 
@@ -62,7 +62,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	@Test
 	public void testStoreDomainObject() {
 		List<JcError> errors;
-		DomainConfig dc = new DomainConfig(dbAccess);
+		DomainAccess da = new DomainAccess(dbAccess);
 		
 		Person keanu = new Person();
 		keanu.setFirstName("Keanu");
@@ -95,7 +95,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		domainObjects.add(keanu);
 		domainObjects.add(laurence);
 		
-		errors = dc.store(domainObjects);
+		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
 		}
@@ -105,15 +105,15 @@ public class DomainMappingTest extends AbstractTestSuite{
 		try {
 			//keanu_1 = dc.loadById(Person.class, 0);
 //			List<Person> persons = dc.loadByIds(Person.class, 0, 3);
-			addr_1 = dc.loadById(Address.class, 1);
-			addr_1 = dc.loadById(Address.class, 1);
+			addr_1 = da.loadById(Address.class, 1);
+			addr_1 = da.loadById(Address.class, 1);
 			
-			DomainConfig dc1 = new DomainConfig(dbAccess);
-			keanu_1 = dc1.loadById(Person.class, 0);
-			keanu_1 = dc.loadById(Person.class, 0);
-			lawrence_1 = dc.loadById(Person.class, 3);
+			DomainAccess da1 = new DomainAccess(dbAccess);
+			keanu_1 = da1.loadById(Person.class, 0);
+			keanu_1 = da.loadById(Person.class, 0);
+			lawrence_1 = da.loadById(Person.class, 3);
 			keanu_1.setFirstName("Keanu Kevin");
-			dc.store(keanu_1);
+			da.store(keanu_1);
 		} catch (Exception e) {
 			if (e instanceof JcResultException) {
 				errors = ((JcResultException)e).getErrors();

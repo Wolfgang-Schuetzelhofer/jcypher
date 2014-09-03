@@ -20,6 +20,8 @@ import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.mapping.DefaultObjectMappingCreator;
+import iot.jcypher.domain.mapping.DomainState;
+import iot.jcypher.domain.mapping.DomainState.Relation;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.graph.GrNode;
@@ -43,13 +45,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public class DomainConfig {
+public class DomainAccess {
 	
-	private DomainConfigHandler domainConfigHandler;
+	private DomainAccessHandler domainAccessHandler;
 
-	public DomainConfig(IDBAccess dbAccess) {
+	public DomainAccess(IDBAccess dbAccess) {
 		super();
-		this.domainConfigHandler = new DomainConfigHandler(dbAccess);
+		this.domainAccessHandler = new DomainAccessHandler(dbAccess);
 	}
 
 	public List<JcError> store(Object domainObject) {
@@ -59,35 +61,31 @@ public class DomainConfig {
 	}
 	
 	public List<JcError> store(List<Object> domainObjects) {
-		return this.domainConfigHandler.store(domainObjects);
+		return this.domainAccessHandler.store(domainObjects);
 	}
 	
 	public <T> T loadById(Class<T> domainObjectClass, long id) {
 		long[] ids = new long[] {id};
-		List<T> ret = this.domainConfigHandler.loadByIds(domainObjectClass, ids);
+		List<T> ret = this.domainAccessHandler.loadByIds(domainObjectClass, ids);
 		return ret.get(0);
 	}
 	
 	public <T> List<T> loadByIds(Class<T> domainObjectClass, long... ids) {
-		return this.domainConfigHandler.loadByIds(domainObjectClass, ids);
+		return this.domainAccessHandler.loadByIds(domainObjectClass, ids);
 	}
 	
 	/**********************************************************************/
-	private class DomainConfigHandler {
+	private class DomainAccessHandler {
 		private static final String NodePrefix = "n_";
 		private static final String RelationPrefix = "r_";
 		private IDBAccess dbAccess;
-		private Map<Object, Long> objectToIdMap;
-		private Map<Relation, Long> relationToIdMap;
-		private Map<Long, List<Object>> idToObjectsMap;
+		private DomainState domainState;
 		private Map<Class<?>, ObjectMapping> mappings;
 
-		private DomainConfigHandler(IDBAccess dbAccess) {
+		private DomainAccessHandler(IDBAccess dbAccess) {
 			super();
 			this.dbAccess = dbAccess;
-			this.objectToIdMap = new HashMap<Object, Long>();
-			this.relationToIdMap = new HashMap<Relation, Long>();
-			this.idToObjectsMap = new HashMap<Long, List<Object>>();
+			this.domainState = new DomainState();
 			this.mappings = new HashMap<Class<?>, ObjectMapping>();
 		}
 		
@@ -114,14 +112,12 @@ public class DomainConfig {
 			
 			while(it.hasNext()) {
 				Entry<Object, GrNode> entry = it.next();
-				objectToIdMap.put(entry.getKey(), entry.getValue().getId());
-				addToIdToObjectsMap(entry.getKey(), entry.getValue().getId());
+				this.domainState.connect_Id2Object(entry.getKey(), entry.getValue().getId());
 			}
 			
 			for (DomRelation2ResultRelation d2r : context.domRelation2Relations) {
-				relationToIdMap.put(d2r.domRelation, d2r.resultRelation.getId());
+				this.domainState.addTo_Relation2IdMap(d2r.domRelation, d2r.resultRelation.getId());
 			}
-			
 			return errors;
 		}
 		
@@ -135,7 +131,7 @@ public class DomainConfig {
 			List<IClause> clauses = null;
 			for (int i = 0; i < context.domainObjects.size(); i++) {
 				domainObject = context.domainObjects.get(i);
-				Long id = this.objectToIdMap.get(domainObject);
+				Long id = this.domainState.getFrom_Object2IdMap(domainObject);
 				if (id != null) { // object exists in graphdb
 					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
 					QueryNode2ResultNode n2n = new QueryNode2ResultNode();
@@ -152,7 +148,7 @@ public class DomainConfig {
 			Map<Integer, QueryRelation2ResultRelation> relationIndexMap = null;
 			for (int i = 0; i < context.relations.size(); i++) {
 				Relation relat = context.relations.get(i);
-				Long id = this.relationToIdMap.get(relat);
+				Long id = this.domainState.getFrom_Relation2IdMap(relat);
 				if (id != null) { // relation exists in graphdb
 					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
 					QueryRelation2ResultRelation r2r = new QueryRelation2ResultRelation();
@@ -217,8 +213,8 @@ public class DomainConfig {
 				}
 				if (rRelation == null) {
 					Relation relat = context.relations.get(i);
-					rRelation = graph.createRelation(relat.type,
-							context.domObj2Node.get(relat.start), context.domObj2Node.get(relat.end));
+					rRelation = graph.createRelation(relat.getType(),
+							context.domObj2Node.get(relat.getStart()), context.domObj2Node.get(relat.getEnd()));
 					DomRelation2ResultRelation d2r = new DomRelation2ResultRelation();
 					d2r.domRelation = relat;
 					d2r.resultRelation = rRelation;
@@ -247,12 +243,8 @@ public class DomainConfig {
 			List<Long> queryIds = new ArrayList<Long>();
 			Map<Long, T> id2Object = new HashMap<Long, T>();
 			for (int i = 0; i < ids.length; i++) {
-				T obj = null;
-				// synchronize for reentrancy
-				synchronized (domainConfigHandler.idToObjectsMap) {
-					// check if domain objects have already been loaded
-					obj = (T) checkForMappedObject(domainObjectClass, ids[i]);
-				}
+				// check if domain objects have already been loaded
+				T obj = (T) this.domainState.checkForMappedObject(domainObjectClass, ids[i]);
 				if (obj != null) {
 					id2Object.put(ids[i], obj);
 				} else {
@@ -308,12 +300,8 @@ public class DomainConfig {
 			Map<Long, JcNode> id2QueryNode = new HashMap<Long, JcNode>();
 			Map<Long, T> id2Object = new HashMap<Long, T>();
 			for (int i = 0; i < ids.length; i++) {
-				T obj = null;
-				// synchronize for reentrancy
-				synchronized (domainConfigHandler.idToObjectsMap) {
-					// check if domain objects have already been loaded
-					obj = (T) checkForMappedObject(domainObjectClass, ids[i]);
-				}
+				// check if domain objects have already been loaded
+				T obj = (T) this.domainState.checkForMappedObject(domainObjectClass, ids[i]);
 				if (obj != null) {
 					id2Object.put(ids[i], obj);
 				} else {
@@ -341,8 +329,7 @@ public class DomainConfig {
 				if (obj == null) { // need to load
 					GrNode rNode = result.resultOf(id2QueryNode.get(ids[i])).get(0);
 					obj = createAndMapProperties(domainObjectClass, rNode);
-					addToIdToObjectsMap(obj, ids[i]);
-					this.objectToIdMap.put(obj, ids[i]);
+					this.domainState.connect_Id2Object(obj, ids[i]);
 				}
 				resultList.add(obj);
 			}
@@ -376,33 +363,6 @@ public class DomainConfig {
 			}
 			return objectMapping;
 		}
-
-		private Object checkForMappedObject (Class<?> doClass, Long id) {
-			List<Object> objs = idToObjectsMap.get(id);
-			if (objs != null) {
-				for (Object obj : objs) {
-					if (obj.getClass().equals(doClass)) {
-						return obj;
-					}
-				}
-			} else {
-				objs = new ArrayList<Object>();
-				idToObjectsMap.put(id, objs);
-			}
-			return null;
-		}
-		
-		private void addToIdToObjectsMap(Object obj, Long id) {
-			synchronized (idToObjectsMap) {
-				List<Object> objs = idToObjectsMap.get(id);
-				if (objs == null) {
-					objs = new ArrayList<Object>();
-					idToObjectsMap.put(id, objs);
-				}
-				if (!objs.contains(obj))
-					objs.add(obj);
-			}
-		}
 	}
 	
 	/**********************************************/
@@ -434,7 +394,7 @@ public class DomainConfig {
 		private void recursiveCalculateClosure(Object domainObject, UpdateContext context) {
 			if (!context.domainObjects.contains(domainObject)) { // avoid infinite loops
 				context.domainObjects.add(domainObject);
-				ObjectMapping objectMapping = domainConfigHandler.getObjectMappingFor(domainObject.getClass());
+				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject.getClass());
 				List<FieldMapping> fMappings = objectMapping.getFieldMappings();
 				for (FieldMapping fm : fMappings) {
 					Object obj = fm.getObjectNeedingRelation(domainObject);
@@ -465,7 +425,7 @@ public class DomainConfig {
 					int fieldIndex, int level) {
 				boolean isNullNode = false;
 				String nnm = this.buildNodeOrRelationName(fieldIndex, level,
-						DomainConfigHandler.NodePrefix);
+						DomainAccessHandler.NodePrefix);
 				JcNode n = new JcNode(nnm);
 				List<GrNode> resList = context.qResult.resultOf(n);
 				if (resList.size() > 0) { // a result node exists for this pattern
@@ -478,22 +438,18 @@ public class DomainConfig {
 							doClass = fm.getFieldType();
 						boolean performMapping = false;
 						Object domainObject = null;
-						// synchronize for reentrancy
-						synchronized (domainConfigHandler.idToObjectsMap) {
-							// check if a domain object has already been mapped to this node
-							domainObject = domainConfigHandler.checkForMappedObject(doClass, rNode.getId());
-							
-							if (domainObject == null) {
-								try {
-									domainObject = doClass.newInstance();
-								} catch (Throwable e) {
-									throw new RuntimeException(e);
-								}
-								List<Object> objs = domainConfigHandler.idToObjectsMap.get(rNode.getId());
-								objs.add(domainObject);
-								domainConfigHandler.objectToIdMap.put(domainObject, rNode.getId());
-								performMapping = true;
+						// check if a domain object has already been mapped to this node
+						domainObject =
+								domainAccessHandler.domainState.checkForMappedObject(doClass, rNode.getId());
+						
+						if (domainObject == null) {
+							try {
+								domainObject = doClass.newInstance();
+							} catch (Throwable e) {
+								throw new RuntimeException(e);
 							}
+							domainAccessHandler.domainState.connect_Id2Object(domainObject, rNode.getId());
+							performMapping = true;
 						}
 						
 						if (fm == null) { // we are at the root level
@@ -501,7 +457,7 @@ public class DomainConfig {
 						}
 						
 						if (performMapping) {
-							ObjectMapping objectMapping = domainConfigHandler.getObjectMappingFor(doClass);
+							ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(doClass);
 							List<FieldMapping> fMappings = objectMapping.getFieldMappings();
 							int idx = -1;
 							for (FieldMapping fMap : fMappings) {
@@ -512,12 +468,12 @@ public class DomainConfig {
 									if (!nodeIsNull && context.currentObject != null) {
 										fMap.setField(domainObject, context.currentObject);
 										String rnm = this.buildNodeOrRelationName(idx, level + 1,
-												DomainConfigHandler.RelationPrefix);
+												DomainAccessHandler.RelationPrefix);
 										JcRelation r = new JcRelation(rnm);
 										List<GrRelation> relList = context.qResult.resultOf(r);
 										// relation must exist, because the related object exists 
 										GrRelation rel = relList.get(0);
-										domainConfigHandler.relationToIdMap.put(
+										domainAccessHandler.domainState.addTo_Relation2IdMap(
 												new Relation(fMap.getPropertyOrRelationName(),
 														domainObject,
 														context.currentObject), rel.getId());
@@ -549,7 +505,7 @@ public class DomainConfig {
 					doClass = context.domainObjectClass;
 				else
 					doClass = fm.getFieldType();
-				ObjectMapping objectMapping = domainConfigHandler.getObjectMappingFor(doClass);
+				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(doClass);
 				List<FieldMapping> fMappings = objectMapping.getFieldMappings();
 				boolean walkedToIndex = this.subPathIndex == -1;
 				boolean subPathWalked = false;
@@ -590,14 +546,14 @@ public class DomainConfig {
 			
 			private void addToQuery(FieldMapping fm, int fieldIndex, ClosureQueryContext context, int level) {
 				if (context.currentMatchClause == null) {
-					JcNode n = new JcNode(DomainConfigHandler.NodePrefix.concat(String.valueOf(0)));
+					JcNode n = new JcNode(DomainAccessHandler.NodePrefix.concat(String.valueOf(0)));
 					context.currentMatchClause = OPTIONAL_MATCH.node(n);
 				}
 				
 				JcNode n = new JcNode(this.buildNodeOrRelationName(fieldIndex, level,
-						DomainConfigHandler.NodePrefix));
+						DomainAccessHandler.NodePrefix));
 				JcRelation r = new JcRelation(this.buildNodeOrRelationName(fieldIndex, level,
-						DomainConfigHandler.RelationPrefix));
+						DomainAccessHandler.RelationPrefix));
 				context.currentMatchClause.relation(r).out().type(fm.getPropertyOrRelationName())
 				.node(n);
 			}
@@ -646,12 +602,6 @@ public class DomainConfig {
 			this.domainObjectClass = domainObjectClass;
 		}
 		
-		private int getClauseIndex() {
-			if(this.matchClauses == null)
-				return 0;
-			return this.matchClauses.size();
-		}
-		
 		private void addMatchClause(IClause clause) {
 			if (this.matchClauses == null)
 				this.matchClauses = new ArrayList<IClause>();
@@ -684,61 +634,5 @@ public class DomainConfig {
 	private class QueryRelation2ResultRelation {
 		private JcRelation queryRelation;
 		private GrRelation resultRelation;
-	}
-	
-	/***********************************/
-	private class Relation {
-		private String type;
-		private Object start;
-		private Object end;
-		
-		private Relation(String type, Object start, Object end) {
-			super();
-			this.type = type;
-			this.start = start;
-			this.end = end;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((end == null) ? 0 : end.hashCode());
-			result = prime * result + ((start == null) ? 0 : start.hashCode());
-			result = prime * result + ((type == null) ? 0 : type.hashCode());
-			return result;
-		}
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			Relation other = (Relation) obj;
-			if (end == null) {
-				if (other.end != null)
-					return false;
-			} else if (!end.equals(other.end))
-				return false;
-			if (start == null) {
-				if (other.start != null)
-					return false;
-			} else if (!start.equals(other.start))
-				return false;
-			if (type == null) {
-				if (other.type != null)
-					return false;
-			} else if (!type.equals(other.type))
-				return false;
-			return true;
-		}
-
-		@Override
-		public String toString() {
-			return "Relation [type=" + type + ", start=" + start + ", end="
-					+ end + "]";
-		}
 	}
 }
