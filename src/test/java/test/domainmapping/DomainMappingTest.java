@@ -83,6 +83,10 @@ public class DomainMappingTest extends AbstractTestSuite{
 		contact.setNummer("12345");
 		keanu.setContact(contact);
 		
+		Contact contact2 = new Contact();
+		contact2.setType(ContactType.EMAIL);
+		contact2.setNummer("dj@nowhere.org");
+		
 		Person laurence = new Person();
 		laurence.setFirstName("Laurence");
 		laurence.setLastName("Fishburne");
@@ -95,6 +99,12 @@ public class DomainMappingTest extends AbstractTestSuite{
 		domainObjects.add(keanu);
 		domainObjects.add(laurence);
 		
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+		}
+		
+		keanu.setContact(null);
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);

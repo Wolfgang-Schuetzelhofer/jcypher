@@ -26,12 +26,14 @@ public class DomainState {
 	private Map<Object, Long> object2IdMap;
 	private Map<Relation, Long> relation2IdMap;
 	private Map<Long, List<Object>> id2ObjectsMap;
+	private Map<Object, List<Relation>> object2RelationsMap;
 	
 	public DomainState() {
 		super();
 		this.object2IdMap = new HashMap<Object, Long>();
 		this.relation2IdMap = new HashMap<Relation, Long>();
 		this.id2ObjectsMap = new HashMap<Long, List<Object>>();
+		this.object2RelationsMap = new HashMap<Object, List<Relation>>();
 	}
 	
 	private void addTo_Object2IdMap(Object key, Long value) {
@@ -52,8 +54,15 @@ public class DomainState {
 		return null;
 	}
 	
-	public void addTo_Relation2IdMap(Relation key, Long value) {
+	public void add_Id2Relation(Relation key, Long value) {
 		this.relation2IdMap.put(key, value);
+		List<Relation> rels = this.object2RelationsMap.get(key.getStart());
+		if (rels == null) {
+			rels = new ArrayList<Relation>();
+			this.object2RelationsMap.put(key.getStart(), rels);
+		}
+		if (!rels.contains(key))
+			rels.add(key);
 	}
 	
 	public Long getFrom_Relation2IdMap(Relation key) {
@@ -66,9 +75,39 @@ public class DomainState {
 			objs.add(obj);
 	}
 	
-	public void connect_Id2Object(Object obj, Long id) {
+	public void add_Id2Object(Object obj, Long id) {
 		this.addTo_Id2ObjectsMap(obj, id);
 		this.addTo_Object2IdMap(obj, id);
+	}
+	
+	public boolean existsRelation(Relation relat) {
+		List<Relation> rels = this.object2RelationsMap.get(relat.getStart());
+		if (rels != null) {
+			for (Relation r : rels) {
+				if (r.equals(relat))
+					return true;
+			}
+		}
+		return false;
+	}
+	
+	public Relation findRelation(Object start, String type) {
+		List<Relation> rels = this.object2RelationsMap.get(start);
+		if (rels != null) {
+			for (Relation r : rels) {
+				if (r.getType().equals(type))
+					return r;
+			}
+		}
+		return null;
+	}
+	
+	public void removeRelation(Relation relat) {
+		List<Relation> rels = this.object2RelationsMap.get(relat.getStart());
+		if (rels != null) {
+			rels.remove(relat);
+		}
+		this.relation2IdMap.remove(relat);
 	}
 	
 	private List<Object> getFrom_Id2ObjectsMap(Long id) {

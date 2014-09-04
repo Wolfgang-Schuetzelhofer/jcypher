@@ -29,6 +29,7 @@ import iot.jcypher.graph.GrRelation;
 import iot.jcypher.graph.Graph;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.pattern.Node;
+import iot.jcypher.query.factories.clause.DO;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.START;
@@ -108,15 +109,20 @@ public class DomainAccess {
 		List<JcError> store(List<Object> domainObjects) {
 			UpdateContext context = this.updateLocalGraph(domainObjects);
 			List<JcError> errors = context.graph.store();
-			Iterator<Entry<Object, GrNode>> it = context.domObj2Node.entrySet().iterator();
-			
-			while(it.hasNext()) {
-				Entry<Object, GrNode> entry = it.next();
-				this.domainState.connect_Id2Object(entry.getKey(), entry.getValue().getId());
-			}
-			
-			for (DomRelation2ResultRelation d2r : context.domRelation2Relations) {
-				this.domainState.addTo_Relation2IdMap(d2r.domRelation, d2r.resultRelation.getId());
+			if (errors.isEmpty()) {
+				for (Relation relat : context.relationsToRemove) {
+					domainState.removeRelation(relat);
+				}
+				
+				Iterator<Entry<Object, GrNode>> it = context.domObj2Node.entrySet().iterator();
+				while(it.hasNext()) {
+					Entry<Object, GrNode> entry = it.next();
+					this.domainState.add_Id2Object(entry.getKey(), entry.getValue().getId());
+				}
+				
+				for (DomRelation2ResultRelation d2r : context.domRelation2Relations) {
+					this.domainState.add_Id2Relation(d2r.domRelation, d2r.resultRelation.getId());
+				}
 			}
 			return errors;
 		}
@@ -129,6 +135,8 @@ public class DomainAccess {
 			Object domainObject;
 			Map<Integer, QueryNode2ResultNode> nodeIndexMap = null;
 			List<IClause> clauses = null;
+			List<IClause> removeStartClauses = null;
+			List<IClause> removeClauses = null;
 			for (int i = 0; i < context.domainObjects.size(); i++) {
 				domainObject = context.domainObjects.get(i);
 				Long id = this.domainState.getFrom_Object2IdMap(domainObject);
@@ -160,33 +168,64 @@ public class DomainAccess {
 				}
 			}
 			
-			if (clauses != null) {
-				clauses.add(RETURN.ALL());
-				IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
-				JcQuery query = new JcQuery();
-				query.setClauses(clausesArray);
-				JcQueryResult result = this.dbAccess.execute(query);
-				if (result.hasErrors()) {
-					List<JcError> errors = Util.collectErrors(result);
+			// relations to remove
+			if (context.relationsToRemove.size() > 0) {
+				removeStartClauses = new ArrayList<IClause>();
+				removeClauses = new ArrayList<IClause>();
+				for (int i = 0; i < context.relationsToRemove.size(); i++) {
+					Relation relat = context.relationsToRemove.get(i);
+					// relation must exist in db
+					Long id = this.domainState.getFrom_Relation2IdMap(relat);
+					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
+					removeStartClauses.add(START.relation(r).byId(id.longValue()));
+					removeClauses.add(DO.DELETE(r));
+				}
+			}
+			
+			if (clauses != null || removeStartClauses != null) {
+				JcQuery query;
+				List<JcQuery> queries = new ArrayList<JcQuery>();
+				if (clauses != null) {
+					clauses.add(RETURN.ALL());
+					IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+					query = new JcQuery();
+					query.setClauses(clausesArray);
+					queries.add(query);
+				}
+				if (removeStartClauses != null) {
+					removeStartClauses.addAll(removeClauses);
+					query = new JcQuery();
+					query.setClauses(removeStartClauses.toArray(new IClause[removeStartClauses.size()]));
+					queries.add(query);
+				}
+//				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
+				List<JcQueryResult> results = this.dbAccess.execute(queries);
+				List<JcError> errors = Util.collectErrors(results);
+				if (errors.size() > 0) {
 					throw new JcResultException(errors);
 				}
-				graph = result.getGraph();
-				if (nodeIndexMap != null) {
-					Iterator<Entry<Integer, QueryNode2ResultNode>> nit = nodeIndexMap.entrySet().iterator();
-					while (nit.hasNext()) {
-						Entry<Integer, QueryNode2ResultNode> entry = nit.next();
-						entry.getValue().resultNode = result.resultOf(entry.getValue().queryNode).get(0);
+				
+				if (clauses != null) {
+					JcQueryResult result = results.get(0);
+					graph = result.getGraph();
+					if (nodeIndexMap != null) {
+						Iterator<Entry<Integer, QueryNode2ResultNode>> nit = nodeIndexMap.entrySet().iterator();
+						while (nit.hasNext()) {
+							Entry<Integer, QueryNode2ResultNode> entry = nit.next();
+							entry.getValue().resultNode = result.resultOf(entry.getValue().queryNode).get(0);
+						}
 					}
-				}
-				if (relationIndexMap != null) {
-					Iterator<Entry<Integer, QueryRelation2ResultRelation>> rit = relationIndexMap.entrySet().iterator();
-					while (rit.hasNext()) {
-						Entry<Integer, QueryRelation2ResultRelation> entry = rit.next();
-						entry.getValue().resultRelation = result.resultOf(entry.getValue().queryRelation).get(0);
+					if (relationIndexMap != null) {
+						Iterator<Entry<Integer, QueryRelation2ResultRelation>> rit = relationIndexMap.entrySet().iterator();
+						while (rit.hasNext()) {
+							Entry<Integer, QueryRelation2ResultRelation> entry = rit.next();
+							entry.getValue().resultRelation = result.resultOf(entry.getValue().queryRelation).get(0);
+						}
 					}
 				}
 			}
-			// up to here, objects existing as nodes in the graphdb have been loaded
+			// up to here, objects existing as nodes in the graphdb as well as relations have been loaded
+			// and relations that should be removed have been removed from the db
 			
 			if (graph == null) // no nodes loaded from db
 				graph = Graph.create(this.dbAccess);
@@ -196,7 +235,7 @@ public class DomainAccess {
 			context.domRelation2Relations = new ArrayList<DomRelation2ResultRelation>();
 			for (int i = 0; i < context.domainObjects.size(); i++) {
 				GrNode rNode = null;
-				if (nodeIndexMap != null) {
+				if (nodeIndexMap != null && nodeIndexMap.get(i) != null) {
 					rNode = nodeIndexMap.get(i).resultNode;
 				}
 				if (rNode == null)
@@ -208,7 +247,7 @@ public class DomainAccess {
 			
 			for (int i = 0; i < context.relations.size(); i++) {
 				GrRelation rRelation = null;
-				if (relationIndexMap != null) {
+				if (relationIndexMap != null && relationIndexMap.get(i) != null) {
 					rRelation = relationIndexMap.get(i).resultRelation;
 				}
 				if (rRelation == null) {
@@ -329,7 +368,7 @@ public class DomainAccess {
 				if (obj == null) { // need to load
 					GrNode rNode = result.resultOf(id2QueryNode.get(ids[i])).get(0);
 					obj = createAndMapProperties(domainObjectClass, rNode);
-					this.domainState.connect_Id2Object(obj, ids[i]);
+					this.domainState.add_Id2Object(obj, ids[i]);
 				}
 				resultList.add(obj);
 			}
@@ -397,11 +436,26 @@ public class DomainAccess {
 				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject.getClass());
 				List<FieldMapping> fMappings = objectMapping.getFieldMappings();
 				for (FieldMapping fm : fMappings) {
-					Object obj = fm.getObjectNeedingRelation(domainObject);
-					if (obj != null) {
-						Relation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, obj);
-						context.relations.add(relat);
-						recursiveCalculateClosure(obj, context);
+					if (fm.needsRelation()) {
+						boolean checkRemoval = false;
+						Object obj = fm.getObjectNeedingRelation(domainObject);
+						if (obj != null) {
+							Relation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, obj);
+							if (!domainAccessHandler.domainState.existsRelation(relat)) {
+								context.relations.add(relat); // relation not in db
+								checkRemoval = true;
+							}
+							recursiveCalculateClosure(obj, context);
+						} else {
+							checkRemoval = true;
+						}
+						if (checkRemoval) {
+							Relation relat = domainAccessHandler.domainState.findRelation(domainObject,
+									fm.getPropertyOrRelationName());
+							if (relat != null) {
+								context.relationsToRemove.add(relat);
+							}
+						}
 					}
 				}
 			}
@@ -448,7 +502,7 @@ public class DomainAccess {
 							} catch (Throwable e) {
 								throw new RuntimeException(e);
 							}
-							domainAccessHandler.domainState.connect_Id2Object(domainObject, rNode.getId());
+							domainAccessHandler.domainState.add_Id2Object(domainObject, rNode.getId());
 							performMapping = true;
 						}
 						
@@ -473,7 +527,7 @@ public class DomainAccess {
 										List<GrRelation> relList = context.qResult.resultOf(r);
 										// relation must exist, because the related object exists 
 										GrRelation rel = relList.get(0);
-										domainAccessHandler.domainState.addTo_Relation2IdMap(
+										domainAccessHandler.domainState.add_Id2Relation(
 												new Relation(fMap.getPropertyOrRelationName(),
 														domainObject,
 														context.currentObject), rel.getId());
@@ -613,6 +667,7 @@ public class DomainAccess {
 	private class UpdateContext {
 		private List<Object> domainObjects = new ArrayList<Object>();
 		private List<Relation> relations = new ArrayList<Relation>();
+		private List<Relation> relationsToRemove = new ArrayList<Relation>();
 		private Map<Object, GrNode> domObj2Node;
 		private List<DomRelation2ResultRelation> domRelation2Relations;
 		private Graph graph;

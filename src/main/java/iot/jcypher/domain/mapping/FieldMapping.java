@@ -20,7 +20,6 @@ import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 
 import java.lang.reflect.Field;
-import java.util.Date;
 
 public class FieldMapping {
 
