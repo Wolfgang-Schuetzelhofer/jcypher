@@ -32,9 +32,11 @@ import iot.jcypher.query.api.pattern.Node;
 import iot.jcypher.query.factories.clause.DO;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
 import iot.jcypher.result.Util;
@@ -139,7 +141,7 @@ public class DomainAccess {
 			List<IClause> removeClauses = null;
 			for (int i = 0; i < context.domainObjects.size(); i++) {
 				domainObject = context.domainObjects.get(i);
-				Long id = this.domainState.getFrom_Object2IdMap(domainObject);
+				Long id = this.domainState.getIdFrom_Object2IdMap(domainObject);
 				if (id != null) { // object exists in graphdb
 					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
 					QueryNode2ResultNode n2n = new QueryNode2ResultNode();
@@ -301,7 +303,7 @@ public class DomainAccess {
 			}
 			
 			if (queries.size() > 0) { // at least one node has to be loaded
-//				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
+				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
 				List<JcQueryResult> results = this.dbAccess.execute(queries);
 				List<JcError> errors = Util.collectErrors(results);
 				if (errors.size() > 0) {
@@ -552,46 +554,52 @@ public class DomainAccess {
 			 * @return true, if calculating query for the current path is done
 			 */
 			private boolean calculateQuery(FieldMapping fm, int fieldIndex, ClosureQueryContext context, int level) {
-				if (fm != null) // don't add a match for the start node itself
-					this.addToQuery(fm, fieldIndex, context, level);
 				Class<?> doClass;
 				if (fm == null)
 					doClass = context.domainObjectClass;
 				else
 					doClass = fm.getFieldType();
-				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(doClass);
-				List<FieldMapping> fMappings = objectMapping.getFieldMappings();
+				
+				if (fm != null) // don't add a match for the start node itself
+					this.addToQuery(fm, fieldIndex, context, level);
+				
 				boolean walkedToIndex = this.subPathIndex == -1;
-				boolean subPathWalked = false;
-				int idx = -1;
-				for (FieldMapping fMap : fMappings) {
-					idx++;
-					if (!walkedToIndex) {
-						if (idx != this.subPathIndex) // until subPathIndex is reached
-							continue;
-						else
-							walkedToIndex = true;
-					}
-					
-					if (fMap.needsRelation()) {
-						boolean needToComeBack = false;
-						if (!subPathWalked) {
-							if (this.next == null)
-								this.next = new Step();
-							boolean isDone = this.next.calculateQuery(fMap, idx, context, level + 1);
-							if (!isDone) { // sub path not finished
-								needToComeBack = true;
-							} else {
-								this.next = null;
-								subPathWalked = true;
-							}
-						} else {
-							needToComeBack = true;
+				if (!context.visitedTypes.contains(doClass) || !walkedToIndex) { // avoid infinite loops
+					if (walkedToIndex) // we are visiting the first time
+						context.visitedTypes.add(doClass);
+					ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(doClass);
+					List<FieldMapping> fMappings = objectMapping.getFieldMappings();
+					boolean subPathWalked = false;
+					int idx = -1;
+					for (FieldMapping fMap : fMappings) {
+						idx++;
+						if (!walkedToIndex) {
+							if (idx != this.subPathIndex) // until subPathIndex is reached
+								continue;
+							else
+								walkedToIndex = true;
 						}
 						
-						if (needToComeBack) {
-							this.subPathIndex = idx;
-							return false;
+						if (fMap.needsRelation()) {
+							boolean needToComeBack = false;
+							if (!subPathWalked) {
+								if (this.next == null)
+									this.next = new Step();
+								boolean isDone = this.next.calculateQuery(fMap, idx, context, level + 1);
+								if (!isDone) { // sub path not finished
+									needToComeBack = true;
+								} else {
+									this.next = null;
+									subPathWalked = true;
+								}
+							} else {
+								needToComeBack = true;
+							}
+							
+							if (needToComeBack) {
+								this.subPathIndex = idx;
+								return false;
+							}
 						}
 					}
 				}
@@ -602,6 +610,9 @@ public class DomainAccess {
 				if (context.currentMatchClause == null) {
 					JcNode n = new JcNode(DomainAccessHandler.NodePrefix.concat(String.valueOf(0)));
 					context.currentMatchClause = OPTIONAL_MATCH.node(n);
+					if (context.matchClauses != null && context.matchClauses.size() > 0) {
+						context.matchClauses.add(SEPARATE.nextClause());
+					}
 				}
 				
 				JcNode n = new JcNode(this.buildNodeOrRelationName(fieldIndex, level,
@@ -650,10 +661,12 @@ public class DomainAccess {
 		private Class<?> domainObjectClass;
 		private List<IClause> matchClauses;
 		private Node currentMatchClause;
+		private List<Class<?>> visitedTypes;
 		
 		ClosureQueryContext(Class<?> domainObjectClass) {
 			super();
 			this.domainObjectClass = domainObjectClass;
+			this.visitedTypes = new ArrayList<Class<?>>();
 		}
 		
 		private void addMatchClause(IClause clause) {

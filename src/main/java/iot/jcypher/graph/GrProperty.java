@@ -42,7 +42,7 @@ public class GrProperty extends PersistableItem {
 
 	public void setValue(Object value) {
 		Object val = value;
-		if (val.getClass().isArray()) {
+		if (val != null && val.getClass().isArray()) {
 			int length = Array.getLength(val);
 			ArrayList<Object> list = new ArrayList<>();
 		    for (int i = 0; i < length; i ++) {

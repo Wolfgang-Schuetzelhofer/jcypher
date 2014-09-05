@@ -16,6 +16,7 @@
 
 package iot.jcypher.graph;
 
+import java.util.Collections;
 import java.util.List;
 
 import iot.jcypher.JcQuery;
@@ -81,7 +82,7 @@ public class Graph {
 	public List<JcError> store() {
 		if (isModified())
 			return this.resultHandler.store();
-		return null;
+		return Collections.emptyList();
 	}
 	
 	/**

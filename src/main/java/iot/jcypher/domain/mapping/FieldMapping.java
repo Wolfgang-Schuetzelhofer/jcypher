@@ -53,14 +53,18 @@ public class FieldMapping {
 			if (MappingUtil.mapsToProperty(typ)) {
 				value = MappingUtil.convertToProperty(value);
 				GrProperty prop = rNode.getProperty(this.propertyName);
-				if (prop != null) {
-					if (!prop.getValue().equals(value)) {
-						prop.remove();
-						prop = null;
-					}
+				if (value != null) {
+					if (prop != null) {
+						Object propValue = MappingUtil.convertFromProperty(prop.getValue(), value.getClass());
+						if (!propValue.equals(value)) {
+							prop.setValue(value);
+						}
+					} else
+						rNode.addProperty(this.propertyName, value);
+				} else {
+					if (prop != null)
+						prop.setValue(null);
 				}
-				if (prop == null)
-					rNode.addProperty(this.propertyName, value);
 			}
 			
 		} catch (Throwable e) {

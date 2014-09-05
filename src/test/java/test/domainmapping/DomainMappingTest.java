@@ -61,8 +61,12 @@ public class DomainMappingTest extends AbstractTestSuite{
 	
 	@Test
 	public void testStoreDomainObject() {
+		Person keanu_1, lawrence_1;
+		Address addr_1;
+		
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess);
+		DomainAccess da1 = new DomainAccess(dbAccess);
 		
 		Person keanu = new Person();
 		keanu.setFirstName("Keanu");
@@ -104,21 +108,68 @@ public class DomainMappingTest extends AbstractTestSuite{
 			printErrors(errors);
 		}
 		
+//		keanu.setFirstName(null);
+//		errors = da.store(domainObjects);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//		}
+//		
+//		keanu.setFirstName("Keanu_1");
 		keanu.setContact(null);
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
 		}
+		
+		laurence.setContact(contact2);
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+		}
+		
+		laurence.setAddress(addr);
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+		}
+		
+		keanu.setFriend(laurence);
+		laurence.setFriend(keanu);
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+		}
+		
+		try {
+//			List<Person> persons = da1.loadByIds(Person.class, 0, 3);
+			keanu_1 = da1.loadById(Person.class, 0);
+		} catch (Exception e) {
+			if (e instanceof JcResultException) {
+				errors = ((JcResultException)e).getErrors();
+				printErrors(errors);
+				return;
+			}
+			throw e;
+		}
+		
+		keanu.setFriend(null);
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+		}
+		
+		laurence.setFriend(null);
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+		}
 
-		Person keanu_1, lawrence_1;
-		Address addr_1;
 		try {
 			//keanu_1 = dc.loadById(Person.class, 0);
 //			List<Person> persons = dc.loadByIds(Person.class, 0, 3);
 			addr_1 = da.loadById(Address.class, 1);
 			addr_1 = da.loadById(Address.class, 1);
 			
-			DomainAccess da1 = new DomainAccess(dbAccess);
 			keanu_1 = da1.loadById(Person.class, 0);
 			keanu_1 = da.loadById(Person.class, 0);
 			lawrence_1 = da.loadById(Person.class, 3);

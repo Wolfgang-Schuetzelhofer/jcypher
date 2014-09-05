@@ -82,6 +82,8 @@ public class MappingUtil {
 				return convertToPrimitive(value, targetType);
 			} else if (targetType.isAssignableFrom(value.getClass())) {
 				return targetType.cast(value);
+			} else if (Number.class.isAssignableFrom(targetType)) {
+				return convertToDistinctNumber(value, targetType);
 			}
 		}
 		return value;
@@ -100,6 +102,20 @@ public class MappingUtil {
 			return ((Number)value).doubleValue();
 		else if (targetType.equals(Boolean.TYPE))
 			return ((Boolean)value).booleanValue();
+		return value;
+	}
+	
+	private static Object convertToDistinctNumber(Object value, Class<?> targetType) {
+		if (targetType.equals(Short.class))
+			return ((Number)value).shortValue();
+		else if (targetType.equals(Integer.class))
+			return ((Number)value).intValue();
+		else if (targetType.equals(Long.class))
+			return ((Number)value).longValue();
+		else if (targetType.equals(Float.class))
+			return ((Number)value).floatValue();
+		else if (targetType.equals(Double.class))
+			return ((Number)value).doubleValue();
 		return value;
 	}
 

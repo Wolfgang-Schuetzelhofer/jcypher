@@ -14,13 +14,8 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.query.ast;
+package iot.jcypher.domain;
 
-public enum ClauseType {
-	START, MATCH, OPTIONAL_MATCH, CREATE, CREATE_UNIQUE, USING_INDEX,
-	USING_SCAN, RETURN, WITH, WHERE, UNION, UNION_ALL,
-	CYPHER_NATIVE,
-	SET, DELETE, REMOVE, FOREACH,
-	CREATE_INDEX, DROP_INDEX,
-	SEPARATE
+public enum Resolution {
+	DEEP, SHALLOW, LEVEL_1
 }

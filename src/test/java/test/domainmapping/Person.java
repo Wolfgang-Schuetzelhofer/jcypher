@@ -9,6 +9,7 @@ public class Person {
 	private Date birthDate;
 	private Address address;
 	private Contact contact;
+	private Person friend;
 	
 	public String getFirstName() {
 		return firstName;
@@ -39,6 +40,12 @@ public class Person {
 	}
 	public void setContact(Contact contact) {
 		this.contact = contact;
+	}
+	public Person getFriend() {
+		return friend;
+	}
+	public void setFriend(Person friend) {
+		this.friend = friend;
 	}
 	@Override
 	public String toString() {

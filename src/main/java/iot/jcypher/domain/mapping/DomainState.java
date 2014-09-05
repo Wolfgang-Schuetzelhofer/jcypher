@@ -16,6 +16,8 @@
 
 package iot.jcypher.domain.mapping;
 
+import iot.jcypher.domain.Resolution;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -23,25 +25,30 @@ import java.util.Map;
 
 public class DomainState {
 
-	private Map<Object, Long> object2IdMap;
+	private Map<Object, LoadInfo> object2IdMap;
 	private Map<Relation, Long> relation2IdMap;
 	private Map<Long, List<Object>> id2ObjectsMap;
 	private Map<Object, List<Relation>> object2RelationsMap;
 	
 	public DomainState() {
 		super();
-		this.object2IdMap = new HashMap<Object, Long>();
+		this.object2IdMap = new HashMap<Object, LoadInfo>();
 		this.relation2IdMap = new HashMap<Relation, Long>();
 		this.id2ObjectsMap = new HashMap<Long, List<Object>>();
 		this.object2RelationsMap = new HashMap<Object, List<Relation>>();
 	}
 	
 	private void addTo_Object2IdMap(Object key, Long value) {
-		this.object2IdMap.put(key, value);
+		LoadInfo loadInfo = new LoadInfo();
+		loadInfo.id = value;
+		this.object2IdMap.put(key, loadInfo);
 	}
 	
-	public Long getFrom_Object2IdMap(Object key) {
-		return this.object2IdMap.get(key);
+	public Long getIdFrom_Object2IdMap(Object key) {
+		LoadInfo loadInfo = this.object2IdMap.get(key);
+		if (loadInfo != null)
+			return loadInfo.id;
+		return null;
 	}
 	
 	public Object checkForMappedObject (Class<?> doClass, Long id) {
@@ -185,5 +192,11 @@ public class DomainState {
 			return "Relation [type=" + type + ", start=" + start + ", end="
 					+ end + "]";
 		}
+	}
+	
+	/********************************/
+	private static class LoadInfo {
+		private Long id;
+		private Resolution resolution;
 	}
 }

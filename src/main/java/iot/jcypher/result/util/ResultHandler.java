@@ -52,7 +52,6 @@ import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueWriter;
-import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.Util;
@@ -665,7 +664,7 @@ public class ResultHandler {
 		Map<GrNode, JcNumber> createdNodeToIdMap = new HashMap<GrNode, JcNumber>();
 		Map<GrRelation, JcNumber> createdRelationToIdMap = new HashMap<GrRelation, JcNumber>();
 		List<JcQuery> queries = createUpdateQueries(createdNodeToIdMap, createdRelationToIdMap);
-		Util.printQueries(queries, "UPDATE", Format.PRETTY_1);
+//		Util.printQueries(queries, "UPDATE", Format.PRETTY_1);
 		List<JcError> errors = new ArrayList<JcError>();
 		if (queries.size() > 0) {
 			List<JcQueryResult> results = dbAccess.execute(queries);
@@ -695,8 +694,10 @@ public class ResultHandler {
 			Map<GrRelation, JcNumber> createdRelationToIdMap) {
 		QueryBuilder queryBuilder = new QueryBuilder();
 		List<JcQuery> queries = queryBuilder.buildUpdateAndRemoveQueries();
-		queries.add(queryBuilder.buildCreateQuery(createdNodeToIdMap,
-				createdRelationToIdMap));
+		JcQuery createQuery = queryBuilder.buildCreateQuery(createdNodeToIdMap,
+				createdRelationToIdMap);
+		if (createQuery != null)
+			queries.add(createQuery);
 		return queries;
 	}
 	
@@ -930,9 +931,13 @@ public class ResultHandler {
 				createdRelationToIdMap.put(grr2jcr.grRelation, rid);
 				clauses.add(RETURN.value(grr2jcr.jcRelation.id()).AS(rid));
 			}
-			IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
-			JcQuery ret = new JcQuery();
-			ret.setClauses(clausesArray);
+			
+			JcQuery ret = null;
+			if (clauses.size() > 0) {
+				IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+				ret = new JcQuery();
+				ret.setClauses(clausesArray);
+			}
 			return ret;
 		}
 		
@@ -1113,7 +1118,11 @@ public class ResultHandler {
 				
 				IClause c = null;
 				if (state == SyncState.CHANGED || state == SyncState.NEW) {
-					c = DO.SET(elem.property(prop.getName())).to(prop.getValue());
+					Object propValue = prop.getValue();
+					if (propValue != null)
+						c = DO.SET(elem.property(prop.getName())).to(prop.getValue());
+					else
+						c = DO.SET(elem.property(prop.getName())).toNull();
 				} else if (state == SyncState.REMOVED) {
 					c = DO.REMOVE(elem.property(prop.getName()));
 				}
