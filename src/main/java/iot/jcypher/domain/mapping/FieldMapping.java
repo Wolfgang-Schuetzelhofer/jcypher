@@ -136,6 +136,12 @@ public class FieldMapping {
 	public Class<?> getFieldType () {
 		return this.field.getType();
 	}
+	
+	public String getFieldName() {
+		if (this.fieldName == null)
+			this.fieldName = this.field.getName();
+		return this.fieldName;
+	}
 
 	private void prepare(Object domainObject) throws NoSuchFieldException, SecurityException {
 		if (this.field == null) {

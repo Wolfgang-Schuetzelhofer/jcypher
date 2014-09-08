@@ -36,7 +36,6 @@ import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
 import iot.jcypher.result.Util;
@@ -81,6 +80,11 @@ public class DomainAccess {
 	private class DomainAccessHandler {
 		private static final String NodePrefix = "n_";
 		private static final String RelationPrefix = "r_";
+		
+		/**
+		 * defines at which recursion occurrence building a query is stopped
+		 */
+		private int maxRecursionCount = 1;
 		private IDBAccess dbAccess;
 		private DomainState domainState;
 		private Map<Class<?>, ObjectMapping> mappings;
@@ -119,7 +123,7 @@ public class DomainAccess {
 				Iterator<Entry<Object, GrNode>> it = context.domObj2Node.entrySet().iterator();
 				while(it.hasNext()) {
 					Entry<Object, GrNode> entry = it.next();
-					this.domainState.add_Id2Object(entry.getKey(), entry.getValue().getId());
+					this.domainState.add_Id2Object(entry.getKey(), entry.getValue().getId(), ResolutionDepth.DEEP);
 				}
 				
 				for (DomRelation2ResultRelation d2r : context.domRelation2Relations) {
@@ -303,7 +307,7 @@ public class DomainAccess {
 			}
 			
 			if (queries.size() > 0) { // at least one node has to be loaded
-				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
+//				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
 				List<JcQueryResult> results = this.dbAccess.execute(queries);
 				List<JcError> errors = Util.collectErrors(results);
 				if (errors.size() > 0) {
@@ -319,7 +323,7 @@ public class DomainAccess {
 				T obj = id2Object.get(ids[i]);
 				if (obj == null) { // need to load
 					FillModelContext<T> fContext = new FillModelContext<T>(domainObjectClass,
-							id2QueryResult.get(ids[i]));
+							id2QueryResult.get(ids[i]), context.recursionEndNodes);
 					new ClosureCalculator().fillModel(fContext);
 					obj = fContext.domainObject;
 				}
@@ -370,7 +374,7 @@ public class DomainAccess {
 				if (obj == null) { // need to load
 					GrNode rNode = result.resultOf(id2QueryNode.get(ids[i])).get(0);
 					obj = createAndMapProperties(domainObjectClass, rNode);
-					this.domainState.add_Id2Object(obj, ids[i]);
+					this.domainState.add_Id2Object(obj, ids[i], ResolutionDepth.DEEP);
 				}
 				resultList.add(obj);
 			}
@@ -411,14 +415,14 @@ public class DomainAccess {
 		
 		private <T> void fillModel(FillModelContext<T> context) {
 			Step step = new Step();
-			step.fillModel(context, null, -1, -1);
+			step.fillModel(context, null);
 		}
 		
 		private void calculateClosureQuery(ClosureQueryContext context) {
 			boolean isDone = false;
 			Step step = new Step();
 			while (!isDone) {
-				isDone = step.calculateQuery(null, -1, context, -1);
+				isDone = step.calculateQuery(null, context);
 				if (context.currentMatchClause != null) {
 					context.addMatchClause(context.currentMatchClause);
 					context.currentMatchClause = null;
@@ -477,22 +481,32 @@ public class DomainAccess {
 			 * @return true, if this leads to a null value
 			 */
 			@SuppressWarnings("unchecked")
-			private <T> boolean fillModel(FillModelContext<T> context, FieldMapping fm,
-					int fieldIndex, int level) {
+			private <T> boolean fillModel(FillModelContext<T> context, FieldMapping fm) {
 				boolean isNullNode = false;
-				String nnm = this.buildNodeOrRelationName(fieldIndex, level,
+				String nnm = this.buildNodeOrRelationName(context.path,
 						DomainAccessHandler.NodePrefix);
+				
+				Class<?> doClass;
+				if (fm == null)
+					doClass = context.domainObjectClass;
+				else
+					doClass = fm.getFieldType();
+				
+				// prepare for navigation to next node
+				context.path.add(new PathElement(doClass));
+				
+				boolean resolveDeep = true;
+				if (context.recursionEndNodes.contains(nnm)) { // exit recursion
+					resolveDeep = false;
+				}
+				
 				JcNode n = new JcNode(nnm);
 				List<GrNode> resList = context.qResult.resultOf(n);
 				if (resList.size() > 0) { // a result node exists for this pattern
 					GrNode rNode = resList.get(0);
 					if (rNode != null) { // null values are supported
-						Class<?> doClass;
-						if (fm == null)
-							doClass = context.domainObjectClass;
-						else
-							doClass = fm.getFieldType();
 						boolean performMapping = false;
+						boolean mapProperties = true;
 						Object domainObject = null;
 						// check if a domain object has already been mapped to this node
 						domainObject =
@@ -504,8 +518,16 @@ public class DomainAccess {
 							} catch (Throwable e) {
 								throw new RuntimeException(e);
 							}
-							domainAccessHandler.domainState.add_Id2Object(domainObject, rNode.getId());
+							domainAccessHandler.domainState.add_Id2Object(domainObject, rNode.getId(),
+									resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
 							performMapping = true;
+						} else {
+							if (resolveDeep &&
+									domainAccessHandler.domainState.getResolutionDepth(domainObject) !=
+										ResolutionDepth.DEEP) {
+								performMapping = true;
+								mapProperties = false; // properties have already been mapped
+							}
 						}
 						
 						if (fm == null) { // we are at the root level
@@ -515,15 +537,18 @@ public class DomainAccess {
 						if (performMapping) {
 							ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(doClass);
 							List<FieldMapping> fMappings = objectMapping.getFieldMappings();
-							int idx = -1;
+							int idx = 0;
 							for (FieldMapping fMap : fMappings) {
-								idx++;
-								if (fMap.needsRelation()) {
+								idx++; // index starts with 1 so as not to mix with the root node (n_0)
+								if (fMap.needsRelation() && resolveDeep) {
 									context.currentObject = null;
-									boolean nodeIsNull = this.fillModel(context, fMap, idx, level + 1);
+									PathElement pe = context.getLastPathElement();
+									pe.fieldIndex = idx;
+									pe.fieldName = fMap.getFieldName();
+									boolean nodeIsNull = this.fillModel(context, fMap);
 									if (!nodeIsNull && context.currentObject != null) {
 										fMap.setField(domainObject, context.currentObject);
-										String rnm = this.buildNodeOrRelationName(idx, level + 1,
+										String rnm = this.buildNodeOrRelationName(context.path,
 												DomainAccessHandler.RelationPrefix);
 										JcRelation r = new JcRelation(rnm);
 										List<GrRelation> relList = context.qResult.resultOf(r);
@@ -535,7 +560,8 @@ public class DomainAccess {
 														context.currentObject), rel.getId());
 									}
 								} else {
-									fMap.mapPropertyToField(domainObject, rNode);
+									if (mapProperties)
+										fMap.mapPropertyToField(domainObject, rNode);
 								}
 							}
 						}
@@ -545,6 +571,7 @@ public class DomainAccess {
 						isNullNode = true;
 					}
 				}
+				context.path.remove(context.path.size() - 1); // remove the last one
 				return isNullNode;
 			}
 			
@@ -553,7 +580,8 @@ public class DomainAccess {
 			 * @param context
 			 * @return true, if calculating query for the current path is done
 			 */
-			private boolean calculateQuery(FieldMapping fm, int fieldIndex, ClosureQueryContext context, int level) {
+			private boolean calculateQuery(FieldMapping fm, ClosureQueryContext context) {
+				boolean ret = true;
 				Class<?> doClass;
 				if (fm == null)
 					doClass = context.domainObjectClass;
@@ -561,52 +589,69 @@ public class DomainAccess {
 					doClass = fm.getFieldType();
 				
 				if (fm != null) // don't add a match for the start node itself
-					this.addToQuery(fm, fieldIndex, context, level);
+					this.addToQuery(fm, context); // navigate to this node
 				
+				boolean resolveDeep = true;
 				boolean walkedToIndex = this.subPathIndex == -1;
-				if (!context.visitedTypes.contains(doClass) || !walkedToIndex) { // avoid infinite loops
-					if (walkedToIndex) // we are visiting the first time
-						context.visitedTypes.add(doClass);
-					ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(doClass);
-					List<FieldMapping> fMappings = objectMapping.getFieldMappings();
-					boolean subPathWalked = false;
-					int idx = -1;
-					for (FieldMapping fMap : fMappings) {
-						idx++;
-						if (!walkedToIndex) {
-							if (idx != this.subPathIndex) // until subPathIndex is reached
-								continue;
-							else
-								walkedToIndex = true;
+				// do the following check to avoid infinite loops
+				if (walkedToIndex) { // we are visiting the first time
+					if (context.getRecursionCount() >= domainAccessHandler.maxRecursionCount)
+						resolveDeep = false;
+				}
+				
+				if (!resolveDeep) { // recursion ends here
+					String nm = this.buildNodeOrRelationName(context.path,
+							DomainAccessHandler.NodePrefix);
+					context.recursionEndNodes.add(nm);
+				}
+				
+				// prepare for navigation to next node
+				context.path.add(new PathElement(doClass));
+				
+				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(doClass);
+				List<FieldMapping> fMappings = objectMapping.getFieldMappings();
+				boolean subPathWalked = false;
+				int idx = 0;
+				for (FieldMapping fMap : fMappings) {
+					idx++; // index starts with 1 so as not to mix with the root node (n_0)
+					if (!walkedToIndex) {
+						if (idx != this.subPathIndex) // until subPathIndex is reached
+							continue;
+						else
+							walkedToIndex = true;
+					}
+					
+					if (fMap.needsRelation() && resolveDeep) {
+						boolean needToComeBack = false;
+						if (!subPathWalked) {
+							if (this.next == null)
+								this.next = new Step();
+							PathElement pe = context.getLastPathElement();
+							pe.fieldIndex = idx;
+							pe.fieldName = fMap.getFieldName();
+							boolean isDone = this.next.calculateQuery(fMap, context);
+							if (!isDone) { // sub path not finished
+								needToComeBack = true;
+							} else {
+								this.next = null;
+								subPathWalked = true;
+							}
+						} else {
+							needToComeBack = true;
 						}
 						
-						if (fMap.needsRelation()) {
-							boolean needToComeBack = false;
-							if (!subPathWalked) {
-								if (this.next == null)
-									this.next = new Step();
-								boolean isDone = this.next.calculateQuery(fMap, idx, context, level + 1);
-								if (!isDone) { // sub path not finished
-									needToComeBack = true;
-								} else {
-									this.next = null;
-									subPathWalked = true;
-								}
-							} else {
-								needToComeBack = true;
-							}
-							
-							if (needToComeBack) {
-								this.subPathIndex = idx;
-								return false;
-							}
+						if (needToComeBack) {
+							this.subPathIndex = idx;
+							ret = false;
+							break;
 						}
 					}
 				}
-				return true;
+				context.path.remove(context.path.size() - 1); // remove the last one
+				return ret;
 			}
 			
-			private void addToQuery(FieldMapping fm, int fieldIndex, ClosureQueryContext context, int level) {
+			private void addToQuery(FieldMapping fm, ClosureQueryContext context) {
 				if (context.currentMatchClause == null) {
 					JcNode n = new JcNode(DomainAccessHandler.NodePrefix.concat(String.valueOf(0)));
 					context.currentMatchClause = OPTIONAL_MATCH.node(n);
@@ -615,28 +660,26 @@ public class DomainAccess {
 					}
 				}
 				
-				JcNode n = new JcNode(this.buildNodeOrRelationName(fieldIndex, level,
+				JcNode n = new JcNode(this.buildNodeOrRelationName(context.path,
 						DomainAccessHandler.NodePrefix));
-				JcRelation r = new JcRelation(this.buildNodeOrRelationName(fieldIndex, level,
+				JcRelation r = new JcRelation(this.buildNodeOrRelationName(context.path,
 						DomainAccessHandler.RelationPrefix));
 				context.currentMatchClause.relation(r).out().type(fm.getPropertyOrRelationName())
 				.node(n);
 			}
 			
-			private String buildNodeOrRelationName(int fieldIndex, int level, String prefix) {
-				// format of node name: n_x_y_z
-				// x: index of the match clause
-				// y: level of the current step within the query path
-				// z: index of the field within the parent
+			private String buildNodeOrRelationName(List<PathElement> path, String prefix) {
+				// format of node name: n_idx1_idx2_idx3...
 				StringBuilder sb = new StringBuilder();
 				sb.append(prefix);
-				if (level >= 0) {
-					sb.append(level);
-					sb.append('_');
-					sb.append(fieldIndex);
+				if (path.size() > 0) {
+					for (int i = 0; i < path.size(); i++) {
+						if (i > 0)
+							sb.append('_');
+						sb.append(path.get(i).fieldIndex);
+					}
 				} else
-					sb.append(0);
-				
+					sb.append(0); // root node name
 				return sb.toString();
 			}
 		}
@@ -648,11 +691,22 @@ public class DomainAccess {
 		private Class<T> domainObjectClass;
 		private T domainObject;
 		private Object currentObject;
+		private List<PathElement> path;
+		private List<String> recursionEndNodes;
 		
-		FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult) {
+		FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult,
+				List<String> recursionEndNds) {
 			super();
 			this.domainObjectClass = domainObjectClass;
 			this.qResult = qResult;
+			this.path = new ArrayList<PathElement>();
+			this.recursionEndNodes = recursionEndNds;
+		}
+		
+		private PathElement getLastPathElement() {
+			if (this.path.size() > 0)
+				return this.path.get(this.path.size() - 1);
+			return null;
 		}
 	}
 	
@@ -661,18 +715,52 @@ public class DomainAccess {
 		private Class<?> domainObjectClass;
 		private List<IClause> matchClauses;
 		private Node currentMatchClause;
-		private List<Class<?>> visitedTypes;
+		private List<PathElement> path;
+		private List<String> recursionEndNodes;
 		
 		ClosureQueryContext(Class<?> domainObjectClass) {
 			super();
 			this.domainObjectClass = domainObjectClass;
-			this.visitedTypes = new ArrayList<Class<?>>();
+			this.path = new ArrayList<PathElement>();
+			this.recursionEndNodes = new ArrayList<String>();
 		}
 		
 		private void addMatchClause(IClause clause) {
 			if (this.matchClauses == null)
 				this.matchClauses = new ArrayList<IClause>();
 			this.matchClauses.add(clause);
+		}
+		
+		private PathElement getLastPathElement() {
+			if (this.path.size() > 0)
+				return this.path.get(this.path.size() - 1);
+			return null;
+		}
+		
+		private int getRecursionCount() {
+			int count = 0;
+			int sz = this.path.size();
+			if (sz > 0) {
+				PathElement peComp = this.path.get(sz - 1);
+				for (int i = sz - 2; i >= 0; i--) {
+					PathElement pe = this.path.get(i);
+					if (pe.sourceType.equals(peComp.sourceType) && pe.fieldName.equals(peComp.fieldName))
+						count++;
+				}
+			}
+			return count;
+		}
+	}
+	
+	/*********************************/
+	private static class PathElement {
+		private Class<?> sourceType;
+		private String fieldName;
+		private int fieldIndex;
+		
+		private PathElement(Class<?> sourceType) {
+			super();
+			this.sourceType = sourceType;
 		}
 	}
 	

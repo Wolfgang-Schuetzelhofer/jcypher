@@ -61,6 +61,29 @@ public class Util {
 	 * @param title
 	 * @param format
 	 */
+	public static void printQuery(JcQuery query, String title, Format format) {
+		System.out.println("QUERY: " + title + " --------------------");
+		// map to Cypher
+		System.out.println("CYPHER --------------------");
+		String cypher = iot.jcypher.samples.Util.toCypher(query, format);
+		System.out.println("--------------------");
+		System.out.println(cypher);
+		
+		// map to JSON
+		String json = iot.jcypher.samples.Util.toJSON(query, format);
+		System.out.println("");
+		System.out.println("JSON   --------------------");
+		System.out.println(json);
+		
+		System.out.println("");
+	}
+	
+	/**
+	 * map to CYPHER statements and map to JSON, print the mapping results to System.out
+	 * @param queries
+	 * @param title
+	 * @param format
+	 */
 	public static void printQueries(List<JcQuery> queries, String title, Format format) {
 		System.out.println("QUERIES: " + title + " --------------------");
 		// map to Cypher
@@ -78,6 +101,23 @@ public class Util {
 		System.out.println(json);
 		
 		System.out.println("");
+	}
+	
+	public static void printResult(JcQueryResult result, String title, Format format) {
+		System.out.println("RESULT OF: " + title + " --------------------");
+		List<JcError> errors = collectErrors(result);
+		if (errors.size() > 0) {
+			StringBuilder sb = new StringBuilder();
+			sb.append("---------------Errors:");
+			appendErrorList(errors, sb);
+			String str = sb.toString();
+			System.out.println("");
+			System.out.println(str);
+		}
+		
+		System.out.println("JSON RESULT --------------------");
+		String resultString = Util.writePretty(result.getJsonResult());
+		System.out.println(resultString);
 	}
 	
 	public static void printResults(List<JcQueryResult> results, String title, Format format) {

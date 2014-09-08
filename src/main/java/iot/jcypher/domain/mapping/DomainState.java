@@ -16,7 +16,7 @@
 
 package iot.jcypher.domain.mapping;
 
-import iot.jcypher.domain.Resolution;
+import iot.jcypher.domain.ResolutionDepth;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,10 +38,18 @@ public class DomainState {
 		this.object2RelationsMap = new HashMap<Object, List<Relation>>();
 	}
 	
-	private void addTo_Object2IdMap(Object key, Long value) {
+	private void addTo_Object2IdMap(Object key, Long value, ResolutionDepth resolutionDepth) {
 		LoadInfo loadInfo = new LoadInfo();
 		loadInfo.id = value;
+		loadInfo.resolutionDepth = resolutionDepth;
 		this.object2IdMap.put(key, loadInfo);
+	}
+	
+	public ResolutionDepth getResolutionDepth(Object key) {
+		LoadInfo loadInfo = this.object2IdMap.get(key);
+		if (loadInfo != null)
+			return loadInfo.resolutionDepth;
+		return null;
 	}
 	
 	public Long getIdFrom_Object2IdMap(Object key) {
@@ -82,9 +90,9 @@ public class DomainState {
 			objs.add(obj);
 	}
 	
-	public void add_Id2Object(Object obj, Long id) {
+	public void add_Id2Object(Object obj, Long id, ResolutionDepth resolutionDepth) {
 		this.addTo_Id2ObjectsMap(obj, id);
-		this.addTo_Object2IdMap(obj, id);
+		this.addTo_Object2IdMap(obj, id, resolutionDepth);
 	}
 	
 	public boolean existsRelation(Relation relat) {
@@ -197,6 +205,6 @@ public class DomainState {
 	/********************************/
 	private static class LoadInfo {
 		private Long id;
-		private Resolution resolution;
+		private ResolutionDepth resolutionDepth;
 	}
 }

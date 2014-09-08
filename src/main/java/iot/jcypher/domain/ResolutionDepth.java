@@ -16,6 +16,6 @@
 
 package iot.jcypher.domain;
 
-public enum Resolution {
+public enum ResolutionDepth {
 	DEEP, SHALLOW, LEVEL_1
 }
