@@ -17,6 +17,7 @@
 package test.domainmapping;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.DBAccessFactory;
@@ -24,6 +25,7 @@ import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccess;
+import iot.jcypher.domain.SyncInfo;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPropertyContainer;
 import iot.jcypher.graph.GrRelation;
@@ -52,9 +54,11 @@ import test.AbstractTestSuite;
 public class DomainMappingTest extends AbstractTestSuite{
 
 	private static IDBAccess dbAccess;
+	private static String domainName;
 	
 	@BeforeClass
 	public static void before() {
+		domainName = "PEOPLE-DOMAIN";
 		Properties props = new Properties();
 		
 		// properties for remote access and for embedded access
@@ -74,51 +78,69 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@Test
-	public void testStoreDomainObject() {
-		Person keanu_1, laurence_1;
-		Address addr_1;
-		
+	public void testClearDomain() {
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		List<JcError> errors;
-		DomainAccess da = new DomainAccess(dbAccess);
-		DomainAccess da1;
 		
 		Person keanu = new Person();
-		keanu.setFirstName("Keanu");
-		keanu.setLastName("Reeves");
-		Calendar cal = Calendar.getInstance();
-		cal.set(1964, 8, 2, 0, 0, 0);
-		clearMillis(cal);
-		keanu.setBirthDate(cal.getTime());
-		
-		Address addr = new Address();
-		addr.setCity("Vienna");
-		addr.setStreet("Main Street");
-		addr.setNumber(9);
-		keanu.setAddress(addr);
-		
-		Contact contact = new Contact();
-		contact.setType(ContactType.TELEPHONE);
-		contact.setNummer("12345");
-		keanu.setContact(contact);
-		
-		Contact contact2 = new Contact();
-		contact2.setType(ContactType.EMAIL);
-		contact2.setNummer("dj@nowhere.org");
-		
+		Address address = new Address();
+		Contact phone = new Contact();
+		Contact email = new Contact();
 		Person laurence = new Person();
-		laurence.setFirstName("Laurence");
-		laurence.setLastName("Fishburne");
-		cal = Calendar.getInstance();
-		cal.set(1961, 6, 30, 0, 0, 0);
-		clearMillis(cal);
-		laurence.setBirthDate(cal.getTime());
+		
+		buildInitialDomainObjects(keanu, laurence, address, phone, email);
 		
 		List<Object> domainObjects = new ArrayList<Object>();
 		domainObjects.add(keanu);
 		domainObjects.add(laurence);
 		
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		boolean check = dbAccess.isDatabaseEmpty();
+		assertFalse("Test Domain not empty", check);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		check = dbAccess.isDatabaseEmpty();
+		assertTrue("Test Domain is empty", check);
+		return;
+	}
+	
+	@Test
+	public void testStoreDomainObjects() {
+		Person keanu_1, laurence_1;
+		Address addr_1;
+		
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		
+		Person keanu = new Person();
+		Address address = new Address();
+		Contact phone = new Contact();
+		Contact email = new Contact();
+		Person laurence = new Person();
+		
+		buildInitialDomainObjects(keanu, laurence, address, phone, email);
+		
+		List<Object> domainObjects = new ArrayList<Object>();
+		domainObjects.add(keanu);
+		domainObjects.add(laurence);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 		// check for an empty graph
-		boolean check = checkForNodesAndRelations(null	, null);
+		boolean check = dbAccess.isDatabaseEmpty();
 		assertTrue("Test for empty graph", check);
 		
 		errors = da.store(domainObjects);
@@ -127,13 +149,14 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw new JcResultException(errors);
 		}
 		
-		keanu_1 = da.loadById(Person.class, 0);
+		SyncInfo syncInfo = da.getSyncInfo(keanu);
+		keanu_1 = da.loadById(Person.class, syncInfo.getId());
 		boolean isIdentical = keanu == keanu_1;
 		assertTrue("Test for identity of domain objects", isIdentical);
 		
-		da1 = new DomainAccess(dbAccess);
+		da1 = new DomainAccess(dbAccess, domainName);
 		try {
-			keanu_1 = da1.loadById(Person.class, 0);
+			keanu_1 = da1.loadById(Person.class, syncInfo.getId());
 		} catch (Exception e) {
 			if (e instanceof JcResultException) {
 				errors = ((JcResultException)e).getErrors();
@@ -169,13 +192,13 @@ public class DomainMappingTest extends AbstractTestSuite{
 			printErrors(errors);
 		}
 		
-		laurence.setContact(contact2);
+		laurence.setContact(email);
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
 		}
 		
-		laurence.setAddress(addr);
+		laurence.setAddress(address);
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
@@ -188,9 +211,15 @@ public class DomainMappingTest extends AbstractTestSuite{
 			printErrors(errors);
 		}
 		
+		keanu.setFriend(null);
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName); 
 		try {
-//			List<Person> persons = da1.loadByIds(Person.class, 0, 3);
-			keanu_1 = da1.loadById(Person.class, 0);
+			keanu_1 = da1.loadById(Person.class, syncInfo.getId());
 		} catch (Exception e) {
 			if (e instanceof JcResultException) {
 				errors = ((JcResultException)e).getErrors();
@@ -198,12 +227,6 @@ public class DomainMappingTest extends AbstractTestSuite{
 				return;
 			}
 			throw e;
-		}
-		
-		keanu.setFriend(null);
-		errors = da.store(domainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
 		}
 		
 		laurence.setFriend(null);
@@ -232,6 +255,35 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw e;
 		}
 		return;
+	}
+	
+	private void buildInitialDomainObjects(Person keanu, Person laurence,
+			Address address, Contact phone, Contact email) {
+		keanu.setFirstName("Keanu");
+		keanu.setLastName("Reeves");
+		Calendar cal = Calendar.getInstance();
+		cal.set(1964, 8, 2, 0, 0, 0);
+		clearMillis(cal);
+		keanu.setBirthDate(cal.getTime());
+		
+		address.setCity("Vienna");
+		address.setStreet("Main Street");
+		address.setNumber(9);
+		keanu.setAddress(address);
+		
+		phone.setType(ContactType.TELEPHONE);
+		phone.setNummer("12345");
+		keanu.setContact(phone);
+		
+		email.setType(ContactType.EMAIL);
+		email.setNummer("dj@nowhere.org");
+		
+		laurence.setFirstName("Laurence");
+		laurence.setLastName("Fishburne");
+		cal = Calendar.getInstance();
+		cal.set(1961, 6, 30, 0, 0, 0);
+		clearMillis(cal);
+		laurence.setBirthDate(cal.getTime());
 	}
 	
 	private boolean equalsPerson(Person person1, Person person2,
@@ -370,13 +422,13 @@ public class DomainMappingTest extends AbstractTestSuite{
 			clauses.add(RETURN.ALL());
 			JcQuery query = new JcQuery();
 			query.setClauses(clauses.toArray(new IClause[clauses.size()]));
-			Util.printQuery(query, "CHECK", Format.PRETTY_1);
+//			Util.printQuery(query, "CHECK", Format.PRETTY_1);
 			JcQueryResult result = dbAccess.execute(query);
 			if (result.hasErrors()) {
 				List<JcError> errors = Util.collectErrors(result);
 				throw new JcResultException(errors);
 			}
-			Util.printResult(result, "CHECK", Format.PRETTY_1);
+//			Util.printResult(result, "CHECK", Format.PRETTY_1);
 			
 			// perform check
 			if (checkForNodes) {
@@ -405,27 +457,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 				}
 			}
 		} else { // check for an empty graph
-			JcNode n = new JcNode("n");
-			JcRelation r = new JcRelation("r");
-			JcQuery query = new JcQuery();
-			query.setClauses(new IClause[] {
-					MATCH.node(n),
-					SEPARATE.nextClause(),
-					MATCH.node().relation(r).node(),
-					RETURN.ALL()
-			});
-			Util.printQuery(query, "CHECK", Format.PRETTY_1);
-			JcQueryResult result = dbAccess.execute(query);
-			if (result.hasErrors()) {
-				List<JcError> errors = Util.collectErrors(result);
-				throw new JcResultException(errors);
-			}
-			Util.printResult(result, "CHECK", Format.PRETTY_1);
-			
-			// perform check
-			List<GrNode> nodes = result.resultOf(n);
-			List<GrRelation> relations = result.resultOf(r);
-			ret = nodes.size() == 0 && relations.size() == 0;
+			ret = dbAccess.isDatabaseEmpty();
 		}
 		return ret;
 	}

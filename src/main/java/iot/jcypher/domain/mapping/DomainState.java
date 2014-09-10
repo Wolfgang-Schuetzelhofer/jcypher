@@ -17,6 +17,7 @@
 package iot.jcypher.domain.mapping;
 
 import iot.jcypher.domain.ResolutionDepth;
+import iot.jcypher.domain.SyncInfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -57,6 +58,10 @@ public class DomainState {
 		if (loadInfo != null)
 			return loadInfo.id;
 		return null;
+	}
+	
+	public LoadInfo getLoadInfoFrom_Object2IdMap(Object key) {
+		return this.object2IdMap.get(key);
 	}
 	
 	public Object checkForMappedObject (Class<?> doClass, Long id) {
@@ -203,8 +208,16 @@ public class DomainState {
 	}
 	
 	/********************************/
-	private static class LoadInfo {
+	public static class LoadInfo {
 		private Long id;
 		private ResolutionDepth resolutionDepth;
+		
+		public Long getId() {
+			return id;
+		}
+		public ResolutionDepth getResolutionDepth() {
+			return resolutionDepth;
+		}
+		
 	}
 }

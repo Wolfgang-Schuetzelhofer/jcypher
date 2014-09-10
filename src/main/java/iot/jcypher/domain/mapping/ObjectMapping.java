@@ -48,4 +48,8 @@ public class ObjectMapping {
 	public void setNodeLabelMapping(NodeLabelMapping nodeLabelMapping) {
 		this.nodeLabelMapping = nodeLabelMapping;
 	}
+
+	public NodeLabelMapping getNodeLabelMapping() {
+		return nodeLabelMapping;
+	}
 }

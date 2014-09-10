@@ -21,25 +21,34 @@ import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.mapping.DefaultObjectMappingCreator;
 import iot.jcypher.domain.mapping.DomainState;
+import iot.jcypher.domain.mapping.DomainState.LoadInfo;
 import iot.jcypher.domain.mapping.DomainState.Relation;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.graph.GrNode;
+import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.graph.Graph;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.pattern.Node;
+import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.DO;
+import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.factories.clause.START;
+import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.values.ValueAccess;
+import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
 import iot.jcypher.result.Util;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -51,9 +60,13 @@ public class DomainAccess {
 	
 	private DomainAccessHandler domainAccessHandler;
 
-	public DomainAccess(IDBAccess dbAccess) {
+	/**
+	 * @param dbAccess the graph database connection
+	 * @param domainName
+	 */
+	public DomainAccess(IDBAccess dbAccess, String domainName) {
 		super();
-		this.domainAccessHandler = new DomainAccessHandler(dbAccess);
+		this.domainAccessHandler = new DomainAccessHandler(dbAccess, domainName);
 	}
 
 	public List<JcError> store(Object domainObject) {
@@ -76,11 +89,26 @@ public class DomainAccess {
 		return this.domainAccessHandler.loadByIds(domainObjectClass, ids);
 	}
 	
+	public SyncInfo getSyncInfo(Object domainObject) {
+		List<Object> domainObjects = new ArrayList<Object>();
+		domainObjects.add(domainObject);
+		List<SyncInfo> ret = this.domainAccessHandler.getSyncInfos(domainObjects);
+		return ret.get(0);
+	}
+	
+	public List<SyncInfo> getSyncInfos(List<Object> domainObjects) {
+		return this.domainAccessHandler.getSyncInfos(domainObjects);
+	}
+	
 	/**********************************************************************/
 	private class DomainAccessHandler {
 		private static final String NodePrefix = "n_";
 		private static final String RelationPrefix = "r_";
+		private static final String DomainInfoNodeLabel = "DomainInfo";
+		private static final String DomainInfoNameProperty = "name";
+		private static final String DomainInfoClass2LabelProperty = "class2LabelMap";
 		
+		private String domainName;
 		/**
 		 * defines at which recursion occurrence building a query is stopped
 		 */
@@ -88,10 +116,12 @@ public class DomainAccess {
 		private IDBAccess dbAccess;
 		private DomainState domainState;
 		private Map<Class<?>, ObjectMapping> mappings;
+		private DomainInfo domainInfo;
 
-		private DomainAccessHandler(IDBAccess dbAccess) {
+		private DomainAccessHandler(IDBAccess dbAccess, String domainName) {
 			super();
-			this.dbAccess = dbAccess;
+			this.domainName = domainName;
+			this.dbAccess = new DBAccessWrapper(dbAccess);
 			this.domainState = new DomainState();
 			this.mappings = new HashMap<Class<?>, ObjectMapping>();
 		}
@@ -131,6 +161,18 @@ public class DomainAccess {
 				}
 			}
 			return errors;
+		}
+		
+		List<SyncInfo> getSyncInfos(List<Object> domainObjects) {
+			List<SyncInfo> ret = new ArrayList<SyncInfo>(domainObjects.size());
+			for (Object obj : domainObjects) {
+				LoadInfo li = this.domainState.getLoadInfoFrom_Object2IdMap(obj);
+				if (li != null)
+					ret.add(new SyncInfo(li.getId(), li.getResolutionDepth()));
+				else
+					ret.add(new SyncInfo(-1, null));
+			}
+			return ret;
 		}
 		
 		private UpdateContext updateLocalGraph(List<Object> domainObjects) {
@@ -404,9 +446,156 @@ public class DomainAccess {
 			ObjectMapping objectMapping = this.mappings.get(domainObjectClass);
 			if (objectMapping == null) {
 				objectMapping = DefaultObjectMappingCreator.createObjectMapping(domainObjectClass);
-				this.mappings.put(domainObjectClass, objectMapping);
+				this.addObjectMappingForClass(domainObjectClass, objectMapping);
 			}
 			return objectMapping;
+		}
+		
+		private void addObjectMappingForClass(Class<?> domainObjectClass, ObjectMapping objectMapping) {
+			this.mappings.put(domainObjectClass, objectMapping);
+			List<String> labels = objectMapping.getNodeLabelMapping().getLabels();
+			String lab;
+			if (labels.size() > 1)
+				lab = labels.toString();
+			else if (labels.size() == 1)
+				lab = labels.get(0);
+			else
+				lab = new String();
+			if (this.domainInfo != null)
+				this.domainInfo.add(domainObjectClass, lab);
+			else {
+				DomainInfo tmp = ((DBAccessWrapper)this.dbAccess).temporaryDomainInfo;
+				if (tmp == null) {
+					tmp = new DomainInfo(-1);
+					((DBAccessWrapper)this.dbAccess).temporaryDomainInfo = tmp;
+				}
+				tmp.add(domainObjectClass, lab);
+			}
+		}
+		
+		/****************************************/
+		private class DBAccessWrapper implements IDBAccess {
+
+			private IDBAccess delegate;
+			private DomainInfo temporaryDomainInfo;
+			
+			private DBAccessWrapper(IDBAccess delegate) {
+				super();
+				this.delegate = delegate;
+			}
+
+			@Override
+			public JcQueryResult execute(JcQuery query) {
+				JcQuery infoQuery = createDomainInfoSyncQuery();
+				if (infoQuery != null) {
+					List<JcQuery> queries = new ArrayList<JcQuery>(2);
+					queries.add(query);
+					queries.add(infoQuery);
+					List<JcQueryResult> results = this.delegate.execute(queries);
+					List<JcError> errors = Util.collectErrors(results);
+					if (errors.isEmpty()) {
+						updateDomainInfo(results.get(1));
+					}
+					return results.get(0);
+				} else
+					return this.delegate.execute(query);
+			}
+
+			@Override
+			public List<JcQueryResult> execute(List<JcQuery> queries) {
+				JcQuery infoQuery = createDomainInfoSyncQuery();
+				if (infoQuery != null) {
+					List<JcQuery> extQueries = new ArrayList<JcQuery>(queries.size() + 1);
+					extQueries.addAll(queries);
+					extQueries.add(infoQuery);
+					List<JcQueryResult> results = this.delegate.execute(extQueries);
+					List<JcError> errors = Util.collectErrors(results);
+					if (errors.isEmpty()) {
+						updateDomainInfo(results.get(queries.size()));
+					}
+					return results.subList(0, queries.size());
+				} else
+					return this.delegate.execute(queries);
+			}
+
+			@Override
+			public List<JcError> clearDatabase() {
+				return this.delegate.clearDatabase();
+			}
+
+			@Override
+			public boolean isDatabaseEmpty() {
+				return this.delegate.isDatabaseEmpty();
+			}
+
+			@Override
+			public void close() {
+				this.delegate.close();
+			}
+
+			private void updateDomainInfo(JcQueryResult result) {
+				if (DomainAccessHandler.this.domainInfo == null) { // initial load
+					JcNode info = new JcNode("info");
+					List<GrNode> rInfos = result.resultOf(info);
+					DomainInfo dInfo;
+					if (rInfos.size() > 0) { // DomainInfo was found in the graph
+						GrNode rInfo = rInfos.get(0);
+						dInfo = new DomainInfo(rInfo.getId());
+						dInfo.initFrom(rInfo);
+					} else
+						DomainAccessHandler.this.domainInfo = new DomainInfo(-1);
+				} else if (DomainAccessHandler.this.domainInfo.isChanged()) { // update info to graph
+					DomainAccessHandler.this.domainInfo.graphUdated();
+					if (DomainAccessHandler.this.domainInfo.nodeId == -1) {
+						// new DomainInfo node was stored in the db
+						// we have to set the returned node id
+						JcNumber nid = new JcNumber("NID");
+						BigDecimal rNid = result.resultOf(nid).get(0);
+						DomainAccessHandler.this.domainInfo.nodeId = rNid.longValue();
+					}
+				}
+				
+				if (this.temporaryDomainInfo != null) {
+					DomainAccessHandler.this.domainInfo.updateFrom(this.temporaryDomainInfo);
+					this.temporaryDomainInfo = null;
+				}
+			}
+
+			private JcQuery createDomainInfoSyncQuery() {
+				JcQuery query = null;
+				if (DomainAccessHandler.this.domainInfo == null) { // initial load
+					JcNode info = new JcNode("info");
+					query = new JcQuery();
+					query.setClauses(new IClause[] {
+							MATCH.node(info).label(DomainInfoNodeLabel),
+							WHERE.valueOf(info.property(DomainInfoNameProperty))
+								.EQUALS(DomainAccessHandler.this.domainName),
+							RETURN.value(info)
+					});
+				} else if (DomainAccessHandler.this.domainInfo.isChanged()) { // update info to graph
+					List<String> class2LabelList = DomainAccessHandler.this.domainInfo.getClass2LabelNameStringList();
+					JcNode info = new JcNode("info");
+					query = new JcQuery();
+					if (DomainAccessHandler.this.domainInfo.nodeId != -1) { // DominInfo was loaded from graph
+						query.setClauses(new IClause[] {
+								START.node(info).byId(DomainAccessHandler.this.domainInfo.nodeId),
+								DO.SET(info.property(DomainInfoClass2LabelProperty)).to(class2LabelList)
+						});
+					} else { // new DomainInfo node must be stored in the db
+						JcNumber nid = new JcNumber("NID");
+						query.setClauses(new IClause[] {
+								CREATE.node(info).label(DomainInfoNodeLabel)
+									.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName)
+									.property(DomainInfoClass2LabelProperty).value(class2LabelList),
+									RETURN.value(info.id()).AS(nid)
+						});
+					}
+				}
+				if (query != null)
+					Util.printQuery(query, "DOMAIN INFO", Format.PRETTY_1);
+				return query;
+			}
+			
 		}
 	}
 	
@@ -790,5 +979,66 @@ public class DomainAccess {
 	private class QueryRelation2ResultRelation {
 		private JcRelation queryRelation;
 		private GrRelation resultRelation;
+	}
+	
+	/***********************************/
+	private class DomainInfo {
+		
+		private boolean changed;
+		private long nodeId;
+		private Map<String, Class<?>> label2ClassMap;
+		private Map<Class<?>, String> class2labelMap;
+
+		private DomainInfo(long nid) {
+			super();
+			this.changed = false;
+			this.nodeId = nid;
+			this.label2ClassMap = new HashMap<String, Class<?>>();
+			this.class2labelMap = new HashMap<Class<?>, String>();
+		}
+
+		private void initFrom(GrNode rInfo) {
+			GrProperty prop = rInfo.getProperty(DomainAccessHandler.DomainInfoClass2LabelProperty);
+			Object val = prop.getValue();
+			return;
+		}
+
+		private void updateFrom(DomainInfo dInfo) {
+			Iterator<Entry<Class<?>, String>> it = dInfo.class2labelMap.entrySet().iterator();
+			while (it.hasNext()) {
+				Entry<Class<?>, String> entry = it.next();
+				this.add(entry.getKey(), entry.getValue());
+			}
+		}
+		
+		private boolean isChanged() {
+			return changed;
+		}
+		
+		private void graphUdated() {
+			this.changed = false;
+		}
+		
+		private void add(Class<?> clazz, String label) {
+			if (!this.class2labelMap.containsKey(clazz)) {
+				this.class2labelMap.put(clazz, label);
+				this.label2ClassMap.put(label, clazz);
+				this.changed = true;
+			}
+		}
+		
+		private List<String> getClass2LabelNameStringList() {
+			List<String> ret = new ArrayList<String>(this.class2labelMap.size());
+			Iterator<Entry<Class<?>, String>> it = this.class2labelMap.entrySet().iterator();
+			while(it.hasNext()) {
+				Entry<Class<?>, String> entry = it.next();
+				StringBuilder sb = new StringBuilder();
+				sb.append(entry.getKey().getName());
+				sb.append('=');
+				sb.append(entry.getValue());
+				ret.add(sb.toString());
+			}
+			return ret;
+		}
 	}
 }

@@ -20,7 +20,7 @@ import iot.jcypher.JSONWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.DBProperties;
-import iot.jcypher.database.DBUtil;
+import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
 import iot.jcypher.query.writer.ContextAccess;
 import iot.jcypher.query.writer.WriterContext;
@@ -116,6 +116,16 @@ public class RemoteDBAccess implements IDBAccessInit {
 			}
 		}
 		return ret;
+	}
+
+	@Override
+	public List<JcError> clearDatabase() {
+		return DBUtil.clearDatabase(this);
+	}
+
+	@Override
+	public boolean isDatabaseEmpty() {
+		return DBUtil.isDatabaseEmpty(this);
 	}
 
 	@Override

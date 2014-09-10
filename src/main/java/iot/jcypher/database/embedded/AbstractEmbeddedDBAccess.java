@@ -19,7 +19,7 @@ package iot.jcypher.database.embedded;
 import iot.jcypher.CypherWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
-import iot.jcypher.database.DBUtil;
+import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
 import iot.jcypher.query.writer.IQueryParam;
 import iot.jcypher.query.writer.QueryParam;
@@ -140,6 +140,16 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			}
 		}
 		return ret;
+	}
+	
+	@Override
+	public List<JcError> clearDatabase() {
+		return DBUtil.clearDatabase(this);
+	}
+
+	@Override
+	public boolean isDatabaseEmpty() {
+		return DBUtil.isDatabaseEmpty(this);
 	}
 	
 	@Override

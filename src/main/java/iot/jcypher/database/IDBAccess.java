@@ -20,6 +20,7 @@ import java.util.List;
 
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
+import iot.jcypher.result.JcError;
 
 public interface IDBAccess {
 
@@ -36,6 +37,17 @@ public interface IDBAccess {
 	 * @return a list of 'JcQueryResult's
 	 */
 	public List<JcQueryResult> execute(List<JcQuery> queries);
+	
+	/**
+	 * removes all nodes and relations form the graph database
+	 * @return a list of errors which is empty if no errors occurred
+	 */
+	public List<JcError> clearDatabase();
+	
+	/**
+	 * @return true if not a single node or relation is contained in the graph database
+	 */
+	public boolean isDatabaseEmpty();
 	
 	/**
 	 * close the database connection
