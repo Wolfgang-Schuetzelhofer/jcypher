@@ -20,6 +20,8 @@ please have a look at: https://github.com/Wolfgang-Schuetzelhofer/jcypher/wiki.
 For more information about Neo4J have a look at: http://www.neo4j.org/
 For more information about the CYPHER language have a look at: http://docs.neo4j.org/chunked/stable/cypher-query-lang.html
 
+Copyright (c) 2014 IoT-Solutions e.U.
+
 License:
 								Apache License
                            Version 2.0, January 2004
