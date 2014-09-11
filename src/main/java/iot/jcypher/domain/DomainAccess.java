@@ -42,7 +42,6 @@ import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
@@ -50,6 +49,7 @@ import iot.jcypher.result.Util;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -106,7 +106,7 @@ public class DomainAccess {
 		private static final String RelationPrefix = "r_";
 		private static final String DomainInfoNodeLabel = "DomainInfo";
 		private static final String DomainInfoNameProperty = "name";
-		private static final String DomainInfoClass2LabelProperty = "class2LabelMap";
+		private static final String DomainInfoLabel2ClassProperty = "label2ClassMap";
 		
 		private String domainName;
 		/**
@@ -509,6 +509,7 @@ public class DomainAccess {
 					extQueries.addAll(queries);
 					extQueries.add(infoQuery);
 					List<JcQueryResult> results = this.delegate.execute(extQueries);
+					Util.printResults(results, "DOMAIN INFO", Format.PRETTY_1);
 					List<JcError> errors = Util.collectErrors(results);
 					if (errors.isEmpty()) {
 						updateDomainInfo(results.get(queries.size()));
@@ -542,6 +543,7 @@ public class DomainAccess {
 						GrNode rInfo = rInfos.get(0);
 						dInfo = new DomainInfo(rInfo.getId());
 						dInfo.initFrom(rInfo);
+						DomainAccessHandler.this.domainInfo = dInfo;
 					} else
 						DomainAccessHandler.this.domainInfo = new DomainInfo(-1);
 				} else if (DomainAccessHandler.this.domainInfo.isChanged()) { // update info to graph
@@ -559,6 +561,19 @@ public class DomainAccess {
 					DomainAccessHandler.this.domainInfo.updateFrom(this.temporaryDomainInfo);
 					this.temporaryDomainInfo = null;
 				}
+				
+				// make sure that stiil pending changes are committed to the database
+				// can happen in certain scenarios with the first domain query executed
+				JcQuery query = this.createDomainInfoSyncQuery();
+				if (query != null) {
+					JcQueryResult uResult = this.delegate.execute(query);
+					List<JcError> errors = Util.collectErrors(uResult);
+					if (errors.isEmpty()) {
+						updateDomainInfo(uResult);
+					} else {
+						throw new JcResultException(errors, "Error on update of Domain Info!");
+					}
+				}
 			}
 
 			private JcQuery createDomainInfoSyncQuery() {
@@ -573,21 +588,21 @@ public class DomainAccess {
 							RETURN.value(info)
 					});
 				} else if (DomainAccessHandler.this.domainInfo.isChanged()) { // update info to graph
-					List<String> class2LabelList = DomainAccessHandler.this.domainInfo.getClass2LabelNameStringList();
+					List<String> class2LabelList = DomainAccessHandler.this.domainInfo.getLabel2ClassNameStringList();
 					JcNode info = new JcNode("info");
 					query = new JcQuery();
 					if (DomainAccessHandler.this.domainInfo.nodeId != -1) { // DominInfo was loaded from graph
 						query.setClauses(new IClause[] {
 								START.node(info).byId(DomainAccessHandler.this.domainInfo.nodeId),
-								DO.SET(info.property(DomainInfoClass2LabelProperty)).to(class2LabelList)
+								DO.SET(info.property(DomainInfoLabel2ClassProperty)).to(class2LabelList)
 						});
 					} else { // new DomainInfo node must be stored in the db
 						JcNumber nid = new JcNumber("NID");
 						query.setClauses(new IClause[] {
 								CREATE.node(info).label(DomainInfoNodeLabel)
 									.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName)
-									.property(DomainInfoClass2LabelProperty).value(class2LabelList),
-									RETURN.value(info.id()).AS(nid)
+									.property(DomainInfoLabel2ClassProperty).value(class2LabelList),
+								RETURN.value(info.id()).AS(nid)
 						});
 					}
 				}
@@ -988,6 +1003,7 @@ public class DomainAccess {
 		private long nodeId;
 		private Map<String, Class<?>> label2ClassMap;
 		private Map<Class<?>, String> class2labelMap;
+		private List<String> possiblyRemovedFromJava;
 
 		private DomainInfo(long nid) {
 			super();
@@ -995,12 +1011,25 @@ public class DomainAccess {
 			this.nodeId = nid;
 			this.label2ClassMap = new HashMap<String, Class<?>>();
 			this.class2labelMap = new HashMap<Class<?>, String>();
+			this.possiblyRemovedFromJava = new ArrayList<String>();
 		}
 
+		@SuppressWarnings("unchecked")
 		private void initFrom(GrNode rInfo) {
-			GrProperty prop = rInfo.getProperty(DomainAccessHandler.DomainInfoClass2LabelProperty);
-			Object val = prop.getValue();
-			return;
+			GrProperty prop = rInfo.getProperty(DomainAccessHandler.DomainInfoLabel2ClassProperty);
+			List<String> val = (List<String>) prop.getValue();
+			if (prop != null) {
+				for (String str : val) {
+					String[] c2l = str.split("=");
+					try {
+						Class<?> clazz = Class.forName(c2l[1]);
+						this.add(clazz, c2l[0]);
+					} catch (ClassNotFoundException e) {
+						this.possiblyRemovedFromJava.add(str);
+					}
+				}
+			}
+			this.changed = false;
 		}
 
 		private void updateFrom(DomainInfo dInfo) {
@@ -1027,17 +1056,18 @@ public class DomainAccess {
 			}
 		}
 		
-		private List<String> getClass2LabelNameStringList() {
+		private List<String> getLabel2ClassNameStringList() {
 			List<String> ret = new ArrayList<String>(this.class2labelMap.size());
 			Iterator<Entry<Class<?>, String>> it = this.class2labelMap.entrySet().iterator();
 			while(it.hasNext()) {
 				Entry<Class<?>, String> entry = it.next();
 				StringBuilder sb = new StringBuilder();
-				sb.append(entry.getKey().getName());
-				sb.append('=');
 				sb.append(entry.getValue());
+				sb.append('=');
+				sb.append(entry.getKey().getName());
 				ret.add(sb.toString());
 			}
+			Collections.sort(ret);
 			return ret;
 		}
 	}

@@ -28,6 +28,11 @@ public class JcResultException extends RuntimeException {
 		super();
 		this.errors = errors;
 	}
+	
+	public JcResultException(List<JcError> errors, String message) {
+		super(message);
+		this.errors = errors;
+	}
 
 	public List<JcError> getErrors() {
 		return errors;

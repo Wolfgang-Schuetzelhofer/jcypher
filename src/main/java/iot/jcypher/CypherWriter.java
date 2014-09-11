@@ -82,6 +82,16 @@ import iot.jcypher.query.writer.WriterContext;
 
 public class CypherWriter {
 
+	// currently if you use parameters in a cypher query, and a parameter is a list,
+	// this does not work properly. Instead of storing a list as property value,
+	// everything is converted to a string.
+	// The workaround is not to use paramaters with cypher queries and lists.
+	// This is true for NEO4J Versions at least up to 2.1.4
+	// If this is corrected in NEO4J some time to come, you simply in class CypherWriter
+	// can set CORRECT_FOR_LIST_WITH_PARAMS to false and the workaround
+	// will be removed
+	private static final boolean CORRECT_FOR_LIST_WITH_PARAMS = true;
+	
 	public static void toCypherExpression(JcQuery query, WriterContext context) {
 		toCypherExpression(query.getClauses(), 0, context);
 	}
@@ -715,7 +725,8 @@ public class CypherWriter {
 					if (mx.getModifyAction() == ModifyAction.SET)
 						context.buffer.append(" = ");
 					if (mx.getValue() != null) { // only in case of SET
-						if (QueryParam.isExtractParams(context)) {
+						if (QueryParam.isExtractParams(context) && (!CORRECT_FOR_LIST_WITH_PARAMS ||
+								!(mx.getValue() instanceof List<?>))) {
 							QueryParam qp = QueryParam.createAddParam(null,
 									mx.getValue(), context);
 							PrimitiveCypherWriter.writeParameter(qp, context);
@@ -802,7 +813,8 @@ public class CypherWriter {
 				context.buffer.append(' ');
 				ValueWriter.toValueExpression((ValueElement)property.getValue(), context);
 			} else if (property.getValue() != null) {
-				if (QueryParam.isExtractParams(context)) {
+				if (QueryParam.isExtractParams(context) && (!CORRECT_FOR_LIST_WITH_PARAMS ||
+						!(property.getValue() instanceof List<?>))) {
 					QueryParam qp = QueryParam.createParam(property.getName(), property.getValue(), context);
 					QueryParamSet.addQueryParam(qp, context);
 					PrimitiveCypherWriter.writeParameter(qp, context);

@@ -16,8 +16,8 @@
 
 package test.domainmapping;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.DBAccessFactory;
@@ -27,15 +27,16 @@ import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccess;
 import iot.jcypher.domain.SyncInfo;
 import iot.jcypher.graph.GrNode;
+import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrPropertyContainer;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
+import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
 import iot.jcypher.result.Util;
@@ -88,7 +89,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Contact email = new Contact();
 		Person laurence = new Person();
 		
-		buildInitialDomainObjects(keanu, laurence, address, phone, email);
+		buildInitialDomainObjects(keanu, laurence, address, phone, email, null);
 		
 		List<Object> domainObjects = new ArrayList<Object>();
 		domainObjects.add(keanu);
@@ -127,8 +128,9 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Contact phone = new Contact();
 		Contact email = new Contact();
 		Person laurence = new Person();
+		Company skynet = new Company();
 		
-		buildInitialDomainObjects(keanu, laurence, address, phone, email);
+		buildInitialDomainObjects(keanu, laurence, address, phone, email, skynet);
 		
 		List<Object> domainObjects = new ArrayList<Object>();
 		domainObjects.add(keanu);
@@ -154,6 +156,19 @@ public class DomainMappingTest extends AbstractTestSuite{
 		boolean isIdentical = keanu == keanu_1;
 		assertTrue("Test for identity of domain objects", isIdentical);
 		
+		// add a new class to the domain to check another
+		// initialize DomainInfo scenario
+		da1 = new DomainAccess(dbAccess, domainName);
+		errors = da1.store(skynet);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		check = checkDomainInfoNodeAgainst(
+				"[Address=test.domainmapping.Address, Company=test.domainmapping.Company," +
+					" Contact=test.domainmapping.Contact, Person=test.domainmapping.Person]");
+		assertTrue("Test Domain Info node", check);
+		
 		da1 = new DomainAccess(dbAccess, domainName);
 		try {
 			keanu_1 = da1.loadById(Person.class, syncInfo.getId());
@@ -170,10 +185,11 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		List<NodesToCheck> ntc = new ArrayList<NodesToCheck>();
 		ntc.add(new NodesToCheck("Person", 2));
-		ntc.add(new NodesToCheck("Address", 1));
+		ntc.add(new NodesToCheck("Address", 2));
 		ntc.add(new NodesToCheck("Contact", 1));
+		ntc.add(new NodesToCheck("Company", 1));
 		List<RelationsToCheck> rtc = new ArrayList<RelationsToCheck>();
-		rtc.add(new RelationsToCheck("address", 1));
+		rtc.add(new RelationsToCheck("address", 2));
 		rtc.add(new RelationsToCheck("contact", 1));
 		
 		check = checkForNodesAndRelations(ntc, rtc);
@@ -257,8 +273,29 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
+	private boolean checkDomainInfoNodeAgainst(String expected) {
+		JcNode info = new JcNode("info");
+		JcQuery query = new JcQuery();
+		query.setClauses(new IClause[] {
+				MATCH.node(info).label("DomainInfo"),
+				WHERE.valueOf(info.property("name"))
+					.EQUALS(domainName),
+				RETURN.value(info)
+		});
+		JcQueryResult result = dbAccess.execute(query);
+		List<JcError> errors = Util.collectErrors(result);
+		if (!errors.isEmpty()) {
+			throw new JcResultException(errors);
+		}
+		GrNode rInfo = result.resultOf(info).get(0);
+		GrProperty prop = rInfo.getProperty("label2ClassMap");
+		Object val = prop.getValue();
+		String returned = val.toString();
+		return expected.equals(returned);
+	}
+
 	private void buildInitialDomainObjects(Person keanu, Person laurence,
-			Address address, Contact phone, Contact email) {
+			Address address, Contact phone, Contact email, Company skynet) {
 		keanu.setFirstName("Keanu");
 		keanu.setLastName("Reeves");
 		Calendar cal = Calendar.getInstance();
@@ -284,6 +321,15 @@ public class DomainMappingTest extends AbstractTestSuite{
 		cal.set(1961, 6, 30, 0, 0, 0);
 		clearMillis(cal);
 		laurence.setBirthDate(cal.getTime());
+		
+		if (skynet != null) {
+			skynet.setName("Sky-Net");
+			Address addr = new Address();
+			addr.setCity("Global City");
+			addr.setStreet("Graphstreet");
+			addr.setNumber(42);
+			skynet.setAddress(addr);
+		}
 	}
 	
 	private boolean equalsPerson(Person person1, Person person2,
