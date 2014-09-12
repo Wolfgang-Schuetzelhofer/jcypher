@@ -20,12 +20,15 @@ import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
+import java.util.Collection;
 
 public class FieldMapping {
 
 	private Field field;
 	private String fieldName;
 	private String propertyName;
+	private String classFieldName;
 	
 	public FieldMapping(Field field) {
 		this(field, field.getName());
@@ -38,24 +41,19 @@ public class FieldMapping {
 		this.propertyName = propertyName;
 	}
 
-	public FieldMapping(String fieldName, String propertyName) {
-		super();
-		this.fieldName = fieldName;
-		this.propertyName = propertyName;
-	}
-	
 	public void mapPropertyFromField(Object domainObject, GrNode rNode) {
 		try {
 			prepare(domainObject);
 			
-			Object value = this.field.get(domainObject);
-			Class<?> typ = this.field.getType();
-			if (MappingUtil.mapsToProperty(typ)) {
+			if (getObjectNeedingRelation(domainObject) == null) { // also checks against DomainInfo
+				// we can map to a property
+				Object value = this.field.get(domainObject);
 				value = MappingUtil.convertToProperty(value);
 				GrProperty prop = rNode.getProperty(this.propertyName);
 				if (value != null) {
 					if (prop != null) {
-						Object propValue = MappingUtil.convertFromProperty(prop.getValue(), value.getClass());
+						Object propValue = MappingUtil.convertFromProperty(prop.getValue(), value.getClass(),
+								getListComponentType());
 						if (!propValue.equals(value)) {
 							prop.setValue(value);
 						}
@@ -78,10 +76,11 @@ public class FieldMapping {
 			
 			Object value = this.field.get(domainObject);
 			GrProperty prop = rNode.getProperty(this.propertyName);
-			if (prop != null && !this.needsRelation()) {
+			if (prop != null) {
 				Object propValue = prop.getValue();
 				Class<?> typ = this.field.getType();
-				propValue = MappingUtil.convertFromProperty(propValue, typ);
+				propValue = MappingUtil.convertFromProperty(propValue, typ,
+						getListComponentType());
 				if (!propValue.equals(value)) {
 					this.field.set(domainObject, propValue);
 				}
@@ -105,28 +104,71 @@ public class FieldMapping {
 	 * @return the value of the field, if this value cannot be mapped to a property,
 	 * but must be mapped to a seperate node connected via a relation, else return null.
 	 */
+	@SuppressWarnings("rawtypes")
 	public Object getObjectNeedingRelation(Object domainObject) {
+		Object value = null;
 		try {
 			prepare(domainObject);
-			Class<?> typ = this.field.getType();
-			if (!MappingUtil.mapsToProperty(typ)) {
-				Object value = this.field.get(domainObject);
-				return value;
+			if (needsRelation()) { // also checks against DominInfo
+				value = this.field.get(domainObject);
+				// check for list (collection) containing primitive or simple types
+				if (value != null && Collection.class.isAssignableFrom(this.field.getType())) {
+					Collection coll = (Collection) this.field.getType().cast(value);
+					if (coll.size() > 0) {
+						Object elem = coll.iterator().next();
+						// test the first element,
+						// assuming all elements are of the same type !!!
+						Class<?> type = elem.getClass();
+						if (MappingUtil.isSimpleType(type)) { // elements are of primitive or simple type
+							// store that info in DomainInfo
+							String classField = getClassFieldName();
+							MappingUtil.internalDomainAccess.get()
+								.addFieldComponentType(classField, type);
+							// to return null
+							value = null;
+						}
+					}
+				}
 			}
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
-		return null;
+		return value;
 	}
 	
 	/**
 	 * 
-	 * @return true, if this firled cannot be mapped to a property,
+	 * @return true, if this field cannot be mapped to a property,
 	 * but must be mapped to a seperate node connected via a relation, else return false.
 	 */
 	public boolean needsRelation() {
-		Class<?> typ = this.field.getType();
-		return !MappingUtil.mapsToProperty(typ);
+		boolean ret = !MappingUtil.mapsToProperty(this.field.getGenericType());
+		if (ret) { // check for list (collection) containing primitive or simple types
+						// in DomainInfo
+			if (Collection.class.isAssignableFrom(this.field.getType())) {
+				String classField = getClassFieldName();
+				Class<?> cType = MappingUtil.internalDomainAccess.get()
+					.getFieldComponentType(classField);
+				// if cType == null, false will be returned
+				ret = !MappingUtil.mapsToProperty(cType);
+			}
+		}
+		return ret;
+	}
+	
+	private Class<?> getListComponentType() {
+		Type typ = MappingUtil.getListComponentType(this.field.getGenericType());
+		if (typ == null) { // check for list (collection) containing primitive or simple types
+										// in DomainInfo
+			if (Collection.class.isAssignableFrom(this.field.getType())) {
+				String classField = getClassFieldName();
+				Class<?> cType = MappingUtil.internalDomainAccess.get()
+					.getFieldComponentType(classField);
+				return cType;
+			}
+		} else if (typ instanceof Class<?>)
+			return (Class<?>)typ;
+		return null;
 	}
 	
 	public String getPropertyOrRelationName() {
@@ -152,5 +194,16 @@ public class FieldMapping {
 		if (this.fieldName == null)
 			this.fieldName = this.field.getName();
 		
+	}
+	
+	private String getClassFieldName() {
+		if (this.classFieldName == null) {
+			StringBuilder sb = new StringBuilder();
+			sb.append(this.field.getDeclaringClass().getName());
+			sb.append('_');
+			sb.append(this.field.getName());
+			this.classFieldName = sb.toString();
+		}
+		return this.classFieldName;
 	}
 }

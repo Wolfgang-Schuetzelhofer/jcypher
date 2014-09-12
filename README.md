@@ -20,6 +20,16 @@ please have a look at: https://github.com/Wolfgang-Schuetzelhofer/jcypher/wiki.
 For more information about Neo4J have a look at: http://www.neo4j.org/
 For more information about the CYPHER language have a look at: http://docs.neo4j.org/chunked/stable/cypher-query-lang.html
 
+You can add JCypher as a Maven dependency:
+
+```xml
+<dependency>
+  <groupId>net.iot-solutions.graphdb</groupId>
+   <artifactId>jcypher</artifactId>
+   <version>1.0.0</version>
+</dependency>
+```
+
 Copyright (c) 2014 IoT-Solutions e.U.
 
 License:

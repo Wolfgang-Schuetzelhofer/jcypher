@@ -16,14 +16,13 @@
 
 package iot.jcypher;
 
-import java.util.List;
-
 import iot.jcypher.query.api.APIObject;
 import iot.jcypher.query.api.APIObjectAccess;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.ast.ASTNode;
 import iot.jcypher.query.ast.ClauseType;
 import iot.jcypher.query.ast.collection.CollectExpression;
+import iot.jcypher.query.ast.collection.CollectExpression.CollectXpressionType;
 import iot.jcypher.query.ast.collection.CollectionSpec;
 import iot.jcypher.query.ast.collection.DoEvalExpression;
 import iot.jcypher.query.ast.collection.EvalExpression;
@@ -31,38 +30,37 @@ import iot.jcypher.query.ast.collection.ExtractEvalExpression;
 import iot.jcypher.query.ast.collection.PredicateEvalExpression;
 import iot.jcypher.query.ast.collection.PropertyEvalExpresssion;
 import iot.jcypher.query.ast.collection.ReduceEvalExpression;
-import iot.jcypher.query.ast.collection.CollectExpression.CollectXpressionType;
 import iot.jcypher.query.ast.index.IndexExpression;
 import iot.jcypher.query.ast.modify.ModifyExpression;
-import iot.jcypher.query.ast.modify.PropertiesCopy;
 import iot.jcypher.query.ast.modify.ModifyExpression.ModifyAction;
+import iot.jcypher.query.ast.modify.PropertiesCopy;
 import iot.jcypher.query.ast.nativ.NativeCypherExpression;
 import iot.jcypher.query.ast.pattern.PatternElement;
 import iot.jcypher.query.ast.pattern.PatternExpression;
 import iot.jcypher.query.ast.pattern.PatternNode;
 import iot.jcypher.query.ast.pattern.PatternPath;
+import iot.jcypher.query.ast.pattern.PatternPath.PathFunction;
 import iot.jcypher.query.ast.pattern.PatternProperty;
 import iot.jcypher.query.ast.pattern.PatternRelation;
-import iot.jcypher.query.ast.pattern.PatternPath.PathFunction;
 import iot.jcypher.query.ast.pattern.PatternRelation.Direction;
 import iot.jcypher.query.ast.predicate.BooleanOp;
+import iot.jcypher.query.ast.predicate.BooleanOp.Operator;
 import iot.jcypher.query.ast.predicate.ExistsPattern;
 import iot.jcypher.query.ast.predicate.Predicate;
 import iot.jcypher.query.ast.predicate.PredicateConcatenator;
 import iot.jcypher.query.ast.predicate.PredicateExpression;
 import iot.jcypher.query.ast.predicate.PredicateFunction;
-import iot.jcypher.query.ast.predicate.SubExpression;
-import iot.jcypher.query.ast.predicate.BooleanOp.Operator;
 import iot.jcypher.query.ast.predicate.PredicateFunction.PredicateFunctionType;
+import iot.jcypher.query.ast.predicate.SubExpression;
 import iot.jcypher.query.ast.returns.Order;
 import iot.jcypher.query.ast.returns.ReturnAggregate;
+import iot.jcypher.query.ast.returns.ReturnAggregate.AggregateFunctionType;
 import iot.jcypher.query.ast.returns.ReturnBoolean;
 import iot.jcypher.query.ast.returns.ReturnCollection;
 import iot.jcypher.query.ast.returns.ReturnElement;
 import iot.jcypher.query.ast.returns.ReturnExpression;
 import iot.jcypher.query.ast.returns.ReturnPattern;
 import iot.jcypher.query.ast.returns.ReturnValue;
-import iot.jcypher.query.ast.returns.ReturnAggregate.AggregateFunctionType;
 import iot.jcypher.query.ast.start.PropertyOrQuery;
 import iot.jcypher.query.ast.start.StartExpression;
 import iot.jcypher.query.ast.union.UnionExpression;
@@ -79,6 +77,8 @@ import iot.jcypher.query.writer.Pretty;
 import iot.jcypher.query.writer.QueryParam;
 import iot.jcypher.query.writer.QueryParamSet;
 import iot.jcypher.query.writer.WriterContext;
+
+import java.util.List;
 
 public class CypherWriter {
 
@@ -813,12 +813,19 @@ public class CypherWriter {
 				context.buffer.append(' ');
 				ValueWriter.toValueExpression((ValueElement)property.getValue(), context);
 			} else if (property.getValue() != null) {
+				// TODO remove later (test with future versions of Neo4J)
+				// workaround for bug: using lists with query parameters
+				// they are mapped to strings instead of being stored as lists (Neo4J Version 2.1.4)
+				boolean disableParamSet = property.getValue() instanceof List<?> &&
+						CORRECT_FOR_LIST_WITH_PARAMS;
+				if (disableParamSet)
+					QueryParamSet.disableUseSet(context);
 				if (QueryParam.isExtractParams(context) && (!CORRECT_FOR_LIST_WITH_PARAMS ||
 						!(property.getValue() instanceof List<?>))) {
 					QueryParam qp = QueryParam.createParam(property.getName(), property.getValue(), context);
 					QueryParamSet.addQueryParam(qp, context);
 					PrimitiveCypherWriter.writeParameter(qp, context);
-				} else
+ 				} else
 					PrimitiveCypherWriter.writePrimitiveValue(property.getValue(), context);
 			}
 		}

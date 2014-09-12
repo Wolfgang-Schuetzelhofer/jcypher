@@ -21,6 +21,7 @@ import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.mapping.DefaultObjectMappingCreator;
 import iot.jcypher.domain.mapping.DomainState;
+import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.DomainState.LoadInfo;
 import iot.jcypher.domain.mapping.DomainState.Relation;
 import iot.jcypher.domain.mapping.FieldMapping;
@@ -107,6 +108,7 @@ public class DomainAccess {
 		private static final String DomainInfoNodeLabel = "DomainInfo";
 		private static final String DomainInfoNameProperty = "name";
 		private static final String DomainInfoLabel2ClassProperty = "label2ClassMap";
+		private static final String DomainInfoFieldComponentTypeProperty = "componentTypeMap";
 		
 		private String domainName;
 		/**
@@ -129,21 +131,43 @@ public class DomainAccess {
 		<T> List<T> loadByIds(Class<T> domainObjectClass, long... ids) {
 			List<T> resultList;
 			
+			InternalDomainAccess internalAccess = null;
 			ClosureQueryContext context = new ClosureQueryContext(domainObjectClass);
-			new ClosureCalculator().calculateClosureQuery(context);
-			boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
-			
-			if (repeat) { // has one or more match clauses
-				resultList = loadByIdsWithMatches(domainObjectClass, context, ids);
-			} else { // only simple start by id clauses are needed
-				resultList = loadByIdsSimple(domainObjectClass, ids);
+			try {
+				internalAccess = MappingUtil.internalDomainAccess.get();
+				MappingUtil.internalDomainAccess.set(new InternalDomainAccess());
+				new ClosureCalculator().calculateClosureQuery(context);
+				boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
+				
+				if (repeat) { // has one or more match clauses
+					resultList = loadByIdsWithMatches(domainObjectClass, context, ids);
+				} else { // only simple start by id clauses are needed
+					resultList = loadByIdsSimple(domainObjectClass, ids);
+				}
+			} finally {
+				if (internalAccess != null)
+					MappingUtil.internalDomainAccess.set(internalAccess);
+				else
+					MappingUtil.internalDomainAccess.remove();
 			}
 
 			return resultList;
 		}
 		
 		List<JcError> store(List<Object> domainObjects) {
-			UpdateContext context = this.updateLocalGraph(domainObjects);
+			UpdateContext context;
+			InternalDomainAccess internalAccess = null;
+			try {
+				internalAccess = MappingUtil.internalDomainAccess.get();
+				MappingUtil.internalDomainAccess.set(new InternalDomainAccess());
+				context = this.updateLocalGraph(domainObjects);
+			} finally {
+				if (internalAccess != null)
+					MappingUtil.internalDomainAccess.set(internalAccess);
+				else
+					MappingUtil.internalDomainAccess.remove();
+			}
+			
 			List<JcError> errors = context.graph.store();
 			if (errors.isEmpty()) {
 				for (Relation relat : context.relationsToRemove) {
@@ -461,16 +485,36 @@ public class DomainAccess {
 				lab = labels.get(0);
 			else
 				lab = new String();
-			if (this.domainInfo != null)
-				this.domainInfo.add(domainObjectClass, lab);
-			else {
-				DomainInfo tmp = ((DBAccessWrapper)this.dbAccess).temporaryDomainInfo;
-				if (tmp == null) {
-					tmp = new DomainInfo(-1);
-					((DBAccessWrapper)this.dbAccess).temporaryDomainInfo = tmp;
-				}
-				tmp.add(domainObjectClass, lab);
+			getAvailableDomainInfo().add(domainObjectClass, lab);
+		}
+		
+		private DomainInfo loadDomainInfoIfNeeded() {
+			if (this.domainInfo == null) {
+				JcQuery query = ((DBAccessWrapper)this.dbAccess).createDomainInfoSyncQuery();
+				JcQueryResult result = ((DBAccessWrapper)this.dbAccess)
+						.delegate.execute(query);
+				List<JcError> errors = Util.collectErrors(result);
+				if (errors.isEmpty()) {
+					((DBAccessWrapper)this.dbAccess)
+						.updateDomainInfo(result);
+				} else
+					throw new JcResultException(errors);
 			}
+			return this.domainInfo;
+		}
+		
+		private DomainInfo getAvailableDomainInfo() {
+			DomainInfo ret;
+			if (this.domainInfo != null)
+				ret = this.domainInfo;
+			else {
+				ret = ((DBAccessWrapper)this.dbAccess).temporaryDomainInfo;
+				if (ret == null) {
+					ret = new DomainInfo(-1);
+					((DBAccessWrapper)this.dbAccess).temporaryDomainInfo = ret;
+				}
+			}
+			return ret;
 		}
 		
 		/****************************************/
@@ -589,19 +633,23 @@ public class DomainAccess {
 					});
 				} else if (DomainAccessHandler.this.domainInfo.isChanged()) { // update info to graph
 					List<String> class2LabelList = DomainAccessHandler.this.domainInfo.getLabel2ClassNameStringList();
+					List<String> fieldComponentTypeList =
+							DomainAccessHandler.this.domainInfo.getFieldComponentTypeStringList();
 					JcNode info = new JcNode("info");
 					query = new JcQuery();
 					if (DomainAccessHandler.this.domainInfo.nodeId != -1) { // DominInfo was loaded from graph
 						query.setClauses(new IClause[] {
 								START.node(info).byId(DomainAccessHandler.this.domainInfo.nodeId),
-								DO.SET(info.property(DomainInfoLabel2ClassProperty)).to(class2LabelList)
+								DO.SET(info.property(DomainInfoLabel2ClassProperty)).to(class2LabelList),
+								DO.SET(info.property(DomainInfoFieldComponentTypeProperty)).to(fieldComponentTypeList)
 						});
 					} else { // new DomainInfo node must be stored in the db
 						JcNumber nid = new JcNumber("NID");
 						query.setClauses(new IClause[] {
 								CREATE.node(info).label(DomainInfoNodeLabel)
 									.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName)
-									.property(DomainInfoLabel2ClassProperty).value(class2LabelList),
+									.property(DomainInfoLabel2ClassProperty).value(class2LabelList)
+									.property(DomainInfoFieldComponentTypeProperty).value(fieldComponentTypeList),
 								RETURN.value(info.id()).AS(nid)
 						});
 					}
@@ -646,25 +694,24 @@ public class DomainAccess {
 				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject.getClass());
 				List<FieldMapping> fMappings = objectMapping.getFieldMappings();
 				for (FieldMapping fm : fMappings) {
-					if (fm.needsRelation()) {
-						boolean checkRemoval = false;
-						Object obj = fm.getObjectNeedingRelation(domainObject);
-						if (obj != null) {
-							Relation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, obj);
-							if (!domainAccessHandler.domainState.existsRelation(relat)) {
-								context.relations.add(relat); // relation not in db
-								checkRemoval = true;
-							}
-							recursiveCalculateClosure(obj, context);
-						} else {
+					boolean checkRemoval = false;
+					Object obj = fm.getObjectNeedingRelation(domainObject);
+					if (obj != null) { // definitly need relation
+						Relation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, obj);
+						if (!domainAccessHandler.domainState.existsRelation(relat)) {
+							context.relations.add(relat); // relation not in db
 							checkRemoval = true;
 						}
-						if (checkRemoval) {
-							Relation relat = domainAccessHandler.domainState.findRelation(domainObject,
-									fm.getPropertyOrRelationName());
-							if (relat != null) {
-								context.relationsToRemove.add(relat);
-							}
+						recursiveCalculateClosure(obj, context);
+					} else {
+						if (fm.needsRelation()) // in case obj == null because it was not set
+							checkRemoval = true;
+					}
+					if (checkRemoval) {
+						Relation relat = domainAccessHandler.domainState.findRelation(domainObject,
+								fm.getPropertyOrRelationName());
+						if (relat != null) {
+							context.relationsToRemove.add(relat);
 						}
 					}
 				}
@@ -1003,7 +1050,8 @@ public class DomainAccess {
 		private long nodeId;
 		private Map<String, Class<?>> label2ClassMap;
 		private Map<Class<?>, String> class2labelMap;
-		private List<String> possiblyRemovedFromJava;
+		private Map<String, Class<?>> field2ComponentTypeMap;
+		private List<String> classesPossiblyRemoved;
 
 		private DomainInfo(long nid) {
 			super();
@@ -1011,21 +1059,38 @@ public class DomainAccess {
 			this.nodeId = nid;
 			this.label2ClassMap = new HashMap<String, Class<?>>();
 			this.class2labelMap = new HashMap<Class<?>, String>();
-			this.possiblyRemovedFromJava = new ArrayList<String>();
+			this.field2ComponentTypeMap = new HashMap<String, Class<?>>();
+			this.classesPossiblyRemoved = new ArrayList<String>();
 		}
 
 		@SuppressWarnings("unchecked")
 		private void initFrom(GrNode rInfo) {
 			GrProperty prop = rInfo.getProperty(DomainAccessHandler.DomainInfoLabel2ClassProperty);
-			List<String> val = (List<String>) prop.getValue();
 			if (prop != null) {
+				List<String> val = (List<String>) prop.getValue();
 				for (String str : val) {
 					String[] c2l = str.split("=");
 					try {
 						Class<?> clazz = Class.forName(c2l[1]);
 						this.add(clazz, c2l[0]);
 					} catch (ClassNotFoundException e) {
-						this.possiblyRemovedFromJava.add(str);
+						this.classesPossiblyRemoved.add(str);
+					}
+				}
+			}
+			
+			prop = rInfo.getProperty(DomainAccessHandler.DomainInfoFieldComponentTypeProperty);
+			if (prop != null) {
+				List<String> val = (List<String>) prop.getValue();
+				for (String str : val) {
+					String[] c2l = str.split("=");
+					try {
+						Class<?> clazz = Class.forName(c2l[1]);
+						this.addFieldComponentType(c2l[0], clazz);
+					} catch (ClassNotFoundException e) {
+						// should never happen as there should only be simple types
+						// (String, Number, ...)
+						throw new RuntimeException(e);
 					}
 				}
 			}
@@ -1056,6 +1121,17 @@ public class DomainAccess {
 			}
 		}
 		
+		private void addFieldComponentType(String classField, Class<?> clazz) {
+			if (!this.field2ComponentTypeMap.containsKey(classField)) {
+				this.field2ComponentTypeMap.put(classField, clazz);
+				this.changed = true;
+			}
+		}
+		
+		private Class<?> getFieldComponentType(String classField) {
+			return this.field2ComponentTypeMap.get(classField);
+		}
+		
 		private List<String> getLabel2ClassNameStringList() {
 			List<String> ret = new ArrayList<String>(this.class2labelMap.size());
 			Iterator<Entry<Class<?>, String>> it = this.class2labelMap.entrySet().iterator();
@@ -1070,5 +1146,35 @@ public class DomainAccess {
 			Collections.sort(ret);
 			return ret;
 		}
+		
+		private List<String> getFieldComponentTypeStringList() {
+			List<String> ret = new ArrayList<String>(this.field2ComponentTypeMap.size());
+			Iterator<Entry<String, Class<?>>> it = this.field2ComponentTypeMap.entrySet().iterator();
+			while(it.hasNext()) {
+				Entry<String, Class<?>> entry = it.next();
+				StringBuilder sb = new StringBuilder();
+				sb.append(entry.getKey());
+				sb.append('=');
+				sb.append(entry.getValue().getName());
+				ret.add(sb.toString());
+			}
+			Collections.sort(ret);
+			return ret;
+		}
+	}
+	
+	/***********************************/
+	public class InternalDomainAccess {
+
+		public Class<?> getFieldComponentType(String classField) {
+			DomainInfo di = domainAccessHandler.loadDomainInfoIfNeeded();
+			return di.getFieldComponentType(classField);
+		}
+
+		public void addFieldComponentType(String classField, Class<?> type) {
+			DomainInfo di = domainAccessHandler.getAvailableDomainInfo();
+			di.addFieldComponentType(classField, type);
+		}
+		
 	}
 }

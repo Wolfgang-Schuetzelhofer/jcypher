@@ -1,6 +1,7 @@
 package test.domainmapping;
 
 import java.util.Date;
+import java.util.List;
 
 public class Person {
 
@@ -9,7 +10,8 @@ public class Person {
 	private Date birthDate;
 	private Address address;
 	private Contact contact;
-	private Person friend;
+	private Person bestFriend;
+	private List<Integer> luckyNumbers;
 	
 	public String getFirstName() {
 		return firstName;
@@ -41,11 +43,17 @@ public class Person {
 	public void setContact(Contact contact) {
 		this.contact = contact;
 	}
-	public Person getFriend() {
-		return friend;
+	public Person getBestFriend() {
+		return bestFriend;
 	}
-	public void setFriend(Person friend) {
-		this.friend = friend;
+	public void setBestFriend(Person friend) {
+		this.bestFriend = friend;
+	}
+	public List<Integer> getLuckyNumbers() {
+		return luckyNumbers;
+	}
+	public void setLuckyNumbers(List<Integer> luckyNumbers) {
+		this.luckyNumbers = luckyNumbers;
 	}
 	@Override
 	public String toString() {

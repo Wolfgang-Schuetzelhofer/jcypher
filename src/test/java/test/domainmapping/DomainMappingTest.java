@@ -67,7 +67,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 	}
 	
 	@AfterClass
@@ -78,22 +78,22 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 	}
 	
-	@Test
+	//@Test
 	public void testClearDomain() {
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		List<JcError> errors;
 		
-		Person keanu = new Person();
+		Person john = new Person();
 		Address address = new Address();
 		Contact phone = new Contact();
 		Contact email = new Contact();
-		Person laurence = new Person();
+		Person james = new Person();
 		
-		buildInitialDomainObjects(keanu, laurence, address, phone, email, null);
+		buildInitialDomainObjects(john, james, address, phone, email, null);
 		
 		List<Object> domainObjects = new ArrayList<Object>();
-		domainObjects.add(keanu);
-		domainObjects.add(laurence);
+		domainObjects.add(john);
+		domainObjects.add(james);
 		
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
@@ -116,25 +116,25 @@ public class DomainMappingTest extends AbstractTestSuite{
 	
 	@Test
 	public void testStoreDomainObjects() {
-		Person keanu_1, laurence_1;
+		Person john_1, james_1;
 		Address addr_1;
 		
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		DomainAccess da1;
 		
-		Person keanu = new Person();
+		Person john = new Person();
 		Address address = new Address();
 		Contact phone = new Contact();
 		Contact email = new Contact();
-		Person laurence = new Person();
+		Person james = new Person();
 		Company skynet = new Company();
 		
-		buildInitialDomainObjects(keanu, laurence, address, phone, email, skynet);
+		buildInitialDomainObjects(john, james, address, phone, email, skynet);
 		
 		List<Object> domainObjects = new ArrayList<Object>();
-		domainObjects.add(keanu);
-		domainObjects.add(laurence);
+		domainObjects.add(john);
+		domainObjects.add(james);
 		
 		errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
@@ -151,9 +151,9 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw new JcResultException(errors);
 		}
 		
-		SyncInfo syncInfo = da.getSyncInfo(keanu);
-		keanu_1 = da.loadById(Person.class, syncInfo.getId());
-		boolean isIdentical = keanu == keanu_1;
+		SyncInfo syncInfo = da.getSyncInfo(john);
+		john_1 = da.loadById(Person.class, syncInfo.getId());
+		boolean isIdentical = john == john_1;
 		assertTrue("Test for identity of domain objects", isIdentical);
 		
 		// add a new class to the domain to check another
@@ -171,7 +171,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		da1 = new DomainAccess(dbAccess, domainName);
 		try {
-			keanu_1 = da1.loadById(Person.class, syncInfo.getId());
+			john_1 = da1.loadById(Person.class, syncInfo.getId());
 		} catch (Exception e) {
 			if (e instanceof JcResultException) {
 				errors = ((JcResultException)e).getErrors();
@@ -180,7 +180,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 			}
 			throw e;
 		}
-		boolean isEqual = equalsPerson(keanu, keanu_1, null);
+		boolean isEqual = equalsPerson(john, john_1, null);
 		assertTrue("Test for equality of domain objects", isEqual);
 		
 		List<NodesToCheck> ntc = new ArrayList<NodesToCheck>();
@@ -202,32 +202,32 @@ public class DomainMappingTest extends AbstractTestSuite{
 //		}
 //		
 //		keanu.setFirstName("Keanu_1");
-		keanu.setContact(null);
+		john.setContact(null);
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
 		}
 		
-		laurence.setContact(email);
+		james.setContact(email);
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
 		}
 		
-		laurence.setAddress(address);
+		james.setAddress(address);
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
 		}
 		
-		keanu.setFriend(laurence);
-		laurence.setFriend(keanu);
+		john.setBestFriend(james);
+		james.setBestFriend(john);
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
 		}
 		
-		keanu.setFriend(null);
+		john.setBestFriend(null);
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
@@ -235,7 +235,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		da1 = new DomainAccess(dbAccess, domainName); 
 		try {
-			keanu_1 = da1.loadById(Person.class, syncInfo.getId());
+			john_1 = da1.loadById(Person.class, syncInfo.getId());
 		} catch (Exception e) {
 			if (e instanceof JcResultException) {
 				errors = ((JcResultException)e).getErrors();
@@ -245,7 +245,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw e;
 		}
 		
-		laurence.setFriend(null);
+		james.setBestFriend(null);
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
@@ -257,11 +257,11 @@ public class DomainMappingTest extends AbstractTestSuite{
 			addr_1 = da.loadById(Address.class, 1);
 			addr_1 = da.loadById(Address.class, 1);
 			
-			keanu_1 = da1.loadById(Person.class, 0);
-			keanu_1 = da.loadById(Person.class, 0);
-			laurence_1 = da.loadById(Person.class, 3);
-			keanu_1.setFirstName("Keanu Kevin");
-			da.store(keanu_1);
+			john_1 = da1.loadById(Person.class, 0);
+			john_1 = da.loadById(Person.class, 0);
+			james_1 = da.loadById(Person.class, 3);
+			john_1.setFirstName("Keanu Kevin");
+			da.store(john_1);
 		} catch (Exception e) {
 			if (e instanceof JcResultException) {
 				errors = ((JcResultException)e).getErrors();
@@ -294,33 +294,42 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return expected.equals(returned);
 	}
 
-	private void buildInitialDomainObjects(Person keanu, Person laurence,
+	@SuppressWarnings({ "rawtypes" })
+	private void buildInitialDomainObjects(Person john, Person james,
 			Address address, Contact phone, Contact email, Company skynet) {
-		keanu.setFirstName("Keanu");
-		keanu.setLastName("Reeves");
+		john.setFirstName("John");
+		john.setLastName("Reeves");
 		Calendar cal = Calendar.getInstance();
 		cal.set(1964, 8, 2, 0, 0, 0);
 		clearMillis(cal);
-		keanu.setBirthDate(cal.getTime());
+		john.setBirthDate(cal.getTime());
+		
+		List<Integer> luckyNumbers = new ArrayList<Integer>();
+		luckyNumbers.add(3);
+		luckyNumbers.add(9);
+		luckyNumbers.add(12);
+		luckyNumbers.add(15);
+		luckyNumbers.add(23);
+		john.setLuckyNumbers(luckyNumbers);
 		
 		address.setCity("Vienna");
 		address.setStreet("Main Street");
 		address.setNumber(9);
-		keanu.setAddress(address);
+		john.setAddress(address);
 		
 		phone.setType(ContactType.TELEPHONE);
 		phone.setNummer("12345");
-		keanu.setContact(phone);
+		john.setContact(phone);
 		
 		email.setType(ContactType.EMAIL);
 		email.setNummer("dj@nowhere.org");
 		
-		laurence.setFirstName("Laurence");
-		laurence.setLastName("Fishburne");
+		james.setFirstName("James");
+		james.setLastName("Fishburne");
 		cal = Calendar.getInstance();
 		cal.set(1961, 6, 30, 0, 0, 0);
 		clearMillis(cal);
-		laurence.setBirthDate(cal.getTime());
+		james.setBirthDate(cal.getTime());
 		
 		if (skynet != null) {
 			skynet.setName("Sky-Net");
@@ -329,6 +338,12 @@ public class DomainMappingTest extends AbstractTestSuite{
 			addr.setStreet("Graphstreet");
 			addr.setNumber(42);
 			skynet.setAddress(addr);
+			
+			List areaCodes = new ArrayList();
+			areaCodes.add(42);
+			areaCodes.add(43);
+			areaCodes.add(44);
+			skynet.setAreaCodes(areaCodes);
 		}
 	}
 	
@@ -373,12 +388,17 @@ public class DomainMappingTest extends AbstractTestSuite{
 				return ac.setResult(false);
 		} else if (!person1.getLastName().equals(person2.getLastName()))
 			return ac.setResult(false);
+		if (person1.getLuckyNumbers() == null) {
+			if (person2.getLuckyNumbers() != null)
+				return ac.setResult(false);
+		} else if (!person1.getLuckyNumbers().equals(person2.getLuckyNumbers()))
+			return ac.setResult(false);
 		
 		ac.setResult(true); // equal so far
-		if (person1.getFriend() == null) {
-			if (person2.getFriend() != null)
+		if (person1.getBestFriend() == null) {
+			if (person2.getBestFriend() != null)
 				return ac.setResult(false);
-		} else if (!equalsPerson(person1.getFriend(), person2.getFriend(), acs))
+		} else if (!equalsPerson(person1.getBestFriend(), person2.getBestFriend(), acs))
 			return ac.setResult(false);
 		return true;
 	}

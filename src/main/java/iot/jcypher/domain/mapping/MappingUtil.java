@@ -16,13 +16,22 @@
 
 package iot.jcypher.domain.mapping;
 
+import iot.jcypher.domain.DomainAccess.InternalDomainAccess;
+
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 public class MappingUtil {
 	
+	public static ThreadLocal<InternalDomainAccess> internalDomainAccess =
+			new ThreadLocal<InternalDomainAccess>();
 	private static SimpleDateFormat simpleDateFormat;
 
 	public static String dateToString(Date date) {
@@ -45,7 +54,39 @@ public class MappingUtil {
 		return new Date(millis);
 	}
 	
-	public static boolean mapsToProperty(Class<?> type) {
+	public static boolean mapsToProperty(Type type) {
+		boolean ret = false;
+		// primitive types and simple types (String, Number, Boolen, Date,...)
+		// cannot be parameterized
+		if (type instanceof Class<?>) {
+			Class<?> clazz = (Class<?>) type;
+			ret = isSimpleType(clazz);
+		} else if (type instanceof ParameterizedType) { // need to check instanceOf
+			Type cType = getListComponentType(type);		// so that null exits the recursion
+			ret = mapsToProperty(cType);
+		}
+		return ret;
+	}
+	
+	public static Type getListComponentType(Type type) {
+		if (type instanceof ParameterizedType) {
+			ParameterizedType pType = (ParameterizedType)type;
+			Type rawType = pType.getRawType();
+			if (rawType instanceof Class<?>) {
+				Class<?> rawClass = (Class<?>)rawType;
+				// test for lists (collections) of primitive types
+				if (Collection.class.isAssignableFrom(rawClass)) {
+					Type[] argTypes = pType.getActualTypeArguments();
+					if (argTypes != null && argTypes.length > 0) {
+						return argTypes[0];
+					}
+				}
+			}
+		}
+		return null;
+	}
+	
+	public static boolean isSimpleType(Class<?> type) {
 		return type.isPrimitive() ||
 				String.class.isAssignableFrom(type) ||
 				Number.class.isAssignableFrom(type) ||
@@ -65,7 +106,16 @@ public class MappingUtil {
 		return value;
 	}
 	
-	public static Object convertFromProperty(Object value, Class<?> targetType) {
+	/**
+	 * @param value
+	 * @param targetType
+	 * @param listComponentType may be null in case when targetType is not a collection,
+	 * or when the listComponentType cannot be determined
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public static Object convertFromProperty(Object value, Class<?> targetType,
+			Class<?>listComponentType) {
 		if (value != null) {
 			if (Date.class.isAssignableFrom(targetType) && value instanceof Number) {
 				return longToDate(((Number)value).longValue());
@@ -76,6 +126,16 @@ public class MappingUtil {
 						return enums[i];
 				}
 				return value;
+			} else if (Collection.class.isAssignableFrom(targetType)) {
+				if (listComponentType != null) {
+					List<Object> converted = new ArrayList<>();
+					Collection<Object> coll = (Collection<Object>)value;
+					for (Object elem : coll) {
+						converted.add(convertFromProperty(elem, listComponentType, null));
+					}
+					coll.clear();
+					coll.addAll(converted);
+				}
 			} else if (targetType.equals(value.getClass())) {
 				return value;
 			} else if (targetType.isPrimitive()) {
