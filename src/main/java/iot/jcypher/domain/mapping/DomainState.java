@@ -17,7 +17,6 @@
 package iot.jcypher.domain.mapping;
 
 import iot.jcypher.domain.ResolutionDepth;
-import iot.jcypher.domain.SyncInfo;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,6 +29,7 @@ public class DomainState {
 	private Map<Relation, Long> relation2IdMap;
 	private Map<Long, List<Object>> id2ObjectsMap;
 	private Map<Object, List<Relation>> object2RelationsMap;
+	private Map<SourceField2TargetKey, List<IndexedRelation>> objectField2IndexedRelationsMap;
 	
 	public DomainState() {
 		super();
@@ -37,6 +37,7 @@ public class DomainState {
 		this.relation2IdMap = new HashMap<Relation, Long>();
 		this.id2ObjectsMap = new HashMap<Long, List<Object>>();
 		this.object2RelationsMap = new HashMap<Object, List<Relation>>();
+		this.objectField2IndexedRelationsMap = new HashMap<SourceField2TargetKey, List<IndexedRelation>>();
 	}
 	
 	private void addTo_Object2IdMap(Object key, Long value, ResolutionDepth resolutionDepth) {
@@ -109,6 +110,10 @@ public class DomainState {
 			}
 		}
 		return false;
+	}
+	
+	public List<IndexedRelation> getIndexedRelations(SourceField2TargetKey key) {
+		return this.objectField2IndexedRelationsMap.get(key);
 	}
 	
 	public Relation findRelation(Object start, String type) {
@@ -204,6 +209,99 @@ public class DomainState {
 		public String toString() {
 			return "Relation [type=" + type + ", start=" + start + ", end="
 					+ end + "]";
+		}
+	}
+	
+	/***********************************/
+	public static class IndexedRelation extends Relation {
+
+		private long index;
+		
+		public IndexedRelation(String type, long idx, Object start, Object end) {
+			super(type, start, end);
+			this.index = idx;
+		}
+		
+		public long getIndex() {
+			return index;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = super.hashCode();
+			result = prime * result + (int) (index ^ (index >>> 32));
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (!super.equals(obj))
+				return false;
+			IndexedRelation other = (IndexedRelation) obj;
+			if (index != other.index)
+				return false;
+			return true;
+		}
+
+		@Override
+		public String toString() {
+			return "IndexedRelation [type=" + getType() + ", index=" + index + ", start=" + getStart() + ", end="
+					+ getEnd() + "]";
+		}
+	}
+	
+	/********************************/
+	public static class SourceField2TargetKey {
+		private Object source;
+		private String fieldName;
+		private Object target;
+		
+		public SourceField2TargetKey(Object src, String fieldName, Object target) {
+			super();
+			this.source = src;
+			this.fieldName = fieldName;
+			this.target = target;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+					+ ((fieldName == null) ? 0 : fieldName.hashCode());
+			result = prime * result
+					+ ((source == null) ? 0 : source.hashCode());
+			result = prime * result
+					+ ((target == null) ? 0 : target.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			SourceField2TargetKey other = (SourceField2TargetKey) obj;
+			if (fieldName == null) {
+				if (other.fieldName != null)
+					return false;
+			} else if (!fieldName.equals(other.fieldName))
+				return false;
+			if (source == null) {
+				if (other.source != null)
+					return false;
+			} else if (!source.equals(other.source))
+				return false;
+			if (target == null) {
+				if (other.target != null)
+					return false;
+			} else if (!target.equals(other.target))
+				return false;
+			return true;
 		}
 	}
 	

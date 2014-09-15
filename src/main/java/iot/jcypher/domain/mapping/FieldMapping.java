@@ -78,11 +78,13 @@ public class FieldMapping {
 			GrProperty prop = rNode.getProperty(this.propertyName);
 			if (prop != null) {
 				Object propValue = prop.getValue();
-				Class<?> typ = this.field.getType();
-				propValue = MappingUtil.convertFromProperty(propValue, typ,
-						getListComponentType());
-				if (!propValue.equals(value)) {
-					this.field.set(domainObject, propValue);
+				if (propValue != null) { // allow null values in properties
+					Class<?> typ = this.field.getType();
+					propValue = MappingUtil.convertFromProperty(propValue, typ,
+							getListComponentType());
+					if (!propValue.equals(value)) {
+						this.field.set(domainObject, propValue);
+					}
 				}
 			}
 		} catch (Throwable e) {
@@ -127,6 +129,8 @@ public class FieldMapping {
 							// to return null
 							value = null;
 						}
+					} else { // empty lists are mapped to a property
+						value = null;
 					}
 				}
 			}
@@ -205,5 +209,9 @@ public class FieldMapping {
 			this.classFieldName = sb.toString();
 		}
 		return this.classFieldName;
+	}
+
+	public boolean isCollection() {
+		return Collection.class.isAssignableFrom(this.field.getType());
 	}
 }

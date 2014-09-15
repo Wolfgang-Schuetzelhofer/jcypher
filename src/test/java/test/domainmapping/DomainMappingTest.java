@@ -41,6 +41,7 @@ import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
 import iot.jcypher.result.Util;
 
+import java.sql.Clob;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -67,7 +68,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 	}
 	
 	@AfterClass
@@ -89,7 +90,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Contact email = new Contact();
 		Person james = new Person();
 		
-		buildInitialDomainObjects(john, james, address, phone, email, null);
+		buildInitialDomainObjects_1(john, james, address, phone, email, null, null);
 		
 		List<Object> domainObjects = new ArrayList<Object>();
 		domainObjects.add(john);
@@ -114,7 +115,180 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
+	@SuppressWarnings({ "unused", "rawtypes" })
 	@Test
+	public void testUpdateComplex_EmptyList2NotEmptyList() {
+		
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		
+		Person john = new Person();
+		
+		buildInitialDomainObjects_2(john);
+		List addresses = john.getAddresses();
+		john.setAddresses(new ArrayList());
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		// Store empty array without generics
+		errors = da.store(john);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		SyncInfo syncInfo = da.getSyncInfo(john);
+		
+		// Store non-empty array without generics
+		john.setAddresses(addresses);
+		errors = da.store(john);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da = new DomainAccess(dbAccess, domainName);
+		Person john_1;
+		john_1 = da.loadById(Person.class, syncInfo.getId());
+		
+		return;
+	}
+	
+	@SuppressWarnings("unchecked")
+	//@Test
+	public void testUpdateSimple_EmptyList2NotEmptyList() {
+		
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		
+		Person john = new Person();
+		Address address = new Address();
+		Contact phone = new Contact();
+		Contact email = new Contact();
+		Person james = new Person();
+		Company skynet = new Company();
+		Company globCom = new Company();
+		
+		buildInitialDomainObjects_1(john, james, address, phone, email, skynet, globCom);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		// Store empty array without generics
+		errors = da.store(globCom);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		SyncInfo syncInfo = da.getSyncInfo(globCom);
+		
+		globCom.getAreaCodes().add(2);
+		globCom.getAreaCodes().add(3);
+		// Store non-empty array without generics
+		errors = da.store(globCom);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da = new DomainAccess(dbAccess, domainName);
+		Company globCom_1;
+		globCom_1 = da.loadById(Company.class, syncInfo.getId());
+		
+		boolean isEqual = equalsCompany(globCom, globCom_1);
+		assertTrue("Test for equality of domain objects", isEqual);
+		
+		// Store non-empty array with generics
+		da = new DomainAccess(dbAccess, domainName);
+		james.setLuckyNumbers(new ArrayList<Integer>());
+		errors = da.store(james);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		syncInfo = da.getSyncInfo(james);
+		
+		james.getLuckyNumbers().add(24);
+		james.getLuckyNumbers().add(48);
+		errors = da.store(james);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da = new DomainAccess(dbAccess, domainName);
+		Person james_1;
+		james_1 = da.loadById(Person.class, syncInfo.getId());
+		
+		isEqual = equalsPerson(james, james_1, null);
+		assertTrue("Test for equality of domain objects", isEqual);
+		
+		return;
+	}
+	
+	//@Test
+	public void testLoadEmptyLists() {
+		
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		
+		Person john = new Person();
+		Address address = new Address();
+		Contact phone = new Contact();
+		Contact email = new Contact();
+		Person james = new Person();
+		Company skynet = new Company();
+		Company globCom = new Company();
+		
+		buildInitialDomainObjects_1(john, james, address, phone, email, skynet, globCom);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		// Test empty array without generics
+		errors = da.store(globCom);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		SyncInfo syncInfo = da.getSyncInfo(globCom);
+		
+		da = new DomainAccess(dbAccess, domainName);
+		Company globCom_1;
+		globCom_1 = da.loadById(Company.class, syncInfo.getId());
+		
+		boolean isEqual = equalsCompany(globCom, globCom_1);
+		assertTrue("Test for equality of domain objects", isEqual);
+		
+		// Test empty array with generics
+		james.setLuckyNumbers(new ArrayList<Integer>());
+		errors = da.store(james);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		syncInfo = da.getSyncInfo(james);
+		
+		da = new DomainAccess(dbAccess, domainName);
+		Person james_1;
+		james_1 = da.loadById(Person.class, syncInfo.getId());
+		
+		isEqual = equalsPerson(james, james_1, null);
+		assertTrue("Test for equality of domain objects", isEqual);
+		
+		return;
+	}
+	
+	//@Test
 	public void testStoreDomainObjects() {
 		Person john_1, james_1;
 		Address addr_1;
@@ -129,8 +303,9 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Contact email = new Contact();
 		Person james = new Person();
 		Company skynet = new Company();
+		Company globCom = new Company();
 		
-		buildInitialDomainObjects(john, james, address, phone, email, skynet);
+		buildInitialDomainObjects_1(john, james, address, phone, email, skynet, globCom);
 		
 		List<Object> domainObjects = new ArrayList<Object>();
 		domainObjects.add(john);
@@ -195,11 +370,30 @@ public class DomainMappingTest extends AbstractTestSuite{
 		check = checkForNodesAndRelations(ntc, rtc);
 		assertTrue("Test for nodes and relations in graph", check);
 		
-//		keanu.setFirstName(null);
-//		errors = da.store(domainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//		}
+		james.setLuckyNumbers(new ArrayList<Integer>());
+		errors = da.store(james);
+		if (errors.size() > 0) {
+			printErrors(errors);
+		}
+		
+		// test if update query is empty (or no update query at all)
+		errors = da.store(james);
+		if (errors.size() > 0) {
+			printErrors(errors);
+		}
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		da1 = new DomainAccess(dbAccess, domainName);
+		errors = da1.store(globCom);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
 //		
 //		keanu.setFirstName("Keanu_1");
 		john.setContact(null);
@@ -214,7 +408,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 			printErrors(errors);
 		}
 		
-		james.setAddress(address);
+		james.setMainAddress(address);
 		errors = da.store(domainObjects);
 		if (errors.size() > 0) {
 			printErrors(errors);
@@ -294,9 +488,10 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return expected.equals(returned);
 	}
 
-	@SuppressWarnings({ "rawtypes" })
-	private void buildInitialDomainObjects(Person john, Person james,
-			Address address, Contact phone, Contact email, Company skynet) {
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private void buildInitialDomainObjects_1(Person john, Person james,
+			Address address, Contact phone, Contact email, Company skynet,
+			Company globCom) {
 		john.setFirstName("John");
 		john.setLastName("Reeves");
 		Calendar cal = Calendar.getInstance();
@@ -315,7 +510,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		address.setCity("Vienna");
 		address.setStreet("Main Street");
 		address.setNumber(9);
-		john.setAddress(address);
+		john.setMainAddress(address);
 		
 		phone.setType(ContactType.TELEPHONE);
 		phone.setNummer("12345");
@@ -345,6 +540,46 @@ public class DomainMappingTest extends AbstractTestSuite{
 			areaCodes.add(44);
 			skynet.setAreaCodes(areaCodes);
 		}
+		
+		if (globCom != null) {
+			globCom.setName("Glob-Com");
+			Address addr = new Address();
+			addr.setCity("Global City");
+			addr.setStreet("Mainstreet");
+			addr.setNumber(1);
+			globCom.setAddress(addr);
+			
+			globCom.setAreaCodes(new ArrayList());
+		}
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	private void buildInitialDomainObjects_2(Person john) {
+		john.setFirstName("John");
+		john.setLastName("Reeves");
+		Calendar cal = Calendar.getInstance();
+		cal.set(1964, 8, 2, 0, 0, 0);
+		clearMillis(cal);
+		john.setBirthDate(cal.getTime());
+		john.setAddresses(new ArrayList());
+		
+		Address address = new Address();
+		address.setCity("Munich");
+		address.setStreet("Main Street");
+		address.setNumber(9);
+		john.getAddresses().add(address);
+		
+		address = new Address();
+		address.setCity("San Francisco");
+		address.setStreet("Kearny Street");
+		address.setNumber(28);
+		john.getAddresses().add(address);
+		
+		address = new Address();
+		address.setCity("Paris");
+		address.setStreet("boulevard de clichy");
+		address.setNumber(108);
+		john.getAddresses().add(address);
 	}
 	
 	private boolean equalsPerson(Person person1, Person person2,
@@ -363,10 +598,10 @@ public class DomainMappingTest extends AbstractTestSuite{
 		ac = new AlreadyCompared(person1, person2);
 		acs.add(ac);
 
-		if (person1.getAddress() == null) {
-			if (person2.getAddress() != null)
+		if (person1.getMainAddress() == null) {
+			if (person2.getMainAddress() != null)
 				return ac.setResult(false);
-		} else if (!equalsAddress(person1.getAddress(), person2.getAddress()))
+		} else if (!equalsAddress(person1.getMainAddress(), person2.getMainAddress()))
 			return ac.setResult(false);
 		if (person1.getBirthDate() == null) {
 			if (person2.getBirthDate() != null)
@@ -432,6 +667,28 @@ public class DomainMappingTest extends AbstractTestSuite{
 		} else if (!contact1.getNummer().equals(contact2.getNummer()))
 			return false;
 		if (contact1.getType() != contact2.getType())
+			return false;
+		return true;
+	}
+	
+	private boolean equalsCompany(Company company_1, Company company_2) {
+		if (company_1 == null || company_2 == null)
+			return false;
+		
+		if (company_1.getName() == null) {
+			if (company_2.getName() != null)
+				return false;
+		} else if (!company_1.getName().equals(company_2.getName()))
+			return false;
+		if (company_1.getAddress() == null) {
+			if (company_2.getAddress() != null)
+				return false;
+		} else if (!equalsAddress(company_1.getAddress(), company_2.getAddress()))
+			return false;
+		if (company_1.getAreaCodes() == null) {
+			if (company_2.getAreaCodes() != null)
+				return false;
+		} else if (!company_1.getAreaCodes().equals(company_2.getAreaCodes()))
 			return false;
 		return true;
 	}

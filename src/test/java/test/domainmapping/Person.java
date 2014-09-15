@@ -8,10 +8,11 @@ public class Person {
 	private String firstName;
 	private String lastName;
 	private Date birthDate;
-	private Address address;
+	private Address mainAddress;
 	private Contact contact;
 	private Person bestFriend;
 	private List<Integer> luckyNumbers;
+	private List addresses;
 	
 	public String getFirstName() {
 		return firstName;
@@ -31,11 +32,11 @@ public class Person {
 	public void setBirthDate(Date birthDate) {
 		this.birthDate = birthDate;
 	}
-	public Address getAddress() {
-		return address;
+	public Address getMainAddress() {
+		return mainAddress;
 	}
-	public void setAddress(Address address) {
-		this.address = address;
+	public void setMainAddress(Address address) {
+		this.mainAddress = address;
 	}
 	public Contact getContact() {
 		return contact;
@@ -55,6 +56,12 @@ public class Person {
 	public void setLuckyNumbers(List<Integer> luckyNumbers) {
 		this.luckyNumbers = luckyNumbers;
 	}
+	public List getAddresses() {
+		return addresses;
+	}
+	public void setAddresses(List addresses) {
+		this.addresses = addresses;
+	}
 	@Override
 	public String toString() {
 		StringBuilder sb = new StringBuilder();
@@ -63,9 +70,9 @@ public class Person {
 		sb.append(this.lastName);
 		sb.append(" born: ");
 		sb.append(this.birthDate);
-		if (this.address != null) {
+		if (this.mainAddress != null) {
 			sb.append(' ');
-			sb.append(this.address.toString());
+			sb.append(this.mainAddress.toString());
 		}
 		if (this.contact != null) {
 			sb.append(' ');

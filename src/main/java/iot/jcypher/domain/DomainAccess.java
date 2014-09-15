@@ -21,10 +21,12 @@ import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.mapping.DefaultObjectMappingCreator;
 import iot.jcypher.domain.mapping.DomainState;
-import iot.jcypher.domain.mapping.MappingUtil;
+import iot.jcypher.domain.mapping.DomainState.IndexedRelation;
 import iot.jcypher.domain.mapping.DomainState.LoadInfo;
 import iot.jcypher.domain.mapping.DomainState.Relation;
+import iot.jcypher.domain.mapping.DomainState.SourceField2TargetKey;
 import iot.jcypher.domain.mapping.FieldMapping;
+import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
@@ -50,6 +52,7 @@ import iot.jcypher.result.Util;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -654,8 +657,9 @@ public class DomainAccess {
 						});
 					}
 				}
-				if (query != null)
-					Util.printQuery(query, "DOMAIN INFO", Format.PRETTY_1);
+				if (query != null) {
+//					Util.printQuery(query, "DOMAIN INFO", Format.PRETTY_1);
+				}
 				return query;
 			}
 			
@@ -697,12 +701,19 @@ public class DomainAccess {
 					boolean checkRemoval = false;
 					Object obj = fm.getObjectNeedingRelation(domainObject);
 					if (obj != null) { // definitly need relation
-						Relation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, obj);
-						if (!domainAccessHandler.domainState.existsRelation(relat)) {
-							context.relations.add(relat); // relation not in db
-							checkRemoval = true;
+						// TODO this code should be in a separate method
+						if (obj instanceof Collection<?>) { // collection with non-simple elements,
+																					// we won't reach this spot with empty collections
+							Collection<?> coll = (Collection<?>)obj;
+							handleListInClosureCalc(coll, domainObject, context, fm);
+						} else {
+							Relation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, obj);
+							if (!domainAccessHandler.domainState.existsRelation(relat)) {
+								context.relations.add(relat); // relation not in db
+								checkRemoval = true;
+							}
+							recursiveCalculateClosure(obj, context);
 						}
-						recursiveCalculateClosure(obj, context);
 					} else {
 						if (fm.needsRelation()) // in case obj == null because it was not set
 							checkRemoval = true;
@@ -716,6 +727,96 @@ public class DomainAccess {
 					}
 				}
 			}
+		}
+		
+		private void handleListInClosureCalc(Collection<?> coll, Object domainObject,
+				UpdateContext context, FieldMapping fm) {
+			String typ = fm.getPropertyOrRelationName();
+			Map<SourceField2TargetKey, List<IndexedRelation>> indexedRelations =
+					new HashMap<SourceField2TargetKey, List<IndexedRelation>>();
+			int idx = 0;
+			for (Object elem : coll) {
+				SourceField2TargetKey key =
+						new SourceField2TargetKey(domainObject, fm.getFieldName(), elem);
+				List<IndexedRelation> relats = indexedRelations.get(key);
+				if (relats == null) {
+					relats = new ArrayList<IndexedRelation>();
+					indexedRelations.put(key, relats);
+				}
+				relats.add(new IndexedRelation(typ, idx, domainObject, elem));
+				idx++;
+			}
+			Iterator<Entry<SourceField2TargetKey, List<IndexedRelation>>> it = indexedRelations.entrySet().iterator();
+			while(it.hasNext()) {
+				Entry<SourceField2TargetKey, List<IndexedRelation>> entry = it.next();
+				List<IndexedRelation> existingRels =
+						domainAccessHandler.domainState.getIndexedRelations(entry.getKey());
+				RelationsToModify toModify = calculateIndexedRelationsToModify(entry.getValue(), existingRels);
+				// TODO continue here
+			}
+		}
+		
+		private RelationsToModify calculateIndexedRelationsToModify(List<IndexedRelation> actual,
+				List<IndexedRelation> existingInGraph) {
+			List<IndexedRelation> act = new ArrayList<IndexedRelation>();
+			act.addAll(actual);
+			List<IndexedRelation> existingOnes = new ArrayList<IndexedRelation>();
+			existingOnes.addAll(existingInGraph);
+			List<IndexedRelation> unchanged = new ArrayList<IndexedRelation>();
+			for (IndexedRelation exists : existingOnes) {
+				for (IndexedRelation iRel : act) {
+					if (exists.equals(iRel)) {
+						unchanged.add(iRel);
+						break;
+					}
+				}
+			}
+			for (IndexedRelation iRel : unchanged) {
+				act.remove(iRel);
+				existingOnes.remove(iRel);
+			}
+			// now we have filtered out those which do not need to be changed, added or removed
+			
+			int maxRemoveIndex = -1;
+			List<IndexedRelationToChange> toChange = new ArrayList<IndexedRelationToChange>();
+			int idx = 0;
+			for (IndexedRelation iRel : act) {
+				if (existingOnes.size() > idx) {
+					toChange.add(new IndexedRelationToChange(existingOnes.get(idx), iRel.getIndex()));
+					maxRemoveIndex = idx;
+				} else
+					break;
+				idx++;
+			}
+			if (maxRemoveIndex != -1) {
+				for (int i = maxRemoveIndex; i >= 0; i--) {
+					existingOnes.remove(i);
+					act.remove(i);
+				}
+			}
+			// now we have filtered out those which need to be changed (they will get a new index)
+			// they are in list 'toChange'.
+			
+			RelationsToModify ret = new RelationsToModify();
+			ret.toChange = toChange;
+			
+			// the actual ones which exist in the graph and the actual ones which can be created
+			// by changing existing ones, have been removed from act.
+			// So in 'act' there are those who need to be created,
+			// We now find them in list 'toCreate'
+			ret.toCreate = act;
+			
+			// Those which really need to be removed are now found in list 'toRemove'
+			ret.toRemove = existingOnes;
+			
+			return ret;
+		}
+		
+		/**********************************************/
+		private class RelationsToModify {
+			private List<IndexedRelation> toCreate;
+			private List<IndexedRelation> toRemove;
+			private List<IndexedRelationToChange> toChange;
 		}
 		
 		/**********************************************/
@@ -809,6 +910,9 @@ public class DomainAccess {
 												new Relation(fMap.getPropertyOrRelationName(),
 														domainObject,
 														context.currentObject), rel.getId());
+									} else if (nodeIsNull && fMap.isCollection()) {
+										// test for empty collection, which evantually was mapped to a property
+										fMap.mapPropertyToField(domainObject, rNode);
 									}
 								} else {
 									if (mapProperties)
@@ -1161,6 +1265,18 @@ public class DomainAccess {
 			Collections.sort(ret);
 			return ret;
 		}
+	}
+	
+	private class IndexedRelationToChange {
+		private IndexedRelation existingOne;
+		private long newIndex;
+		
+		private IndexedRelationToChange(IndexedRelation existingOne, long newIndex) {
+			super();
+			this.existingOne = existingOne;
+			this.newIndex = newIndex;
+		}
+		
 	}
 	
 	/***********************************/
