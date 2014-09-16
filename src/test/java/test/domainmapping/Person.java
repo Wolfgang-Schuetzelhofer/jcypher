@@ -12,6 +12,7 @@ public class Person {
 	private Contact contact;
 	private Person bestFriend;
 	private List<Integer> luckyNumbers;
+	@SuppressWarnings("rawtypes")
 	private List addresses;
 	
 	public String getFirstName() {
@@ -56,9 +57,11 @@ public class Person {
 	public void setLuckyNumbers(List<Integer> luckyNumbers) {
 		this.luckyNumbers = luckyNumbers;
 	}
+	@SuppressWarnings("rawtypes")
 	public List getAddresses() {
 		return addresses;
 	}
+	@SuppressWarnings("rawtypes")
 	public void setAddresses(List addresses) {
 		this.addresses = addresses;
 	}

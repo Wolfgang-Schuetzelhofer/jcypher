@@ -26,17 +26,17 @@ import java.util.Map;
 public class DomainState {
 
 	private Map<Object, LoadInfo> object2IdMap;
-	private Map<Relation, Long> relation2IdMap;
+	private Map<IRelation, Long> relation2IdMap;
 	private Map<Long, List<Object>> id2ObjectsMap;
-	private Map<Object, List<Relation>> object2RelationsMap;
+	private Map<Object, List<IRelation>> object2RelationsMap;
 	private Map<SourceField2TargetKey, List<IndexedRelation>> objectField2IndexedRelationsMap;
 	
 	public DomainState() {
 		super();
 		this.object2IdMap = new HashMap<Object, LoadInfo>();
-		this.relation2IdMap = new HashMap<Relation, Long>();
+		this.relation2IdMap = new HashMap<IRelation, Long>();
 		this.id2ObjectsMap = new HashMap<Long, List<Object>>();
-		this.object2RelationsMap = new HashMap<Object, List<Relation>>();
+		this.object2RelationsMap = new HashMap<Object, List<IRelation>>();
 		this.objectField2IndexedRelationsMap = new HashMap<SourceField2TargetKey, List<IndexedRelation>>();
 	}
 	
@@ -75,18 +75,51 @@ public class DomainState {
 		return null;
 	}
 	
-	public void add_Id2Relation(Relation key, Long value) {
-		this.relation2IdMap.put(key, value);
-		List<Relation> rels = this.object2RelationsMap.get(key.getStart());
-		if (rels == null) {
-			rels = new ArrayList<Relation>();
-			this.object2RelationsMap.put(key.getStart(), rels);
+	public void add_Id2Relation(IRelation relat, Long value) {
+		IRelation toPut = relat; 
+		if (relat instanceof IndexedRelationToChange) {
+			IndexedRelation oldOne = ((IndexedRelationToChange)relat).existingOne;
+			this.relation2IdMap.remove(oldOne);
+			SourceField2TargetKey key = new SourceField2TargetKey(oldOne.getStart(),
+					oldOne.getType(), oldOne.getEnd());
+			List<IndexedRelation> rels = this.objectField2IndexedRelationsMap.get(key);
+			if (rels != null) {
+				rels.remove(oldOne);
+			}
+			IndexedRelation newOne = new IndexedRelation(oldOne.getType(),
+					((IndexedRelationToChange)relat).newIndex,
+					oldOne.getStart(), oldOne.getEnd());
+			toPut = newOne;
 		}
-		if (!rels.contains(key))
-			rels.add(key);
+		this.relation2IdMap.put(toPut, value);
+		
+		if (toPut instanceof IndexedRelation) {
+			SourceField2TargetKey key = new SourceField2TargetKey(toPut.getStart(),
+					toPut.getType(), toPut.getEnd());
+			List<IndexedRelation> rels = this.objectField2IndexedRelationsMap.get(key);
+			if (rels == null) {
+				rels = new ArrayList<IndexedRelation>();
+				this.objectField2IndexedRelationsMap.put(key, rels);
+			}
+			if (!rels.contains(toPut))
+				rels.add((IndexedRelation) toPut);
+		} else {
+			List<IRelation> rels = this.object2RelationsMap.get(toPut.getStart());
+			if (rels == null) {
+				rels = new ArrayList<IRelation>();
+				this.object2RelationsMap.put(toPut.getStart(), rels);
+			}
+			if (!rels.contains(toPut))
+				rels.add(toPut);
+		}
 	}
 	
-	public Long getFrom_Relation2IdMap(Relation key) {
+	public Long getFrom_Relation2IdMap(IRelation relat) {
+		IRelation key;
+		if (relat instanceof IndexedRelationToChange)
+			key = ((IndexedRelationToChange)relat).existingOne;
+		else
+			key = relat;
 		return this.relation2IdMap.get(key);
 	}
 	
@@ -101,10 +134,10 @@ public class DomainState {
 		this.addTo_Object2IdMap(obj, id, resolutionDepth);
 	}
 	
-	public boolean existsRelation(Relation relat) {
-		List<Relation> rels = this.object2RelationsMap.get(relat.getStart());
+	public boolean existsRelation(IRelation relat) {
+		List<IRelation> rels = this.object2RelationsMap.get(relat.getStart());
 		if (rels != null) {
-			for (Relation r : rels) {
+			for (IRelation r : rels) {
 				if (r.equals(relat))
 					return true;
 			}
@@ -116,10 +149,10 @@ public class DomainState {
 		return this.objectField2IndexedRelationsMap.get(key);
 	}
 	
-	public Relation findRelation(Object start, String type) {
-		List<Relation> rels = this.object2RelationsMap.get(start);
+	public IRelation findRelation(Object start, String type) {
+		List<IRelation> rels = this.object2RelationsMap.get(start);
 		if (rels != null) {
-			for (Relation r : rels) {
+			for (IRelation r : rels) {
 				if (r.getType().equals(type))
 					return r;
 			}
@@ -127,10 +160,19 @@ public class DomainState {
 		return null;
 	}
 	
-	public void removeRelation(Relation relat) {
-		List<Relation> rels = this.object2RelationsMap.get(relat.getStart());
-		if (rels != null) {
-			rels.remove(relat);
+	public void removeRelation(IRelation relat) {
+		if (relat instanceof IndexedRelation) {
+			SourceField2TargetKey key = new SourceField2TargetKey(relat.getStart(),
+					relat.getType(), relat.getEnd());
+			List<IndexedRelation> rels = this.objectField2IndexedRelationsMap.get(key);
+			if (rels != null) {
+				rels.remove(relat);
+			}
+		} else {
+			List<IRelation> rels = this.object2RelationsMap.get(relat.getStart());
+			if (rels != null) {
+				rels.remove(relat);
+			}
 		}
 		this.relation2IdMap.remove(relat);
 	}
@@ -143,9 +185,16 @@ public class DomainState {
 		}
 		return objs;
 	}
+	
+	/***********************************/
+	public interface IRelation {
+		public String getType();
+		public Object getStart();
+		public Object getEnd();
+	}
 
 	/***********************************/
-	public static class Relation {
+	public static class Relation implements IRelation {
 		private String type;
 		private Object start;
 		private Object end;
@@ -157,14 +206,17 @@ public class DomainState {
 			this.end = end;
 		}
 
+		@Override
 		public String getType() {
 			return type;
 		}
 
+		@Override
 		public Object getStart() {
 			return start;
 		}
 
+		@Override
 		public Object getEnd() {
 			return end;
 		}
@@ -249,6 +301,38 @@ public class DomainState {
 			return "IndexedRelation [type=" + getType() + ", index=" + index + ", start=" + getStart() + ", end="
 					+ getEnd() + "]";
 		}
+	}
+	
+	/***********************************/
+	public static class IndexedRelationToChange implements IRelation {
+		private IndexedRelation existingOne;
+		private long newIndex;
+		
+		public IndexedRelationToChange(IndexedRelation existingOne, long newIndex) {
+			super();
+			this.existingOne = existingOne;
+			this.newIndex = newIndex;
+		}
+
+		@Override
+		public String getType() {
+			return this.existingOne.getType();
+		}
+
+		@Override
+		public Object getStart() {
+			return this.existingOne.getStart();
+		}
+
+		@Override
+		public Object getEnd() {
+			return this.existingOne.getEnd();
+		}
+
+		public long getNewIndex() {
+			return newIndex;
+		}
+		
 	}
 	
 	/********************************/

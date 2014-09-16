@@ -21,7 +21,9 @@ import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.mapping.DefaultObjectMappingCreator;
 import iot.jcypher.domain.mapping.DomainState;
+import iot.jcypher.domain.mapping.DomainState.IRelation;
 import iot.jcypher.domain.mapping.DomainState.IndexedRelation;
+import iot.jcypher.domain.mapping.DomainState.IndexedRelationToChange;
 import iot.jcypher.domain.mapping.DomainState.LoadInfo;
 import iot.jcypher.domain.mapping.DomainState.Relation;
 import iot.jcypher.domain.mapping.DomainState.SourceField2TargetKey;
@@ -112,6 +114,7 @@ public class DomainAccess {
 		private static final String DomainInfoNameProperty = "name";
 		private static final String DomainInfoLabel2ClassProperty = "label2ClassMap";
 		private static final String DomainInfoFieldComponentTypeProperty = "componentTypeMap";
+		private static final String IndexProperty = "index";
 		
 		private String domainName;
 		/**
@@ -173,7 +176,7 @@ public class DomainAccess {
 			
 			List<JcError> errors = context.graph.store();
 			if (errors.isEmpty()) {
-				for (Relation relat : context.relationsToRemove) {
+				for (IRelation relat : context.relationsToRemove) {
 					domainState.removeRelation(relat);
 				}
 				
@@ -230,7 +233,7 @@ public class DomainAccess {
 			
 			Map<Integer, QueryRelation2ResultRelation> relationIndexMap = null;
 			for (int i = 0; i < context.relations.size(); i++) {
-				Relation relat = context.relations.get(i);
+				IRelation relat = context.relations.get(i);
 				Long id = this.domainState.getFrom_Relation2IdMap(relat);
 				if (id != null) { // relation exists in graphdb
 					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
@@ -248,7 +251,7 @@ public class DomainAccess {
 				removeStartClauses = new ArrayList<IClause>();
 				removeClauses = new ArrayList<IClause>();
 				for (int i = 0; i < context.relationsToRemove.size(); i++) {
-					Relation relat = context.relationsToRemove.get(i);
+					IRelation relat = context.relationsToRemove.get(i);
 					// relation must exist in db
 					Long id = this.domainState.getFrom_Relation2IdMap(relat);
 					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
@@ -317,7 +320,7 @@ public class DomainAccess {
 					rNode = graph.createNode();
 				
 				context.domObj2Node.put(context.domainObjects.get(i), rNode);
-				updateFromObject(context.domainObjects.get(i), rNode);
+				updateGraphFromObject(context.domainObjects.get(i), rNode);
 			}
 			
 			for (int i = 0; i < context.relations.size(); i++) {
@@ -326,7 +329,7 @@ public class DomainAccess {
 					rRelation = relationIndexMap.get(i).resultRelation;
 				}
 				if (rRelation == null) {
-					Relation relat = context.relations.get(i);
+					IRelation relat = context.relations.get(i);
 					rRelation = graph.createRelation(relat.getType(),
 							context.domObj2Node.get(relat.getStart()), context.domObj2Node.get(relat.getEnd()));
 					DomRelation2ResultRelation d2r = new DomRelation2ResultRelation();
@@ -334,6 +337,7 @@ public class DomainAccess {
 					d2r.resultRelation = rRelation;
 					context.domRelation2Relations.add(d2r);
 				}
+				updateGraphFromRelation(context.relations.get(i), rRelation);
 			}
 			context.graph = graph;
 			return context;
@@ -464,9 +468,27 @@ public class DomainAccess {
 			return domainObject;
 		}
 
-		private void updateFromObject(Object domainObject, GrNode rNode) {
+		private void updateGraphFromObject(Object domainObject, GrNode rNode) {
 			ObjectMapping objectMapping = getObjectMappingFor(domainObject.getClass());
 			objectMapping.mapPropertiesFromObject(domainObject, rNode);
+		}
+		
+		private void updateGraphFromRelation(IRelation relat, GrRelation rRelation) {
+			Long idx = null;
+			if (relat instanceof IndexedRelation)
+				idx = new Long(((IndexedRelation)relat).getIndex());
+			else if (relat instanceof IndexedRelationToChange)
+				idx = new Long(((IndexedRelationToChange)relat).getNewIndex());
+			
+			if (idx != null) {
+				GrProperty prop = rRelation.getProperty(IndexProperty);
+				if (prop != null) {
+					Object propValue = MappingUtil.convertFromProperty(prop.getValue(), idx.getClass(), null);
+					if (!idx.equals(propValue))
+						prop.setValue(idx);
+				} else
+					rRelation.addProperty(IndexProperty, idx);
+			}
 		}
 		
 		private ObjectMapping getObjectMappingFor(Class<?> domainObjectClass) {
@@ -698,31 +720,23 @@ public class DomainAccess {
 				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject.getClass());
 				List<FieldMapping> fMappings = objectMapping.getFieldMappings();
 				for (FieldMapping fm : fMappings) {
-					boolean checkRemoval = false;
 					Object obj = fm.getObjectNeedingRelation(domainObject);
 					if (obj != null) { // definitly need relation
-						// TODO this code should be in a separate method
 						if (obj instanceof Collection<?>) { // collection with non-simple elements,
 																					// we won't reach this spot with empty collections
 							Collection<?> coll = (Collection<?>)obj;
 							handleListInClosureCalc(coll, domainObject, context, fm);
 						} else {
-							Relation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, obj);
-							if (!domainAccessHandler.domainState.existsRelation(relat)) {
-								context.relations.add(relat); // relation not in db
-								checkRemoval = true;
-							}
-							recursiveCalculateClosure(obj, context);
+							handleObjectInClosureCalc(obj, domainObject, context, fm);
 						}
 					} else {
-						if (fm.needsRelation()) // in case obj == null because it was not set
-							checkRemoval = true;
-					}
-					if (checkRemoval) {
-						Relation relat = domainAccessHandler.domainState.findRelation(domainObject,
-								fm.getPropertyOrRelationName());
-						if (relat != null) {
-							context.relationsToRemove.add(relat);
+						if (fm.needsRelation()) { // in case obj == null because it was not set
+							// no relation --> check if an old relation needs to be removed
+							IRelation relat = domainAccessHandler.domainState.findRelation(domainObject,
+									fm.getPropertyOrRelationName());
+							if (relat != null) {
+								context.relationsToRemove.add(relat);
+							}
 						}
 					}
 				}
@@ -752,8 +766,30 @@ public class DomainAccess {
 				List<IndexedRelation> existingRels =
 						domainAccessHandler.domainState.getIndexedRelations(entry.getKey());
 				RelationsToModify toModify = calculateIndexedRelationsToModify(entry.getValue(), existingRels);
-				// TODO continue here
+				context.relations.addAll(toModify.toChange);
+				context.relations.addAll(toModify.toCreate);
+				context.relationsToRemove.addAll(toModify.toRemove);
 			}
+			for (Object elem : coll) {
+				recursiveCalculateClosure(elem, context);
+			}
+		}
+		
+		private void handleObjectInClosureCalc(Object relatedObject, Object domainObject,
+				UpdateContext context, FieldMapping fm) {
+			IRelation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, relatedObject);
+			if (!domainAccessHandler.domainState.existsRelation(relat)) {
+				context.relations.add(relat); // relation not in db
+				
+				// check if an old relation (for the same field but to another object, which is now replaced
+				// by the new relation) needs to be removed.
+				relat = domainAccessHandler.domainState.findRelation(domainObject,
+						fm.getPropertyOrRelationName());
+				if (relat != null) {
+					context.relationsToRemove.add(relat);
+				}
+			}
+			recursiveCalculateClosure(relatedObject, context);
 		}
 		
 		private RelationsToModify calculateIndexedRelationsToModify(List<IndexedRelation> actual,
@@ -761,7 +797,8 @@ public class DomainAccess {
 			List<IndexedRelation> act = new ArrayList<IndexedRelation>();
 			act.addAll(actual);
 			List<IndexedRelation> existingOnes = new ArrayList<IndexedRelation>();
-			existingOnes.addAll(existingInGraph);
+			if (existingInGraph != null)
+				existingOnes.addAll(existingInGraph);
 			List<IndexedRelation> unchanged = new ArrayList<IndexedRelation>();
 			for (IndexedRelation exists : existingOnes) {
 				for (IndexedRelation iRel : act) {
@@ -1122,8 +1159,8 @@ public class DomainAccess {
 	/***********************************/
 	private class UpdateContext {
 		private List<Object> domainObjects = new ArrayList<Object>();
-		private List<Relation> relations = new ArrayList<Relation>();
-		private List<Relation> relationsToRemove = new ArrayList<Relation>();
+		private List<IRelation> relations = new ArrayList<IRelation>();
+		private List<IRelation> relationsToRemove = new ArrayList<IRelation>();
 		private Map<Object, GrNode> domObj2Node;
 		private List<DomRelation2ResultRelation> domRelation2Relations;
 		private Graph graph;
@@ -1131,7 +1168,7 @@ public class DomainAccess {
 	
 	/***********************************/
 	private class DomRelation2ResultRelation {
-		private Relation domRelation;
+		private IRelation domRelation;
 		private GrRelation resultRelation;
 	}
 	
@@ -1265,18 +1302,6 @@ public class DomainAccess {
 			Collections.sort(ret);
 			return ret;
 		}
-	}
-	
-	private class IndexedRelationToChange {
-		private IndexedRelation existingOne;
-		private long newIndex;
-		
-		private IndexedRelationToChange(IndexedRelation existingOne, long newIndex) {
-			super();
-			this.existingOne = existingOne;
-			this.newIndex = newIndex;
-		}
-		
 	}
 	
 	/***********************************/
