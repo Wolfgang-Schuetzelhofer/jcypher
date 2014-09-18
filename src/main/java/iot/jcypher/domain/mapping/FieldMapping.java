@@ -63,6 +63,14 @@ public class FieldMapping {
 					if (prop != null)
 						prop.setValue(null);
 				}
+			} else {
+				// a previously empty collection might hav been mapped to a property
+				// we need to remove the property
+				if (Collection.class.isAssignableFrom(getFieldType())) {
+					GrProperty prop = rNode.getProperty(this.propertyName);
+					if (prop != null)
+						prop.setValue(null);
+				}
 			}
 			
 		} catch (Throwable e) {
@@ -113,24 +121,31 @@ public class FieldMapping {
 			prepare(domainObject);
 			if (needsRelation()) { // also checks against DominInfo
 				value = this.field.get(domainObject);
-				// check for list (collection) containing primitive or simple types
-				if (value != null && Collection.class.isAssignableFrom(this.field.getType())) {
-					Collection coll = (Collection) this.field.getType().cast(value);
-					if (coll.size() > 0) {
-						Object elem = coll.iterator().next();
-						// test the first element,
-						// assuming all elements are of the same type !!!
-						Class<?> type = elem.getClass();
-						if (MappingUtil.isSimpleType(type)) { // elements are of primitive or simple type
+				if (value != null) {
+					// store concrete type in DomainInfo
+					String classField = getClassFieldName();
+					MappingUtil.internalDomainAccess.get()
+						.addConcreteFieldType(classField, value.getClass());
+					
+					// check for list (collection) containing primitive or simple types
+					if (Collection.class.isAssignableFrom(this.field.getType())) {
+						Collection coll = (Collection) this.field.getType().cast(value);
+						if (coll.size() > 0) {
+							Object elem = coll.iterator().next();
+							Class<?> type = elem.getClass();
 							// store that info in DomainInfo
-							String classField = getClassFieldName();
+							classField = getClassFieldName();
 							MappingUtil.internalDomainAccess.get()
 								.addFieldComponentType(classField, type);
-							// to return null
+							// test the first element,
+							// assuming all elements are of the same type !!!
+							if (MappingUtil.isSimpleType(type)) { // elements are of primitive or simple type
+								// to return null
+								value = null;
+							}
+						} else { // empty lists are mapped to a property
 							value = null;
 						}
-					} else { // empty lists are mapped to a property
-						value = null;
 					}
 				}
 			}
@@ -200,7 +215,7 @@ public class FieldMapping {
 		
 	}
 	
-	private String getClassFieldName() {
+	public String getClassFieldName() {
 		if (this.classFieldName == null) {
 			StringBuilder sb = new StringBuilder();
 			sb.append(this.field.getDeclaringClass().getName());

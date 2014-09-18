@@ -14,13 +14,13 @@ JCypher aims to provide seamlessly integrated Java access to graph databases (Ne
 - At the top level, arbitrarily complex business domains can be mapped to graph databases in a completely non-invasive way (not even annotations invading the business model).
    Additionally, JCypher provides database access in a uniform way to remote as well as to embedded databases (including in-memory databases).
 
-For reading a documentation, finding code snippets and samples, getting tipps on how to start with JCypher, and to be informed about future directions,
-please have a look at: https://github.com/Wolfgang-Schuetzelhofer/jcypher/wiki.
+Please have a look at: https://github.com/Wolfgang-Schuetzelhofer/jcypher/wiki for a more comprehensive documentation. There you will also find code snippets, references to samples, tipps on how
+to get started with JCypher, and you will be informed about future directions.
 
 For more information about Neo4J have a look at: http://www.neo4j.org/
-For more information about the CYPHER language have a look at: http://docs.neo4j.org/chunked/stable/cypher-query-lang.html
+</br>For more information about the CYPHER language have a look at: http://docs.neo4j.org/chunked/stable/cypher-query-lang.html
 
-You can add JCypher as a Maven dependency:
+For adding JCypher as a Maven dependency:
 
 ```xml
 <dependency>

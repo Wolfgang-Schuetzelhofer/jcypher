@@ -150,6 +150,14 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw new JcResultException(errors);
 		}
 		
+		// test if property for empty collection has been removed
+//		da = new DomainAccess(dbAccess, domainName);
+//		errors = da.store(john);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+		
 		da = new DomainAccess(dbAccess, domainName);
 		Person john_1;
 		john_1 = da.loadById(Person.class, syncInfo.getId());

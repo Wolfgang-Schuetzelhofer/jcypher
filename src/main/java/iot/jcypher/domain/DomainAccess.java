@@ -114,6 +114,7 @@ public class DomainAccess {
 		private static final String DomainInfoNameProperty = "name";
 		private static final String DomainInfoLabel2ClassProperty = "label2ClassMap";
 		private static final String DomainInfoFieldComponentTypeProperty = "componentTypeMap";
+		private static final String DomainInfoConcreteFieldTypeProperty = "fieldTypeMap";
 		private static final String IndexProperty = "index";
 		
 		private String domainName;
@@ -380,13 +381,13 @@ public class DomainAccess {
 			}
 			
 			if (queries.size() > 0) { // at least one node has to be loaded
-//				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
+				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
 				List<JcQueryResult> results = this.dbAccess.execute(queries);
 				List<JcError> errors = Util.collectErrors(results);
 				if (errors.size() > 0) {
 					throw new JcResultException(errors);
 				}
-//				Util.printResults(results, "CLOSURE", Format.PRETTY_1);
+				Util.printResults(results, "CLOSURE", Format.PRETTY_1);
 				for (int i = 0; i < queries.size(); i++) {
 					id2QueryResult.put(queryIds.get(i), results.get(i));
 				}
@@ -455,10 +456,17 @@ public class DomainAccess {
 		}
 
 		private <T> T createAndMapProperties(Class<T> domainObjectClass, GrNode rNode) {
+			Class<? extends T> concreteClass;
 			ObjectMapping objectMapping = getObjectMappingFor(domainObjectClass);
+			if (objectMapping == null) {
+				concreteClass = findMappableSubClassFor(domainObjectClass);
+				objectMapping = getObjectMappingForConcreteClass(concreteClass);
+			} else
+				concreteClass = domainObjectClass;
+			
 			T domainObject;
 			try {
-				domainObject = domainObjectClass.newInstance();
+				domainObject = concreteClass.newInstance();
 			} catch (Throwable e) {
 				throw new RuntimeException(e);
 			}
@@ -469,7 +477,8 @@ public class DomainAccess {
 		}
 
 		private void updateGraphFromObject(Object domainObject, GrNode rNode) {
-			ObjectMapping objectMapping = getObjectMappingFor(domainObject.getClass());
+			// a mapping for this concrete class has definitly been stored earlier
+			ObjectMapping objectMapping = mappings.get(domainObject.getClass());
 			objectMapping.mapPropertiesFromObject(domainObject, rNode);
 		}
 		
@@ -492,10 +501,38 @@ public class DomainAccess {
 		}
 		
 		private ObjectMapping getObjectMappingFor(Class<?> domainObjectClass) {
-			ObjectMapping objectMapping = this.mappings.get(domainObjectClass);
+			return this.mappings.get(domainObjectClass);
+		}
+		
+		/**
+		 * look if there exists a concrete subclass, which has been mapped to the graph,
+		 * and hence has a mapping defined
+		 * @param domainObjectClass
+		 * @return
+		 */
+		@SuppressWarnings("unchecked")
+		private <T> Class<? extends T> findMappableSubClassFor(Class<T> domainObjectClass) {
+			DomainInfo dInfo = loadDomainInfoIfNeeded();
+			Iterator<Entry<Class<?>, String>> it = dInfo.class2labelMap.entrySet().iterator();
+			// TODO what if there are more sublasses having been mapped ???
+			while (it.hasNext()) {
+				Entry<Class<?>, String> entry = it.next();
+				if (domainObjectClass.isAssignableFrom(entry.getKey()))
+					return (Class<? extends T>) entry.getKey();
+			}
+			return null;
+		}
+		
+		private ObjectMapping getObjectMappingFor(Object domainObject) {
+			Class<?> clazz = domainObject.getClass();
+			return getObjectMappingForConcreteClass(clazz);
+		}
+		
+		private ObjectMapping getObjectMappingForConcreteClass(Class<?> clazz) {
+			ObjectMapping objectMapping = this.mappings.get(clazz);
 			if (objectMapping == null) {
-				objectMapping = DefaultObjectMappingCreator.createObjectMapping(domainObjectClass);
-				this.addObjectMappingForClass(domainObjectClass, objectMapping);
+				objectMapping = DefaultObjectMappingCreator.createObjectMapping(clazz);
+				addObjectMappingForClass(clazz, objectMapping);
 			}
 			return objectMapping;
 		}
@@ -510,7 +547,7 @@ public class DomainAccess {
 				lab = labels.get(0);
 			else
 				lab = new String();
-			getAvailableDomainInfo().add(domainObjectClass, lab);
+			getAvailableDomainInfo().addClassLabel(domainObjectClass, lab);
 		}
 		
 		private DomainInfo loadDomainInfoIfNeeded() {
@@ -578,7 +615,7 @@ public class DomainAccess {
 					extQueries.addAll(queries);
 					extQueries.add(infoQuery);
 					List<JcQueryResult> results = this.delegate.execute(extQueries);
-					Util.printResults(results, "DOMAIN INFO", Format.PRETTY_1);
+//					Util.printResults(results, "DOMAIN INFO", Format.PRETTY_1);
 					List<JcError> errors = Util.collectErrors(results);
 					if (errors.isEmpty()) {
 						updateDomainInfo(results.get(queries.size()));
@@ -660,13 +697,16 @@ public class DomainAccess {
 					List<String> class2LabelList = DomainAccessHandler.this.domainInfo.getLabel2ClassNameStringList();
 					List<String> fieldComponentTypeList =
 							DomainAccessHandler.this.domainInfo.getFieldComponentTypeStringList();
+					List<String> concreteFieldTypeList =
+							DomainAccessHandler.this.domainInfo.getConcreteFieldTypeStringList();
 					JcNode info = new JcNode("info");
 					query = new JcQuery();
 					if (DomainAccessHandler.this.domainInfo.nodeId != -1) { // DominInfo was loaded from graph
 						query.setClauses(new IClause[] {
 								START.node(info).byId(DomainAccessHandler.this.domainInfo.nodeId),
 								DO.SET(info.property(DomainInfoLabel2ClassProperty)).to(class2LabelList),
-								DO.SET(info.property(DomainInfoFieldComponentTypeProperty)).to(fieldComponentTypeList)
+								DO.SET(info.property(DomainInfoFieldComponentTypeProperty)).to(fieldComponentTypeList),
+								DO.SET(info.property(DomainInfoConcreteFieldTypeProperty)).to(concreteFieldTypeList)
 						});
 					} else { // new DomainInfo node must be stored in the db
 						JcNumber nid = new JcNumber("NID");
@@ -674,7 +714,8 @@ public class DomainAccess {
 								CREATE.node(info).label(DomainInfoNodeLabel)
 									.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName)
 									.property(DomainInfoLabel2ClassProperty).value(class2LabelList)
-									.property(DomainInfoFieldComponentTypeProperty).value(fieldComponentTypeList),
+									.property(DomainInfoFieldComponentTypeProperty).value(fieldComponentTypeList)
+									.property(DomainInfoConcreteFieldTypeProperty).value(concreteFieldTypeList),
 								RETURN.value(info.id()).AS(nid)
 						});
 					}
@@ -717,7 +758,7 @@ public class DomainAccess {
 		private void recursiveCalculateClosure(Object domainObject, UpdateContext context) {
 			if (!context.domainObjects.contains(domainObject)) { // avoid infinite loops
 				context.domainObjects.add(domainObject);
-				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject.getClass());
+				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject);
 				List<FieldMapping> fMappings = objectMapping.getFieldMappings();
 				for (FieldMapping fm : fMappings) {
 					Object obj = fm.getObjectNeedingRelation(domainObject);
@@ -875,94 +916,119 @@ public class DomainAccess {
 				String nnm = this.buildNodeOrRelationName(context.path,
 						DomainAccessHandler.NodePrefix);
 				
-				Class<?> doClass;
+				Class<?> dobClass;
 				if (fm == null)
-					doClass = context.domainObjectClass;
-				else
-					doClass = fm.getFieldType();
+					dobClass = context.domainObjectClass;
+				else {
+					String classFieldName = fm.getClassFieldName();
+					dobClass = MappingUtil.internalDomainAccess.get()
+							.getConcreteFieldType(classFieldName);
+					if (dobClass == null) // fall back
+						dobClass = fm.getFieldType();
+				}
 				
 				// prepare for navigation to next node
-				context.path.add(new PathElement(doClass));
+				context.path.add(new PathElement(dobClass));
 				
 				boolean resolveDeep = true;
 				if (context.recursionEndNodes.contains(nnm)) { // exit recursion
 					resolveDeep = false;
 				}
 				
+				boolean isCollection = Collection.class.isAssignableFrom(dobClass);
+				Class<?> concreteClass;
+				ObjectMapping objectMapping;
+				Collection<Object> collection = null;
+				if (isCollection) {
+					collection = (Collection<Object>) createInstance(dobClass);
+					String classFieldName = fm.getClassFieldName();
+					dobClass = MappingUtil.internalDomainAccess.get()
+							.getFieldComponentType(classFieldName);
+				}
+				
+				objectMapping = domainAccessHandler.getObjectMappingFor(dobClass);
+				if (objectMapping == null) {
+					concreteClass = domainAccessHandler.findMappableSubClassFor(dobClass);
+					objectMapping = domainAccessHandler.getObjectMappingForConcreteClass(concreteClass);
+				} else
+					concreteClass = dobClass;
+				
 				JcNode n = new JcNode(nnm);
 				List<GrNode> resList = context.qResult.resultOf(n);
+				Object domainObject = null;
 				if (resList.size() > 0) { // a result node exists for this pattern
-					GrNode rNode = resList.get(0);
-					if (rNode != null) { // null values are supported
-						boolean performMapping = false;
-						boolean mapProperties = true;
-						Object domainObject = null;
-						// check if a domain object has already been mapped to this node
-						domainObject =
-								domainAccessHandler.domainState.checkForMappedObject(doClass, rNode.getId());
-						
-						if (domainObject == null) {
-							try {
-								domainObject = doClass.newInstance();
-							} catch (Throwable e) {
-								throw new RuntimeException(e);
-							}
-							domainAccessHandler.domainState.add_Id2Object(domainObject, rNode.getId(),
-									resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
-							performMapping = true;
-						} else {
-							if (resolveDeep &&
-									domainAccessHandler.domainState.getResolutionDepth(domainObject) !=
-										ResolutionDepth.DEEP) {
+					for (GrNode rNode : resList) {
+						if (rNode != null) { // null values are supported
+							boolean performMapping = false;
+							boolean mapProperties = true;
+							// check if a domain object has already been mapped to this node
+							domainObject =
+									domainAccessHandler.domainState.checkForMappedObject(concreteClass, rNode.getId());
+							
+							if (domainObject == null) {
+								domainObject = createInstance(concreteClass);
+								domainAccessHandler.domainState.add_Id2Object(domainObject, rNode.getId(),
+										resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
 								performMapping = true;
-								mapProperties = false; // properties have already been mapped
-							}
-						}
-						
-						if (fm == null) { // we are at the root level
-							context.domainObject = (T) domainObject;
-						}
-						
-						if (performMapping) {
-							ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(doClass);
-							List<FieldMapping> fMappings = objectMapping.getFieldMappings();
-							int idx = 0;
-							for (FieldMapping fMap : fMappings) {
-								idx++; // index starts with 1 so as not to mix with the root node (n_0)
-								if (fMap.needsRelation() && resolveDeep) {
-									context.currentObject = null;
-									PathElement pe = context.getLastPathElement();
-									pe.fieldIndex = idx;
-									pe.fieldName = fMap.getFieldName();
-									boolean nodeIsNull = this.fillModel(context, fMap);
-									if (!nodeIsNull && context.currentObject != null) {
-										fMap.setField(domainObject, context.currentObject);
-										String rnm = this.buildNodeOrRelationName(context.path,
-												DomainAccessHandler.RelationPrefix);
-										JcRelation r = new JcRelation(rnm);
-										List<GrRelation> relList = context.qResult.resultOf(r);
-										// relation must exist, because the related object exists 
-										GrRelation rel = relList.get(0);
-										domainAccessHandler.domainState.add_Id2Relation(
-												new Relation(fMap.getPropertyOrRelationName(),
-														domainObject,
-														context.currentObject), rel.getId());
-									} else if (nodeIsNull && fMap.isCollection()) {
-										// test for empty collection, which evantually was mapped to a property
-										fMap.mapPropertyToField(domainObject, rNode);
-									}
-								} else {
-									if (mapProperties)
-										fMap.mapPropertyToField(domainObject, rNode);
+							} else {
+								if (resolveDeep &&
+										domainAccessHandler.domainState.getResolutionDepth(domainObject) !=
+											ResolutionDepth.DEEP) {
+									performMapping = true;
+									mapProperties = false; // properties have already been mapped
 								}
 							}
+							
+							if (fm == null) { // we are at the root level
+								context.domainObject = (T) domainObject;
+							}
+							
+							if (performMapping) {
+								List<FieldMapping> fMappings = objectMapping.getFieldMappings();
+								int idx = 0;
+								for (FieldMapping fMap : fMappings) {
+									idx++; // index starts with 1 so as not to mix with the root node (n_0)
+									if (fMap.needsRelation() && resolveDeep) {
+										context.currentObject = null;
+										PathElement pe = context.getLastPathElement();
+										pe.fieldIndex = idx;
+										pe.fieldName = fMap.getFieldName();
+										boolean nodeIsNull = this.fillModel(context, fMap);
+										if (!nodeIsNull && context.currentObject != null) {
+											fMap.setField(domainObject, context.currentObject);
+											String rnm = this.buildNodeOrRelationName(context.path,
+													DomainAccessHandler.RelationPrefix);
+											JcRelation r = new JcRelation(rnm);
+											List<GrRelation> relList = context.qResult.resultOf(r);
+											// relation must exist, because the related object exists 
+											GrRelation rel = relList.get(0);
+											domainAccessHandler.domainState.add_Id2Relation(
+													new Relation(fMap.getPropertyOrRelationName(),
+															domainObject,
+															context.currentObject), rel.getId());
+										} else if (nodeIsNull && fMap.isCollection()) {
+											// test for empty collection, which evantually was mapped to a property
+											fMap.mapPropertyToField(domainObject, rNode);
+										}
+									} else {
+										if (mapProperties)
+											fMap.mapPropertyToField(domainObject, rNode);
+									}
+								}
+							}
+							if (isCollection)
+								collection.add(domainObject);
+						} else {
+							isNullNode = true;
 						}
-						// set the object mapped to the actual field (fm)
-						context.currentObject = domainObject;
-					} else {
-						isNullNode = true;
 					}
 				}
+				
+				// set the object mapped to the actual field (fm)
+				if (isCollection)
+					context.currentObject = collection;
+				else
+					context.currentObject = domainObject;
 				context.path.remove(context.path.size() - 1); // remove the last one
 				return isNullNode;
 			}
@@ -974,11 +1040,16 @@ public class DomainAccess {
 			 */
 			private boolean calculateQuery(FieldMapping fm, ClosureQueryContext context) {
 				boolean ret = true;
-				Class<?> doClass;
+				Class<?> dobClass;
 				if (fm == null)
-					doClass = context.domainObjectClass;
-				else
-					doClass = fm.getFieldType();
+					dobClass = context.domainObjectClass;
+				else {
+					String classFieldName = fm.getClassFieldName();
+					dobClass = MappingUtil.internalDomainAccess.get()
+							.getConcreteFieldType(classFieldName);
+					if (dobClass == null) // fall back
+						dobClass = fm.getFieldType();
+				}
 				
 				if (fm != null) // don't add a match for the start node itself
 					this.addToQuery(fm, context); // navigate to this node
@@ -998,44 +1069,57 @@ public class DomainAccess {
 				}
 				
 				// prepare for navigation to next node
-				context.path.add(new PathElement(doClass));
+				context.path.add(new PathElement(dobClass));
 				
-				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(doClass);
-				List<FieldMapping> fMappings = objectMapping.getFieldMappings();
-				boolean subPathWalked = false;
-				int idx = 0;
-				for (FieldMapping fMap : fMappings) {
-					idx++; // index starts with 1 so as not to mix with the root node (n_0)
-					if (!walkedToIndex) {
-						if (idx != this.subPathIndex) // until subPathIndex is reached
-							continue;
-						else
-							walkedToIndex = true;
-					}
-					
-					if (fMap.needsRelation() && resolveDeep) {
-						boolean needToComeBack = false;
-						if (!subPathWalked) {
-							if (this.next == null)
-								this.next = new Step();
-							PathElement pe = context.getLastPathElement();
-							pe.fieldIndex = idx;
-							pe.fieldName = fMap.getFieldName();
-							boolean isDone = this.next.calculateQuery(fMap, context);
-							if (!isDone) { // sub path not finished
-								needToComeBack = true;
-							} else {
-								this.next = null;
-								subPathWalked = true;
-							}
-						} else {
-							needToComeBack = true;
+				Class<?> concreteClass;
+				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(dobClass);
+				if (objectMapping == null) {
+					concreteClass = domainAccessHandler.findMappableSubClassFor(dobClass);
+					// if concrete class is null here, that means that:
+					// no instance of that class has yet been stored in the database
+					// hence there will be no node appropriate in the db to be loaded
+					if (concreteClass != null)
+						objectMapping = domainAccessHandler.getObjectMappingForConcreteClass(concreteClass);
+				} else
+					concreteClass = dobClass;
+				
+				if (objectMapping != null) { // else no instance of that class has yet been stored in the database
+					List<FieldMapping> fMappings = objectMapping.getFieldMappings();
+					boolean subPathWalked = false;
+					int idx = 0;
+					for (FieldMapping fMap : fMappings) {
+						idx++; // index starts with 1 so as not to mix with the root node (n_0)
+						if (!walkedToIndex) {
+							if (idx != this.subPathIndex) // until subPathIndex is reached
+								continue;
+							else
+								walkedToIndex = true;
 						}
 						
-						if (needToComeBack) {
-							this.subPathIndex = idx;
-							ret = false;
-							break;
+						if (fMap.needsRelation() && resolveDeep) {
+							boolean needToComeBack = false;
+							if (!subPathWalked) {
+								if (this.next == null)
+									this.next = new Step();
+								PathElement pe = context.getLastPathElement();
+								pe.fieldIndex = idx;
+								pe.fieldName = fMap.getFieldName();
+								boolean isDone = this.next.calculateQuery(fMap, context);
+								if (!isDone) { // sub path not finished
+									needToComeBack = true;
+								} else {
+									this.next = null;
+									subPathWalked = true;
+								}
+							} else {
+								needToComeBack = true;
+							}
+							
+							if (needToComeBack) {
+								this.subPathIndex = idx;
+								ret = false;
+								break;
+							}
 						}
 					}
 				}
@@ -1073,6 +1157,16 @@ public class DomainAccess {
 				} else
 					sb.append(0); // root node name
 				return sb.toString();
+			}
+			
+			private Object createInstance(Class<?> clazz) {
+				Object ret;
+				try {
+					ret = clazz.newInstance();
+				} catch(Throwable e) {
+					throw new RuntimeException(e);
+				}
+				return ret;
 			}
 		}
 	}
@@ -1191,17 +1285,16 @@ public class DomainAccess {
 		private long nodeId;
 		private Map<String, Class<?>> label2ClassMap;
 		private Map<Class<?>, String> class2labelMap;
-		private Map<String, Class<?>> field2ComponentTypeMap;
-		private List<String> classesPossiblyRemoved;
-
+		private Map<String, Class<?>> fieldComponentTypeMap;
+		private Map<String, Class<?>> concreteFieldTypeMap;
 		private DomainInfo(long nid) {
 			super();
 			this.changed = false;
 			this.nodeId = nid;
 			this.label2ClassMap = new HashMap<String, Class<?>>();
 			this.class2labelMap = new HashMap<Class<?>, String>();
-			this.field2ComponentTypeMap = new HashMap<String, Class<?>>();
-			this.classesPossiblyRemoved = new ArrayList<String>();
+			this.fieldComponentTypeMap = new HashMap<String, Class<?>>();
+			this.concreteFieldTypeMap = new HashMap<String, Class<?>>();
 		}
 
 		@SuppressWarnings("unchecked")
@@ -1213,9 +1306,9 @@ public class DomainAccess {
 					String[] c2l = str.split("=");
 					try {
 						Class<?> clazz = Class.forName(c2l[1]);
-						this.add(clazz, c2l[0]);
+						this.addClassLabel(clazz, c2l[0]);
 					} catch (ClassNotFoundException e) {
-						this.classesPossiblyRemoved.add(str);
+						throw new RuntimeException(e);
 					}
 				}
 			}
@@ -1229,8 +1322,20 @@ public class DomainAccess {
 						Class<?> clazz = Class.forName(c2l[1]);
 						this.addFieldComponentType(c2l[0], clazz);
 					} catch (ClassNotFoundException e) {
-						// should never happen as there should only be simple types
-						// (String, Number, ...)
+						throw new RuntimeException(e);
+					}
+				}
+			}
+			
+			prop = rInfo.getProperty(DomainAccessHandler.DomainInfoConcreteFieldTypeProperty);
+			if (prop != null) {
+				List<String> val = (List<String>) prop.getValue();
+				for (String str : val) {
+					String[] c2l = str.split("=");
+					try {
+						Class<?> clazz = Class.forName(c2l[1]);
+						this.addConcreteFieldType(c2l[0], clazz);
+					} catch (ClassNotFoundException e) {
 						throw new RuntimeException(e);
 					}
 				}
@@ -1242,7 +1347,19 @@ public class DomainAccess {
 			Iterator<Entry<Class<?>, String>> it = dInfo.class2labelMap.entrySet().iterator();
 			while (it.hasNext()) {
 				Entry<Class<?>, String> entry = it.next();
-				this.add(entry.getKey(), entry.getValue());
+				this.addClassLabel(entry.getKey(), entry.getValue());
+			}
+			
+			Iterator<Entry<String, Class<?>>> it2 = dInfo.fieldComponentTypeMap.entrySet().iterator();
+			while(it2.hasNext()) {
+				Entry<String, Class<?>> entry = it2.next();
+				this.addFieldComponentType(entry.getKey(), entry.getValue());
+			}
+			
+			it2 = dInfo.concreteFieldTypeMap.entrySet().iterator();
+			while(it2.hasNext()) {
+				Entry<String, Class<?>> entry = it2.next();
+				this.addFieldComponentType(entry.getKey(), entry.getValue());
 			}
 		}
 		
@@ -1254,7 +1371,7 @@ public class DomainAccess {
 			this.changed = false;
 		}
 		
-		private void add(Class<?> clazz, String label) {
+		private void addClassLabel(Class<?> clazz, String label) {
 			if (!this.class2labelMap.containsKey(clazz)) {
 				this.class2labelMap.put(clazz, label);
 				this.label2ClassMap.put(label, clazz);
@@ -1263,14 +1380,29 @@ public class DomainAccess {
 		}
 		
 		private void addFieldComponentType(String classField, Class<?> clazz) {
-			if (!this.field2ComponentTypeMap.containsKey(classField)) {
-				this.field2ComponentTypeMap.put(classField, clazz);
+			if (!this.fieldComponentTypeMap.containsKey(classField)) {
+				this.fieldComponentTypeMap.put(classField, clazz);
 				this.changed = true;
 			}
 		}
 		
 		private Class<?> getFieldComponentType(String classField) {
-			return this.field2ComponentTypeMap.get(classField);
+			return this.fieldComponentTypeMap.get(classField);
+		}
+		
+		private void addConcreteFieldType(String classField, Class<?> clazz) {
+			if (!this.concreteFieldTypeMap.containsKey(classField)) {
+				this.concreteFieldTypeMap.put(classField, clazz);
+				this.changed = true;
+			}
+		}
+		
+		private Class<?> getConcreteFieldType(String classField) {
+			return this.concreteFieldTypeMap.get(classField);
+		}
+		
+		private Class<?> getClassForLabel(String label) {
+			return this.label2ClassMap.get(label);
 		}
 		
 		private List<String> getLabel2ClassNameStringList() {
@@ -1289,8 +1421,23 @@ public class DomainAccess {
 		}
 		
 		private List<String> getFieldComponentTypeStringList() {
-			List<String> ret = new ArrayList<String>(this.field2ComponentTypeMap.size());
-			Iterator<Entry<String, Class<?>>> it = this.field2ComponentTypeMap.entrySet().iterator();
+			List<String> ret = new ArrayList<String>(this.fieldComponentTypeMap.size());
+			Iterator<Entry<String, Class<?>>> it = this.fieldComponentTypeMap.entrySet().iterator();
+			while(it.hasNext()) {
+				Entry<String, Class<?>> entry = it.next();
+				StringBuilder sb = new StringBuilder();
+				sb.append(entry.getKey());
+				sb.append('=');
+				sb.append(entry.getValue().getName());
+				ret.add(sb.toString());
+			}
+			Collections.sort(ret);
+			return ret;
+		}
+		
+		private List<String> getConcreteFieldTypeStringList() {
+			List<String> ret = new ArrayList<String>(this.concreteFieldTypeMap.size());
+			Iterator<Entry<String, Class<?>>> it = this.concreteFieldTypeMap.entrySet().iterator();
 			while(it.hasNext()) {
 				Entry<String, Class<?>> entry = it.next();
 				StringBuilder sb = new StringBuilder();
@@ -1311,11 +1458,20 @@ public class DomainAccess {
 			DomainInfo di = domainAccessHandler.loadDomainInfoIfNeeded();
 			return di.getFieldComponentType(classField);
 		}
+		
+		public Class<?> getConcreteFieldType(String classField) {
+			DomainInfo di = domainAccessHandler.loadDomainInfoIfNeeded();
+			return di.getConcreteFieldType(classField);
+		}
 
 		public void addFieldComponentType(String classField, Class<?> type) {
 			DomainInfo di = domainAccessHandler.getAvailableDomainInfo();
 			di.addFieldComponentType(classField, type);
 		}
 		
+		public void addConcreteFieldType(String classField, Class<?> type) {
+			DomainInfo di = domainAccessHandler.getAvailableDomainInfo();
+			di.addConcreteFieldType(classField, type);
+		}
 	}
 }
