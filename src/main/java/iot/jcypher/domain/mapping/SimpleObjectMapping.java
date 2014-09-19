@@ -16,25 +16,20 @@
 
 package iot.jcypher.domain.mapping;
 
-import iot.jcypher.graph.GrNode;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
-public class NodeLabelMapping {
+public class SimpleObjectMapping extends ObjectMapping {
 
-	private String label;
+	private List<FieldMapping> fieldMappings = new ArrayList<FieldMapping>();
 	
-	public NodeLabelMapping(String label) {
-		super();
-		this.label = label;
+	public List<FieldMapping> getFieldMappings() {
+		return fieldMappings;
 	}
 
-	public void mapLabel(Object domainObject, GrNode rNode) {
-		if (this.label != null) {
-			if (rNode.getLabel(this.label) == null)
-				rNode.addLabel(this.label);
-		}
-	}
-
-	public String getLabel() {
-		return this.label;
+	@Override
+	public Iterator<FieldMapping> fieldMappingsIterator() {
+		return this.fieldMappings.iterator();
 	}
 }

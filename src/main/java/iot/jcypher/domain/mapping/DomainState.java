@@ -27,7 +27,9 @@ public class DomainState {
 
 	private Map<Object, LoadInfo> object2IdMap;
 	private Map<IRelation, Long> relation2IdMap;
-	private Map<Long, List<Object>> id2ObjectsMap;
+	
+	// in a domain there can only exist unambiguous mappings between objects and nodes
+	private Map<Long, Object> id2ObjectMap;
 	private Map<Object, List<IRelation>> object2RelationsMap;
 	private Map<SourceField2TargetKey, List<IndexedRelation>> objectField2IndexedRelationsMap;
 	
@@ -35,7 +37,7 @@ public class DomainState {
 		super();
 		this.object2IdMap = new HashMap<Object, LoadInfo>();
 		this.relation2IdMap = new HashMap<IRelation, Long>();
-		this.id2ObjectsMap = new HashMap<Long, List<Object>>();
+		this.id2ObjectMap = new HashMap<Long, Object>();
 		this.object2RelationsMap = new HashMap<Object, List<IRelation>>();
 		this.objectField2IndexedRelationsMap = new HashMap<SourceField2TargetKey, List<IndexedRelation>>();
 	}
@@ -63,16 +65,6 @@ public class DomainState {
 	
 	public LoadInfo getLoadInfoFrom_Object2IdMap(Object key) {
 		return this.object2IdMap.get(key);
-	}
-	
-	public Object checkForMappedObject (Class<?> doClass, Long id) {
-		List<Object> objs = this.getFrom_Id2ObjectsMap(id);
-		for (Object obj : objs) {
-			if (obj.getClass().equals(doClass)) {
-				return obj;
-			}
-		}
-		return null;
 	}
 	
 	public void add_Id2Relation(IRelation relat, Long value) {
@@ -123,14 +115,12 @@ public class DomainState {
 		return this.relation2IdMap.get(key);
 	}
 	
-	public void addTo_Id2ObjectsMap(Object obj, Long id) {
-		List<Object> objs = this.getFrom_Id2ObjectsMap(id);
-		if (!objs.contains(obj))
-			objs.add(obj);
+	public void addTo_Id2ObjectMap(Object obj, Long id) {
+		this.id2ObjectMap.put(id, obj);
 	}
 	
 	public void add_Id2Object(Object obj, Long id, ResolutionDepth resolutionDepth) {
-		this.addTo_Id2ObjectsMap(obj, id);
+		this.addTo_Id2ObjectMap(obj, id);
 		this.addTo_Object2IdMap(obj, id, resolutionDepth);
 	}
 	
@@ -177,13 +167,8 @@ public class DomainState {
 		this.relation2IdMap.remove(relat);
 	}
 	
-	private List<Object> getFrom_Id2ObjectsMap(Long id) {
-		List<Object> objs = this.id2ObjectsMap.get(id);
-		if (objs == null) {
-			objs = new ArrayList<Object>();
-			this.id2ObjectsMap.put(id, objs);
-		}
-		return objs;
+	public Object getFrom_Id2ObjectMap(Long id) {
+		return this.id2ObjectMap.get(id);
 	}
 	
 	/***********************************/

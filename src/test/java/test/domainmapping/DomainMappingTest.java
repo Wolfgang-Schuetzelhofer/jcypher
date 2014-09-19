@@ -52,6 +52,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
+import test.domainmapping.ambiguous.Broker;
+import test.domainmapping.ambiguous.IPerson;
+import test.domainmapping.ambiguous.JPerson;
+import test.domainmapping.ambiguous.NPerson;
 
 public class DomainMappingTest extends AbstractTestSuite{
 
@@ -115,8 +119,53 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	@SuppressWarnings({ "unused", "rawtypes" })
 	@Test
+	public void testAmbiguous() {
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		Broker broker1 = new Broker();
+		Broker broker2 = new Broker();
+		Broker broker21;
+		Broker broker22;
+		
+		buildAmbiguousTestObjects(broker1, broker2);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		List<Object> domainObjects = new ArrayList<Object>();
+		domainObjects.add(broker1);
+		domainObjects.add(broker2);
+		
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		IPerson person1 = broker1.getWorksWith();
+		IPerson person2 = broker2.getWorksWith();
+		SyncInfo syncInfo_1 = da.getSyncInfo(broker1);
+		SyncInfo syncInfo_2 = da.getSyncInfo(broker2);
+		SyncInfo syncInfo_3 = da.getSyncInfo(person1);
+		SyncInfo syncInfo_4 = da.getSyncInfo(person2);
+		
+		IPerson person21;
+		IPerson person22;
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		person21 = da1.loadById(IPerson.class, syncInfo_3.getId());
+		person22 = da1.loadById(IPerson.class, syncInfo_4.getId());
+		broker21 = da1.loadById(Broker.class, syncInfo_1.getId());
+		return;
+	}
+	
+	@SuppressWarnings({ "unused", "rawtypes" })
+	//@Test
 	public void testUpdateComplex_EmptyList2NotEmptyList() {
 		
 		List<JcError> errors;
@@ -494,6 +543,33 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Object val = prop.getValue();
 		String returned = val.toString();
 		return expected.equals(returned);
+	}
+
+	private void buildAmbiguousTestObjects(Broker broker1, Broker broker2) {
+		Address address = new Address();
+		address.setCity("Munich");
+		address.setStreet("Main Street");
+		address.setNumber(9);
+		
+		NPerson nPerson = new NPerson();
+		nPerson.setNamePart1("Sam");
+		nPerson.setNamePart2("Smith");
+		nPerson.setSocialSecurityNumber("123456");
+		nPerson.setHomeAddress(address);
+		
+		address = new Address();
+		address.setCity("San Francisco");
+		address.setStreet("Kearny Street");
+		address.setNumber(28);
+		
+		JPerson jPerson = new JPerson();
+		jPerson.setNamePart1("Global Company");
+		jPerson.setNamePart2("incorporated");
+		jPerson.setCompanyNumber(42);
+		jPerson.setCompanyAddress(address);
+		
+		broker1.setWorksWith(nPerson);
+		broker2.setWorksWith(jPerson);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })

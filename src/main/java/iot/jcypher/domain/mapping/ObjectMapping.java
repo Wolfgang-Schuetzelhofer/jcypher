@@ -16,33 +16,31 @@
 
 package iot.jcypher.domain.mapping;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import iot.jcypher.graph.GrNode;
 
-public class ObjectMapping {
+import java.util.Iterator;
 
-	private List<FieldMapping> fieldMappings = new ArrayList<FieldMapping>();
+public abstract class ObjectMapping {
+
 	private NodeLabelMapping nodeLabelMapping;
 	
 	public void mapPropertiesFromObject(Object domainObject, GrNode rNode) {
 		if (this.nodeLabelMapping != null)
-			this.nodeLabelMapping.mapLabels(domainObject, rNode);
+			this.nodeLabelMapping.mapLabel(domainObject, rNode);
 			
-		for (FieldMapping fm : getFieldMappings()) {
+		Iterator<FieldMapping> it = fieldMappingsIterator();
+		while(it.hasNext()) {
+			FieldMapping fm = it.next();
 			fm.mapPropertyFromField(domainObject, rNode);
 		}
 	}
 	
 	public void mapPropertiesToObject(Object domainObject, GrNode rNode) {
-		for (FieldMapping fm : getFieldMappings()) {
+		Iterator<FieldMapping> it = fieldMappingsIterator();
+		while(it.hasNext()) {
+			FieldMapping fm = it.next();
 			fm.mapPropertyToField(domainObject, rNode);
 		}
-	}
-
-	public List<FieldMapping> getFieldMappings() {
-		return fieldMappings;
 	}
 
 	public void setNodeLabelMapping(NodeLabelMapping nodeLabelMapping) {
@@ -51,5 +49,11 @@ public class ObjectMapping {
 
 	public NodeLabelMapping getNodeLabelMapping() {
 		return nodeLabelMapping;
+	}
+	
+	public abstract Iterator<FieldMapping> fieldMappingsIterator();
+	
+	public boolean shouldPerformFieldMapping(FieldMapping fieldMapping) {
+		return true;
 	}
 }

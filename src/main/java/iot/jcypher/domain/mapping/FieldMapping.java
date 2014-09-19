@@ -166,24 +166,34 @@ public class FieldMapping {
 						// in DomainInfo
 			if (Collection.class.isAssignableFrom(this.field.getType())) {
 				String classField = getClassFieldName();
-				Class<?> cType = MappingUtil.internalDomainAccess.get()
+				CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
 					.getFieldComponentType(classField);
 				// if cType == null, false will be returned
-				ret = !MappingUtil.mapsToProperty(cType);
+				if (cType != null) {
+					ret = !MappingUtil.mapsToProperty(cType.getType());
+				} else
+					ret = false; // cannot determine if the component type is simple
+									   // so return false and leave the decission for later,
+									   // when a concrete component is available
 			}
 		}
 		return ret;
 	}
 	
+	/**
+	 * only called when to check for a concrete simple component type
+	 * @return
+	 */
 	private Class<?> getListComponentType() {
 		Type typ = MappingUtil.getListComponentType(this.field.getGenericType());
 		if (typ == null) { // check for list (collection) containing primitive or simple types
 										// in DomainInfo
-			if (Collection.class.isAssignableFrom(this.field.getType())) {
+			if (isCollection()) {
 				String classField = getClassFieldName();
-				Class<?> cType = MappingUtil.internalDomainAccess.get()
+				CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
 					.getFieldComponentType(classField);
-				return cType;
+				if (cType != null)
+					return cType.getType();
 			}
 		} else if (typ instanceof Class<?>)
 			return (Class<?>)typ;
@@ -205,14 +215,8 @@ public class FieldMapping {
 	}
 
 	private void prepare(Object domainObject) throws NoSuchFieldException, SecurityException {
-		if (this.field == null) {
-			this.field = domainObject.getClass().getDeclaredField(this.fieldName);
-			this.field.setAccessible(true);
-		}
-		
 		if (this.fieldName == null)
 			this.fieldName = this.field.getName();
-		
 	}
 	
 	public String getClassFieldName() {
@@ -229,4 +233,27 @@ public class FieldMapping {
 	public boolean isCollection() {
 		return Collection.class.isAssignableFrom(this.field.getType());
 	}
+
+	@Override
+	public int hashCode() {
+		return field.hashCode();
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		FieldMapping other = (FieldMapping) obj;
+		if (field == null) {
+			if (other.field != null)
+				return false;
+		} else if (!field.equals(other.field))
+			return false;
+		return true;
+	}
+	
 }

@@ -21,23 +21,30 @@ import java.lang.reflect.Field;
 public class DefaultObjectMappingCreator {
 
 	public static ObjectMapping createObjectMapping(Class<?> toMap) {
-		ObjectMapping objectMapping = new ObjectMapping();
+		SimpleObjectMapping objectMapping = new SimpleObjectMapping();
 		
 		NodeLabelMapping labelMapping = DefaultObjectMappingCreator.createLabelMapping(toMap);
 		objectMapping.setNodeLabelMapping(labelMapping);
 		
-		Field[] fields = toMap.getDeclaredFields();
-		for (int i = 0;i < fields.length; i++) {
-			FieldMapping fieldMapping = new FieldMapping(fields[i]);
-			objectMapping.getFieldMappings().add(fieldMapping);
+		Class<?> clazz = toMap;
+		while(!Object.class.equals(clazz)) {
+			addFieldMappings(objectMapping, clazz);
+			clazz = clazz.getSuperclass();
 		}
 		
 		return objectMapping;
 	}
 	
+	private static void addFieldMappings(SimpleObjectMapping objectMapping, Class<?> clazz) {
+		Field[] fields = clazz.getDeclaredFields();
+		for (int i = 0;i < fields.length; i++) {
+			FieldMapping fieldMapping = new FieldMapping(fields[i]);
+			objectMapping.getFieldMappings().add(fieldMapping);
+		}
+	}
+	
 	public static NodeLabelMapping createLabelMapping(Class<?> toMap) {
-		NodeLabelMapping labelMapping = new NodeLabelMapping();
-		labelMapping.getLabels().add(toMap.getSimpleName());
+		NodeLabelMapping labelMapping = new NodeLabelMapping(toMap.getSimpleName());
 		return labelMapping;
 	}
 }
