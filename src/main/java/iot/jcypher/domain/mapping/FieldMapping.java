@@ -172,8 +172,8 @@ public class FieldMapping {
 				if (cType != null) {
 					ret = !MappingUtil.mapsToProperty(cType.getType());
 				} else
-					ret = false; // cannot determine if the component type is simple
-									   // so return false and leave the decission for later,
+					ret = true; // cannot determine if the component type is simple
+									   // so return true and leave the decission for later,
 									   // when a concrete component is available
 			}
 		}

@@ -41,7 +41,6 @@ import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
 import iot.jcypher.result.Util;
 
-import java.sql.Clob;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
@@ -53,8 +52,12 @@ import org.junit.Test;
 
 import test.AbstractTestSuite;
 import test.domainmapping.ambiguous.Broker;
+import test.domainmapping.ambiguous.CompareUtil_2;
+import test.domainmapping.ambiguous.District;
+import test.domainmapping.ambiguous.DistrictAddress;
 import test.domainmapping.ambiguous.IPerson;
 import test.domainmapping.ambiguous.JPerson;
+import test.domainmapping.ambiguous.MultiBroker;
 import test.domainmapping.ambiguous.NPerson;
 
 public class DomainMappingTest extends AbstractTestSuite{
@@ -119,23 +122,31 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	@Test
+	//@Test
 	public void testAmbiguous() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		DomainAccess da1;
 		Broker broker1 = new Broker();
 		Broker broker2 = new Broker();
+		MultiBroker multiBroker = new MultiBroker();
 		Broker broker21;
 		Broker broker22;
+		boolean equals;
 		
-		buildAmbiguousTestObjects(broker1, broker2);
+		buildAmbiguousTestObjects(broker1, broker2, multiBroker);
 		
 		errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
+		
+//		errors = da.store(multiBroker);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
 		
 		List<Object> domainObjects = new ArrayList<Object>();
 		domainObjects.add(broker1);
@@ -158,14 +169,27 @@ public class DomainMappingTest extends AbstractTestSuite{
 		IPerson person22;
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		person21 = da1.loadById(IPerson.class, syncInfo_3.getId());
-		person22 = da1.loadById(IPerson.class, syncInfo_4.getId());
+//		person21 = da1.loadById(IPerson.class, syncInfo_3.getId());
+//		equals = CompareUtil_2.equalsIPerson(person1, person21);
+//		assertTrue(equals);
+//		
+//		person22 = da1.loadById(IPerson.class, syncInfo_4.getId());
+//		equals = CompareUtil_2.equalsIPerson(person2, person22);
+//		assertTrue(equals);
+		
 		broker21 = da1.loadById(Broker.class, syncInfo_1.getId());
+		equals = CompareUtil_2.equalsBroker(broker1, broker21);
+		assertTrue(equals);
+		
+		broker22 = da1.loadById(Broker.class, syncInfo_2.getId());
+		equals = CompareUtil_2.equalsBroker(broker2, broker22);
+		assertTrue(equals);
+		
 		return;
 	}
 	
 	@SuppressWarnings({ "unused", "rawtypes" })
-	//@Test
+	@Test
 	public void testUpdateComplex_EmptyList2NotEmptyList() {
 		
 		List<JcError> errors;
@@ -258,7 +282,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Company globCom_1;
 		globCom_1 = da.loadById(Company.class, syncInfo.getId());
 		
-		boolean isEqual = equalsCompany(globCom, globCom_1);
+		boolean isEqual = CompareUtil.equalsCompany(globCom, globCom_1);
 		assertTrue("Test for equality of domain objects", isEqual);
 		
 		// Store non-empty array with generics
@@ -283,7 +307,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Person james_1;
 		james_1 = da.loadById(Person.class, syncInfo.getId());
 		
-		isEqual = equalsPerson(james, james_1, null);
+		isEqual = CompareUtil.equalsPerson(james, james_1, null);
 		assertTrue("Test for equality of domain objects", isEqual);
 		
 		return;
@@ -323,7 +347,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Company globCom_1;
 		globCom_1 = da.loadById(Company.class, syncInfo.getId());
 		
-		boolean isEqual = equalsCompany(globCom, globCom_1);
+		boolean isEqual = CompareUtil.equalsCompany(globCom, globCom_1);
 		assertTrue("Test for equality of domain objects", isEqual);
 		
 		// Test empty array with generics
@@ -339,7 +363,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Person james_1;
 		james_1 = da.loadById(Person.class, syncInfo.getId());
 		
-		isEqual = equalsPerson(james, james_1, null);
+		isEqual = CompareUtil.equalsPerson(james, james_1, null);
 		assertTrue("Test for equality of domain objects", isEqual);
 		
 		return;
@@ -412,7 +436,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 			}
 			throw e;
 		}
-		boolean isEqual = equalsPerson(john, john_1, null);
+		boolean isEqual = CompareUtil.equalsPerson(john, john_1, null);
 		assertTrue("Test for equality of domain objects", isEqual);
 		
 		List<NodesToCheck> ntc = new ArrayList<NodesToCheck>();
@@ -545,7 +569,8 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return expected.equals(returned);
 	}
 
-	private void buildAmbiguousTestObjects(Broker broker1, Broker broker2) {
+	private void buildAmbiguousTestObjects(Broker broker1, Broker broker2,
+			MultiBroker multiBroker) {
 		Address address = new Address();
 		address.setCity("Munich");
 		address.setStreet("Main Street");
@@ -556,6 +581,11 @@ public class DomainMappingTest extends AbstractTestSuite{
 		nPerson.setNamePart2("Smith");
 		nPerson.setSocialSecurityNumber("123456");
 		nPerson.setHomeAddress(address);
+		address = new Address();
+		address.setCity("Munich");
+		address.setStreet("Bahnhofplatz");
+		address.setNumber(2);
+		nPerson.setWorkAddress(address);
 		
 		address = new Address();
 		address.setCity("San Francisco");
@@ -567,9 +597,41 @@ public class DomainMappingTest extends AbstractTestSuite{
 		jPerson.setNamePart2("incorporated");
 		jPerson.setCompanyNumber(42);
 		jPerson.setCompanyAddress(address);
+		address = new Address();
+		address.setCity("San Francisco");
+		address.setStreet("Market Street");
+		address.setNumber(29);
+		jPerson.setContactAddress(address);
+		DistrictAddress dAddress = new DistrictAddress();
+		dAddress.setCity("San Francisco");
+		dAddress.setStreet("Embarcadero Center");
+		dAddress.setNumber(1);
+		District district = new District();
+		district.setName("District thirteen");
+		//dAddress.setDistrict(district);
+		district = new District();
+		district.setName("Subistrict four");
+		dAddress.setSubDistrict(district);
+		jPerson.setPostalAddress(dAddress);
 		
 		broker1.setWorksWith(nPerson);
+		address = new Address();
+		address.setCity("New York");
+		address.setStreet("52nd Street");
+		address.setNumber(35);
+		broker1.setAddress(address);
+		
 		broker2.setWorksWith(jPerson);
+		address = new Address();
+		address.setCity("Brussels");
+		address.setStreet("Main Road");
+		address.setNumber(168);
+		broker2.setAddress(address);
+		
+		List<IPerson> persons = new ArrayList<IPerson>();
+		persons.add(jPerson);
+		persons.add(nPerson);
+		multiBroker.setCanBroker(persons);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
@@ -664,127 +726,6 @@ public class DomainMappingTest extends AbstractTestSuite{
 		address.setStreet("boulevard de clichy");
 		address.setNumber(108);
 		john.getAddresses().add(address);
-	}
-	
-	private boolean equalsPerson(Person person1, Person person2,
-			List<AlreadyCompared> alreadyCompareds) {
-		
-		if (person1 == null || person2 == null)
-			return false;
-		
-		List<AlreadyCompared> acs = alreadyCompareds;
-		if (acs == null)
-			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = alreadyCompared(person1, person2, acs);
-		if (ac != null) // avoid infinite loops
-			return ac.result;
-		
-		ac = new AlreadyCompared(person1, person2);
-		acs.add(ac);
-
-		if (person1.getMainAddress() == null) {
-			if (person2.getMainAddress() != null)
-				return ac.setResult(false);
-		} else if (!equalsAddress(person1.getMainAddress(), person2.getMainAddress()))
-			return ac.setResult(false);
-		if (person1.getBirthDate() == null) {
-			if (person2.getBirthDate() != null)
-				return ac.setResult(false);
-		} else if (!person1.getBirthDate().equals(person2.getBirthDate()))
-			return ac.setResult(false);
-		if (person1.getContact() == null) {
-			if (person2.getContact() != null)
-				return ac.setResult(false);
-		} else if (!equalsContact(person1.getContact(), person2.getContact()))
-			return ac.setResult(false);
-		if (person1.getFirstName() == null) {
-			if (person2.getFirstName() != null)
-				return ac.setResult(false);
-		} else if (!person1.getFirstName().equals(person2.getFirstName()))
-			return ac.setResult(false);
-		if (person1.getLastName() == null) {
-			if (person2.getLastName() != null)
-				return ac.setResult(false);
-		} else if (!person1.getLastName().equals(person2.getLastName()))
-			return ac.setResult(false);
-		if (person1.getLuckyNumbers() == null) {
-			if (person2.getLuckyNumbers() != null)
-				return ac.setResult(false);
-		} else if (!person1.getLuckyNumbers().equals(person2.getLuckyNumbers()))
-			return ac.setResult(false);
-		
-		ac.setResult(true); // equal so far
-		if (person1.getBestFriend() == null) {
-			if (person2.getBestFriend() != null)
-				return ac.setResult(false);
-		} else if (!equalsPerson(person1.getBestFriend(), person2.getBestFriend(), acs))
-			return ac.setResult(false);
-		return true;
-	}
-	
-	private boolean equalsAddress(Address address1, Address address2) {
-		if (address1 == null || address2 == null)
-			return false;
-		
-		if (address1.getCity() == null) {
-			if (address2.getCity() != null)
-				return false;
-		} else if (!address1.getCity().equals(address2.getCity()))
-			return false;
-		if (address1.getNumber() != address2.getNumber())
-			return false;
-		if (address1.getStreet() == null) {
-			if (address2.getStreet() != null)
-				return false;
-		} else if (!address1.getStreet().equals(address2.getStreet()))
-			return false;
-		return true;
-	}
-	
-	private boolean equalsContact(Contact contact1, Contact contact2) {
-		if (contact1 == null || contact2 == null)
-			return false;
-		
-		if (contact1.getNummer() == null) {
-			if (contact2.getNummer() != null)
-				return false;
-		} else if (!contact1.getNummer().equals(contact2.getNummer()))
-			return false;
-		if (contact1.getType() != contact2.getType())
-			return false;
-		return true;
-	}
-	
-	private boolean equalsCompany(Company company_1, Company company_2) {
-		if (company_1 == null || company_2 == null)
-			return false;
-		
-		if (company_1.getName() == null) {
-			if (company_2.getName() != null)
-				return false;
-		} else if (!company_1.getName().equals(company_2.getName()))
-			return false;
-		if (company_1.getAddress() == null) {
-			if (company_2.getAddress() != null)
-				return false;
-		} else if (!equalsAddress(company_1.getAddress(), company_2.getAddress()))
-			return false;
-		if (company_1.getAreaCodes() == null) {
-			if (company_2.getAreaCodes() != null)
-				return false;
-		} else if (!company_1.getAreaCodes().equals(company_2.getAreaCodes()))
-			return false;
-		return true;
-	}
-	
-	private AlreadyCompared alreadyCompared(Object obj1, Object obj2,
-			List<AlreadyCompared> alreadyCompareds) {
-		for (AlreadyCompared ac : alreadyCompareds) {
-			if ((ac.object1 == obj1 && ac.object2 == obj2) ||
-					(ac.object1 == obj2 && ac.object2 == obj2))
-				return ac;
-		}
-		return null;
 	}
 	
 	/**
@@ -892,24 +833,6 @@ public class DomainMappingTest extends AbstractTestSuite{
 		nMillis = nMillis * 1000;
 		nMillis = nMillis - 1000;
 		cal.setTimeInMillis(nMillis);
-	}
-	
-	/************************************/
-	private static class AlreadyCompared {
-		private Object object1;
-		private Object object2;
-		private boolean result;
-		
-		private AlreadyCompared(Object object1, Object object2) {
-			super();
-			this.object1 = object1;
-			this.object2 = object2;
-		}
-		
-		private boolean setResult(boolean b) {
-			this.result = b;
-			return b;
-		}
 	}
 	
 	/************************************/
