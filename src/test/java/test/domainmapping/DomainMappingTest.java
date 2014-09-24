@@ -122,7 +122,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testAmbiguous() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
@@ -149,6 +149,12 @@ public class DomainMappingTest extends AbstractTestSuite{
 //		}
 		
 		List<Object> domainObjects = new ArrayList<Object>();
+		
+//		((DistrictAddress)((JPerson)broker2.getWorksWith()).getPostalAddress()).setDistrict(null);
+//		((JPerson)broker2.getWorksWith()).setCompanyAddress(null);
+//		((JPerson)broker2.getWorksWith()).setContactAddress(null);
+//		((JPerson)broker2.getWorksWith()).setPostalAddress(null);
+		
 		domainObjects.add(broker1);
 		domainObjects.add(broker2);
 		
@@ -185,11 +191,59 @@ public class DomainMappingTest extends AbstractTestSuite{
 		equals = CompareUtil_2.equalsBroker(broker2, broker22);
 		assertTrue(equals);
 		
+		((DistrictAddress)((JPerson)broker2.getWorksWith()).getPostalAddress()).setDistrict(null);
+		errors = da.store(broker2);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		broker22 = da1.loadById(Broker.class, syncInfo_2.getId());
+		equals = CompareUtil_2.equalsBroker(broker2, broker22);
+		assertTrue(equals);
+		
+		((JPerson)broker2.getWorksWith()).setCompanyAddress(null);
+		errors = da.store(broker2);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		broker22 = da1.loadById(Broker.class, syncInfo_2.getId());
+		equals = CompareUtil_2.equalsBroker(broker2, broker22);
+		assertTrue(equals);
+		
+		((JPerson)broker2.getWorksWith()).setPostalAddress(null);
+		errors = da.store(broker2);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		broker22 = da1.loadById(Broker.class, syncInfo_2.getId());
+		equals = CompareUtil_2.equalsBroker(broker2, broker22);
+		assertTrue(equals);
+		
+		((JPerson)broker2.getWorksWith()).setContactAddress(null);
+		errors = da.store(broker2);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		broker22 = da1.loadById(Broker.class, syncInfo_2.getId());
+		equals = CompareUtil_2.equalsBroker(broker2, broker22);
+		assertTrue(equals);
+		
 		return;
 	}
 	
 	@SuppressWarnings({ "unused", "rawtypes" })
-	@Test
+	//@Test
 	public void testUpdateComplex_EmptyList2NotEmptyList() {
 		
 		List<JcError> errors;
@@ -608,7 +662,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		dAddress.setNumber(1);
 		District district = new District();
 		district.setName("District thirteen");
-		//dAddress.setDistrict(district);
+		dAddress.setDistrict(district);
 		district = new District();
 		district.setName("Subistrict four");
 		dAddress.setSubDistrict(district);

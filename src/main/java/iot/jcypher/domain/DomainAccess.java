@@ -163,6 +163,11 @@ public class DomainAccess {
 				} else { // only simple start by id clauses are needed
 					resultList = loadByIdsSimple(domainObjectClass, ids);
 				}
+			} catch(Throwable e) {
+				if (!(e instanceof RuntimeException))
+					throw new RuntimeException(e);
+				else
+					throw e;
 			} finally {
 				if (internalAccess != null)
 					MappingUtil.internalDomainAccess.set(internalAccess);
@@ -426,7 +431,7 @@ public class DomainAccess {
 				T obj = id2Object.get(ids[i]);
 				if (obj == null) { // need to load
 					FillModelContext<T> fContext = new FillModelContext<T>(domainObjectClass,
-							id2QueryResult.get(ids[i]), context.queryEndNodes);
+							id2QueryResult.get(ids[i]), context.queryEndNodes, context.recursionExitNodes);
 					new ClosureCalculator().fillModel(fContext);
 					obj = fContext.domainObject;
 				}
@@ -780,7 +785,7 @@ public class DomainAccess {
 		
 		private <T> void fillModel(FillModelContext<T> context) {
 			Step step = new Step();
-			step.fillModel(context, null);
+			step.fillModel(context, null, null);
 		}
 		
 		private void calculateClosureQuery(ClosureQueryContext context) {
@@ -955,17 +960,21 @@ public class DomainAccess {
 			
 			/**
 			 * @param context
-			 * @param fm
-			 * @param fieldIndex
-			 * @param level
+			 * @param fm may be null
+			 * @param nodeName may be null
 			 * @return true, if this leads to a null value
 			 */
 			@SuppressWarnings("unchecked")
-			private <T> boolean fillModel(FillModelContext<T> context, FieldMapping fm) {
+			private <T> boolean fillModel(FillModelContext<T> context, FieldMapping fm,
+					String nodeName) {
 				int prevClauseRepetitionNumber = context.clauseRepetitionNumber;
 				boolean isNullNode = false;
-				String nnm = this.buildNodeOrRelationName(context.path,
-						DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
+				String nnm;
+				if (nodeName != null)
+					nnm = nodeName;
+				else
+					nnm = this.buildNodeOrRelationName(context.path,
+							DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
 				context.setTerminatesClause(nnm);
 				
 				CompoundObjectType compoundType;
@@ -983,7 +992,7 @@ public class DomainAccess {
 					context.path.add(new PathElement(pureType));
 					
 					boolean resolveDeep = true;
-					if (context.queryEndNodes.contains(nnm)) { // exit recursion
+					if (context.recursionExitNodes.contains(nnm)) { // exit recursion
 						resolveDeep = false;
 					}
 					
@@ -1053,15 +1062,30 @@ public class DomainAccess {
 											pe.fieldIndex = idx;
 											context.clauseRepetitionNumber = context.maxClauseRepetitionNumber;
 											pe.fieldName = fMap.getFieldName();
-											boolean nodeIsNull = this.fillModel(context, fMap);
+											String ndName = this.buildNodeOrRelationName(context.path,
+													DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
+											boolean nodeIsNull = false; // to not accidentially enter test for empty collection
+											boolean needToRepeat = false;
+											if (isValidNodeName(ndName, context))
+												nodeIsNull = this.fillModel(context, fMap, ndName);
+											else
+												needToRepeat = true; // need to repeat
 											context.alreadyTested.clear();
-											while(nodeIsNull && morePathsToTest(context, fMap, idx)) {
+											while(needToRepeat && morePathsToTest(context, fMap, idx)) {
 												context.currentObject = null;
 												pe = context.getLastPathElement();
 												pe.fieldIndex = idx;
 												context.clauseRepetitionNumber = context.maxClauseRepetitionNumber;
 												pe.fieldName = fMap.getFieldName();
-												nodeIsNull = this.fillModel(context, fMap);
+												ndName = this.buildNodeOrRelationName(context.path,
+														DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
+												needToRepeat = false;
+												if (isValidNodeName(ndName, context))
+													nodeIsNull = this.fillModel(context, fMap, ndName);
+												else {
+													if (moreClausesAvailable(ndName, context))
+														needToRepeat = true; // need to repeat
+												}
 											}
 											if (!nodeIsNull && context.currentObject != null) {
 												fMap.setField(domainObject, context.currentObject);
@@ -1103,6 +1127,21 @@ public class DomainAccess {
 				}
 				context.clauseRepetitionNumber = prevClauseRepetitionNumber;
 				return isNullNode;
+			}
+			
+			private <T> boolean isValidNodeName(String nodeName, FillModelContext<T> context) {
+				for (String endNode : context.queryEndNodes) {
+					if (endNode.indexOf(nodeName) == 0)
+						return true;
+				}
+				return false;
+			}
+			
+			private <T> boolean moreClausesAvailable(String nodeName, FillModelContext<T> context) {
+				int idx1 = nodeName.indexOf('_') + 1;
+				int idx2 = nodeName.indexOf('_', idx1);
+				String clauseNum = nodeName.substring(idx1, idx2);
+				return Integer.parseInt(clauseNum) < context.queryEndNodes.size() - 1;
 			}
 			
 			private <T> void calculateMaxClauseRepetitionNumber(FillModelContext<T> context, FieldMapping fMap,
@@ -1178,10 +1217,14 @@ public class DomainAccess {
 				
 				boolean resolveDeep = true;
 				boolean walkedToIndex = this.subPathIndex == -1; // visiting the first time
+				boolean subPathWalked = false;
 				// do the following check to avoid infinite loops
 				if (walkedToIndex) { // we are visiting the first time
 					if (context.getRecursionCount() >= domainAccessHandler.maxRecursionCount)
 						resolveDeep = false;
+					// to make sure, that the node itself is added as an end  node to the query
+					if (fm != null)
+						subPathWalked = true;
 				}
 				
 				// prepare for navigation to next node
@@ -1198,13 +1241,11 @@ public class DomainAccess {
 				if (compoundType != null) { // else no instance of that class has yet been stored in the database
 					ObjectMapping objectMapping = domainAccessHandler.getCompoundObjectMappingFor(compoundType, null);
 					Iterator<FieldMapping> it = objectMapping.fieldMappingsIterator();
-					boolean subPathWalked = false;
 					int idx = 0;
 					while (it.hasNext()) {
 						FieldMapping fMap = it.next();
 						idx++; // index starts with 1 so as not to mix with the root node (n_0)
 						if (!walkedToIndex) {
-							terminatesClause = false;
 							if (idx != this.subPathIndex) // until subPathIndex is reached
 								continue;
 							else
@@ -1212,9 +1253,9 @@ public class DomainAccess {
 						}
 						
 						if (fMap.needsRelation() && resolveDeep) {
-							terminatesClause = false;
 							boolean needToComeBack = false;
 							if (!subPathWalked) {
+								terminatesClause = false;
 								if (this.next == null)
 									this.next = new Step();
 								PathElement pe = context.getLastPathElement();
@@ -1244,6 +1285,8 @@ public class DomainAccess {
 					String nm = this.buildNodeOrRelationName(context.path,
 							DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
 					context.queryEndNodes.add(nm);
+					if (!resolveDeep) // exits a recursion
+						context.recursionExitNodes.add(nm);
 				}
 				return ret;
 			}
@@ -1293,18 +1336,20 @@ public class DomainAccess {
 		private Object currentObject;
 		private List<PathElement> path;
 		private List<String> queryEndNodes;
+		private List<String> recursionExitNodes;
 		private int clauseRepetitionNumber;
 		private int maxClauseRepetitionNumber;
 		private boolean terminatesClause;
 		private List<String> alreadyTested;
 		
 		FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult,
-				List<String> queryEndNds) {
+				List<String> queryEndNds, List<String> recursionExitNds) {
 			super();
 			this.domainObjectClass = domainObjectClass;
 			this.qResult = qResult;
 			this.path = new ArrayList<PathElement>();
 			this.queryEndNodes = queryEndNds;
+			this.recursionExitNodes = recursionExitNds;
 			this.clauseRepetitionNumber = 0;
 			this.maxClauseRepetitionNumber = 0;
 			this.terminatesClause = false;
@@ -1336,13 +1381,15 @@ public class DomainAccess {
 		private Node currentMatchClause;
 		private List<PathElement> path;
 		private List<String> queryEndNodes;
+		private List<String> recursionExitNodes;
 		private int clauseRepetitionNumber;
 		
-		ClosureQueryContext(Class<?> domainObjectClass) {
+		private ClosureQueryContext(Class<?> domainObjectClass) {
 			super();
 			this.domainObjectClass = domainObjectClass;
 			this.path = new ArrayList<PathElement>();
 			this.queryEndNodes = new ArrayList<String>();
+			this.recursionExitNodes = new ArrayList<String>();
 		}
 		
 		private void addMatchClause(IClause clause) {
