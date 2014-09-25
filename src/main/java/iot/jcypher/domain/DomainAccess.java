@@ -59,6 +59,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -1093,12 +1094,17 @@ public class DomainAccess {
 														DomainAccessHandler.RelationPrefix, context.clauseRepetitionNumber);
 												JcRelation r = new JcRelation(rnm);
 												List<GrRelation> relList = context.qResult.resultOf(r);
-												// relation(s) must exist, because the related object(s) exists 
-												GrRelation rel = relList.get(0);
-												domainAccessHandler.domainState.add_Id2Relation(
-														new Relation(fMap.getPropertyOrRelationName(),
-																domainObject,
-																context.currentObject), rel.getId());
+												// relation(s) must exist, because the related object(s) exists
+												if (context.currentObject instanceof Collection) {
+													addRelations(domainObject, relList, (Collection<?>)context.currentObject,
+															fMap.getPropertyOrRelationName());
+												} else {
+													GrRelation rel = relList.get(0);
+													domainAccessHandler.domainState.add_Id2Relation(
+															new Relation(fMap.getPropertyOrRelationName(),
+																	domainObject,
+																	context.currentObject), rel.getId());
+												}
 											} else if (nodeIsNull && fMap.isCollection()) {
 												// test for empty collection, which evantually was mapped to a property
 												fMap.mapPropertyToField(domainObject, rNode);
@@ -1127,6 +1133,42 @@ public class DomainAccess {
 				}
 				context.clauseRepetitionNumber = prevClauseRepetitionNumber;
 				return isNullNode;
+			}
+			
+			@SuppressWarnings({ "unchecked", "rawtypes" })
+			private void addRelations(Object start, List<GrRelation> relList, Collection coll,
+					String relType) {
+				Iterator<?> cit = coll.iterator();
+				Iterator<GrRelation> rit = relList.iterator();
+				List<IndexedRelation> toResort = new ArrayList<IndexedRelation>();
+				long prevIndex = -1;
+				boolean needResort = false;
+				while(rit.hasNext()) {
+					GrRelation rel = rit.next();
+					Object domainObject = cit.next();
+					GrProperty prop = rel.getProperty(DomainAccessHandler.IndexProperty);
+					long idx = (Long)MappingUtil.convertFromProperty(prop.getValue(), Long.class, null);
+					if (idx <= prevIndex)
+						needResort = true;
+					prevIndex = idx;
+					IndexedRelation irel = new IndexedRelation(relType, idx, start, domainObject);
+					domainAccessHandler.domainState.add_Id2Relation(irel, rel.getId());
+					toResort.add(irel);
+				}
+				
+				if (needResort) {
+					Collections.sort(toResort, new Comparator<IndexedRelation>() {
+						@Override
+						public int compare(IndexedRelation o1,
+								IndexedRelation o2) {
+							return Long.compare(o1.getIndex(), o2.getIndex());
+						}
+					});
+					coll.clear();
+					for (IndexedRelation irel : toResort) {
+						coll.add(irel.getEnd());
+					}
+				}
 			}
 			
 			private <T> boolean isValidNodeName(String nodeName, FillModelContext<T> context) {

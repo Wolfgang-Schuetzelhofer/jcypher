@@ -122,7 +122,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	@Test
+	//@Test
 	public void testAmbiguous() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
@@ -242,12 +242,13 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	@SuppressWarnings({ "unused", "rawtypes" })
-	//@Test
+	@SuppressWarnings({ "unused", "rawtypes", "unchecked" })
+	@Test
 	public void testUpdateComplex_EmptyList2NotEmptyList() {
 		
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
 		
 		Person john = new Person();
 		
@@ -285,9 +286,24 @@ public class DomainMappingTest extends AbstractTestSuite{
 //			throw new JcResultException(errors);
 //		}
 		
-		da = new DomainAccess(dbAccess, domainName);
+		da1 = new DomainAccess(dbAccess, domainName);
 		Person john_1;
-		john_1 = da.loadById(Person.class, syncInfo.getId());
+		john_1 = da1.loadById(Person.class, syncInfo.getId());
+		boolean equals = CompareUtil.equalsPerson(john, john_1);
+		assertTrue(equals);
+		
+		Address addr = (Address) john.getAddresses().remove(john.getAddresses().size() - 1);
+		john.getAddresses().add(0, addr);
+		errors = da.store(john);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		john_1 = da1.loadById(Person.class, syncInfo.getId());
+		equals = CompareUtil.equalsPerson(john, john_1);
+		assertTrue(equals);
 		
 		return;
 	}
@@ -361,7 +377,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Person james_1;
 		james_1 = da.loadById(Person.class, syncInfo.getId());
 		
-		isEqual = CompareUtil.equalsPerson(james, james_1, null);
+		isEqual = CompareUtil.equalsPerson(james, james_1);
 		assertTrue("Test for equality of domain objects", isEqual);
 		
 		return;
@@ -417,7 +433,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Person james_1;
 		james_1 = da.loadById(Person.class, syncInfo.getId());
 		
-		isEqual = CompareUtil.equalsPerson(james, james_1, null);
+		isEqual = CompareUtil.equalsPerson(james, james_1);
 		assertTrue("Test for equality of domain objects", isEqual);
 		
 		return;
@@ -490,7 +506,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 			}
 			throw e;
 		}
-		boolean isEqual = CompareUtil.equalsPerson(john, john_1, null);
+		boolean isEqual = CompareUtil.equalsPerson(john, john_1);
 		assertTrue("Test for equality of domain objects", isEqual);
 		
 		List<NodesToCheck> ntc = new ArrayList<NodesToCheck>();

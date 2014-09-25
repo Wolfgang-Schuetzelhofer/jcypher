@@ -18,10 +18,15 @@ package test.domainmapping;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 
 public class CompareUtil {
 
-	public static boolean equalsPerson(Person person1, Person person2,
+	public static boolean equalsPerson(Person person1, Person person2) {
+		return equalsPerson(person1, person2, new ArrayList<AlreadyCompared>());
+	}
+			
+	private static boolean equalsPerson(Person person1, Person person2,
 			List<AlreadyCompared> alreadyCompareds) {
 		
 		if (person1 == null || person2 == null)
@@ -67,6 +72,11 @@ public class CompareUtil {
 				return ac.setResult(false);
 		} else if (!person1.getLuckyNumbers().equals(person2.getLuckyNumbers()))
 			return ac.setResult(false);
+		if (person1.getAddresses() == null) {
+			if (person2.getAddresses() != null)
+				return ac.setResult(false);
+		} else if (!equalsAddresses(person1.getAddresses(), person2.getAddresses()))
+			return false;
 		
 		ac.setResult(true); // equal so far
 		if (person1.getBestFriend() == null) {
@@ -79,6 +89,9 @@ public class CompareUtil {
 	
 	public static boolean equalsAddress(Address address1, Address address2) {
 		if (address1 == null || address2 == null)
+			return false;
+		
+		if(!address1.getClass().equals(address2.getClass()))
 			return false;
 		
 		if (address1.getCity() == null) {
@@ -94,6 +107,21 @@ public class CompareUtil {
 		} else if (!address1.getStreet().equals(address2.getStreet()))
 			return false;
 		return true;
+	}
+	
+	public static boolean equalsAddresses(List addresses1, List addresses2) {
+		 if (addresses1 == addresses2)
+	            return true;
+
+	        ListIterator e1 = addresses1.listIterator();
+	        ListIterator e2 = addresses2.listIterator();
+	        while (e1.hasNext() && e2.hasNext()) {
+	        	Object o1 = e1.next();
+	        	Object o2 = e2.next();
+	            if (!(o1==null ? o2==null : equalsAddress((Address)o1, (Address)o2)))
+	                return false;
+	        }
+	        return !(e1.hasNext() || e2.hasNext());
 	}
 	
 	public static boolean equalsContact(Contact contact1, Contact contact2) {
