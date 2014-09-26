@@ -20,7 +20,6 @@ import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.util.Collection;
 
 public class FieldMapping {
@@ -152,11 +151,11 @@ public class FieldMapping {
 	 * but must be mapped to a seperate node connected via a relation, else return false.
 	 */
 	public boolean needsRelation() {
-		boolean ret = !MappingUtil.mapsToProperty(this.field.getGenericType());
+		boolean ret = !MappingUtil.mapsToProperty(this.field.getType());
 		if (ret) { // check for list (collection) containing primitive or simple types
 						// in DomainInfo
 			if (Collection.class.isAssignableFrom(this.field.getType())) {
-				String classField = getClassFieldName();
+				String classField = getClassFieldName(null);
 				CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
 					.getFieldComponentType(classField);
 				// if cType == null, false will be returned
@@ -176,18 +175,13 @@ public class FieldMapping {
 	 * @return
 	 */
 	private Class<?> getListComponentType() {
-		Type typ = MappingUtil.getListComponentType(this.field.getGenericType());
-		if (typ == null) { // check for list (collection) containing primitive or simple types
-										// in DomainInfo
-			if (isCollection()) {
-				String classField = getClassFieldName();
-				CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
-					.getFieldComponentType(classField);
-				if (cType != null)
-					return cType.getType();
-			}
-		} else if (typ instanceof Class<?>)
-			return (Class<?>)typ;
+		if (isCollection()) {
+			String classField = getClassFieldName(null);
+			CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
+				.getFieldComponentType(classField);
+			if (cType != null)
+				return cType.getType();
+		}
 		return null;
 	}
 	
@@ -210,7 +204,7 @@ public class FieldMapping {
 			this.fieldName = this.field.getName();
 	}
 	
-	public String getClassFieldName() {
+	public String getClassFieldName(String prefix) {
 		if (this.classFieldName == null) {
 			StringBuilder sb = new StringBuilder();
 			sb.append(this.field.getDeclaringClass().getName());
@@ -218,6 +212,8 @@ public class FieldMapping {
 			sb.append(this.field.getName());
 			this.classFieldName = sb.toString();
 		}
+		if (prefix != null)
+			return prefix.concat(this.classFieldName);
 		return this.classFieldName;
 	}
 

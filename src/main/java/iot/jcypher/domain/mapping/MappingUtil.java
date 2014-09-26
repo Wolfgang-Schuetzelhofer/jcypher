@@ -54,36 +54,8 @@ public class MappingUtil {
 		return new Date(millis);
 	}
 	
-	public static boolean mapsToProperty(Type type) {
-		boolean ret = false;
-		// primitive types and simple types (String, Number, Boolen, Date,...)
-		// cannot be parameterized
-		if (type instanceof Class<?>) {
-			Class<?> clazz = (Class<?>) type;
-			ret = isSimpleType(clazz);
-		} else if (type instanceof ParameterizedType) { // need to check instanceOf
-			Type cType = getListComponentType(type);		// so that null exits the recursion
-			ret = mapsToProperty(cType);
-		}
-		return ret;
-	}
-	
-	public static Type getListComponentType(Type type) {
-		if (type instanceof ParameterizedType) {
-			ParameterizedType pType = (ParameterizedType)type;
-			Type rawType = pType.getRawType();
-			if (rawType instanceof Class<?>) {
-				Class<?> rawClass = (Class<?>)rawType;
-				// test for lists (collections) of primitive types
-				if (Collection.class.isAssignableFrom(rawClass)) {
-					Type[] argTypes = pType.getActualTypeArguments();
-					if (argTypes != null && argTypes.length > 0) {
-						return argTypes[0];
-					}
-				}
-			}
-		}
-		return null;
+	public static boolean mapsToProperty(Class<?> type) {
+		return isSimpleType(type);
 	}
 	
 	public static boolean isSimpleType(Class<?> type) {

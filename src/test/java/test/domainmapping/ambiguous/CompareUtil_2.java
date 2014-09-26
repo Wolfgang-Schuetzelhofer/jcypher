@@ -35,6 +35,17 @@ public class CompareUtil_2 {
 		if (broker_1.getClass() != broker_2.getClass())
 			return false;
 		
+		if (broker_1.getName() == null) {
+			if (broker_2.getName() != null)
+				return false;
+		} else if (!broker_1.getName().equals(broker_2.getName()))
+			return false;
+		if (broker_1.getAddress() == null) {
+			if (broker_2.getAddress() != null)
+				return false;
+		} else if (!CompareUtil_2.equalsAddress(broker_1.getAddress(), broker_2.getAddress()))
+			return false;
+		
 		if (broker_1.getCanBroker() == null) {
 			if (broker_2.getCanBroker() != null)
 				return false;

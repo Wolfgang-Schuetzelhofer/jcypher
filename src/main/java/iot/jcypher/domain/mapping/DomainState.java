@@ -31,7 +31,7 @@ public class DomainState {
 	// in a domain there can only exist unambiguous mappings between objects and nodes
 	private Map<Long, Object> id2ObjectMap;
 	private Map<Object, List<IRelation>> object2RelationsMap;
-	private Map<SourceField2TargetKey, List<IndexedRelation>> objectField2IndexedRelationsMap;
+	private Map<SourceField2TargetKey, List<KeyedRelation>> objectField2KeyedRelationsMap;
 	
 	public DomainState() {
 		super();
@@ -39,7 +39,7 @@ public class DomainState {
 		this.relation2IdMap = new HashMap<IRelation, Long>();
 		this.id2ObjectMap = new HashMap<Long, Object>();
 		this.object2RelationsMap = new HashMap<Object, List<IRelation>>();
-		this.objectField2IndexedRelationsMap = new HashMap<SourceField2TargetKey, List<IndexedRelation>>();
+		this.objectField2KeyedRelationsMap = new HashMap<SourceField2TargetKey, List<KeyedRelation>>();
 	}
 	
 	private void addTo_Object2IdMap(Object key, Long value, ResolutionDepth resolutionDepth) {
@@ -69,32 +69,32 @@ public class DomainState {
 	
 	public void add_Id2Relation(IRelation relat, Long value) {
 		IRelation toPut = relat; 
-		if (relat instanceof IndexedRelationToChange) {
-			IndexedRelation oldOne = ((IndexedRelationToChange)relat).existingOne;
+		if (relat instanceof KeyedRelationToChange) {
+			KeyedRelation oldOne = ((KeyedRelationToChange)relat).existingOne;
 			this.relation2IdMap.remove(oldOne);
 			SourceField2TargetKey key = new SourceField2TargetKey(oldOne.getStart(),
 					oldOne.getType(), oldOne.getEnd());
-			List<IndexedRelation> rels = this.objectField2IndexedRelationsMap.get(key);
+			List<KeyedRelation> rels = this.objectField2KeyedRelationsMap.get(key);
 			if (rels != null) {
 				rels.remove(oldOne);
 			}
-			IndexedRelation newOne = new IndexedRelation(oldOne.getType(),
-					((IndexedRelationToChange)relat).newIndex,
+			KeyedRelation newOne = new KeyedRelation(oldOne.getType(),
+					((KeyedRelationToChange)relat).newKey,
 					oldOne.getStart(), oldOne.getEnd());
 			toPut = newOne;
 		}
 		this.relation2IdMap.put(toPut, value);
 		
-		if (toPut instanceof IndexedRelation) {
+		if (toPut instanceof KeyedRelation) {
 			SourceField2TargetKey key = new SourceField2TargetKey(toPut.getStart(),
 					toPut.getType(), toPut.getEnd());
-			List<IndexedRelation> rels = this.objectField2IndexedRelationsMap.get(key);
+			List<KeyedRelation> rels = this.objectField2KeyedRelationsMap.get(key);
 			if (rels == null) {
-				rels = new ArrayList<IndexedRelation>();
-				this.objectField2IndexedRelationsMap.put(key, rels);
+				rels = new ArrayList<KeyedRelation>();
+				this.objectField2KeyedRelationsMap.put(key, rels);
 			}
 			if (!rels.contains(toPut))
-				rels.add((IndexedRelation) toPut);
+				rels.add((KeyedRelation) toPut);
 		} else {
 			List<IRelation> rels = this.object2RelationsMap.get(toPut.getStart());
 			if (rels == null) {
@@ -108,8 +108,8 @@ public class DomainState {
 	
 	public Long getFrom_Relation2IdMap(IRelation relat) {
 		IRelation key;
-		if (relat instanceof IndexedRelationToChange)
-			key = ((IndexedRelationToChange)relat).existingOne;
+		if (relat instanceof KeyedRelationToChange)
+			key = ((KeyedRelationToChange)relat).existingOne;
 		else
 			key = relat;
 		return this.relation2IdMap.get(key);
@@ -135,8 +135,8 @@ public class DomainState {
 		return false;
 	}
 	
-	public List<IndexedRelation> getIndexedRelations(SourceField2TargetKey key) {
-		return this.objectField2IndexedRelationsMap.get(key);
+	public List<KeyedRelation> getKeyedRelations(SourceField2TargetKey key) {
+		return this.objectField2KeyedRelationsMap.get(key);
 	}
 	
 	public IRelation findRelation(Object start, String type) {
@@ -151,10 +151,10 @@ public class DomainState {
 	}
 	
 	public void removeRelation(IRelation relat) {
-		if (relat instanceof IndexedRelation) {
+		if (relat instanceof KeyedRelation) {
 			SourceField2TargetKey key = new SourceField2TargetKey(relat.getStart(),
 					relat.getType(), relat.getEnd());
-			List<IndexedRelation> rels = this.objectField2IndexedRelationsMap.get(key);
+			List<KeyedRelation> rels = this.objectField2KeyedRelationsMap.get(key);
 			if (rels != null) {
 				rels.remove(relat);
 			}
@@ -250,53 +250,61 @@ public class DomainState {
 	}
 	
 	/***********************************/
-	public static class IndexedRelation extends Relation {
+	public static class KeyedRelation extends Relation {
 
-		private long index;
+		// must be of simple type so that it can be mapped to a property
+		private Object key;
 		
-		public IndexedRelation(String type, long idx, Object start, Object end) {
+		public KeyedRelation(String type, Object key, Object start, Object end) {
 			super(type, start, end);
-			this.index = idx;
+			this.key = key;
 		}
 		
-		public long getIndex() {
-			return index;
+		public Object getKey() {
+			return this.key;
 		}
 
 		@Override
 		public int hashCode() {
 			final int prime = 31;
 			int result = super.hashCode();
-			result = prime * result + (int) (index ^ (index >>> 32));
+			result = prime * result + ((key == null) ? 0 : key.hashCode());
 			return result;
 		}
 
 		@Override
 		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
 			if (!super.equals(obj))
 				return false;
-			IndexedRelation other = (IndexedRelation) obj;
-			if (index != other.index)
+			KeyedRelation other = (KeyedRelation) obj;
+			if (key == null) {
+				if (other.key != null)
+					return false;
+			} else if (!key.equals(other.key))
 				return false;
 			return true;
 		}
 
 		@Override
 		public String toString() {
-			return "IndexedRelation [type=" + getType() + ", index=" + index + ", start=" + getStart() + ", end="
-					+ getEnd() + "]";
+			return "KeyedRelation [key=" + key + ", getType()=" + getType()
+					+ ", getStart()=" + getStart() + ", getEnd()=" + getEnd()
+					+ "]";
 		}
+		
 	}
 	
 	/***********************************/
-	public static class IndexedRelationToChange implements IRelation {
-		private IndexedRelation existingOne;
-		private long newIndex;
+	public static class KeyedRelationToChange implements IRelation {
+		private KeyedRelation existingOne;
+		private Object newKey;
 		
-		public IndexedRelationToChange(IndexedRelation existingOne, long newIndex) {
+		public KeyedRelationToChange(KeyedRelation existingOne, Object newKey) {
 			super();
 			this.existingOne = existingOne;
-			this.newIndex = newIndex;
+			this.newKey = newKey;
 		}
 
 		@Override
@@ -314,10 +322,9 @@ public class DomainState {
 			return this.existingOne.getEnd();
 		}
 
-		public long getNewIndex() {
-			return newIndex;
+		public Object getNewKey() {
+			return this.newKey;
 		}
-		
 	}
 	
 	/********************************/

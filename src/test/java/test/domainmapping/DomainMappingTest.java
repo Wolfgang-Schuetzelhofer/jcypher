@@ -43,7 +43,9 @@ import iot.jcypher.result.Util;
 
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import org.junit.AfterClass;
@@ -59,6 +61,7 @@ import test.domainmapping.ambiguous.IPerson;
 import test.domainmapping.ambiguous.JPerson;
 import test.domainmapping.ambiguous.MultiBroker;
 import test.domainmapping.ambiguous.NPerson;
+import test.domainmapping.maps.AddressMap;
 
 public class DomainMappingTest extends AbstractTestSuite{
 
@@ -75,7 +78,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 	}
 	
 	@AfterClass
@@ -123,6 +126,39 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@Test
+	public void testMap() {
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		AddressMap addressMap = new AddressMap();
+		AddressMap addressMap1;
+		boolean equals;
+		
+		buildMapTestObjects(addressMap);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(addressMap);
+		
+		errors = da.store(addressMap);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		addressMap1 = da1.loadById(AddressMap.class, syncInfo_1.getId());
+//		equals = CompareUtil_2.equalsBroker(addressMap, addressMap1);
+//		assertTrue(equals);
+		
+		return;
+	}
+	
+	//@Test
 	public void testAmbiguous() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
@@ -236,7 +272,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	@Test
+	//@Test
 	public void testAmbiguous_02() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
@@ -272,7 +308,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@SuppressWarnings({ "unused", "rawtypes", "unchecked" })
-	@Test
+	//@Test
 	public void testUpdateComplex_EmptyList2NotEmptyList() {
 		
 		List<JcError> errors;
@@ -668,6 +704,36 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return expected.equals(returned);
 	}
 
+	private void buildMapTestObjects(AddressMap addressMap) {
+		Map<String, Address> addresses = new HashMap<String, Address>();
+		addressMap.setAddresses(addresses);
+		
+		Address address = new Address();
+		address.setCity("Munich");
+		address.setStreet("Main Street");
+		address.setNumber(9);
+		addresses.put("first", address);
+		
+		DistrictAddress dAddress = new DistrictAddress();
+		dAddress.setCity("San Francisco");
+		dAddress.setStreet("Embarcadero Center");
+		dAddress.setNumber(1);
+		District district = new District();
+		district.setName("District thirteen");
+		dAddress.setDistrict(district);
+		district = new District();
+		district.setName("Subistrict four");
+		dAddress.setSubDistrict(district);
+		addresses.put("second", dAddress);
+		
+		address = new Address();
+		address.setCity("New York");
+		address.setStreet("52nd Street");
+		address.setNumber(35);
+		addresses.put("third", address);
+		
+	}
+
 	private void buildAmbiguousTestObjects(Broker broker1, Broker broker2,
 			MultiBroker multiBroker) {
 		Address address = new Address();
@@ -731,6 +797,12 @@ public class DomainMappingTest extends AbstractTestSuite{
 		persons.add(jPerson);
 		persons.add(nPerson);
 		multiBroker.setCanBroker(persons);
+		multiBroker.setName("Jack Broker");
+		address = new Address();
+		address.setCity("Vienna");
+		address.setStreet("Am Graben");
+		address.setNumber(5);
+		multiBroker.setAddress(address);
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
