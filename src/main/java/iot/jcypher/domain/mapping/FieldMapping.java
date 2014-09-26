@@ -119,24 +119,15 @@ public class FieldMapping {
 		Object value = null;
 		try {
 			prepare(domainObject);
-			if (needsRelation()) { // also checks against DominInfo
+			if (needsRelation()) { // checks against DominInfo
 				value = this.field.get(domainObject);
 				if (value != null) {
-					// store concrete type in DomainInfo
-					String classField = getClassFieldName();
-					MappingUtil.internalDomainAccess.get()
-						.addConcreteFieldType(classField, value.getClass());
-					
 					// check for list (collection) containing primitive or simple types
 					if (Collection.class.isAssignableFrom(this.field.getType())) {
 						Collection coll = (Collection) this.field.getType().cast(value);
 						if (coll.size() > 0) {
 							Object elem = coll.iterator().next();
 							Class<?> type = elem.getClass();
-							// store that info in DomainInfo
-							classField = getClassFieldName();
-							MappingUtil.internalDomainAccess.get()
-								.addFieldComponentType(classField, type);
 							// test the first element,
 							// assuming all elements are of the same type !!!
 							if (MappingUtil.isSimpleType(type)) { // elements are of primitive or simple type

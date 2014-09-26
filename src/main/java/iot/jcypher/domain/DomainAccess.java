@@ -845,6 +845,10 @@ public class DomainAccess {
 			String typ = fm.getPropertyOrRelationName();
 			Map<SourceField2TargetKey, List<IndexedRelation>> indexedRelations =
 					new HashMap<SourceField2TargetKey, List<IndexedRelation>>();
+			// store concrete type in DomainInfo
+			String classField = fm.getClassFieldName();
+			MappingUtil.internalDomainAccess.get()
+				.addConcreteFieldType(classField, coll.getClass());
 			int idx = 0;
 			for (Object elem : coll) {
 				SourceField2TargetKey key =
@@ -855,6 +859,9 @@ public class DomainAccess {
 					indexedRelations.put(key, relats);
 				}
 				relats.add(new IndexedRelation(typ, idx, domainObject, elem));
+				// store component type in DomainInfo
+				MappingUtil.internalDomainAccess.get()
+					.addFieldComponentType(classField, elem.getClass());
 				idx++;
 			}
 			Iterator<Entry<SourceField2TargetKey, List<IndexedRelation>>> it = indexedRelations.entrySet().iterator();
@@ -886,6 +893,10 @@ public class DomainAccess {
 					context.relationsToRemove.add(relat);
 				}
 			}
+			// store concrete type in DomainInfo
+			String classField = fm.getClassFieldName();
+			MappingUtil.internalDomainAccess.get()
+				.addConcreteFieldType(classField, relatedObject.getClass());
 			recursiveCalculateClosure(relatedObject, context);
 		}
 		
@@ -1016,7 +1027,8 @@ public class DomainAccess {
 					JcNode n = new JcNode(nnm);
 					List<GrNode> resList = context.qResult.resultOf(n);
 					Object domainObject = null;
-					if (resList.size() > 0) { // a result node exists for this pattern
+					if (resList.size() > 0) { // at least one result node exists for this pattern
+						int initialMaxClauseRepetitionNumber = context.maxClauseRepetitionNumber;
 						for (GrNode rNode : resList) {
 							if (rNode != null) { // null values are supported
 								boolean performMapping = false;
@@ -1044,6 +1056,8 @@ public class DomainAccess {
 								}
 								
 								if (performMapping) {
+									// need to reset if we iterate through a list
+									context.maxClauseRepetitionNumber = initialMaxClauseRepetitionNumber;
 									ObjectMapping objectMapping = domainAccessHandler
 											.getCompoundObjectMappingFor(compoundType, domainObject.getClass());
 									Iterator<FieldMapping> it = objectMapping.fieldMappingsIterator();
@@ -1623,7 +1637,8 @@ public class DomainAccess {
 				this.fieldComponentTypeMap.put(classField, cType);
 				this.changed = true;
 			} else {
-				this.changed = cType.addType(clazz);
+				boolean added = cType.addType(clazz);
+				this.changed = this.changed || added;
 			}
 		}
 		
@@ -1638,7 +1653,8 @@ public class DomainAccess {
 				this.concreteFieldTypeMap.put(classField, cType);
 				this.changed = true;
 			} else {
-				this.changed = cType.addType(clazz);
+				boolean added = cType.addType(clazz);
+				this.changed = this.changed || added;
 			}
 		}
 		

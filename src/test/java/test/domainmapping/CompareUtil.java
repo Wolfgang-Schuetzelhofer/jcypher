@@ -109,6 +109,7 @@ public class CompareUtil {
 		return true;
 	}
 	
+	@SuppressWarnings("rawtypes")
 	public static boolean equalsAddresses(List addresses1, List addresses2) {
 		 if (addresses1 == addresses2)
 	            return true;

@@ -122,7 +122,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testAmbiguous() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
@@ -141,12 +141,6 @@ public class DomainMappingTest extends AbstractTestSuite{
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
-		
-//		errors = da.store(multiBroker);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
 		
 		List<Object> domainObjects = new ArrayList<Object>();
 		
@@ -237,6 +231,41 @@ public class DomainMappingTest extends AbstractTestSuite{
 		da1 = new DomainAccess(dbAccess, domainName);
 		broker22 = da1.loadById(Broker.class, syncInfo_2.getId());
 		equals = CompareUtil_2.equalsBroker(broker2, broker22);
+		assertTrue(equals);
+		
+		return;
+	}
+	
+	@Test
+	public void testAmbiguous_02() {
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		Broker broker1 = new Broker();
+		Broker broker2 = new Broker();
+		MultiBroker multiBroker = new MultiBroker();
+		MultiBroker multiBroker1;
+		boolean equals;
+		
+		buildAmbiguousTestObjects(broker1, broker2, multiBroker);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(multiBroker);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(multiBroker);
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		multiBroker1 = da1.loadById(MultiBroker.class, syncInfo_1.getId());
+		equals = CompareUtil_2.equalsMultiBroker(multiBroker, multiBroker1);
 		assertTrue(equals);
 		
 		return;

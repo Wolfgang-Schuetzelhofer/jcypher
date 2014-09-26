@@ -16,11 +16,32 @@
 
 package test.domainmapping.ambiguous;
 
+import java.util.List;
+import java.util.ListIterator;
+
 import test.domainmapping.Address;
 import test.domainmapping.CompareUtil;
 
 
 public class CompareUtil_2 {
+	
+	public static boolean equalsMultiBroker(MultiBroker broker_1, MultiBroker broker_2) {
+		if (broker_1 == broker_2)
+			return true;
+		if (broker_1 != null && broker_2 == null)
+			return false;
+		if (broker_2 != null && broker_1 == null)
+			return false;
+		if (broker_1.getClass() != broker_2.getClass())
+			return false;
+		
+		if (broker_1.getCanBroker() == null) {
+			if (broker_2.getCanBroker() != null)
+				return false;
+		} else if (!equalsIPersons(broker_1.getCanBroker(), broker_2.getCanBroker()))
+			return false;
+		return true;
+	}
 
 	public static boolean equalsBroker(Broker broker_1, Broker broker_2) {
 		if (broker_1 == broker_2)
@@ -42,6 +63,21 @@ public class CompareUtil_2 {
 		} else if (!CompareUtil_2.equalsAddress(broker_1.getAddress(), broker_2.getAddress()))
 			return false;
 		return true;
+	}
+	
+	public static boolean equalsIPersons(List<IPerson> iPersons_1, List<IPerson> iPersons_2) {
+		if (iPersons_1 == iPersons_2)
+            return true;
+
+        ListIterator<IPerson> e1 = iPersons_1.listIterator();
+        ListIterator<IPerson> e2 = iPersons_2.listIterator();
+        while (e1.hasNext() && e2.hasNext()) {
+        	IPerson o1 = e1.next();
+        	IPerson o2 = e2.next();
+            if (!(o1==null ? o2==null : equalsIPerson(o1, o2)))
+                return false;
+        }
+        return !(e1.hasNext() || e2.hasNext());
 	}
 	
 	public static boolean equalsIPerson(IPerson iPerson_1, IPerson iPerson_2) {
