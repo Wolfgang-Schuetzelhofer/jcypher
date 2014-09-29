@@ -44,8 +44,10 @@ import iot.jcypher.result.Util;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Properties;
 
 import org.junit.AfterClass;
@@ -61,7 +63,7 @@ import test.domainmapping.ambiguous.IPerson;
 import test.domainmapping.ambiguous.JPerson;
 import test.domainmapping.ambiguous.MultiBroker;
 import test.domainmapping.ambiguous.NPerson;
-import test.domainmapping.maps.AddressMap;
+import test.domainmapping.maps.MapContainer;
 
 public class DomainMappingTest extends AbstractTestSuite{
 
@@ -130,11 +132,14 @@ public class DomainMappingTest extends AbstractTestSuite{
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		DomainAccess da1;
-		AddressMap addressMap = new AddressMap();
-		AddressMap addressMap1;
+		MapContainer addressMap = new MapContainer();
+		MapContainer addressMap1;
 		boolean equals;
 		
-		buildMapTestObjects(addressMap);
+		//buildMapTestSimple2Complex(addressMap);
+		//buildMapTestComplex2Simple(addressMap);
+		buildMapTestComplex2Complex(addressMap);
+		//buildMapTestComplex2Complex_2(addressMap);
 		
 		errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
@@ -142,16 +147,74 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw new JcResultException(errors);
 		}
 		
-		SyncInfo syncInfo_1 = da.getSyncInfo(addressMap);
-		
 		errors = da.store(addressMap);
 		if (errors.size() > 0) {
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
 		
+		SyncInfo syncInfo_1 = da.getSyncInfo(addressMap);
+		
+		// modify complex2Complex
+		Address first = null;
+		Address second = null;
+		Address third = null;
+		Address first_1 = null;
+		Address second_1 = null;
+		Address third_1 = null;
+		Iterator<Entry<Address, Address>> it = addressMap.getAddress2AddressMap().entrySet().iterator();
+		while(it.hasNext()) {
+			Entry<Address, Address> entry = it.next();
+			if (entry.getKey().getStreet().equals("Embarcadero Center")) {
+				second = entry.getKey();
+				third_1 = entry.getValue();
+			} else if (entry.getKey().getStreet().equals("52nd Street")) {
+				third = entry.getKey();
+				first_1 = entry.getValue();
+			} else if (entry.getKey().getStreet().equals("Main Street")) {
+				first = entry.getKey();
+				second_1 = entry.getValue();
+			}
+		}
+		addressMap.getAddress2AddressMap().put(second, first_1);
+		addressMap.getAddress2AddressMap().put(third, second_1);
+		addressMap.getAddress2AddressMap().remove(first);
+		
+		// modify complex2Simple
+//		Address embarcadero = null;
+//		Address newYork = null;
+//		Address munich = null;
+//		Iterator<Entry<Address, String>> it = addressMap.getAddress2StringMap().entrySet().iterator();
+//		while(it.hasNext()) {
+//			Entry<Address, String> entry = it.next();
+//			if (entry.getKey().getStreet().equals("Embarcadero Center"))
+//				embarcadero = entry.getKey();
+//			else if (entry.getKey().getStreet().equals("52nd Street"))
+//				newYork = entry.getKey();
+//			else if (entry.getKey().getStreet().equals("Main Street"))
+//				munich = entry.getKey();
+//		}
+//		addressMap.getAddress2StringMap().put(newYork, "second");
+//		addressMap.getAddress2StringMap().put(embarcadero, "third");
+//		addressMap.getAddress2StringMap().remove(munich);
+		
+		// modify simple2Complex
+//		Address second = addressMap.getString2AddressMap().get("second");
+//		Address third = addressMap.getString2AddressMap().get("third");
+//		addressMap.getString2AddressMap().put("second", third);
+//		addressMap.getString2AddressMap().put("third", second);
+//		addressMap.getString2AddressMap().remove("first");
+		
+		// store modification
+		errors = da.store(addressMap);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		
 		da1 = new DomainAccess(dbAccess, domainName);
-		addressMap1 = da1.loadById(AddressMap.class, syncInfo_1.getId());
+		addressMap1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
 //		equals = CompareUtil_2.equalsBroker(addressMap, addressMap1);
 //		assertTrue(equals);
 		
@@ -704,9 +767,9 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return expected.equals(returned);
 	}
 
-	private void buildMapTestObjects(AddressMap addressMap) {
+	private void buildMapTestSimple2Complex(MapContainer addressMap) {
 		Map<String, Address> addresses = new HashMap<String, Address>();
-		addressMap.setAddresses(addresses);
+		addressMap.setString2AddressMap(addresses);
 		
 		Address address = new Address();
 		address.setCity("Munich");
@@ -731,6 +794,119 @@ public class DomainMappingTest extends AbstractTestSuite{
 		address.setStreet("52nd Street");
 		address.setNumber(35);
 		addresses.put("third", address);
+		
+	}
+	
+	private void buildMapTestComplex2Simple(MapContainer addressMap) {
+		Map<Address, String> addresses = new HashMap<Address, String>();
+		addressMap.setAddress2StringMap(addresses);
+		
+		Address address = new Address();
+		address.setCity("Munich");
+		address.setStreet("Main Street");
+		address.setNumber(9);
+		addresses.put(address, "first");
+		
+		DistrictAddress dAddress = new DistrictAddress();
+		dAddress.setCity("San Francisco");
+		dAddress.setStreet("Embarcadero Center");
+		dAddress.setNumber(1);
+		District district = new District();
+		district.setName("District thirteen");
+		dAddress.setDistrict(district);
+		district = new District();
+		district.setName("Subistrict four");
+		dAddress.setSubDistrict(district);
+		addresses.put(dAddress, "second");
+		
+		address = new Address();
+		address.setCity("New York");
+		address.setStreet("52nd Street");
+		address.setNumber(35);
+		addresses.put(address, "third");
+		
+	}
+	
+	private void buildMapTestComplex2Complex(MapContainer addressMap) {
+		Map<Address, Address> addresses = new HashMap<Address, Address>();
+		addressMap.setAddress2AddressMap(addresses);
+		
+		Address first = new Address();
+		first.setCity("Munich");
+		first.setStreet("Main Street");
+		first.setNumber(9);
+		
+		DistrictAddress second = new DistrictAddress();
+		second.setCity("San Francisco");
+		second.setStreet("Embarcadero Center");
+		second.setNumber(1);
+		District district = new District();
+		district.setName("District thirteen");
+		second.setDistrict(district);
+		district = new District();
+		district.setName("Subistrict four");
+		second.setSubDistrict(district);
+		
+		Address third = new Address();
+		third.setCity("New York");
+		third.setStreet("52nd Street");
+		third.setNumber(35);
+		
+		addresses.put(first, second);
+		addresses.put(second, third);
+		addresses.put(third, first);
+		
+	}
+	
+	private void buildMapTestComplex2Complex_2(MapContainer addressMap) {
+		Map<Address, Address> addresses = new HashMap<Address, Address>();
+		addressMap.setAddress2AddressMap(addresses);
+		
+		Address first = new Address();
+		first.setCity("Munich");
+		first.setStreet("Main Street");
+		first.setNumber(9);
+		
+		Address first_1 = new Address();
+		first_1.setCity("Munich");
+		first_1.setStreet("Main Street");
+		first_1.setNumber(9);
+		
+		DistrictAddress second = new DistrictAddress();
+		second.setCity("San Francisco");
+		second.setStreet("Embarcadero Center");
+		second.setNumber(1);
+		District district = new District();
+		district.setName("District thirteen");
+		second.setDistrict(district);
+		district = new District();
+		district.setName("Subistrict four");
+		second.setSubDistrict(district);
+		
+		DistrictAddress second_1 = new DistrictAddress();
+		second_1.setCity("San Francisco");
+		second_1.setStreet("Embarcadero Center");
+		second_1.setNumber(1);
+		district = new District();
+		district.setName("District thirteen");
+		second_1.setDistrict(district);
+		district = new District();
+		district.setName("Subistrict four");
+		second_1.setSubDistrict(district);
+		
+		Address third = new Address();
+		third.setCity("New York");
+		third.setStreet("52nd Street");
+		third.setNumber(35);
+		
+		Address third_1 = new Address();
+		third_1.setCity("New York");
+		third_1.setStreet("52nd Street");
+		third_1.setNumber(35);
+		
+		addresses.put(first, second_1);
+		addresses.put(second, third_1);
+		addresses.put(third, first_1);
 		
 	}
 

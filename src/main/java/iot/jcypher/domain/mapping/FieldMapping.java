@@ -21,6 +21,7 @@ import iot.jcypher.graph.GrProperty;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.Map;
 
 public class FieldMapping {
 
@@ -118,9 +119,11 @@ public class FieldMapping {
 		Object value = null;
 		try {
 			prepare(domainObject);
-			if (needsRelation()) { // checks against DominInfo
-				value = this.field.get(domainObject);
-				if (value != null) {
+			value = this.field.get(domainObject);
+			if (value != null) {
+				if (MappingUtil.isSimpleType(value.getClass())) { // value is of primitive or simple type
+					value = null;
+				} else {
 					// check for list (collection) containing primitive or simple types
 					if (Collection.class.isAssignableFrom(this.field.getType())) {
 						Collection coll = (Collection) this.field.getType().cast(value);
@@ -151,23 +154,30 @@ public class FieldMapping {
 	 * but must be mapped to a seperate node connected via a relation, else return false.
 	 */
 	public boolean needsRelation() {
-		boolean ret = !MappingUtil.mapsToProperty(this.field.getType());
-		if (ret) { // check for list (collection) containing primitive or simple types
-						// in DomainInfo
-			if (Collection.class.isAssignableFrom(this.field.getType())) {
-				String classField = getClassFieldName(null);
-				CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
-					.getFieldComponentType(classField);
-				// if cType == null, false will be returned
-				if (cType != null) {
-					ret = !MappingUtil.mapsToProperty(cType.getType());
-				} else
-					ret = true; // cannot determine if the component type is simple
-									   // so return true and leave the decission for later,
-									   // when a concrete component is available
+		boolean needRelation = !MappingUtil.mapsToProperty(this.field.getType());
+		if (needRelation) {
+			String classField = getClassFieldName(null);
+			CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
+					.getConcreteFieldType(classField);
+			if (cType != null && MappingUtil.mapsToProperty(cType.getType()))
+				return false;
+			else {
+				// check for list (collection) containing primitive or simple types
+							// in DomainInfo
+				if (Collection.class.isAssignableFrom(this.field.getType())) {
+					cType = MappingUtil.internalDomainAccess.get()
+						.getFieldComponentType(classField);
+					// if cType == null, false will be returned
+					if (cType != null) {
+						needRelation = !MappingUtil.mapsToProperty(cType.getType());
+					} else
+						needRelation = true; // cannot determine if the component type is simple
+										   // so return true and leave the decission for later,
+										   // when a concrete component is available
+				}
 			}
 		}
-		return ret;
+		return needRelation;
 	}
 	
 	/**
@@ -219,6 +229,10 @@ public class FieldMapping {
 
 	public boolean isCollection() {
 		return Collection.class.isAssignableFrom(this.field.getType());
+	}
+	
+	public boolean isMap() {
+		return Map.class.isAssignableFrom(this.field.getType());
 	}
 
 	@Override

@@ -32,6 +32,7 @@ public class DomainState {
 	private Map<Long, Object> id2ObjectMap;
 	private Map<Object, List<IRelation>> object2RelationsMap;
 	private Map<SourceField2TargetKey, List<KeyedRelation>> objectField2KeyedRelationsMap;
+	private Map<SourceFieldKey, List<KeyedRelation>> multiRelationsMap;
 	
 	public DomainState() {
 		super();
@@ -40,6 +41,7 @@ public class DomainState {
 		this.id2ObjectMap = new HashMap<Long, Object>();
 		this.object2RelationsMap = new HashMap<Object, List<IRelation>>();
 		this.objectField2KeyedRelationsMap = new HashMap<SourceField2TargetKey, List<KeyedRelation>>();
+		this.multiRelationsMap = new HashMap<SourceFieldKey, List<KeyedRelation>>();
 	}
 	
 	private void addTo_Object2IdMap(Object key, Long value, ResolutionDepth resolutionDepth) {
@@ -78,6 +80,11 @@ public class DomainState {
 			if (rels != null) {
 				rels.remove(oldOne);
 			}
+			SourceFieldKey fieldKey = key.getSourceFieldKey();
+			rels = this.multiRelationsMap.get(fieldKey);
+			if (rels != null) {
+				rels.remove(oldOne);
+			}
 			KeyedRelation newOne = new KeyedRelation(oldOne.getType(),
 					((KeyedRelationToChange)relat).newKey,
 					oldOne.getStart(), oldOne.getEnd());
@@ -92,6 +99,14 @@ public class DomainState {
 			if (rels == null) {
 				rels = new ArrayList<KeyedRelation>();
 				this.objectField2KeyedRelationsMap.put(key, rels);
+			}
+			if (!rels.contains(toPut))
+				rels.add((KeyedRelation) toPut);
+			SourceFieldKey fieldKey = key.getSourceFieldKey();
+			rels = this.multiRelationsMap.get(fieldKey);
+			if (rels == null) {
+				rels = new ArrayList<KeyedRelation>();
+				this.multiRelationsMap.put(fieldKey, rels);
 			}
 			if (!rels.contains(toPut))
 				rels.add((KeyedRelation) toPut);
@@ -139,6 +154,10 @@ public class DomainState {
 		return this.objectField2KeyedRelationsMap.get(key);
 	}
 	
+	public List<KeyedRelation> getKeyedRelations(SourceFieldKey key) {
+		return this.multiRelationsMap.get(key);
+	}
+	
 	public IRelation findRelation(Object start, String type) {
 		List<IRelation> rels = this.object2RelationsMap.get(start);
 		if (rels != null) {
@@ -155,6 +174,11 @@ public class DomainState {
 			SourceField2TargetKey key = new SourceField2TargetKey(relat.getStart(),
 					relat.getType(), relat.getEnd());
 			List<KeyedRelation> rels = this.objectField2KeyedRelationsMap.get(key);
+			if (rels != null) {
+				rels.remove(relat);
+			}
+			SourceFieldKey fieldKey = key.getSourceFieldKey();
+			rels = this.multiRelationsMap.get(fieldKey);
 			if (rels != null) {
 				rels.remove(relat);
 			}
@@ -340,6 +364,10 @@ public class DomainState {
 			this.target = target;
 		}
 
+		public SourceFieldKey getSourceFieldKey() {
+			return new SourceFieldKey(this.source, this.fieldName);
+		}
+		
 		@Override
 		public int hashCode() {
 			final int prime = 31;
@@ -379,6 +407,52 @@ public class DomainState {
 				return false;
 			return true;
 		}
+	}
+	
+	/********************************/
+	public static class SourceFieldKey {
+		private Object source;
+		private String fieldName;
+		
+		public SourceFieldKey(Object src, String fieldName) {
+			super();
+			this.source = src;
+			this.fieldName = fieldName;
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result
+					+ ((fieldName == null) ? 0 : fieldName.hashCode());
+			result = prime * result
+					+ ((source == null) ? 0 : source.hashCode());
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			SourceFieldKey other = (SourceFieldKey) obj;
+			if (fieldName == null) {
+				if (other.fieldName != null)
+					return false;
+			} else if (!fieldName.equals(other.fieldName))
+				return false;
+			if (source == null) {
+				if (other.source != null)
+					return false;
+			} else if (!source.equals(other.source))
+				return false;
+			return true;
+		}
+		
 	}
 	
 	/********************************/

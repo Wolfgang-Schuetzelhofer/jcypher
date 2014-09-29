@@ -29,7 +29,11 @@ import iot.jcypher.domain.mapping.DomainState.KeyedRelationToChange;
 import iot.jcypher.domain.mapping.DomainState.LoadInfo;
 import iot.jcypher.domain.mapping.DomainState.Relation;
 import iot.jcypher.domain.mapping.DomainState.SourceField2TargetKey;
+import iot.jcypher.domain.mapping.DomainState.SourceFieldKey;
 import iot.jcypher.domain.mapping.FieldMapping;
+import iot.jcypher.domain.mapping.MapEntry;
+import iot.jcypher.domain.mapping.MapEntry.MapEntrySimple;
+import iot.jcypher.domain.mapping.MapEntry.MapEntryComplex;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.graph.GrLabel;
@@ -295,6 +299,22 @@ public class DomainAccess {
 					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
 					removeStartClauses.add(START.relation(r).byId(id.longValue()));
 					removeClauses.add(DO.DELETE(r));
+				}
+			}
+			
+			// domain objects to remove
+			if (context.domainObjectsToRemove.size() > 0) {
+				if (removeStartClauses == null) {
+					removeStartClauses = new ArrayList<IClause>();
+					removeClauses = new ArrayList<IClause>();
+				}
+				for (int i = 0; i < context.domainObjectsToRemove.size(); i++) {
+					Object dobj = context.domainObjectsToRemove.get(i);
+					// relation must exist in db
+					Long id = this.domainState.getIdFrom_Object2IdMap(dobj);
+					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
+					removeStartClauses.add(START.node(n).byId(id.longValue()));
+					removeClauses.add(DO.DELETE(n));
 				}
 			}
 			
@@ -808,12 +828,18 @@ public class DomainAccess {
 
 		private void calculateClosure(List<Object> domainObjects, UpdateContext context) {
 			for (Object domainObject : domainObjects) {
-				recursiveCalculateClosure(domainObject, context);
+				recursiveCalculateClosure(domainObject, context, false); // don't delete
 			}
 		}
 		
+		/**
+		 * @param domainObject
+		 * @param context
+		 * @param prepareToDelete if true, delete outgoing relations from domainObject that later on itself will be deleted
+		 */
 		@SuppressWarnings("unchecked")
-		private void recursiveCalculateClosure(Object domainObject, UpdateContext context) {
+		private void recursiveCalculateClosure(Object domainObject, UpdateContext context,
+				boolean prepareToDelete) {
 			if (!context.domainObjects.contains(domainObject)) { // avoid infinite loops
 				context.domainObjects.add(domainObject);
 				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject);
@@ -821,7 +847,7 @@ public class DomainAccess {
 				while (it.hasNext()) {
 					FieldMapping fm = it.next();
 					Object obj = fm.getObjectNeedingRelation(domainObject);
-					if (obj != null) { // definitly need relation
+					if (obj != null && !prepareToDelete) { // definitly need relation
 						if (obj instanceof Collection<?>) { // collection with non-simple elements,
 																					// we won't reach this spot with empty collections
 							Collection<?> coll = (Collection<?>)obj;
@@ -835,10 +861,18 @@ public class DomainAccess {
 					} else {
 						if (fm.needsRelation()) { // in case obj == null because it was not set
 							// no relation --> check if an old relation needs to be removed
-							IRelation relat = domainAccessHandler.domainState.findRelation(domainObject,
-									fm.getPropertyOrRelationName());
-							if (relat != null) {
-								context.relationsToRemove.add(relat);
+							if (fm.isCollection() || fm.isMap()) {
+								// remove multiple relations if they exist
+								List<MapEntry> mapEntriesToRemove = handleKeyedRelationsModification(null, context,
+										new SourceFieldKey(domainObject, fm.getFieldName()));
+								removeObjectsIfNeeded(context, mapEntriesToRemove);
+							} else {
+								// remove just a single relation if it exists
+								IRelation relat = domainAccessHandler.domainState.findRelation(domainObject,
+										fm.getPropertyOrRelationName());
+								if (relat != null) {
+									context.relationsToRemove.add(relat);
+								}
 							}
 						}
 					}
@@ -852,6 +886,7 @@ public class DomainAccess {
 			String typ = fm.getPropertyOrRelationName();
 			Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations =
 					new HashMap<SourceField2TargetKey, List<KeyedRelation>>();
+			List<MapEntry> mapEntries = new ArrayList<MapEntry>();
 			// store concrete type in DomainInfo
 			String classField = fm.getClassFieldName(null);
 			MappingUtil.internalDomainAccess.get()
@@ -860,8 +895,25 @@ public class DomainAccess {
 			while(it.hasNext()) {
 				Entry<Object, Object> entry = it.next();
 				Object val = entry.getValue();
-				boolean mapsToProperty = MappingUtil.mapsToProperty(val.getClass());
-				Object target = mapsToProperty ? mapTerminator : val;
+				Object key = entry.getKey();
+				boolean keyMapsToProperty = MappingUtil.mapsToProperty(key.getClass());
+				boolean valMapsToProperty = MappingUtil.mapsToProperty(val.getClass());
+				Object target;
+				Object relationKey;
+				if (keyMapsToProperty) {
+					target = valMapsToProperty ? mapTerminator : val;
+					relationKey = entry.getKey();
+				} else { // complex key always needs a MapEntry
+					// handle it like a list for correct removal of removed entries
+					MapEntry mapEntry;
+					if (valMapsToProperty)
+						mapEntry = new MapEntrySimple(key, val);
+					else
+						mapEntry = new MapEntryComplex(key, val);
+					mapEntries.add(mapEntry);
+					target = mapEntry;
+					relationKey = mapEntry.hashCode();
+				}
 				SourceField2TargetKey s2tKey =
 						new SourceField2TargetKey(domainObject, fm.getFieldName(), target);
 				List<KeyedRelation> relats = keyedRelations.get(s2tKey);
@@ -869,24 +921,36 @@ public class DomainAccess {
 					relats = new ArrayList<KeyedRelation>();
 					keyedRelations.put(s2tKey, relats);
 				}
-				relats.add(new KeyedRelation(typ, entry.getKey(), domainObject, target));
+				relats.add(new KeyedRelation(typ, relationKey, domainObject, target));
+				
 				// store component types in DomainInfo
 				MappingUtil.internalDomainAccess.get()
-					.addFieldComponentType(fm.getClassFieldName(domainAccessHandler.MapKeyPrefix),
+					.addFieldComponentType(fm.getClassFieldName(DomainAccessHandler.MapKeyPrefix),
 							entry.getKey().getClass());
 				MappingUtil.internalDomainAccess.get()
-				.addFieldComponentType(fm.getClassFieldName(domainAccessHandler.MapValuePrefix),
+				.addFieldComponentType(fm.getClassFieldName(DomainAccessHandler.MapValuePrefix),
 						entry.getValue().getClass());
 			}
 			
-			handleKeyedRelationsModification(keyedRelations, context);
-			 it = map.entrySet().iterator();
-			while(it.hasNext()) {
-				Entry<Object, Object> entry = it.next();
-				Object val = entry.getValue();
-				boolean mapsToProperty = MappingUtil.mapsToProperty(val.getClass());
-				if (!mapsToProperty)
-					recursiveCalculateClosure(val, context);
+			boolean complexKeys = mapEntries.size() > 0;
+			if (complexKeys) {
+				List<MapEntry> mapEntriesToRemove = handleKeyedRelationsModification(keyedRelations, context,
+						new SourceFieldKey(domainObject, fm.getFieldName()));
+				for (MapEntry mapEntry : mapEntries) {
+					recursiveCalculateClosure(mapEntry, context, false);
+				}
+				removeObjectsIfNeeded(context, mapEntriesToRemove);
+			} else { // simple keys
+				handleKeyedRelationsModification(keyedRelations, context,
+						new SourceFieldKey(domainObject, fm.getFieldName()));
+				 it = map.entrySet().iterator();
+				while(it.hasNext()) {
+					Entry<Object, Object> entry = it.next();
+					Object val = entry.getValue();
+					boolean mapsToProperty = MappingUtil.mapsToProperty(val.getClass());
+					if (!mapsToProperty)
+						recursiveCalculateClosure(val, context, false); // don't delete
+				}
 			}
 		}
 		
@@ -915,9 +979,10 @@ public class DomainAccess {
 				idx++;
 			}
 			
-			handleKeyedRelationsModification(keyedRelations, context);
+			handleKeyedRelationsModification(keyedRelations, context,
+					new SourceFieldKey(domainObject, fm.getFieldName()));
 			for (Object elem : coll) {
-				recursiveCalculateClosure(elem, context);
+				recursiveCalculateClosure(elem, context, false); // don't delete
 			}
 		}
 		
@@ -939,25 +1004,44 @@ public class DomainAccess {
 			String classField = fm.getClassFieldName(null);
 			MappingUtil.internalDomainAccess.get()
 				.addConcreteFieldType(classField, relatedObject.getClass());
-			recursiveCalculateClosure(relatedObject, context);
+			recursiveCalculateClosure(relatedObject, context, false); // don't delete
 		}
 		
-		private void handleKeyedRelationsModification(Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations,
-				UpdateContext context) {
-			Iterator<Entry<SourceField2TargetKey, List<KeyedRelation>>> it = keyedRelations.entrySet().iterator();
-			while(it.hasNext()) {
-				Entry<SourceField2TargetKey, List<KeyedRelation>> entry = it.next();
-				List<KeyedRelation> existingRels =
-						domainAccessHandler.domainState.getKeyedRelations(entry.getKey());
-				RelationsToModify toModify = calculateKeyedRelationsToModify(entry.getValue(), existingRels);
-				context.relations.addAll(toModify.toChange);
-				context.relations.addAll(toModify.toCreate);
-				context.relationsToRemove.addAll(toModify.toRemove);
+		private List<MapEntry> handleKeyedRelationsModification(Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations,
+				UpdateContext context, SourceFieldKey fieldKey) {
+			List<KeyedRelation> allExistingRels = new ArrayList<KeyedRelation>();
+			List<KeyedRelation> allExist = domainAccessHandler.domainState.getKeyedRelations(fieldKey);
+			if (allExist != null)
+				allExistingRels.addAll(allExist);
+			
+			if (keyedRelations != null) {
+				Iterator<Entry<SourceField2TargetKey, List<KeyedRelation>>> it = keyedRelations.entrySet().iterator();
+				while(it.hasNext()) {
+					Entry<SourceField2TargetKey, List<KeyedRelation>> entry = it.next();
+					List<KeyedRelation> existingRels =
+							domainAccessHandler.domainState.getKeyedRelations(entry.getKey());
+					RelationsToModify toModify = calculateKeyedRelationsToModify(entry.getValue(), existingRels, allExistingRels);
+					context.relations.addAll(toModify.toChange);
+					context.relations.addAll(toModify.toCreate);
+					context.relationsToRemove.addAll(toModify.toRemove);
+				}
 			}
+			// in allExistingRels we have those which previously existed but don't exist in the collection or map any more
+			context.relationsToRemove.addAll(allExistingRels);
+			List<MapEntry> mapEntriesToRemove = new ArrayList<MapEntry>();
+			for(KeyedRelation kRel : allExistingRels) { // they are to be removed
+				Object end = kRel.getEnd();
+				if (end instanceof MapEntry) { // remove MapEntry
+					// TODO is the check really needed
+					if (!mapEntriesToRemove.contains(end))
+						mapEntriesToRemove.add((MapEntry) end);
+				}
+			}
+			return mapEntriesToRemove;
 		}
 		
 		private RelationsToModify calculateKeyedRelationsToModify(List<KeyedRelation> actual,
-				List<KeyedRelation> existingInGraph) {
+				List<KeyedRelation> existingInGraph, List<KeyedRelation> allExistingInGraph) {
 			List<KeyedRelation> act = new ArrayList<KeyedRelation>();
 			act.addAll(actual);
 			List<KeyedRelation> existingOnes = new ArrayList<KeyedRelation>();
@@ -975,6 +1059,7 @@ public class DomainAccess {
 			for (KeyedRelation iRel : unchanged) {
 				act.remove(iRel);
 				existingOnes.remove(iRel);
+				allExistingInGraph.remove(iRel);
 			}
 			// now we have filtered out those which do not need to be changed, added or removed
 			
@@ -991,8 +1076,9 @@ public class DomainAccess {
 			}
 			if (maxRemoveIndex != -1) {
 				for (int i = maxRemoveIndex; i >= 0; i--) {
-					existingOnes.remove(i);
+					KeyedRelation removed = existingOnes.remove(i);
 					act.remove(i);
+					allExistingInGraph.remove(removed);
 				}
 			}
 			// now we have filtered out those which need to be changed (they will get a new key)
@@ -1010,7 +1096,19 @@ public class DomainAccess {
 			// Those which really need to be removed are now found in list 'toRemove'
 			ret.toRemove = existingOnes;
 			
+			// existing ones are already added to toRemove, avoid doing it again later
+			allExistingInGraph.removeAll(existingOnes);
+			
 			return ret;
+		}
+		
+		private void removeObjectsIfNeeded(UpdateContext context, List<MapEntry> mapEntriesToRemove) {
+			if (mapEntriesToRemove.size() > 0) {
+				for(Object obj : mapEntriesToRemove) { // remove MapEntry objects
+					recursiveCalculateClosure(obj, context, true);
+					context.domainObjectsToRemove.add(obj);
+				}
+			}
 		}
 		
 		/**********************************************/
@@ -1554,6 +1652,7 @@ public class DomainAccess {
 		private List<Object> domainObjects = new ArrayList<Object>();
 		private List<IRelation> relations = new ArrayList<IRelation>();
 		private List<IRelation> relationsToRemove = new ArrayList<IRelation>();
+		private List<Object> domainObjectsToRemove = new ArrayList<Object>();
 		private Map<Object, GrNode> domObj2Node;
 		private List<DomRelation2ResultRelation> domRelation2Relations;
 		private Graph graph;
