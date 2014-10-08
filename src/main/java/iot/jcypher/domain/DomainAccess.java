@@ -31,9 +31,9 @@ import iot.jcypher.domain.mapping.DomainState.Relation;
 import iot.jcypher.domain.mapping.DomainState.SourceField2TargetKey;
 import iot.jcypher.domain.mapping.DomainState.SourceFieldKey;
 import iot.jcypher.domain.mapping.FieldMapping;
+import iot.jcypher.domain.mapping.IMapEntry;
 import iot.jcypher.domain.mapping.MapEntry;
-import iot.jcypher.domain.mapping.MapEntry.MapEntrySimple;
-import iot.jcypher.domain.mapping.MapEntry.MapEntryComplex;
+import iot.jcypher.domain.mapping.MapTerminator;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.graph.GrLabel;
@@ -67,6 +67,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -125,8 +126,9 @@ public class DomainAccess {
 		private static final String DomainInfoFieldComponentTypeProperty = "componentTypeMap";
 		private static final String DomainInfoConcreteFieldTypeProperty = "fieldTypeMap";
 		private static final String KeyProperty = "key";
-		private static final String MapKeyPrefix = "-k";
-		private static final String MapValuePrefix = "-v";
+		private static final String ValueProperty = "value";
+		private static final String KeyTypeProperty = "keyType";
+		private static final String ValueTypeProperty = "valueType";
 		
 		private String domainName;
 		/**
@@ -554,10 +556,14 @@ public class DomainAccess {
 		
 		private void updateGraphFromRelation(IRelation relat, GrRelation rRelation) {
 			Object key = null;
-			if (relat instanceof KeyedRelation)
+			Object value = null;
+			if (relat instanceof KeyedRelation) {
 				key = ((KeyedRelation)relat).getKey();
-			else if (relat instanceof KeyedRelationToChange)
-				key = ((KeyedRelationToChange)relat).getNewKey();
+				value = ((KeyedRelation)relat).getValue();
+			} else if (relat instanceof KeyedRelationToChange) {
+				key = ((KeyedRelationToChange)relat).getNewOne().getKey();
+				value = ((KeyedRelationToChange)relat).getNewOne().getValue();
+			}
 			
 			if (key != null) {
 				GrProperty prop = rRelation.getProperty(KeyProperty);
@@ -567,6 +573,38 @@ public class DomainAccess {
 						prop.setValue(key);
 				} else
 					rRelation.addProperty(KeyProperty, key);
+				
+				prop = rRelation.getProperty(KeyTypeProperty);
+				if (prop != null) {
+					Object propValue = key.getClass().getName();
+					if (!prop.getValue().equals(propValue))
+						prop.setValue(propValue);
+				} else
+					rRelation.addProperty(KeyTypeProperty, key.getClass().getName());
+			}
+			
+			GrProperty prop = rRelation.getProperty(ValueProperty);
+			if (value != null) {
+				if (prop != null) {
+					Object propValue = MappingUtil.convertFromProperty(prop.getValue(), value.getClass(), null);
+					if (!value.equals(propValue))
+						prop.setValue(value);
+				} else
+					rRelation.addProperty(ValueProperty, value);
+				
+				prop = rRelation.getProperty(ValueTypeProperty);
+				if (prop != null) {
+					Object propValue = value.getClass().getName();
+					if (!prop.getValue().equals(propValue))
+						prop.setValue(propValue);
+				} else
+					rRelation.addProperty(ValueTypeProperty, value.getClass().getName());
+			} else {
+				if (prop != null)
+					prop.setValue(null);
+				prop = rRelation.getProperty(ValueTypeProperty);
+				if (prop != null)
+					prop.setValue(null);
 			}
 		}
 		
@@ -863,8 +901,8 @@ public class DomainAccess {
 							// no relation --> check if an old relation needs to be removed
 							if (fm.isCollection() || fm.isMap()) {
 								// remove multiple relations if they exist
-								List<MapEntry> mapEntriesToRemove = handleKeyedRelationsModification(null, context,
-										new SourceFieldKey(domainObject, fm.getFieldName()));
+								List<IMapEntry> mapEntriesToRemove = handleKeyedRelationsModification(null, context,
+										new SourceFieldKey(domainObject, fm.getFieldName()), false);
 								removeObjectsIfNeeded(context, mapEntriesToRemove);
 							} else {
 								// remove just a single relation if it exists
@@ -882,15 +920,16 @@ public class DomainAccess {
 		
 		private void handleMapInClosureCalc(Map<Object, Object> map, Object domainObject,
 				UpdateContext context, FieldMapping fm) {
-			MapTerminator mapTerminator = new MapTerminator();
+			MapTerminator mapTerminator = null;
 			String typ = fm.getPropertyOrRelationName();
 			Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations =
 					new HashMap<SourceField2TargetKey, List<KeyedRelation>>();
-			List<MapEntry> mapEntries = new ArrayList<MapEntry>();
+			List<IMapEntry> mapEntries = new ArrayList<IMapEntry>();
 			// store concrete type in DomainInfo
-			String classField = fm.getClassFieldName(null);
+			String classField = fm.getClassFieldName();
 			MappingUtil.internalDomainAccess.get()
 				.addConcreteFieldType(classField, map.getClass());
+			boolean containsMapTerm = false;
 			Iterator<Entry<Object, Object>> it = map.entrySet().iterator();
 			while(it.hasNext()) {
 				Entry<Object, Object> entry = it.next();
@@ -901,18 +940,22 @@ public class DomainAccess {
 				Object target;
 				Object relationKey;
 				if (keyMapsToProperty) {
-					target = valMapsToProperty ? mapTerminator : val;
+					if (valMapsToProperty) {
+						if (mapTerminator == null) {
+							mapTerminator = new MapTerminator(domainObject, fm.getFieldName());
+							mapEntries.add(mapTerminator);
+							containsMapTerm = true;
+						}
+						target = mapTerminator;
+					} else
+						target = val;
 					relationKey = entry.getKey();
 				} else { // complex key always needs a MapEntry
 					// handle it like a list for correct removal of removed entries
-					MapEntry mapEntry;
-					if (valMapsToProperty)
-						mapEntry = new MapEntrySimple(key, val);
-					else
-						mapEntry = new MapEntryComplex(key, val);
+					MapEntry mapEntry = new MapEntry(key, val);
 					mapEntries.add(mapEntry);
 					target = mapEntry;
-					relationKey = mapEntry.hashCode();
+					relationKey = mapEntry.getKeyCode();
 				}
 				SourceField2TargetKey s2tKey =
 						new SourceField2TargetKey(domainObject, fm.getFieldName(), target);
@@ -921,37 +964,25 @@ public class DomainAccess {
 					relats = new ArrayList<KeyedRelation>();
 					keyedRelations.put(s2tKey, relats);
 				}
-				relats.add(new KeyedRelation(typ, relationKey, domainObject, target));
+				KeyedRelation keyedRelation = new KeyedRelation(typ, relationKey, domainObject, target);
+				if (valMapsToProperty && keyMapsToProperty)
+					keyedRelation.setValue(val);
+				relats.add(keyedRelation);
 				
 				// store component types in DomainInfo
 				MappingUtil.internalDomainAccess.get()
-					.addFieldComponentType(fm.getClassFieldName(DomainAccessHandler.MapKeyPrefix),
-							entry.getKey().getClass());
-				MappingUtil.internalDomainAccess.get()
-				.addFieldComponentType(fm.getClassFieldName(DomainAccessHandler.MapValuePrefix),
-						entry.getValue().getClass());
+					.addFieldComponentType(fm.getClassFieldName(),
+							target.getClass());
 			}
 			
-			boolean complexKeys = mapEntries.size() > 0;
-			if (complexKeys) {
-				List<MapEntry> mapEntriesToRemove = handleKeyedRelationsModification(keyedRelations, context,
-						new SourceFieldKey(domainObject, fm.getFieldName()));
-				for (MapEntry mapEntry : mapEntries) {
-					recursiveCalculateClosure(mapEntry, context, false);
-				}
-				removeObjectsIfNeeded(context, mapEntriesToRemove);
-			} else { // simple keys
-				handleKeyedRelationsModification(keyedRelations, context,
-						new SourceFieldKey(domainObject, fm.getFieldName()));
-				 it = map.entrySet().iterator();
-				while(it.hasNext()) {
-					Entry<Object, Object> entry = it.next();
-					Object val = entry.getValue();
-					boolean mapsToProperty = MappingUtil.mapsToProperty(val.getClass());
-					if (!mapsToProperty)
-						recursiveCalculateClosure(val, context, false); // don't delete
-				}
+			List<IMapEntry> mapEntriesToRemove =
+					handleKeyedRelationsModification(keyedRelations, context,
+							new SourceFieldKey(domainObject, fm.getFieldName()),
+							containsMapTerm);
+			for (IMapEntry mapEntry : mapEntries) {
+				recursiveCalculateClosure(mapEntry, context, false); // don't delete
 			}
+			removeObjectsIfNeeded(context, mapEntriesToRemove);
 		}
 		
 		private void handleListInClosureCalc(Collection<?> coll, Object domainObject,
@@ -960,7 +991,7 @@ public class DomainAccess {
 			Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations =
 					new HashMap<SourceField2TargetKey, List<KeyedRelation>>();
 			// store concrete type in DomainInfo
-			String classField = fm.getClassFieldName(null);
+			String classField = fm.getClassFieldName();
 			MappingUtil.internalDomainAccess.get()
 				.addConcreteFieldType(classField, coll.getClass());
 			int idx = 0;
@@ -980,7 +1011,7 @@ public class DomainAccess {
 			}
 			
 			handleKeyedRelationsModification(keyedRelations, context,
-					new SourceFieldKey(domainObject, fm.getFieldName()));
+					new SourceFieldKey(domainObject, fm.getFieldName()), false);
 			for (Object elem : coll) {
 				recursiveCalculateClosure(elem, context, false); // don't delete
 			}
@@ -1001,14 +1032,14 @@ public class DomainAccess {
 				}
 			}
 			// store concrete type in DomainInfo
-			String classField = fm.getClassFieldName(null);
+			String classField = fm.getClassFieldName();
 			MappingUtil.internalDomainAccess.get()
 				.addConcreteFieldType(classField, relatedObject.getClass());
 			recursiveCalculateClosure(relatedObject, context, false); // don't delete
 		}
 		
-		private List<MapEntry> handleKeyedRelationsModification(Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations,
-				UpdateContext context, SourceFieldKey fieldKey) {
+		private List<IMapEntry> handleKeyedRelationsModification(Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations,
+				UpdateContext context, SourceFieldKey fieldKey, boolean containsMapTerm) {
 			List<KeyedRelation> allExistingRels = new ArrayList<KeyedRelation>();
 			List<KeyedRelation> allExist = domainAccessHandler.domainState.getKeyedRelations(fieldKey);
 			if (allExist != null)
@@ -1028,13 +1059,19 @@ public class DomainAccess {
 			}
 			// in allExistingRels we have those which previously existed but don't exist in the collection or map any more
 			context.relationsToRemove.addAll(allExistingRels);
-			List<MapEntry> mapEntriesToRemove = new ArrayList<MapEntry>();
+			List<IMapEntry> mapEntriesToRemove = new ArrayList<IMapEntry>();
+			boolean mapTermAdded = false;
 			for(KeyedRelation kRel : allExistingRels) { // they are to be removed
 				Object end = kRel.getEnd();
 				if (end instanceof MapEntry) { // remove MapEntry
 					// TODO is the check really needed
 					if (!mapEntriesToRemove.contains(end))
 						mapEntriesToRemove.add((MapEntry) end);
+				} else if (end instanceof MapTerminator) {
+					if (!containsMapTerm && !mapTermAdded) {
+						mapTermAdded = true;
+						mapEntriesToRemove.add((MapTerminator)end);
+					}
 				}
 			}
 			return mapEntriesToRemove;
@@ -1068,7 +1105,7 @@ public class DomainAccess {
 			int idx = 0;
 			for (KeyedRelation iRel : act) {
 				if (existingOnes.size() > idx) {
-					toChange.add(new KeyedRelationToChange(existingOnes.get(idx), iRel.getKey()));
+					toChange.add(new KeyedRelationToChange(existingOnes.get(idx), iRel));
 					maxRemoveIndex = idx;
 				} else
 					break;
@@ -1102,10 +1139,10 @@ public class DomainAccess {
 			return ret;
 		}
 		
-		private void removeObjectsIfNeeded(UpdateContext context, List<MapEntry> mapEntriesToRemove) {
+		private void removeObjectsIfNeeded(UpdateContext context, List<IMapEntry> mapEntriesToRemove) {
 			if (mapEntriesToRemove.size() > 0) {
 				for(Object obj : mapEntriesToRemove) { // remove MapEntry objects
-					recursiveCalculateClosure(obj, context, true);
+					recursiveCalculateClosure(obj, context, true); // prepare for remove
 					context.domainObjectsToRemove.add(obj);
 				}
 			}
@@ -1147,11 +1184,12 @@ public class DomainAccess {
 				if (fm == null) // root type
 					compoundType = domainAccessHandler.getCompoundTypeFor(context.domainObjectClass);
 				else {
-					String classFieldName = fm.getClassFieldName(null);
+					String classFieldName = fm.getClassFieldName();
 					compoundType = MappingUtil.internalDomainAccess.get()
 							.getConcreteFieldType(classFieldName);
 				}
 				Class<? extends Object> pureType = fm != null ? fm.getFieldType() : context.domainObjectClass;
+				int pathCount = context.getPathCount(context.path);
 				
 				if (compoundType != null) { // else this field cannot have been stored in the graph earlier
 					// prepare for navigation to next node
@@ -1163,14 +1201,24 @@ public class DomainAccess {
 					}
 					
 					boolean isCollection = Collection.class.isAssignableFrom(pureType);
-					//ObjectMapping objectMapping;
+					boolean isMap = Map.class.isAssignableFrom(pureType);
 					Collection<Object> collection = null;
+					Map<Object, Object> map = null;
 					if (isCollection) {
-						String classFieldName = fm.getClassFieldName(null);
+						String classFieldName = fm.getClassFieldName();
 						// select the first concrete type in the CompoundType to instantiate.
 						// Most certainly there will only be one type in the CompoundType,
 						// anyway it must be instantiable as it has earlier been stored to the graph
 						collection = (Collection<Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
+								.getConcreteFieldType(classFieldName).getType());
+						compoundType = MappingUtil.internalDomainAccess.get()
+								.getFieldComponentType(classFieldName);
+					} else if (isMap) {
+						String classFieldName = fm.getClassFieldName();
+						// select the first concrete type in the CompoundType to instantiate.
+						// Most certainly there will only be one type in the CompoundType,
+						// anyway it must be instantiable as it has earlier been stored to the graph
+						map = (Map<Object, Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
 								.getConcreteFieldType(classFieldName).getType());
 						compoundType = MappingUtil.internalDomainAccess.get()
 								.getFieldComponentType(classFieldName);
@@ -1192,7 +1240,10 @@ public class DomainAccess {
 								
 								if (domainObject == null) {
 									Class<?> clazz = domainAccessHandler.findClassToInstantiateFor(rNode);
-									domainObject = domainAccessHandler.createInstance(clazz);
+									if (clazz.equals(MapTerminator.class))
+										domainObject = new MapTerminator(context.parentObject, fm.getFieldName());
+									else
+										domainObject = domainAccessHandler.createInstance(clazz);
 									domainAccessHandler.domainState.add_Id2Object(domainObject, rNode.getId(),
 											resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
 									performMapping = true;
@@ -1235,9 +1286,10 @@ public class DomainAccess {
 													DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
 											boolean nodeIsNull = false; // to not accidentially enter test for empty collection
 											boolean needToRepeat = false;
-											if (isValidNodeName(ndName, context))
+											if (isValidNodeName(ndName, context)) {
+												context.parentObject = domainObject;
 												nodeIsNull = this.fillModel(context, fMap, ndName);
-											else
+											} else
 												needToRepeat = true; // need to repeat
 											context.alreadyTested.clear();
 											while(needToRepeat && morePathsToTest(context, fMap, idx)) {
@@ -1249,9 +1301,10 @@ public class DomainAccess {
 												ndName = this.buildNodeOrRelationName(context.path,
 														DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
 												needToRepeat = false;
-												if (isValidNodeName(ndName, context))
+												if (isValidNodeName(ndName, context)) {
+													context.parentObject = domainObject;
 													nodeIsNull = this.fillModel(context, fMap, ndName);
-												else {
+												} else {
 													if (moreClausesAvailable(ndName, context))
 														needToRepeat = true; // need to repeat
 												}
@@ -1264,8 +1317,11 @@ public class DomainAccess {
 												List<GrRelation> relList = context.qResult.resultOf(r);
 												// relation(s) must exist, because the related object(s) exists
 												if (context.currentObject instanceof Collection) {
-													addRelations(domainObject, relList, (Collection<?>)context.currentObject,
+													addCollectionRelations(domainObject, relList, (Collection<?>)context.currentObject,
 															fMap.getPropertyOrRelationName());
+												} else if (context.currentObject instanceof Map<?, ?>) {
+													addMapRelationsFillMap(domainObject, relList,
+															fMap.getPropertyOrRelationName(), (Map<Object, Object>)context.currentObject);
 												} else {
 													GrRelation rel = relList.get(0);
 													domainAccessHandler.domainState.add_Id2Relation(
@@ -1283,9 +1339,9 @@ public class DomainAccess {
 												fMap.mapPropertyToField(domainObject, rNode);
 										}
 									}
+									if (isCollection)
+										collection.add(domainObject);
 								}
-								if (isCollection)
-									collection.add(domainObject);
 							} else {
 								isNullNode = true;
 							}
@@ -1295,6 +1351,8 @@ public class DomainAccess {
 					// set the object mapped to the actual field (fm)
 					if (isCollection)
 						context.currentObject = collection;
+					else if (isMap)
+						context.currentObject = map;
 					else
 						context.currentObject = domainObject;
 					context.path.remove(context.path.size() - 1); // remove the last one
@@ -1304,7 +1362,7 @@ public class DomainAccess {
 			}
 			
 			@SuppressWarnings({ "unchecked", "rawtypes" })
-			private void addRelations(Object start, List<GrRelation> relList, Collection coll,
+			private void addCollectionRelations(Object start, List<GrRelation> relList, Collection coll,
 					String relType) {
 				Iterator<?> cit = coll.iterator();
 				Iterator<GrRelation> rit = relList.iterator();
@@ -1315,7 +1373,7 @@ public class DomainAccess {
 					GrRelation rel = rit.next();
 					Object domainObject = cit.next();
 					GrProperty prop = rel.getProperty(DomainAccessHandler.KeyProperty);
-					long idx = (Long)MappingUtil.convertFromProperty(prop.getValue(), Long.class, null);
+					int idx = (Integer)MappingUtil.convertFromProperty(prop.getValue(), Integer.class, null);
 					if (idx <= prevIndex)
 						needResort = true;
 					prevIndex = idx;
@@ -1337,6 +1395,47 @@ public class DomainAccess {
 					for (KeyedRelation irel : toResort) {
 						coll.add(irel.getEnd());
 					}
+				}
+			}
+			
+			private void addMapRelationsFillMap(Object start, List<GrRelation> relList,
+					String relType, Map<Object, Object> map) {
+				try {
+					Map<Long, Boolean> handledRelations = new HashMap<Long, Boolean>();
+					Iterator<GrRelation> rit = relList.iterator();
+					while(rit.hasNext()) {
+						GrRelation rel = rit.next();
+						long relId = rel.getId();
+						if (handledRelations.get(relId) == null) {
+							handledRelations.put(relId, Boolean.TRUE);
+							Object end = domainAccessHandler.domainState.getFrom_Id2ObjectMap(
+									rel.getEndNode().getId());
+							GrProperty prop = rel.getProperty(DomainAccessHandler.KeyProperty);
+							GrProperty typeProp = rel.getProperty(DomainAccessHandler.KeyTypeProperty);
+							Object key = MappingUtil.convertFromProperty(prop.getValue(),
+									Class.forName(typeProp.getValue().toString()), null);
+							KeyedRelation irel = new KeyedRelation(relType, key, start, end);
+							Object val = null;
+							prop = rel.getProperty(DomainAccessHandler.ValueProperty);
+							if (prop != null) {
+								typeProp = rel.getProperty(DomainAccessHandler.ValueTypeProperty);
+								val = MappingUtil.convertFromProperty(prop.getValue(),
+										Class.forName(typeProp.getValue().toString()), null);
+								irel.setValue(val);
+							}
+							domainAccessHandler.domainState.add_Id2Relation(irel, relId);
+							
+							// fill map
+							if (end instanceof MapTerminator)
+								map.put(key, val);
+							else if (end instanceof MapEntry)
+								map.put(((MapEntry)end).getKey(), ((MapEntry)end).getValue());
+							else
+								map.put(key, end);
+						}
+					}
+				} catch(Throwable e) {
+					throw new RuntimeException(e);
 				}
 			}
 			
@@ -1417,7 +1516,7 @@ public class DomainAccess {
 				if (fm == null) // root type
 					compoundType = domainAccessHandler.getCompoundTypeFor(context.domainObjectClass);
 				else {
-					String classFieldName = fm.getClassFieldName(null);
+					String classFieldName = fm.getClassFieldName();
 					compoundType = MappingUtil.internalDomainAccess.get()
 							.getConcreteFieldType(classFieldName);
 				}
@@ -1442,10 +1541,10 @@ public class DomainAccess {
 				context.path.add(new PathElement(pureType));
 				
 				boolean isCollection = Collection.class.isAssignableFrom(pureType);
-				if (isCollection) {
-					String classFieldName = fm.getClassFieldName(null);
+				boolean isMap = Map.class.isAssignableFrom(pureType);
+				if (isCollection || isMap) {
 					compoundType = MappingUtil.internalDomainAccess.get()
-							.getFieldComponentType(classFieldName);
+							.getFieldComponentType(fm.getClassFieldName());
 				}
 				
 				boolean terminatesClause = true;
@@ -1537,11 +1636,6 @@ public class DomainAccess {
 				return sb.toString();
 			}
 		}
-		
-		/**********************************************/
-		private class MapTerminator {
-			
-		}
 	}
 	
 	/***********************************/
@@ -1550,6 +1644,7 @@ public class DomainAccess {
 		private Class<T> domainObjectClass;
 		private T domainObject;
 		private Object currentObject;
+		private Object parentObject;
 		private List<PathElement> path;
 		private List<String> queryEndNodes;
 		private List<String> recursionExitNodes;
@@ -1557,6 +1652,7 @@ public class DomainAccess {
 		private int maxClauseRepetitionNumber;
 		private boolean terminatesClause;
 		private List<String> alreadyTested;
+		private Map<PathIdentifier, PathCount> pathCountMap;
 		
 		FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult,
 				List<String> queryEndNds, List<String> recursionExitNds) {
@@ -1570,6 +1666,7 @@ public class DomainAccess {
 			this.maxClauseRepetitionNumber = 0;
 			this.terminatesClause = false;
 			this.alreadyTested = new ArrayList<String>();
+			pathCountMap = new HashMap<PathIdentifier, PathCount>();
 		}
 		
 		private PathElement getLastPathElement() {
@@ -1587,6 +1684,18 @@ public class DomainAccess {
 				this.maxClauseRepetitionNumber++;
 				this.terminatesClause = false;
 			}
+		}
+		
+		private int getPathCount(List<PathElement> path) {
+			PathIdentifier pi = new PathIdentifier(path);
+			PathCount count = this.pathCountMap.get(pi);
+			if (count == null) {
+				count = new PathCount();
+				count.count = -1;
+				this.pathCountMap.put(pi, count);
+			}
+			count.count++;
+			return count.count;
 		}
 	}
 	
@@ -1645,6 +1754,34 @@ public class DomainAccess {
 			super();
 			this.sourceType = sourceType;
 		}
+
+		public int pathElementHashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + fieldIndex;
+			result = prime * result
+					+ ((sourceType == null) ? 0 : sourceType.hashCode());
+			return result;
+		}
+
+		private boolean sameAs(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			PathElement other = (PathElement) obj;
+			if (fieldIndex != other.fieldIndex)
+				return false;
+			if (sourceType == null) {
+				if (other.sourceType != null)
+					return false;
+			} else if (!sourceType.equals(other.sourceType))
+				return false;
+			return true;
+		}
+		
 	}
 	
 	/***********************************/
@@ -1875,6 +2012,67 @@ public class DomainAccess {
 			Collections.sort(ret);
 			return ret;
 		}
+	}
+	
+	/***********************************/
+	private class PathIdentifier {
+		private List<PathElement> path;
+
+		private PathIdentifier(List<PathElement> aPath) {
+			super();
+			this.path = new ArrayList<PathElement>(aPath);
+		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + pathHashCode();
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			PathIdentifier other = (PathIdentifier) obj;
+			if (path == null) {
+				if (other.path != null)
+					return false;
+			} else if (!equalsPath(path, other.path))
+				return false;
+			return true;
+		}
+		
+		private boolean equalsPath(List<PathElement> path1, List<PathElement> path2) {
+			ListIterator<PathElement> e1 = path1.listIterator();
+	        ListIterator<PathElement> e2 = path2.listIterator();
+	        while (e1.hasNext() && e2.hasNext()) {
+	            PathElement o1 = e1.next();
+	            PathElement o2 = e2.next();
+	            if (!(o1==null ? o2==null : o1.sameAs(o2)))
+	                return false;
+	        }
+	        return !(e1.hasNext() || e2.hasNext());
+		}
+		
+		private int pathHashCode() {
+			if (this.path == null)
+				return 0;
+			int hashCode = 1;
+	        for (PathElement e : this.path)
+	            hashCode = 31*hashCode + (e==null ? 0 : e.pathElementHashCode());
+	        return hashCode;
+		}
+	}
+	
+	/***********************************/
+	private class PathCount {
+		private int count;
 	}
 	
 	/***********************************/

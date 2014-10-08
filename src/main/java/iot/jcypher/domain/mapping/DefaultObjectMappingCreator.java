@@ -17,6 +17,7 @@
 package iot.jcypher.domain.mapping;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 
 public class DefaultObjectMappingCreator {
 
@@ -38,8 +39,10 @@ public class DefaultObjectMappingCreator {
 	private static void addFieldMappings(SimpleObjectMapping objectMapping, Class<?> clazz) {
 		Field[] fields = clazz.getDeclaredFields();
 		for (int i = 0;i < fields.length; i++) {
-			FieldMapping fieldMapping = new FieldMapping(fields[i]);
-			objectMapping.getFieldMappings().add(fieldMapping);
+			if (!Modifier.isTransient(fields[i].getModifiers())) {
+				FieldMapping fieldMapping = new FieldMapping(fields[i]);
+				objectMapping.getFieldMappings().add(fieldMapping);
+			}
 		}
 	}
 	

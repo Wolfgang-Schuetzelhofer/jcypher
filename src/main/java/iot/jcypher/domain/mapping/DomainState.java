@@ -85,9 +85,7 @@ public class DomainState {
 			if (rels != null) {
 				rels.remove(oldOne);
 			}
-			KeyedRelation newOne = new KeyedRelation(oldOne.getType(),
-					((KeyedRelationToChange)relat).newKey,
-					oldOne.getStart(), oldOne.getEnd());
+			KeyedRelation newOne = ((KeyedRelationToChange)relat).getNewOne();
 			toPut = newOne;
 		}
 		this.relation2IdMap.put(toPut, value);
@@ -278,6 +276,9 @@ public class DomainState {
 
 		// must be of simple type so that it can be mapped to a property
 		private Object key;
+		// must be either null or
+		// must be of simple type so that it can be mapped to a property
+		private Object value;
 		
 		public KeyedRelation(String type, Object key, Object start, Object end) {
 			super(type, start, end);
@@ -288,11 +289,20 @@ public class DomainState {
 			return this.key;
 		}
 
+		public Object getValue() {
+			return value;
+		}
+
+		public void setValue(Object value) {
+			this.value = value;
+		}
+
 		@Override
 		public int hashCode() {
 			final int prime = 31;
 			int result = super.hashCode();
 			result = prime * result + ((key == null) ? 0 : key.hashCode());
+			result = prime * result + ((value == null) ? 0 : value.hashCode());
 			return result;
 		}
 
@@ -307,6 +317,11 @@ public class DomainState {
 				if (other.key != null)
 					return false;
 			} else if (!key.equals(other.key))
+				return false;
+			if (value == null) {
+				if (other.value != null)
+					return false;
+			} else if (!value.equals(other.value))
 				return false;
 			return true;
 		}
@@ -323,12 +338,12 @@ public class DomainState {
 	/***********************************/
 	public static class KeyedRelationToChange implements IRelation {
 		private KeyedRelation existingOne;
-		private Object newKey;
+		private KeyedRelation newOne;
 		
-		public KeyedRelationToChange(KeyedRelation existingOne, Object newKey) {
+		public KeyedRelationToChange(KeyedRelation existingOne, KeyedRelation newOne) {
 			super();
 			this.existingOne = existingOne;
-			this.newKey = newKey;
+			this.newOne = newOne;
 		}
 
 		@Override
@@ -346,8 +361,8 @@ public class DomainState {
 			return this.existingOne.getEnd();
 		}
 
-		public Object getNewKey() {
-			return this.newKey;
+		public KeyedRelation getNewOne() {
+			return this.newOne;
 		}
 	}
 	

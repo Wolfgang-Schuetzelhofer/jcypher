@@ -6,6 +6,9 @@ import test.domainmapping.Address;
 
 public class MapContainer {
 
+	// simple, simple
+	private Map<String, Integer> string2IntegerMap;
+	
 	// simple, complex
 	private Map<String, Address> string2AddressMap;
 	
@@ -14,6 +17,9 @@ public class MapContainer {
 	
 	// complex, complex
 	private Map<Address, Address> address2AddressMap;
+	
+	// any, any
+	private Map<?, ?> any2AnyMap;
 
 	public Map<String, Address> getString2AddressMap() {
 		return string2AddressMap;
@@ -37,6 +43,22 @@ public class MapContainer {
 
 	public void setAddress2AddressMap(Map<Address, Address> address2AddressMap) {
 		this.address2AddressMap = address2AddressMap;
+	}
+
+	public Map<String, Integer> getString2IntegerMap() {
+		return string2IntegerMap;
+	}
+
+	public void setString2IntegerMap(Map<String, Integer> string2IntegerMap) {
+		this.string2IntegerMap = string2IntegerMap;
+	}
+
+	public Map<?, ?> getAny2AnyMap() {
+		return any2AnyMap;
+	}
+
+	public void setAny2AnyMap(Map<?, ?> any2AnyMap) {
+		this.any2AnyMap = any2AnyMap;
 	}
 
 }

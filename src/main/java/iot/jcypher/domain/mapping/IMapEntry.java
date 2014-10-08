@@ -16,33 +16,6 @@
 
 package iot.jcypher.domain.mapping;
 
-public class MapEntry implements IMapEntry {
+public interface IMapEntry {
 
-	protected Object key;
-	protected Object value;
-	
-	public MapEntry(Object key, Object value) {
-		super();
-		this.key = key;
-		this.value = value;
-	}
-	
-	public MapEntry() {
-		super();
-	}
-
-	public Object getKey() {
-		return key;
-	}
-
-	public Object getValue() {
-		return value;
-	}
-
-	public int getKeyCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((key == null) ? 0 : key.hashCode());
-		return result;
-	}
 }

@@ -128,7 +128,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@Test
-	public void testMap() {
+	public void testMapAny2Any() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		DomainAccess da1;
@@ -136,10 +136,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		MapContainer addressMap1;
 		boolean equals;
 		
-		//buildMapTestSimple2Complex(addressMap);
-		//buildMapTestComplex2Simple(addressMap);
-		buildMapTestComplex2Complex(addressMap);
-		//buildMapTestComplex2Complex_2(addressMap);
+		buildMapTestAny2Any(addressMap);
 		
 		errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
@@ -155,30 +152,153 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		SyncInfo syncInfo_1 = da.getSyncInfo(addressMap);
 		
-		// modify complex2Complex
-		Address first = null;
-		Address second = null;
-		Address third = null;
-		Address first_1 = null;
-		Address second_1 = null;
-		Address third_1 = null;
-		Iterator<Entry<Address, Address>> it = addressMap.getAddress2AddressMap().entrySet().iterator();
-		while(it.hasNext()) {
-			Entry<Address, Address> entry = it.next();
-			if (entry.getKey().getStreet().equals("Embarcadero Center")) {
-				second = entry.getKey();
-				third_1 = entry.getValue();
-			} else if (entry.getKey().getStreet().equals("52nd Street")) {
-				third = entry.getKey();
-				first_1 = entry.getValue();
-			} else if (entry.getKey().getStreet().equals("Main Street")) {
-				first = entry.getKey();
-				second_1 = entry.getValue();
-			}
+		da1 = new DomainAccess(dbAccess, domainName);
+		addressMap1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+//		equals = CompareUtil_2.equalsBroker(addressMap, addressMap1);
+//		assertTrue(equals);
+		
+		// modify simple2Simple
+		addressMap.getString2IntegerMap().put("one", 2);
+		addressMap.getString2IntegerMap().put("two", 3);
+		addressMap.getString2IntegerMap().remove("three");
+		
+		
+		// store modification
+		errors = da.store(addressMap);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
 		}
-		addressMap.getAddress2AddressMap().put(second, first_1);
-		addressMap.getAddress2AddressMap().put(third, second_1);
-		addressMap.getAddress2AddressMap().remove(first);
+		
+		// modify simple2Simple
+		addressMap.getString2IntegerMap().remove("one");
+		addressMap.getString2IntegerMap().remove("two");
+		
+		// store modification
+		errors = da.store(addressMap);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		return;
+	}
+	
+	//@Test
+	public void testMapSimple2Simple() {
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		MapContainer addressMap = new MapContainer();
+		MapContainer addressMap1;
+		boolean equals;
+		
+		buildMapTestSimple2Simple(addressMap);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(addressMap);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(addressMap);
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		addressMap1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+//		equals = CompareUtil_2.equalsBroker(addressMap, addressMap1);
+//		assertTrue(equals);
+		
+		// modify simple2Simple
+		addressMap.getString2IntegerMap().put("one", 2);
+		addressMap.getString2IntegerMap().put("two", 3);
+		addressMap.getString2IntegerMap().remove("three");
+		
+		
+		// store modification
+		errors = da.store(addressMap);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		// modify simple2Simple
+		addressMap.getString2IntegerMap().remove("one");
+		addressMap.getString2IntegerMap().remove("two");
+		
+		// store modification
+		errors = da.store(addressMap);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		return;
+	}
+	
+	//@Test
+	public void testMap() {
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		MapContainer addressMap = new MapContainer();
+		MapContainer addressMap1;
+		boolean equals;
+		
+		//buildMapTestSimple2Complex(addressMap);
+		//buildMapTestComplex2Simple(addressMap);
+		//buildMapTestComplex2Complex(addressMap);
+		//buildMapTestComplex2Complex_2(addressMap);
+		buildMapTestSimple2Simple(addressMap);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(addressMap);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(addressMap);
+		
+		// modify simple2Simple
+		addressMap.getString2IntegerMap().put("one", 2);
+		addressMap.getString2IntegerMap().put("two", 3);
+		addressMap.getString2IntegerMap().remove("three");
+		
+		// modify complex2Complex
+//		Address first = null;
+//		Address second = null;
+//		Address third = null;
+//		Address first_1 = null;
+//		Address second_1 = null;
+//		Address third_1 = null;
+//		Iterator<Entry<Address, Address>> it = addressMap.getAddress2AddressMap().entrySet().iterator();
+//		while(it.hasNext()) {
+//			Entry<Address, Address> entry = it.next();
+//			if (entry.getKey().getStreet().equals("Embarcadero Center")) {
+//				second = entry.getKey();
+//				third_1 = entry.getValue();
+//			} else if (entry.getKey().getStreet().equals("52nd Street")) {
+//				third = entry.getKey();
+//				first_1 = entry.getValue();
+//			} else if (entry.getKey().getStreet().equals("Main Street")) {
+//				first = entry.getKey();
+//				second_1 = entry.getValue();
+//			}
+//		}
+//		addressMap.getAddress2AddressMap().put(second, first_1);
+//		addressMap.getAddress2AddressMap().put(third, second_1);
+//		addressMap.getAddress2AddressMap().remove(first);
 		
 		// modify complex2Simple
 //		Address embarcadero = null;
@@ -204,6 +324,17 @@ public class DomainMappingTest extends AbstractTestSuite{
 //		addressMap.getString2AddressMap().put("second", third);
 //		addressMap.getString2AddressMap().put("third", second);
 //		addressMap.getString2AddressMap().remove("first");
+		
+		// store modification
+		errors = da.store(addressMap);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		// modify simple2Simple
+		addressMap.getString2IntegerMap().remove("one");
+		addressMap.getString2IntegerMap().remove("two");
 		
 		// store modification
 		errors = da.store(addressMap);
@@ -765,6 +896,47 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Object val = prop.getValue();
 		String returned = val.toString();
 		return expected.equals(returned);
+	}
+	
+	private void buildMapTestAny2Any(MapContainer addressMap) {
+		Map<Object, Object> anyMap = new HashMap<Object, Object>();
+		addressMap.setAny2AnyMap(anyMap);
+		
+		Address first = new Address();
+		first.setCity("Munich");
+		first.setStreet("Main Street");
+		first.setNumber(9);
+		
+		DistrictAddress second = new DistrictAddress();
+		second.setCity("San Francisco");
+		second.setStreet("Embarcadero Center");
+		second.setNumber(1);
+		District district = new District();
+		district.setName("District thirteen");
+		second.setDistrict(district);
+		district = new District();
+		district.setName("Subistrict four");
+		second.setSubDistrict(district);
+		
+		Address third = new Address();
+		third.setCity("New York");
+		third.setStreet("52nd Street");
+		third.setNumber(35);
+		
+		anyMap.put(first, second);
+		anyMap.put("third", third);
+		anyMap.put(third, "third again");
+		anyMap.put("four", 4);
+		anyMap.put(5, "five");
+	}
+	
+	private void buildMapTestSimple2Simple(MapContainer addressMap) {
+		Map<String, Integer> s2i = new HashMap<String, Integer>();
+		addressMap.setString2IntegerMap(s2i);
+		
+		s2i.put("one", 1);
+		s2i.put("two", 2);
+		s2i.put("three", 3);
 	}
 
 	private void buildMapTestSimple2Complex(MapContainer addressMap) {

@@ -156,7 +156,7 @@ public class FieldMapping {
 	public boolean needsRelation() {
 		boolean needRelation = !MappingUtil.mapsToProperty(this.field.getType());
 		if (needRelation) {
-			String classField = getClassFieldName(null);
+			String classField = getClassFieldName();
 			CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
 					.getConcreteFieldType(classField);
 			if (cType != null && MappingUtil.mapsToProperty(cType.getType()))
@@ -186,7 +186,7 @@ public class FieldMapping {
 	 */
 	private Class<?> getListComponentType() {
 		if (isCollection()) {
-			String classField = getClassFieldName(null);
+			String classField = getClassFieldName();
 			CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
 				.getFieldComponentType(classField);
 			if (cType != null)
@@ -214,7 +214,7 @@ public class FieldMapping {
 			this.fieldName = this.field.getName();
 	}
 	
-	public String getClassFieldName(String prefix) {
+	public String getClassFieldName() {
 		if (this.classFieldName == null) {
 			StringBuilder sb = new StringBuilder();
 			sb.append(this.field.getDeclaringClass().getName());
@@ -222,8 +222,6 @@ public class FieldMapping {
 			sb.append(this.field.getName());
 			this.classFieldName = sb.toString();
 		}
-		if (prefix != null)
-			return prefix.concat(this.classFieldName);
 		return this.classFieldName;
 	}
 
