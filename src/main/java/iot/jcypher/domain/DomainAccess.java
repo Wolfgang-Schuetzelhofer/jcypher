@@ -31,6 +31,7 @@ import iot.jcypher.domain.mapping.DomainState.Relation;
 import iot.jcypher.domain.mapping.DomainState.SourceField2TargetKey;
 import iot.jcypher.domain.mapping.DomainState.SourceFieldKey;
 import iot.jcypher.domain.mapping.FieldMapping;
+import iot.jcypher.domain.mapping.FieldMapping.FieldKind;
 import iot.jcypher.domain.mapping.IMapEntry;
 import iot.jcypher.domain.mapping.MapEntry;
 import iot.jcypher.domain.mapping.MapTerminator;
@@ -66,8 +67,8 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -846,7 +847,7 @@ public class DomainAccess {
 		
 		private <T> void fillModel(FillModelContext<T> context) {
 			Step step = new Step();
-			step.fillModel(context, null, null);
+			step.fillModel(context, null, null, null, null);
 		}
 		
 		private void calculateClosureQuery(ClosureQueryContext context) {
@@ -897,9 +898,14 @@ public class DomainAccess {
 							handleObjectInClosureCalc(obj, domainObject, context, fm);
 						}
 					} else {
+						obj = fm.getFieldValue(domainObject);
+						if (obj != null) // store class field info in DomainInfo
+							MappingUtil.internalDomainAccess.get()
+							.addConcreteFieldType(fm.getClassFieldName(), obj.getClass());
 						if (fm.needsRelation()) { // in case obj == null because it was not set
 							// no relation --> check if an old relation needs to be removed
-							if (fm.isCollection() || fm.isMap()) {
+							if (fm.getFieldKind() == FieldKind.COLLECTION ||
+									fm.getFieldKind() == FieldKind.MAP) {
 								// remove multiple relations if they exist
 								List<IMapEntry> mapEntriesToRemove = handleKeyedRelationsModification(null, context,
 										new SourceFieldKey(domainObject, fm.getFieldName()), false);
@@ -1165,13 +1171,12 @@ public class DomainAccess {
 			 * @param context
 			 * @param fm may be null
 			 * @param nodeName may be null
-			 * @return true, if this leads to a null value
 			 */
 			@SuppressWarnings("unchecked")
-			private <T> boolean fillModel(FillModelContext<T> context, FieldMapping fm,
-					String nodeName) {
+			private <T> void fillModel(FillModelContext<T> context, FieldMapping fm,
+					String nodeName, String relationName, GrNode parentNode) {
 				int prevClauseRepetitionNumber = context.clauseRepetitionNumber;
-				boolean isNullNode = false;
+				boolean isRoot = fm == null;
 				String nnm;
 				if (nodeName != null)
 					nnm = nodeName;
@@ -1181,7 +1186,7 @@ public class DomainAccess {
 				context.setTerminatesClause(nnm);
 				
 				CompoundObjectType compoundType;
-				if (fm == null) // root type
+				if (isRoot) // root type
 					compoundType = domainAccessHandler.getCompoundTypeFor(context.domainObjectClass);
 				else {
 					String classFieldName = fm.getClassFieldName();
@@ -1189,7 +1194,6 @@ public class DomainAccess {
 							.getConcreteFieldType(classFieldName);
 				}
 				Class<? extends Object> pureType = fm != null ? fm.getFieldType() : context.domainObjectClass;
-				int pathCount = context.getPathCount(context.path);
 				
 				if (compoundType != null) { // else this field cannot have been stored in the graph earlier
 					// prepare for navigation to next node
@@ -1200,11 +1204,10 @@ public class DomainAccess {
 						resolveDeep = false;
 					}
 					
-					boolean isCollection = Collection.class.isAssignableFrom(pureType);
-					boolean isMap = Map.class.isAssignableFrom(pureType);
+					FieldKind fieldKind = fm != null ? fm.getFieldKind() : FieldKind.SINGLE;
 					Collection<Object> collection = null;
 					Map<Object, Object> map = null;
-					if (isCollection) {
+					if (fieldKind == FieldKind.COLLECTION) {
 						String classFieldName = fm.getClassFieldName();
 						// select the first concrete type in the CompoundType to instantiate.
 						// Most certainly there will only be one type in the CompoundType,
@@ -1213,7 +1216,7 @@ public class DomainAccess {
 								.getConcreteFieldType(classFieldName).getType());
 						compoundType = MappingUtil.internalDomainAccess.get()
 								.getFieldComponentType(classFieldName);
-					} else if (isMap) {
+					} else if (fieldKind == FieldKind.MAP) {
 						String classFieldName = fm.getClassFieldName();
 						// select the first concrete type in the CompoundType to instantiate.
 						// Most certainly there will only be one type in the CompoundType,
@@ -1224,27 +1227,63 @@ public class DomainAccess {
 								.getFieldComponentType(classFieldName);
 					}
 					
-					//objectMapping = domainAccessHandler.getObjectMappingFor(compoundType);
+					// initialize for loop iteration
+					Set<GrRelation> relationList; // make list of relations distinct
+					Iterator<GrRelation> relationsIterator = null;
+					List<GrRelation> usedRelations = null;
+					GrNode actNode = null;
+					GrRelation actRelation = null;
+					boolean loopDone = true;
+					if (isRoot) {
+						JcNode n = new JcNode(nnm);
+						List<GrNode> nodeList = context.qResult.resultOf(n);
+						if (nodeList.size() > 0) {
+							actNode = nodeList.get(0); // there can only be one
+							loopDone = false;
+						}
+					} else {
+						JcRelation r = new JcRelation(relationName);
+						relationList = new LinkedHashSet<GrRelation>(context.qResult.resultOf(r));
+						relationsIterator = relationList.iterator();
+						if (relationsIterator.hasNext()) {
+							actRelation = relationsIterator.next();
+							loopDone = false;
+						}
+						usedRelations = new ArrayList<GrRelation>();
+					}
 					
-					JcNode n = new JcNode(nnm);
-					List<GrNode> resList = context.qResult.resultOf(n);
 					Object domainObject = null;
-					if (resList.size() > 0) { // at least one result node exists for this pattern
+					if (!loopDone) { // at least one result node exists for this pattern
 						int initialMaxClauseRepetitionNumber = context.maxClauseRepetitionNumber;
-						for (GrNode rNode : resList) {
-							if (rNode != null) { // null values are supported
+						while (!loopDone) {
+							if (!isRoot) {
+								actNode = null;
+								if (actRelation != null) {
+									if (actRelation.getStartNode().getId() != parentNode.getId()) {
+										if (relationsIterator.hasNext())
+											actRelation = relationsIterator.next();
+										else
+											loopDone = true;
+										continue;
+									}
+									actNode = actRelation.getEndNode();
+									usedRelations.add(actRelation);
+								}
+							} // else is root
+							
+							if (actNode != null) { // null values are supported
 								boolean performMapping = false;
 								boolean mapProperties = true;
 								// check if a domain object has already been mapped to this node
-								domainObject = domainAccessHandler.domainState.getFrom_Id2ObjectMap(rNode.getId());
+								domainObject = domainAccessHandler.domainState.getFrom_Id2ObjectMap(actNode.getId());
 								
 								if (domainObject == null) {
-									Class<?> clazz = domainAccessHandler.findClassToInstantiateFor(rNode);
+									Class<?> clazz = domainAccessHandler.findClassToInstantiateFor(actNode);
 									if (clazz.equals(MapTerminator.class))
 										domainObject = new MapTerminator(context.parentObject, fm.getFieldName());
 									else
 										domainObject = domainAccessHandler.createInstance(clazz);
-									domainAccessHandler.domainState.add_Id2Object(domainObject, rNode.getId(),
+									domainAccessHandler.domainState.add_Id2Object(domainObject, actNode.getId(),
 											resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
 									performMapping = true;
 								} else {
@@ -1276,89 +1315,100 @@ public class DomainAccess {
 											}
 											continue;
 										}
+										boolean mapped = false;
+										if (fMap.needsRelationOrProperty()) {
+											mapped = fMap.mapPropertyToField(domainObject, actNode);
+										}
 										if (fMap.needsRelation() && resolveDeep) {
-											context.currentObject = null;
-											PathElement pe = context.getLastPathElement();
-											pe.fieldIndex = idx;
-											context.clauseRepetitionNumber = context.maxClauseRepetitionNumber;
-											pe.fieldName = fMap.getFieldName();
-											String ndName = this.buildNodeOrRelationName(context.path,
-													DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
-											boolean nodeIsNull = false; // to not accidentially enter test for empty collection
-											boolean needToRepeat = false;
-											if (isValidNodeName(ndName, context)) {
-												context.parentObject = domainObject;
-												nodeIsNull = this.fillModel(context, fMap, ndName);
-											} else
-												needToRepeat = true; // need to repeat
-											context.alreadyTested.clear();
-											while(needToRepeat && morePathsToTest(context, fMap, idx)) {
-												context.currentObject = null;
-												pe = context.getLastPathElement();
+											if (!mapped) {
+												PathElement pe = context.getLastPathElement();
 												pe.fieldIndex = idx;
 												context.clauseRepetitionNumber = context.maxClauseRepetitionNumber;
 												pe.fieldName = fMap.getFieldName();
-												ndName = this.buildNodeOrRelationName(context.path,
+												String ndName = this.buildNodeOrRelationName(context.path,
 														DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
-												needToRepeat = false;
+												boolean needToRepeat = false;
 												if (isValidNodeName(ndName, context)) {
+													Object prevParent = context.parentObject;
 													context.parentObject = domainObject;
-													nodeIsNull = this.fillModel(context, fMap, ndName);
-												} else {
-													if (moreClausesAvailable(ndName, context))
-														needToRepeat = true; // need to repeat
+													String rnm = this.buildNodeOrRelationName(context.path,
+															DomainAccessHandler.RelationPrefix, context.clauseRepetitionNumber);
+													this.fillModel(context, fMap, ndName, rnm, actNode);
+													context.parentObject = prevParent;
+												} else
+													needToRepeat = true; // need to repeat
+												context.alreadyTested.clear();
+												while(needToRepeat && morePathsToTest(context, fMap, idx)) {
+													pe = context.getLastPathElement();
+													pe.fieldIndex = idx;
+													context.clauseRepetitionNumber = context.maxClauseRepetitionNumber;
+													pe.fieldName = fMap.getFieldName();
+													ndName = this.buildNodeOrRelationName(context.path,
+															DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
+													needToRepeat = false;
+													if (isValidNodeName(ndName, context)) {
+														Object prevParent = context.parentObject;
+														context.parentObject = domainObject;
+														String rnm = this.buildNodeOrRelationName(context.path,
+																DomainAccessHandler.RelationPrefix, context.clauseRepetitionNumber);
+														this.fillModel(context, fMap, ndName, rnm, actNode);
+														context.parentObject = prevParent;
+													} else {
+														if (moreClausesAvailable(ndName, context))
+															needToRepeat = true; // need to repeat
+													}
 												}
+												context.updateMaxClauseRepetitionNumber();
 											}
-											if (!nodeIsNull && context.currentObject != null) {
-												fMap.setField(domainObject, context.currentObject);
-												String rnm = this.buildNodeOrRelationName(context.path,
-														DomainAccessHandler.RelationPrefix, context.clauseRepetitionNumber);
-												JcRelation r = new JcRelation(rnm);
-												List<GrRelation> relList = context.qResult.resultOf(r);
-												// relation(s) must exist, because the related object(s) exists
-												if (context.currentObject instanceof Collection) {
-													addCollectionRelations(domainObject, relList, (Collection<?>)context.currentObject,
-															fMap.getPropertyOrRelationName());
-												} else if (context.currentObject instanceof Map<?, ?>) {
-													addMapRelationsFillMap(domainObject, relList,
-															fMap.getPropertyOrRelationName(), (Map<Object, Object>)context.currentObject);
-												} else {
-													GrRelation rel = relList.get(0);
-													domainAccessHandler.domainState.add_Id2Relation(
-															new Relation(fMap.getPropertyOrRelationName(),
-																	domainObject,
-																	context.currentObject), rel.getId());
-												}
-											} else if (nodeIsNull && fMap.isCollection()) {
-												// test for empty collection, which evantually was mapped to a property
-												fMap.mapPropertyToField(domainObject, rNode);
-											}
-											context.updateMaxClauseRepetitionNumber();
 										} else {
-											if (mapProperties)
-												fMap.mapPropertyToField(domainObject, rNode);
+											if (mapProperties && !mapped)
+												fMap.mapPropertyToField(domainObject, actNode);
 										}
 									}
-									if (isCollection)
-										collection.add(domainObject);
 								}
-							} else {
-								isNullNode = true;
+								
+								// domainObject has now been resolved and filled
+								if (fieldKind == FieldKind.COLLECTION)
+									collection.add(domainObject);
 							}
+							
+							if (relationsIterator == null)
+								loopDone = true;
+							else {
+								loopDone = !relationsIterator.hasNext();
+								if (!loopDone)
+									actRelation = relationsIterator.next();
+							}
+						} // end of loop
+						
+						if (!isRoot) {
+							if (fieldKind == FieldKind.COLLECTION) {
+								addCollectionRelations(context.parentObject, usedRelations, collection,
+										fm.getPropertyOrRelationName());
+								if (collection.isEmpty()) {
+									// test for empty collection, which evantually was mapped to a property
+									fm.mapPropertyToField(context.parentObject, parentNode);
+									domainObject = null;
+								} else
+									domainObject = collection;
+							} else if (fieldKind == FieldKind.MAP) {
+								addMapRelations_FillMap(context.parentObject, usedRelations,
+										fm.getPropertyOrRelationName(), map);
+								domainObject = map;
+							} else if (usedRelations.size() > 0) {
+								GrRelation rel = usedRelations.get(0);
+								domainAccessHandler.domainState.add_Id2Relation(
+										new Relation(fm.getPropertyOrRelationName(),
+												context.parentObject,
+												domainObject), rel.getId());
+							}
+							if (domainObject != null)
+								fm.setFieldValue(context.parentObject, domainObject);
 						}
 					}
-					
-					// set the object mapped to the actual field (fm)
-					if (isCollection)
-						context.currentObject = collection;
-					else if (isMap)
-						context.currentObject = map;
-					else
-						context.currentObject = domainObject;
 					context.path.remove(context.path.size() - 1); // remove the last one
 				}
 				context.clauseRepetitionNumber = prevClauseRepetitionNumber;
-				return isNullNode;
 			}
 			
 			@SuppressWarnings({ "unchecked", "rawtypes" })
@@ -1387,8 +1437,8 @@ public class DomainAccess {
 						@Override
 						public int compare(KeyedRelation o1,
 								KeyedRelation o2) {
-							return Long.compare(((Long)o1.getKey()).longValue(),
-									((Long)o2.getKey()).longValue());
+							return Integer.compare(((Integer)o1.getKey()).intValue(),
+									((Integer)o2.getKey()).intValue());
 						}
 					});
 					coll.clear();
@@ -1398,7 +1448,7 @@ public class DomainAccess {
 				}
 			}
 			
-			private void addMapRelationsFillMap(Object start, List<GrRelation> relList,
+			private void addMapRelations_FillMap(Object start, List<GrRelation> relList,
 					String relType, Map<Object, Object> map) {
 				try {
 					Map<Long, Boolean> handledRelations = new HashMap<Long, Boolean>();
@@ -1643,7 +1693,6 @@ public class DomainAccess {
 		private JcQueryResult qResult;
 		private Class<T> domainObjectClass;
 		private T domainObject;
-		private Object currentObject;
 		private Object parentObject;
 		private List<PathElement> path;
 		private List<String> queryEndNodes;
@@ -1652,7 +1701,6 @@ public class DomainAccess {
 		private int maxClauseRepetitionNumber;
 		private boolean terminatesClause;
 		private List<String> alreadyTested;
-		private Map<PathIdentifier, PathCount> pathCountMap;
 		
 		FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult,
 				List<String> queryEndNds, List<String> recursionExitNds) {
@@ -1666,7 +1714,6 @@ public class DomainAccess {
 			this.maxClauseRepetitionNumber = 0;
 			this.terminatesClause = false;
 			this.alreadyTested = new ArrayList<String>();
-			pathCountMap = new HashMap<PathIdentifier, PathCount>();
 		}
 		
 		private PathElement getLastPathElement() {
@@ -1684,18 +1731,6 @@ public class DomainAccess {
 				this.maxClauseRepetitionNumber++;
 				this.terminatesClause = false;
 			}
-		}
-		
-		private int getPathCount(List<PathElement> path) {
-			PathIdentifier pi = new PathIdentifier(path);
-			PathCount count = this.pathCountMap.get(pi);
-			if (count == null) {
-				count = new PathCount();
-				count.count = -1;
-				this.pathCountMap.put(pi, count);
-			}
-			count.count++;
-			return count.count;
 		}
 	}
 	
@@ -1753,33 +1788,6 @@ public class DomainAccess {
 		private PathElement(Class<?> sourceType) {
 			super();
 			this.sourceType = sourceType;
-		}
-
-		public int pathElementHashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + fieldIndex;
-			result = prime * result
-					+ ((sourceType == null) ? 0 : sourceType.hashCode());
-			return result;
-		}
-
-		private boolean sameAs(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			PathElement other = (PathElement) obj;
-			if (fieldIndex != other.fieldIndex)
-				return false;
-			if (sourceType == null) {
-				if (other.sourceType != null)
-					return false;
-			} else if (!sourceType.equals(other.sourceType))
-				return false;
-			return true;
 		}
 		
 	}
@@ -2012,67 +2020,6 @@ public class DomainAccess {
 			Collections.sort(ret);
 			return ret;
 		}
-	}
-	
-	/***********************************/
-	private class PathIdentifier {
-		private List<PathElement> path;
-
-		private PathIdentifier(List<PathElement> aPath) {
-			super();
-			this.path = new ArrayList<PathElement>(aPath);
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + pathHashCode();
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			PathIdentifier other = (PathIdentifier) obj;
-			if (path == null) {
-				if (other.path != null)
-					return false;
-			} else if (!equalsPath(path, other.path))
-				return false;
-			return true;
-		}
-		
-		private boolean equalsPath(List<PathElement> path1, List<PathElement> path2) {
-			ListIterator<PathElement> e1 = path1.listIterator();
-	        ListIterator<PathElement> e2 = path2.listIterator();
-	        while (e1.hasNext() && e2.hasNext()) {
-	            PathElement o1 = e1.next();
-	            PathElement o2 = e2.next();
-	            if (!(o1==null ? o2==null : o1.sameAs(o2)))
-	                return false;
-	        }
-	        return !(e1.hasNext() || e2.hasNext());
-		}
-		
-		private int pathHashCode() {
-			if (this.path == null)
-				return 0;
-			int hashCode = 1;
-	        for (PathElement e : this.path)
-	            hashCode = 31*hashCode + (e==null ? 0 : e.pathElementHashCode());
-	        return hashCode;
-		}
-	}
-	
-	/***********************************/
-	private class PathCount {
-		private int count;
 	}
 	
 	/***********************************/

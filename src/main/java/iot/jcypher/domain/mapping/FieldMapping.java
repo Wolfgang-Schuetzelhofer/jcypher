@@ -78,13 +78,20 @@ public class FieldMapping {
 		}
 	}
 	
-	public void mapPropertyToField(Object domainObject, GrNode rNode) {
+	/**
+	 * @param domainObject
+	 * @param rNode
+	 * @return true if the property exists in the node
+	 */
+	public boolean mapPropertyToField(Object domainObject, GrNode rNode) {
 		try {
 			prepare(domainObject);
 			
 			Object value = this.field.get(domainObject);
 			GrProperty prop = rNode.getProperty(this.propertyName);
+			boolean hasProperty = false;
 			if (prop != null) {
+				hasProperty = true;
 				Object propValue = prop.getValue();
 				if (propValue != null) { // allow null values in properties
 					Class<?> typ = this.field.getType();
@@ -95,15 +102,25 @@ public class FieldMapping {
 					}
 				}
 			}
+			return hasProperty;
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
 	}
 	
-	public void setField(Object domainObject, Object value) {
+	public void setFieldValue(Object domainObject, Object value) {
 		try {
 			prepare(domainObject);
 			this.field.set(domainObject, value);
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	public Object getFieldValue(Object domainObject) {
+		try {
+			prepare(domainObject);
+			return this.field.get(domainObject);
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
@@ -149,6 +166,16 @@ public class FieldMapping {
 	}
 	
 	/**
+	 * @return true if the field type is Object.class, because at runtime this
+	 * can lead to a simple type (e.g. Integer) which can be mapped to a property,
+	 * or it can lead to a complex type which requires a relation in the graph.
+	 * It is therefore necessary to look at properties and relations.
+	 */
+	public boolean needsRelationOrProperty() {
+		return this.field.getType().equals(Object.class);
+	}
+	
+	/**
 	 * 
 	 * @return true, if this field cannot be mapped to a property,
 	 * but must be mapped to a seperate node connected via a relation, else return false.
@@ -185,7 +212,7 @@ public class FieldMapping {
 	 * @return
 	 */
 	private Class<?> getListComponentType() {
-		if (isCollection()) {
+		if (getFieldKind() == FieldKind.COLLECTION) {
 			String classField = getClassFieldName();
 			CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
 				.getFieldComponentType(classField);
@@ -225,12 +252,10 @@ public class FieldMapping {
 		return this.classFieldName;
 	}
 
-	public boolean isCollection() {
-		return Collection.class.isAssignableFrom(this.field.getType());
-	}
-	
-	public boolean isMap() {
-		return Map.class.isAssignableFrom(this.field.getType());
+	public FieldKind getFieldKind() {
+		Class<?> typ = this.field.getType();
+		return Collection.class.isAssignableFrom(typ) ? FieldKind.COLLECTION :
+			Map.class.isAssignableFrom(typ) ? FieldKind.MAP : FieldKind.SINGLE;
 	}
 
 	@Override
@@ -255,4 +280,8 @@ public class FieldMapping {
 		return true;
 	}
 	
+	/***********************************/
+	public static enum FieldKind {
+		SINGLE, COLLECTION, MAP
+	}
 }

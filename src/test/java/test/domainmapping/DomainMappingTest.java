@@ -63,6 +63,7 @@ import test.domainmapping.ambiguous.IPerson;
 import test.domainmapping.ambiguous.JPerson;
 import test.domainmapping.ambiguous.MultiBroker;
 import test.domainmapping.ambiguous.NPerson;
+import test.domainmapping.maps.CompareUtil_3;
 import test.domainmapping.maps.MapContainer;
 
 public class DomainMappingTest extends AbstractTestSuite{
@@ -127,16 +128,16 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	@Test
+	//@Test
 	public void testMapAny2Any() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		DomainAccess da1;
-		MapContainer addressMap = new MapContainer();
-		MapContainer addressMap1;
+		MapContainer mapContainer = new MapContainer();
+		MapContainer mapContainer_1;
 		boolean equals;
 		
-		buildMapTestAny2Any(addressMap);
+		buildMapTestAny2Any(mapContainer);
 		
 		errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
@@ -144,38 +145,41 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw new JcResultException(errors);
 		}
 		
-		errors = da.store(addressMap);
+		errors = da.store(mapContainer);
 		if (errors.size() > 0) {
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
 		
-		SyncInfo syncInfo_1 = da.getSyncInfo(addressMap);
+		SyncInfo syncInfo_1 = da.getSyncInfo(mapContainer);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		addressMap1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
-//		equals = CompareUtil_2.equalsBroker(addressMap, addressMap1);
-//		assertTrue(equals);
+		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
+		assertTrue(equals);
+		
+		if (true)
+			return;
 		
 		// modify simple2Simple
-		addressMap.getString2IntegerMap().put("one", 2);
-		addressMap.getString2IntegerMap().put("two", 3);
-		addressMap.getString2IntegerMap().remove("three");
+		mapContainer.getString2IntegerMap().put("one", 2);
+		mapContainer.getString2IntegerMap().put("two", 3);
+		mapContainer.getString2IntegerMap().remove("three");
 		
 		
 		// store modification
-		errors = da.store(addressMap);
+		errors = da.store(mapContainer);
 		if (errors.size() > 0) {
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
 		
 		// modify simple2Simple
-		addressMap.getString2IntegerMap().remove("one");
-		addressMap.getString2IntegerMap().remove("two");
+		mapContainer.getString2IntegerMap().remove("one");
+		mapContainer.getString2IntegerMap().remove("two");
 		
 		// store modification
-		errors = da.store(addressMap);
+		errors = da.store(mapContainer);
 		if (errors.size() > 0) {
 			printErrors(errors);
 			throw new JcResultException(errors);
@@ -568,7 +572,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@SuppressWarnings("unchecked")
-	//@Test
+	@Test
 	public void testUpdateSimple_EmptyList2NotEmptyList() {
 		
 		List<JcError> errors;
