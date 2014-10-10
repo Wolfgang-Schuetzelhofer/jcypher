@@ -104,4 +104,8 @@ public class Graph {
 	void setSyncState(SyncState syncState) {
 		this.syncState = syncState;
 	}
+	
+	void setDBAccess(IDBAccess dbAccess) {
+		this.resultHandler.setDbAccess(dbAccess);
+	}
 }

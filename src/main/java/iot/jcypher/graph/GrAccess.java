@@ -16,6 +16,7 @@
 
 package iot.jcypher.graph;
 
+import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.internal.ChangeListener;
 import iot.jcypher.graph.internal.GrId;
 import iot.jcypher.result.util.ResultHandler;
@@ -103,5 +104,9 @@ public class GrAccess {
 	
 	public static void setToSynchronized(PersistableItem item) {
 		item.setToSynchronized();
+	}
+	
+	public static void setDBAccess(IDBAccess dbAccess, Graph graph) {
+		graph.setDBAccess(dbAccess);
 	}
 }

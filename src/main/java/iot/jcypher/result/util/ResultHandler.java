@@ -773,6 +773,10 @@ public class ResultHandler {
 		return id;
 	}
 
+	public void setDbAccess(IDBAccess dbAccess) {
+		this.dbAccess = dbAccess;
+	}
+
 	/**************************************/
 	private enum ElemType {
 		NODE, RELATION

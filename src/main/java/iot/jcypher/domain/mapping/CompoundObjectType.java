@@ -23,11 +23,13 @@ public class CompoundObjectType {
 	public static final String SEPARATOR = ", ";
 	
 	private Class<?> type;
+	private CType cType;
 	private CompoundObjectType next;
 	
 	public CompoundObjectType(Class<?> type) {
 		super();
 		this.type = type;
+		this.cType = MappingUtil.mapsToProperty(type) ? CType.SIMPLE : CType.COMPLEX;
 	}
 	
 	/**
@@ -45,11 +47,22 @@ public class CompoundObjectType {
 		}
 		CompoundObjectType nextOne = new CompoundObjectType(typ);
 		cur.next = nextOne;
+		CType t = nextOne.cType;
+		it = typeIterator();
+		while (it.hasNext()) {
+			cur = it.next();
+			if (cur.cType != t)
+				cur.cType = CType.MIXED;
+		}
 		return true;
 	}
 	
 	public Class<?> getType() {
 		return this.type;
+	}
+	
+	public CType getCType() {
+		return this.cType;
 	}
 	
 	public Iterator<CompoundObjectType> typeIterator() {
@@ -97,6 +110,10 @@ public class CompoundObjectType {
 		public void remove() {
 			throw new RuntimeException("operation not supported");
 		}
-		
+	}
+	
+	/********************************************/
+	public static enum CType {
+		SIMPLE, COMPLEX, MIXED
 	}
 }

@@ -37,6 +37,7 @@ import iot.jcypher.domain.mapping.MapEntry;
 import iot.jcypher.domain.mapping.MapTerminator;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
+import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
@@ -347,6 +348,7 @@ public class DomainAccess {
 				if (clauses != null) {
 					JcQueryResult result = results.get(0);
 					graph = result.getGraph();
+					GrAccess.setDBAccess(this.dbAccess, graph);
 					if (nodeIndexMap != null) {
 						Iterator<Entry<Integer, QueryNode2ResultNode>> nit = nodeIndexMap.entrySet().iterator();
 						while (nit.hasNext()) {
@@ -447,7 +449,7 @@ public class DomainAccess {
 				if (errors.size() > 0) {
 					throw new JcResultException(errors);
 				}
-				Util.printResults(results, "CLOSURE", Format.PRETTY_1);
+//				Util.printResults(results, "CLOSURE", Format.PRETTY_1);
 				for (int i = 0; i < queries.size(); i++) {
 					id2QueryResult.put(queryIds.get(i), results.get(i));
 				}

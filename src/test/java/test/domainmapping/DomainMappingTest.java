@@ -128,7 +128,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testMapAny2Any() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
@@ -572,11 +572,12 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@SuppressWarnings("unchecked")
-	@Test
+	//@Test
 	public void testUpdateSimple_EmptyList2NotEmptyList() {
 		
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
 		
 		Person john = new Person();
 		Address address = new Address();
@@ -602,6 +603,13 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		SyncInfo syncInfo = da.getSyncInfo(globCom);
 		
+		da1 = new DomainAccess(dbAccess, domainName);
+		Company globCom_1;
+		globCom_1 = da1.loadById(Company.class, syncInfo.getId());
+		
+		boolean isEqual = CompareUtil.equalsCompany(globCom, globCom_1);
+		assertTrue("Test for equality of domain objects", isEqual);
+		
 		globCom.getAreaCodes().add(2);
 		globCom.getAreaCodes().add(3);
 		// Store non-empty array without generics
@@ -611,15 +619,13 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw new JcResultException(errors);
 		}
 		
-		da = new DomainAccess(dbAccess, domainName);
-		Company globCom_1;
-		globCom_1 = da.loadById(Company.class, syncInfo.getId());
+		da1 = new DomainAccess(dbAccess, domainName);
+		globCom_1 = da1.loadById(Company.class, syncInfo.getId());
 		
-		boolean isEqual = CompareUtil.equalsCompany(globCom, globCom_1);
+		isEqual = CompareUtil.equalsCompany(globCom, globCom_1);
 		assertTrue("Test for equality of domain objects", isEqual);
 		
 		// Store non-empty array with generics
-		da = new DomainAccess(dbAccess, domainName);
 		james.setLuckyNumbers(new ArrayList<Integer>());
 		errors = da.store(james);
 		if (errors.size() > 0) {
@@ -627,6 +633,13 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw new JcResultException(errors);
 		}
 		syncInfo = da.getSyncInfo(james);
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		Person james_1;
+		james_1 = da1.loadById(Person.class, syncInfo.getId());
+		
+		isEqual = CompareUtil.equalsPerson(james, james_1);
+		assertTrue("Test for equality of domain objects", isEqual);
 		
 		james.getLuckyNumbers().add(24);
 		james.getLuckyNumbers().add(48);
@@ -636,9 +649,8 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw new JcResultException(errors);
 		}
 		
-		da = new DomainAccess(dbAccess, domainName);
-		Person james_1;
-		james_1 = da.loadById(Person.class, syncInfo.getId());
+		da1 = new DomainAccess(dbAccess, domainName);
+		james_1 = da1.loadById(Person.class, syncInfo.getId());
 		
 		isEqual = CompareUtil.equalsPerson(james, james_1);
 		assertTrue("Test for equality of domain objects", isEqual);

@@ -16,6 +16,7 @@
 
 package iot.jcypher.domain.mapping;
 
+import iot.jcypher.domain.mapping.CompoundObjectType.CType;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 
@@ -55,6 +56,7 @@ public class FieldMapping {
 						Object propValue = MappingUtil.convertFromProperty(prop.getValue(), value.getClass(),
 								getListComponentType());
 						if (!propValue.equals(value)) {
+							addSimpleListComponentType2DomainInfo(value);
 							prop.setValue(value);
 						}
 					} else
@@ -182,11 +184,11 @@ public class FieldMapping {
 	 */
 	public boolean needsRelation() {
 		boolean needRelation = !MappingUtil.mapsToProperty(this.field.getType());
-		if (needRelation) {
+		if (needRelation) { // check DomainInfo
 			String classField = getClassFieldName();
 			CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
 					.getConcreteFieldType(classField);
-			if (cType != null && MappingUtil.mapsToProperty(cType.getType()))
+			if (cType != null && cType.getCType() == CType.SIMPLE)
 				return false;
 			else {
 				// check for list (collection) containing primitive or simple types
@@ -196,15 +198,34 @@ public class FieldMapping {
 						.getFieldComponentType(classField);
 					// if cType == null, false will be returned
 					if (cType != null) {
-						needRelation = !MappingUtil.mapsToProperty(cType.getType());
+						needRelation = cType.getCType() != CType.SIMPLE;
 					} else
 						needRelation = true; // cannot determine if the component type is simple
-										   // so return true and leave the decission for later,
+										   // so return true and leave the decision for later,
 										   // when a concrete component is available
 				}
 			}
 		}
 		return needRelation;
+	}
+	
+	@SuppressWarnings("rawtypes")
+	private void addSimpleListComponentType2DomainInfo(Object value) {
+		// check for list (collection) containing primitive or simple types
+		if (Collection.class.isAssignableFrom(this.field.getType())) {
+			Collection coll = (Collection) this.field.getType().cast(value);
+			if (coll.size() > 0) {
+				Object elem = coll.iterator().next();
+				Class<?> type = elem.getClass();
+				// test the first element,
+				// assuming all elements are of the same type !!!
+				if (MappingUtil.isSimpleType(type)) { // elements are of primitive or simple type
+					// store component type in DomainInfo
+					MappingUtil.internalDomainAccess.get()
+						.addFieldComponentType(getClassFieldName(), elem.getClass());
+				}
+			}
+		}
 	}
 	
 	/**
