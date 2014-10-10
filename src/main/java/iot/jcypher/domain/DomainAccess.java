@@ -34,6 +34,7 @@ import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.FieldMapping.FieldKind;
 import iot.jcypher.domain.mapping.IMapEntry;
 import iot.jcypher.domain.mapping.MapEntry;
+import iot.jcypher.domain.mapping.MapEntryObjectMapping;
 import iot.jcypher.domain.mapping.MapTerminator;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
@@ -534,7 +535,7 @@ public class DomainAccess {
 			}
 			
 			T domainObject = (T) createInstance(concreteClass);
-			ObjectMapping objectMapping = getObjectMappingFor(domainObject);
+			ObjectMapping objectMapping = getObjectMappingFor(domainObject, null);
 			objectMapping.mapPropertiesToObject(domainObject, rNode);
 			
 			return domainObject;
@@ -615,14 +616,17 @@ public class DomainAccess {
 			return new CompoundObjectMapping(cType, this.mappings, filter);
 		}
 		
-		private ObjectMapping getObjectMappingFor(Object domainObject) {
+		private ObjectMapping getObjectMappingFor(Object domainObject, FieldMapping parentField) {
 			Class<?> clazz = domainObject.getClass();
 			ObjectMapping objectMapping = this.mappings.get(clazz);
 			if (objectMapping == null) {
 				objectMapping = DefaultObjectMappingCreator.createObjectMapping(clazz);
 				addObjectMappingForClass(clazz, objectMapping);
 			}
-			return objectMapping;
+			if (clazz.equals(MapEntry.class))
+				return new MapEntryObjectMapping(objectMapping, parentField);
+			else
+				return objectMapping;
 		}
 		
 		private void addObjectMappingForClass(Class<?> domainObjectClass, ObjectMapping objectMapping) {
@@ -869,7 +873,7 @@ public class DomainAccess {
 
 		private void calculateClosure(List<Object> domainObjects, UpdateContext context) {
 			for (Object domainObject : domainObjects) {
-				recursiveCalculateClosure(domainObject, context, false); // don't delete
+				recursiveCalculateClosure(domainObject, null, context, false); // don't delete
 			}
 		}
 		
@@ -879,11 +883,11 @@ public class DomainAccess {
 		 * @param prepareToDelete if true, delete outgoing relations from domainObject that later on itself will be deleted
 		 */
 		@SuppressWarnings("unchecked")
-		private void recursiveCalculateClosure(Object domainObject, UpdateContext context,
+		private void recursiveCalculateClosure(Object domainObject, FieldMapping parentField, UpdateContext context,
 				boolean prepareToDelete) {
 			if (!context.domainObjects.contains(domainObject)) { // avoid infinite loops
 				context.domainObjects.add(domainObject);
-				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject);
+				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject, parentField);
 				Iterator<FieldMapping> it = objectMapping.fieldMappingsIterator();
 				while (it.hasNext()) {
 					FieldMapping fm = it.next();
@@ -911,7 +915,7 @@ public class DomainAccess {
 								// remove multiple relations if they exist
 								List<IMapEntry> mapEntriesToRemove = handleKeyedRelationsModification(null, context,
 										new SourceFieldKey(domainObject, fm.getFieldName()), false);
-								removeObjectsIfNeeded(context, mapEntriesToRemove);
+								removeObjectsIfNeeded(fm, context, mapEntriesToRemove);
 							} else {
 								// remove just a single relation if it exists
 								IRelation relat = domainAccessHandler.domainState.findRelation(domainObject,
@@ -988,9 +992,9 @@ public class DomainAccess {
 							new SourceFieldKey(domainObject, fm.getFieldName()),
 							containsMapTerm);
 			for (IMapEntry mapEntry : mapEntries) {
-				recursiveCalculateClosure(mapEntry, context, false); // don't delete
+				recursiveCalculateClosure(mapEntry, fm, context, false); // don't delete
 			}
-			removeObjectsIfNeeded(context, mapEntriesToRemove);
+			removeObjectsIfNeeded(fm, context, mapEntriesToRemove);
 		}
 		
 		private void handleListInClosureCalc(Collection<?> coll, Object domainObject,
@@ -1021,7 +1025,7 @@ public class DomainAccess {
 			handleKeyedRelationsModification(keyedRelations, context,
 					new SourceFieldKey(domainObject, fm.getFieldName()), false);
 			for (Object elem : coll) {
-				recursiveCalculateClosure(elem, context, false); // don't delete
+				recursiveCalculateClosure(elem, fm, context, false); // don't delete
 			}
 		}
 		
@@ -1043,7 +1047,7 @@ public class DomainAccess {
 			String classField = fm.getClassFieldName();
 			MappingUtil.internalDomainAccess.get()
 				.addConcreteFieldType(classField, relatedObject.getClass());
-			recursiveCalculateClosure(relatedObject, context, false); // don't delete
+			recursiveCalculateClosure(relatedObject, fm, context, false); // don't delete
 		}
 		
 		private List<IMapEntry> handleKeyedRelationsModification(Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations,
@@ -1147,10 +1151,10 @@ public class DomainAccess {
 			return ret;
 		}
 		
-		private void removeObjectsIfNeeded(UpdateContext context, List<IMapEntry> mapEntriesToRemove) {
+		private void removeObjectsIfNeeded(FieldMapping parentField, UpdateContext context, List<IMapEntry> mapEntriesToRemove) {
 			if (mapEntriesToRemove.size() > 0) {
 				for(Object obj : mapEntriesToRemove) { // remove MapEntry objects
-					recursiveCalculateClosure(obj, context, true); // prepare for remove
+					recursiveCalculateClosure(obj, parentField, context, true); // prepare for remove
 					context.domainObjectsToRemove.add(obj);
 				}
 			}

@@ -247,6 +247,10 @@ public class FieldMapping {
 		return this.propertyName;
 	}
 	
+	public Field getField() {
+		return this.field;
+	}
+	
 	public Class<?> getFieldType () {
 		return this.field.getType();
 	}
@@ -290,13 +294,13 @@ public class FieldMapping {
 			return true;
 		if (obj == null)
 			return false;
-		if (getClass() != obj.getClass())
+		if (!(obj instanceof FieldMapping))
 			return false;
 		FieldMapping other = (FieldMapping) obj;
 		if (field == null) {
-			if (other.field != null)
+			if (other.getField() != null)
 				return false;
-		} else if (!field.equals(other.field))
+		} else if (!field.equals(other.getField()))
 			return false;
 		return true;
 	}

@@ -41,7 +41,7 @@ public class DefaultObjectMappingCreator {
 		for (int i = 0;i < fields.length; i++) {
 			if (!Modifier.isTransient(fields[i].getModifiers())) {
 				FieldMapping fieldMapping = new FieldMapping(fields[i]);
-				objectMapping.getFieldMappings().add(fieldMapping);
+				objectMapping.addFieldMapping(fieldMapping);
 			}
 		}
 	}

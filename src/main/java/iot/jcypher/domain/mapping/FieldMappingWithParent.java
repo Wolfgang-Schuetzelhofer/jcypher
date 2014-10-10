@@ -16,20 +16,14 @@
 
 package iot.jcypher.domain.mapping;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
 
-public class SimpleObjectMapping extends ObjectMapping {
+public class FieldMappingWithParent extends FieldMapping {
 
-	private List<FieldMapping> fieldMappings = new ArrayList<FieldMapping>();
+	private FieldMapping parentField;
 	
-	public void addFieldMapping(FieldMapping fieldMapping) {
-		this.fieldMappings.add(fieldMapping);
+	public FieldMappingWithParent(FieldMapping source, FieldMapping parentField) {
+		super(source.getField(), source.getPropertyOrRelationName());
+		this.parentField = parentField;
 	}
 
-	@Override
-	public Iterator<FieldMapping> fieldMappingsIterator() {
-		return this.fieldMappings.iterator();
-	}
 }
