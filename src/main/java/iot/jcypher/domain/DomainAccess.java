@@ -32,9 +32,9 @@ import iot.jcypher.domain.mapping.DomainState.SourceField2TargetKey;
 import iot.jcypher.domain.mapping.DomainState.SourceFieldKey;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.FieldMapping.FieldKind;
+import iot.jcypher.domain.mapping.FieldMappingWithParent;
 import iot.jcypher.domain.mapping.IMapEntry;
 import iot.jcypher.domain.mapping.MapEntry;
-import iot.jcypher.domain.mapping.MapEntryObjectMapping;
 import iot.jcypher.domain.mapping.MapTerminator;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
@@ -535,7 +535,7 @@ public class DomainAccess {
 			}
 			
 			T domainObject = (T) createInstance(concreteClass);
-			ObjectMapping objectMapping = getObjectMappingFor(domainObject, null);
+			ObjectMapping objectMapping = getObjectMappingFor(domainObject);
 			objectMapping.mapPropertiesToObject(domainObject, rNode);
 			
 			return domainObject;
@@ -616,17 +616,21 @@ public class DomainAccess {
 			return new CompoundObjectMapping(cType, this.mappings, filter);
 		}
 		
-		private ObjectMapping getObjectMappingFor(Object domainObject, FieldMapping parentField) {
+		private ObjectMapping getObjectMappingFor(Object domainObject) {
 			Class<?> clazz = domainObject.getClass();
 			ObjectMapping objectMapping = this.mappings.get(clazz);
 			if (objectMapping == null) {
 				objectMapping = DefaultObjectMappingCreator.createObjectMapping(clazz);
 				addObjectMappingForClass(clazz, objectMapping);
 			}
-			if (clazz.equals(MapEntry.class))
-				return new MapEntryObjectMapping(objectMapping, parentField);
-			else
-				return objectMapping;
+			return objectMapping;
+		}
+		
+		private FieldMapping modifyFieldMapping(FieldMapping fm, FieldMapping parentField) {
+			if (fm.getField().getDeclaringClass().equals(MapEntry.class)) {
+				return new FieldMappingWithParent(fm, parentField);
+			}
+			return fm;
 		}
 		
 		private void addObjectMappingForClass(Class<?> domainObjectClass, ObjectMapping objectMapping) {
@@ -887,10 +891,10 @@ public class DomainAccess {
 				boolean prepareToDelete) {
 			if (!context.domainObjects.contains(domainObject)) { // avoid infinite loops
 				context.domainObjects.add(domainObject);
-				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject, parentField);
+				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject);
 				Iterator<FieldMapping> it = objectMapping.fieldMappingsIterator();
 				while (it.hasNext()) {
-					FieldMapping fm = it.next();
+					FieldMapping fm = domainAccessHandler.modifyFieldMapping(it.next(), parentField);
 					Object obj = fm.getObjectNeedingRelation(domainObject);
 					if (obj != null && !prepareToDelete) { // definitly need relation
 						if (obj instanceof Collection<?>) { // collection with non-simple elements,
@@ -1313,7 +1317,7 @@ public class DomainAccess {
 									Iterator<FieldMapping> it = objectMapping.fieldMappingsIterator();
 									int idx = 0;
 									while (it.hasNext()) {
-										FieldMapping fMap = it.next();
+										FieldMapping fMap = domainAccessHandler.modifyFieldMapping(it.next(), fm);
 										idx++; // index starts with 1 so as not to mix with the root node (n_0)
 										if (!objectMapping.shouldPerformFieldMapping(fMap)) {
 											if (fMap.needsRelation() && resolveDeep) {
@@ -1609,7 +1613,7 @@ public class DomainAccess {
 					Iterator<FieldMapping> it = objectMapping.fieldMappingsIterator();
 					int idx = 0;
 					while (it.hasNext()) {
-						FieldMapping fMap = it.next();
+						FieldMapping fMap = domainAccessHandler.modifyFieldMapping(it.next(), fm);
 						idx++; // index starts with 1 so as not to mix with the root node (n_0)
 						if (!walkedToIndex) {
 							if (idx != this.subPathIndex) // until subPathIndex is reached

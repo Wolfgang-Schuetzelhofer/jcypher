@@ -26,4 +26,14 @@ public class FieldMappingWithParent extends FieldMapping {
 		this.parentField = parentField;
 	}
 
+	@Override
+	public String getClassFieldName() {
+		StringBuilder sb = new StringBuilder();
+		sb.append('-');
+		sb.append(getFieldName());
+		sb.append('-');
+		sb.append(this.parentField.getClassFieldName());
+		return sb.toString();
+	}
+
 }
