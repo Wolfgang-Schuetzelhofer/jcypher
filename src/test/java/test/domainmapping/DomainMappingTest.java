@@ -65,6 +65,7 @@ import test.domainmapping.ambiguous.MultiBroker;
 import test.domainmapping.ambiguous.NPerson;
 import test.domainmapping.maps.CompareUtil_3;
 import test.domainmapping.maps.MapContainer;
+import test.domainmapping.maps.MultiDimMapsLists;
 
 public class DomainMappingTest extends AbstractTestSuite{
 
@@ -129,15 +130,95 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@Test
+	public void testMultiMapList() {
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		MultiDimMapsLists multiDimMapsLists = new MultiDimMapsLists();
+		MultiDimMapsLists multiDimMapsLists_1;
+		boolean equals;
+		Address first = new Address();
+		DistrictAddress second = new DistrictAddress();
+		Address third = new Address();
+		Address first_1 = new Address();
+		DistrictAddress second_1 = new DistrictAddress();
+		Address third_1 = new Address();
+		Address first_2 = new Address();
+		DistrictAddress second_2 = new DistrictAddress();
+		Address third_2 = new Address();
+		
+		buildMapTestAny2Any(first, second, third);
+		buildMapTestAny2Any(first_1, second_1, third_1);
+		buildMapTestAny2Any(first_2, second_2, third_2);
+		
+		// init multiDimMap
+		Map<Object, Object> multiDimMap = new HashMap<Object, Object>();
+		Map<Object, Object> multiDimMap_1 = new HashMap<Object, Object>();
+		Map<Object, Object> multiDimMap_2 = new HashMap<Object, Object>();
+		
+		multiDimMap_1.put(first_1, second_1);
+		multiDimMap_1.put("third", third_1);
+		multiDimMap_1.put(third_1, "third again");
+		multiDimMap_1.put("four", 4);
+		multiDimMap_1.put(5, "five");
+		
+		multiDimMap_2.put(first_2, second_2);
+		multiDimMap_2.put("third", third_2);
+		multiDimMap_2.put(third_2, "third again");
+		multiDimMap_2.put("six", 6);
+		multiDimMap_2.put(7, "seven");
+		
+		multiDimMap.put(multiDimMap_1, multiDimMap_2);
+		multiDimMap.put("first", multiDimMap_1);
+		multiDimMap.put("second", multiDimMap_1);
+		
+		multiDimMapsLists.setMultiDimMap(multiDimMap);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(multiDimMapsLists);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
+		assertTrue(equals);
+		
+		return;
+	}
+	
+	//@Test
 	public void testMapAny2Any() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		DomainAccess da1;
 		MapContainer mapContainer = new MapContainer();
 		MapContainer mapContainer_1;
+		Address first = new Address();
+		DistrictAddress second = new DistrictAddress();
+		Address third = new Address();
 		boolean equals;
 		
-		buildMapTestAny2Any(mapContainer);
+		buildMapTestAny2Any(first, second, third);
+		
+		// init any2Any
+		Map<Object, Object> anyMap = new HashMap<Object, Object>();
+		anyMap.put(first, second);
+		anyMap.put("third", third);
+		anyMap.put(third, "third again");
+		anyMap.put("four", 4);
+		anyMap.put(5, "five");
+		
+		mapContainer.setAny2AnyMap(new HashMap<Object, Object>());
 		
 		errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
@@ -158,14 +239,26 @@ public class DomainMappingTest extends AbstractTestSuite{
 		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
 		assertTrue(equals);
 		
-		if (true)
-			return;
+		mapContainer.setAny2AnyMap(anyMap);
 		
-		// modify simple2Simple
-		mapContainer.getString2IntegerMap().put("one", 2);
-		mapContainer.getString2IntegerMap().put("two", 3);
-		mapContainer.getString2IntegerMap().remove("three");
+		errors = da.store(mapContainer);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 		
+		da1 = new DomainAccess(dbAccess, domainName);
+		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
+		assertTrue(equals);
+		
+		// modify any2Any
+		anyMap.put(first, third);
+		anyMap.put("third", third);
+		anyMap.remove(third);
+		anyMap.put(second, "second");
+		anyMap.put("four", 44);
+		anyMap.remove(5);
 		
 		// store modification
 		errors = da.store(mapContainer);
@@ -174,9 +267,15 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw new JcResultException(errors);
 		}
 		
-		// modify simple2Simple
-		mapContainer.getString2IntegerMap().remove("one");
-		mapContainer.getString2IntegerMap().remove("two");
+		da1 = new DomainAccess(dbAccess, domainName);
+		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
+		assertTrue(equals);
+		
+		// modify any2Any
+		anyMap.remove("third");
+		anyMap.remove(second);
+		anyMap.remove("four");
 		
 		// store modification
 		errors = da.store(mapContainer);
@@ -184,6 +283,41 @@ public class DomainMappingTest extends AbstractTestSuite{
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
+		assertTrue(equals);
+		
+		// modify any2Any
+		mapContainer.setAny2AnyMap(null);
+		
+		// store modification
+		errors = da.store(mapContainer);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
+		assertTrue(equals);
+		
+		// modify any2Any
+		mapContainer.setAny2AnyMap(new HashMap<Object, Object>());
+		
+		// store modification
+		errors = da.store(mapContainer);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
+		assertTrue(equals);
 		
 		return;
 	}
@@ -512,6 +646,8 @@ public class DomainMappingTest extends AbstractTestSuite{
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		DomainAccess da1;
+		Person john_1;
+		boolean equals;
 		
 		Person john = new Person();
 		
@@ -533,6 +669,24 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		SyncInfo syncInfo = da.getSyncInfo(john);
 		
+		da1 = new DomainAccess(dbAccess, domainName);
+		john_1 = da1.loadById(Person.class, syncInfo.getId());
+		equals = CompareUtil.equalsPerson(john, john_1);
+		assertTrue(equals);
+		
+		// Store null array
+		john.setAddresses(null);
+		errors = da.store(john);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		john_1 = da1.loadById(Person.class, syncInfo.getId());
+		equals = CompareUtil.equalsPerson(john, john_1);
+		assertTrue(equals);
+		
 		// Store non-empty array without generics
 		john.setAddresses(addresses);
 		errors = da.store(john);
@@ -550,9 +704,8 @@ public class DomainMappingTest extends AbstractTestSuite{
 //		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		Person john_1;
 		john_1 = da1.loadById(Person.class, syncInfo.getId());
-		boolean equals = CompareUtil.equalsPerson(john, john_1);
+		equals = CompareUtil.equalsPerson(john, john_1);
 		assertTrue(equals);
 		
 		Address addr = (Address) john.getAddresses().remove(john.getAddresses().size() - 1);
@@ -914,16 +1067,11 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return expected.equals(returned);
 	}
 	
-	private void buildMapTestAny2Any(MapContainer addressMap) {
-		Map<Object, Object> anyMap = new HashMap<Object, Object>();
-		addressMap.setAny2AnyMap(anyMap);
-		
-		Address first = new Address();
+	private void buildMapTestAny2Any(Address first, DistrictAddress second, Address third) {
 		first.setCity("Munich");
 		first.setStreet("Main Street");
 		first.setNumber(9);
 		
-		DistrictAddress second = new DistrictAddress();
 		second.setCity("San Francisco");
 		second.setStreet("Embarcadero Center");
 		second.setNumber(1);
@@ -931,19 +1079,12 @@ public class DomainMappingTest extends AbstractTestSuite{
 		district.setName("District thirteen");
 		second.setDistrict(district);
 		district = new District();
-		district.setName("Subistrict four");
+		district.setName("Subdistrict four");
 		second.setSubDistrict(district);
 		
-		Address third = new Address();
 		third.setCity("New York");
 		third.setStreet("52nd Street");
 		third.setNumber(35);
-		
-		anyMap.put(first, second);
-		anyMap.put("third", third);
-		anyMap.put(third, "third again");
-		anyMap.put("four", 4);
-		anyMap.put(5, "five");
 	}
 	
 	private void buildMapTestSimple2Simple(MapContainer addressMap) {
@@ -973,7 +1114,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		district.setName("District thirteen");
 		dAddress.setDistrict(district);
 		district = new District();
-		district.setName("Subistrict four");
+		district.setName("Subdistrict four");
 		dAddress.setSubDistrict(district);
 		addresses.put("second", dAddress);
 		
@@ -1003,7 +1144,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		district.setName("District thirteen");
 		dAddress.setDistrict(district);
 		district = new District();
-		district.setName("Subistrict four");
+		district.setName("Subdistrict four");
 		dAddress.setSubDistrict(district);
 		addresses.put(dAddress, "second");
 		
@@ -1032,7 +1173,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		district.setName("District thirteen");
 		second.setDistrict(district);
 		district = new District();
-		district.setName("Subistrict four");
+		district.setName("Subdistrict four");
 		second.setSubDistrict(district);
 		
 		Address third = new Address();
@@ -1068,7 +1209,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		district.setName("District thirteen");
 		second.setDistrict(district);
 		district = new District();
-		district.setName("Subistrict four");
+		district.setName("Subdistrict four");
 		second.setSubDistrict(district);
 		
 		DistrictAddress second_1 = new DistrictAddress();
@@ -1079,7 +1220,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		district.setName("District thirteen");
 		second_1.setDistrict(district);
 		district = new District();
-		district.setName("Subistrict four");
+		district.setName("Subdistrict four");
 		second_1.setSubDistrict(district);
 		
 		Address third = new Address();
@@ -1139,7 +1280,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		district.setName("District thirteen");
 		dAddress.setDistrict(district);
 		district = new District();
-		district.setName("Subistrict four");
+		district.setName("Subdistrict four");
 		dAddress.setSubDistrict(district);
 		jPerson.setPostalAddress(dAddress);
 		

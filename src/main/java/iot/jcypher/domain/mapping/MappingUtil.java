@@ -18,15 +18,15 @@ package iot.jcypher.domain.mapping;
 
 import iot.jcypher.domain.DomainAccess.InternalDomainAccess;
 
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 public class MappingUtil {
 	
@@ -67,12 +67,18 @@ public class MappingUtil {
 				Enum.class.isAssignableFrom(type);
 	}
 	
+	@SuppressWarnings("rawtypes")
 	public static Object convertToProperty(Object value) {
 		if (value != null) {
 			if (Date.class.isAssignableFrom(value.getClass())) {
 				return dateToLong((Date) value);
 			} else if (Enum.class.isAssignableFrom(value.getClass())) {
 				return ((Enum<?>)value).name();
+			} else if (value instanceof Map) {
+				Map map = (Map)value;
+				if (map.isEmpty()) { // empty maps are mapped to empty lists
+					return Collections.EMPTY_LIST;
+				}
 			}
 		}
 		return value;
@@ -81,13 +87,23 @@ public class MappingUtil {
 	/**
 	 * @param value
 	 * @param targetType
-	 * @param listComponentType may be null in case when targetType is not a collection,
+	 * @return
+	 */
+	public static Object convertFromProperty(Object value, Class<?> targetType) {
+		return MappingUtil.convertFromProperty(value, targetType, null, null);
+	}
+	
+	/**
+	 * @param value
+	 * @param targetType
+	 * @param componentType may be null in case when targetType is not a collection,
 	 * or when the listComponentType cannot be determined
+	 * @param concreteFieldType
 	 * @return
 	 */
 	@SuppressWarnings("unchecked")
 	public static Object convertFromProperty(Object value, Class<?> targetType,
-			Class<?>listComponentType) {
+			Class<?>componentType, Class<?> concreteFieldType) {
 		if (value != null) {
 			if (Date.class.isAssignableFrom(targetType) && value instanceof Number) {
 				return longToDate(((Number)value).longValue());
@@ -99,14 +115,22 @@ public class MappingUtil {
 				}
 				return value;
 			} else if (Collection.class.isAssignableFrom(targetType)) {
-				if (listComponentType != null) {
+				if (componentType != null) {
 					List<Object> converted = new ArrayList<>();
 					Collection<Object> coll = (Collection<Object>)value;
 					for (Object elem : coll) {
-						converted.add(convertFromProperty(elem, listComponentType, null));
+						converted.add(convertFromProperty(elem, componentType, null, null));
 					}
 					coll.clear();
 					coll.addAll(converted);
+				}
+			} else if (Map.class.isAssignableFrom(targetType)) { // only possible for empty maps
+				if (concreteFieldType != null) {
+					try {
+						return concreteFieldType.newInstance();
+					} catch (Throwable e) {
+						throw new RuntimeException(e);
+					}
 				}
 			} else if (targetType.equals(value.getClass())) {
 				return value;
@@ -114,7 +138,7 @@ public class MappingUtil {
 				return convertToPrimitive(value, targetType);
 			} else if (targetType.isAssignableFrom(value.getClass())) {
 				return targetType.cast(value);
-			} else if (Number.class.isAssignableFrom(targetType)) {
+			} else if (Number.class.isAssignableFrom(targetType) && value instanceof Number) {
 				return convertToDistinctNumber(value, targetType);
 			}
 		}
@@ -122,17 +146,17 @@ public class MappingUtil {
 	}
 	
 	private static Object convertToPrimitive(Object value, Class<?> targetType) {
-		if (targetType.equals(Short.TYPE))
+		if (targetType.equals(Short.TYPE) && value instanceof Number)
 			return ((Number)value).shortValue();
-		else if (targetType.equals(Integer.TYPE))
+		else if (targetType.equals(Integer.TYPE) && value instanceof Number)
 			return ((Number)value).intValue();
-		else if (targetType.equals(Long.TYPE))
+		else if (targetType.equals(Long.TYPE) && value instanceof Number)
 			return ((Number)value).longValue();
-		else if (targetType.equals(Float.TYPE))
+		else if (targetType.equals(Float.TYPE) && value instanceof Number)
 			return ((Number)value).floatValue();
-		else if (targetType.equals(Double.TYPE))
+		else if (targetType.equals(Double.TYPE) && value instanceof Number)
 			return ((Number)value).doubleValue();
-		else if (targetType.equals(Boolean.TYPE))
+		else if (targetType.equals(Boolean.TYPE) && value instanceof Boolean)
 			return ((Boolean)value).booleanValue();
 		return value;
 	}

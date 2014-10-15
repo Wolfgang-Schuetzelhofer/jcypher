@@ -16,14 +16,18 @@
 
 package iot.jcypher.domain.mapping;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class FieldMappingWithParent extends FieldMapping {
 
-	private FieldMapping parentField;
+	private List<FieldMapping> parentFields;
 	
 	public FieldMappingWithParent(FieldMapping source, FieldMapping parentField) {
 		super(source.getField(), source.getPropertyOrRelationName());
-		this.parentField = parentField;
+		this.parentFields = new ArrayList<FieldMapping>();
+		this.parentFields.add(parentField);
 	}
 
 	@Override
@@ -32,8 +36,31 @@ public class FieldMappingWithParent extends FieldMapping {
 		sb.append('-');
 		sb.append(getFieldName());
 		sb.append('-');
-		sb.append(this.parentField.getClassFieldName());
+		sb.append(this.getDOClassFieldName());
 		return sb.toString();
+	}
+	
+	@Override
+	public String getPropertyOrRelationName() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(this.propertyName);
+		sb.append('_');
+		sb.append(this.getDOPropertyOrRelationName());
+		return sb.toString();
+	}
+	
+	public void addParentField(FieldMapping fm) {
+		this.parentFields.add(fm);
+	}
+
+	@Override
+	protected String getDOClassFieldName() {
+		return this.parentFields.get(0).getDOClassFieldName();
+	}
+
+	@Override
+	protected String getDOPropertyOrRelationName() {
+		return this.parentFields.get(0).getDOPropertyOrRelationName();
 	}
 
 }

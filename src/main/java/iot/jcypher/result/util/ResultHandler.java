@@ -665,7 +665,7 @@ public class ResultHandler {
 		Map<GrNode, JcNumber> createdNodeToIdMap = new HashMap<GrNode, JcNumber>();
 		Map<GrRelation, JcNumber> createdRelationToIdMap = new HashMap<GrRelation, JcNumber>();
 		List<JcQuery> queries = createUpdateQueries(createdNodeToIdMap, createdRelationToIdMap);
-		Util.printQueries(queries, "UPDATE", Format.PRETTY_1);
+//		Util.printQueries(queries, "UPDATE", Format.PRETTY_1);
 		List<JcError> errors = new ArrayList<JcError>();
 		if (queries.size() > 0) {
 			List<JcQueryResult> results = dbAccess.execute(queries);

@@ -25,6 +25,23 @@ import test.domainmapping.ambiguous.CompareUtil_2;
 
 public class CompareUtil_3 {
 
+	public static boolean equalsMultiDimMapsLists(MultiDimMapsLists m_1,
+			MultiDimMapsLists m_2) {
+		if (m_1 == m_2)
+			return true;
+		if (m_1 != null && m_2 == null)
+			return false;
+		if (m_2 != null && m_1 == null)
+			return false;
+		if (m_1.getMultiDimMap() == null) {
+			if (m_2.getMultiDimMap() != null)
+				return false;
+		} else if (!equalsMap(m_1.getMultiDimMap(),
+				m_2.getMultiDimMap()))
+			return false;
+		return true;
+	}
+	
 	public static boolean equalsMapContainer(MapContainer container_1,
 			MapContainer container_2) {
 		if (container_1 == container_2)
@@ -70,6 +87,8 @@ public class CompareUtil_3 {
 	public static boolean equalsMap(Map map_1, Map map_2) {
 		if (map_1 == map_2)
 			return true;
+		if (!(map_2 instanceof Map))
+			return false;
 		if (map_1.size() != map_2.size())
 			return false;
 
@@ -102,6 +121,7 @@ public class CompareUtil_3 {
 		return true;
 	}
 	
+	@SuppressWarnings("rawtypes")
 	public static boolean equalsObjects(Object o_1, Object o_2) {
 		if (o_1 == o_2)
 			return true;
@@ -110,6 +130,8 @@ public class CompareUtil_3 {
 		if (o_1 == null) {
 			if (o_2 != null)
 				return false;
+		} else if (o_1 instanceof Map && o_2 instanceof Map) {
+			return CompareUtil_3.equalsMap((Map)o_1, (Map)o_2);
 		} else if (!o_1.equals(o_2))
 			return false; 
 		

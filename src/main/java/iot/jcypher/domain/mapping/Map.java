@@ -16,27 +16,21 @@
 
 package iot.jcypher.domain.mapping;
 
+public class Map {
 
-public class MapEntry implements IMapEntry {
+	private java.util.Map<Object, Object> content;
 
-	protected Object key;
-	protected Object value;
-	
-	public MapEntry(Object key, Object value) {
-		super();
-		this.key = key;
-		this.value = value;
-	}
-	
-	public MapEntry() {
+	public Map() {
 		super();
 	}
 
-	public Object getKey() {
-		return key;
+	public Map(java.util.Map<Object, Object> content) {
+		super();
+		this.content = content;
 	}
 
-	public Object getValue() {
-		return value;
+	public java.util.Map<Object, Object> getContent() {
+		return content;
 	}
+	
 }

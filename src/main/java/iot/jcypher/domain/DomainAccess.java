@@ -32,7 +32,6 @@ import iot.jcypher.domain.mapping.DomainState.SourceField2TargetKey;
 import iot.jcypher.domain.mapping.DomainState.SourceFieldKey;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.FieldMapping.FieldKind;
-import iot.jcypher.domain.mapping.FieldMappingWithParent;
 import iot.jcypher.domain.mapping.IMapEntry;
 import iot.jcypher.domain.mapping.MapEntry;
 import iot.jcypher.domain.mapping.MapTerminator;
@@ -68,6 +67,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -138,6 +138,7 @@ public class DomainAccess {
 		 * defines at which recursion occurrence building a query is stopped
 		 */
 		private int maxRecursionCount = 1;
+		private int maxPathSize = 2;
 		private IDBAccess dbAccess;
 		private DomainState domainState;
 		private Map<Class<?>, ObjectMapping> mappings;
@@ -171,7 +172,7 @@ public class DomainAccess {
 				boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
 				
 				if (repeat) { // has one or more match clauses
-					resultList = loadByIdsWithMatches(domainObjectClass, context, ids);
+					resultList = loadByIdsWithMatches(domainObjectClass, context, null, ids);
 				} else { // only simple start by id clauses are needed
 					resultList = loadByIdsSimple(domainObjectClass, ids);
 				}
@@ -188,6 +189,57 @@ public class DomainAccess {
 			}
 
 			return resultList;
+		}
+		
+		void loadDeep(List<Object> domainObjects, Set<MapEntry2DOMap> entry2DOMaps) {
+			Map<Class<?>, List<Object>> byType = new HashMap<Class<?>, List<Object>>();
+			for (Object domainObject : domainObjects) {
+				List<Object> list = byType.get(domainObject.getClass());
+				if (list == null) {
+					list = new ArrayList<Object>();
+					byType.put(domainObject.getClass(), list);
+				}
+				list.add(domainObject);
+			}
+			Iterator<Entry<Class<?>, List<Object>>> it = byType.entrySet().iterator();
+			while(it.hasNext()) {
+				Entry<Class<?>, List<Object>> entry = it.next();
+				loadDeepByType(entry.getKey(), entry.getValue(), entry2DOMaps);
+			}
+		}
+		
+		<T> void loadDeepByType(Class<T> domainObjectClass, List<Object> domainObjects,
+				Set<MapEntry2DOMap> entry2DOMaps) {
+			InternalDomainAccess internalAccess = null;
+			ClosureQueryContext context = new ClosureQueryContext(domainObjectClass);
+			long[] ids = new long[domainObjects.size()];
+			for (int i = 0; i < domainObjects.size(); i++) {
+				ids[i] = this.domainState.getLoadInfoFrom_Object2IdMap(
+						domainObjects.get(i)).getId();
+			}
+			try {
+				internalAccess = MappingUtil.internalDomainAccess.get();
+				MappingUtil.internalDomainAccess.set(new InternalDomainAccess());
+				updateMappingsIfNeeded();
+				new ClosureCalculator().calculateClosureQuery(context);
+				boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
+				
+				if (repeat) { // has one or more match clauses
+					loadByIdsWithMatches(domainObjectClass, context, entry2DOMaps, ids);
+				} else { // only simple start by id clauses are needed
+					loadByIdsSimple(domainObjectClass, ids);
+				}
+			} catch(Throwable e) {
+				if (!(e instanceof RuntimeException))
+					throw new RuntimeException(e);
+				else
+					throw e;
+			} finally {
+				if (internalAccess != null)
+					MappingUtil.internalDomainAccess.set(internalAccess);
+				else
+					MappingUtil.internalDomainAccess.remove();
+			}
 		}
 		
 		List<JcError> store(List<Object> domainObjects) {
@@ -414,36 +466,30 @@ public class DomainAccess {
 		 * @param ids
 		 * @return
 		 */
-		@SuppressWarnings("unchecked")
 		private <T> List<T> loadByIdsWithMatches(Class<T> domainObjectClass,
-				ClosureQueryContext context, long... ids) {
+				ClosureQueryContext context, Set<MapEntry2DOMap> entry2DOMaps, long... ids) {
 			List<T> resultList = new ArrayList<T>();
+			Set<MapEntry2DOMap> e2DOMaps = entry2DOMaps;
 			JcQuery query;
 			String nm = NodePrefix.concat(String.valueOf(0));
 			List<JcQuery> queries = new ArrayList<JcQuery>();
 			Map<Long, JcQueryResult> id2QueryResult = new HashMap<Long, JcQueryResult>();
 			List<Long> queryIds = new ArrayList<Long>();
-			Map<Long, T> id2Object = new HashMap<Long, T>();
 			for (int i = 0; i < ids.length; i++) {
-				// check if domain objects have already been loaded
-				T obj = (T) this.domainState.getFrom_Id2ObjectMap(ids[i]);
-				if (obj != null) {
-					id2Object.put(ids[i], obj);
-				} else {
-					query = new JcQuery();
-					JcNode n = new JcNode(nm);
-					List<IClause> clauses = new ArrayList<IClause>();
-					clauses.add(START.node(n).byId(ids[i]));
-					clauses.addAll(context.matchClauses);
-					clauses.add(RETURN.ALL());
-					IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
-					query.setClauses(clausesArray);
-					queries.add(query);
-					queryIds.add(ids[i]);
-				}
+				// if the object has already been loaded it will be reloaded (updated)
+				query = new JcQuery();
+				JcNode n = new JcNode(nm);
+				List<IClause> clauses = new ArrayList<IClause>();
+				clauses.add(START.node(n).byId(ids[i]));
+				clauses.addAll(context.matchClauses);
+				clauses.add(RETURN.ALL());
+				IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+				query.setClauses(clausesArray);
+				queries.add(query);
+				queryIds.add(ids[i]);
 			}
 			
-			if (queries.size() > 0) { // at least one node has to be loaded
+			if (queries.size() > 0) { // at least one node has to be (re)loaded
 				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
 				List<JcQueryResult> results = this.dbAccess.execute(queries);
 				List<JcError> errors = Util.collectErrors(results);
@@ -456,16 +502,33 @@ public class DomainAccess {
 				}
 			}
 			
+			boolean isRoot;
+			if (e2DOMaps == null) {
+				isRoot = true;
+				e2DOMaps = new HashSet<MapEntry2DOMap>();
+			} else
+				isRoot = false;
+			List<Object> objectsNotResolvedDeep = new ArrayList<Object>();
 			for (int i = 0; i < ids.length; i++) {
-				T obj = id2Object.get(ids[i]);
-				if (obj == null) { // need to load
-					FillModelContext<T> fContext = new FillModelContext<T>(domainObjectClass,
-							id2QueryResult.get(ids[i]), context.queryEndNodes, context.recursionExitNodes);
-					new ClosureCalculator().fillModel(fContext);
-					obj = fContext.domainObject;
-				}
-				resultList.add(obj);
+				FillModelContext<T> fContext = new FillModelContext<T>(domainObjectClass,
+						id2QueryResult.get(ids[i]), context.queryEndNodes, context.recursionExitNodes);
+				new ClosureCalculator().fillModel(fContext);
+				objectsNotResolvedDeep.addAll(fContext.recursionExitObjects);
+				resultList.add(fContext.domainObject);
+				e2DOMaps.addAll(fContext.entry2DOMaps);
 			}
+			
+			if (!objectsNotResolvedDeep.isEmpty()) {
+				loadDeep(objectsNotResolvedDeep, e2DOMaps);
+			}
+			
+			if (isRoot) {
+				// handle update of maps from MapEntries
+				for (MapEntry2DOMap e2DOMap : e2DOMaps) {
+					e2DOMap.update();
+				}
+			}
+			
 			return resultList;
 		}
 		
@@ -484,17 +547,17 @@ public class DomainAccess {
 			for (int i = 0; i < ids.length; i++) {
 				// check if domain objects have already been loaded
 				T obj = (T) this.domainState.getFrom_Id2ObjectMap(ids[i]);
-				if (obj != null) {
+				if (obj != null)
 					id2Object.put(ids[i], obj);
-				} else {
-					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
-					id2QueryNode.put(ids[i], n);
-					clauses.add(START.node(n).byId(ids[i]));
-				}
+
+				// if the object has already been loaded it will be reloaded (updated)
+				JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
+				id2QueryNode.put(ids[i], n);
+				clauses.add(START.node(n).byId(ids[i]));
 			}
 			
 			JcQueryResult result = null;
-			if (clauses.size() > 0) { // one or more nodes are to be loaded
+			if (clauses.size() > 0) { // one or more nodes are to be (re)loaded
 				clauses.add(RETURN.ALL());
 				JcQuery query = new JcQuery();
 				IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
@@ -508,33 +571,37 @@ public class DomainAccess {
 			
 			for (int i = 0; i < ids.length; i++) {
 				T obj = id2Object.get(ids[i]);
-				if (obj == null) { // need to load
-					GrNode rNode = result.resultOf(id2QueryNode.get(ids[i])).get(0);
-					obj = createAndMapProperties(domainObjectClass, rNode);
-					this.domainState.add_Id2Object(obj, ids[i], ResolutionDepth.DEEP);
-				}
-				resultList.add(obj);
+				GrNode rNode = result.resultOf(id2QueryNode.get(ids[i])).get(0);
+				T resObj = createIfNeeded_MapProperties(domainObjectClass, rNode, obj);
+				if (obj == null)
+					this.domainState.add_Id2Object(resObj, ids[i], ResolutionDepth.DEEP);
+				else
+					this.domainState.getLoadInfoFrom_Object2IdMap(obj)
+						.setResolutionDepth(ResolutionDepth.DEEP);
+				resultList.add(resObj);
 			}
 			return resultList;
 		}
 
 		@SuppressWarnings("unchecked")
-		private <T> T createAndMapProperties(Class<T> domainObjectClass, GrNode rNode) {
-			Class<? extends T> concreteClass;
-			Class<?> clazz = findClassToInstantiateFor(rNode);
-			if (clazz != null) {
-				if (!domainObjectClass.isAssignableFrom(clazz)) {
-					throw new RuntimeException(clazz.getName() + " cannot be assigned to domain object class: " +
-							domainObjectClass.getName());
+		private <T> T createIfNeeded_MapProperties(Class<T> domainObjectClass, GrNode rNode, T domObj) {
+			T domainObject = domObj;
+			if (domainObject == null) {
+				Class<? extends T> concreteClass;
+				Class<?> clazz = findClassToInstantiateFor(rNode);
+				if (clazz != null) {
+					if (!domainObjectClass.isAssignableFrom(clazz)) {
+						throw new RuntimeException(clazz.getName() + " cannot be assigned to domain object class: " +
+								domainObjectClass.getName());
+					} else {
+						concreteClass = (Class<? extends T>) clazz;
+					}
 				} else {
-					concreteClass = (Class<? extends T>) clazz;
+					throw new RuntimeException("node with label(s): " + rNode.getLabels() + " cannot be mapped to domain object class: " +
+							domainObjectClass.getName());
 				}
-			} else {
-				throw new RuntimeException("node with label(s): " + rNode.getLabels() + " cannot be mapped to domain object class: " +
-						domainObjectClass.getName());
+				domainObject = (T) createInstance(concreteClass);
 			}
-			
-			T domainObject = (T) createInstance(concreteClass);
 			ObjectMapping objectMapping = getObjectMappingFor(domainObject);
 			objectMapping.mapPropertiesToObject(domainObject, rNode);
 			
@@ -572,7 +639,7 @@ public class DomainAccess {
 			if (key != null) {
 				GrProperty prop = rRelation.getProperty(KeyProperty);
 				if (prop != null) {
-					Object propValue = MappingUtil.convertFromProperty(prop.getValue(), key.getClass(), null);
+					Object propValue = MappingUtil.convertFromProperty(prop.getValue(), key.getClass());
 					if (!key.equals(propValue))
 						prop.setValue(key);
 				} else
@@ -590,7 +657,7 @@ public class DomainAccess {
 			GrProperty prop = rRelation.getProperty(ValueProperty);
 			if (value != null) {
 				if (prop != null) {
-					Object propValue = MappingUtil.convertFromProperty(prop.getValue(), value.getClass(), null);
+					Object propValue = MappingUtil.convertFromProperty(prop.getValue(), value.getClass());
 					if (!value.equals(propValue))
 						prop.setValue(value);
 				} else
@@ -627,9 +694,16 @@ public class DomainAccess {
 		}
 		
 		private FieldMapping modifyFieldMapping(FieldMapping fm, FieldMapping parentField) {
-			if (fm.getField().getDeclaringClass().equals(MapEntry.class)) {
-				return new FieldMappingWithParent(fm, parentField);
-			}
+//			Class<?> clazz = fm.getField().getDeclaringClass();
+//			if (clazz.equals(MapEntry.class) || clazz.equals(iot.jcypher.domain.mapping.Map.class)) {
+//				FieldMappingWithParent mfm = modifiedFieldMappings.get(fm);
+//				if (mfm == null) {
+//					mfm = new FieldMappingWithParent(fm, parentField);
+//					modifiedFieldMappings.put(fm, mfm);
+//				} else
+//					mfm.addParentField(parentField);
+//				return mfm;
+//			}
 			return fm;
 		}
 		
@@ -934,6 +1008,7 @@ public class DomainAccess {
 			}
 		}
 		
+		@SuppressWarnings("unchecked")
 		private void handleMapInClosureCalc(Map<Object, Object> map, Object domainObject,
 				UpdateContext context, FieldMapping fm) {
 			MapTerminator mapTerminator = null;
@@ -941,6 +1016,7 @@ public class DomainAccess {
 			Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations =
 					new HashMap<SourceField2TargetKey, List<KeyedRelation>>();
 			List<IMapEntry> mapEntries = new ArrayList<IMapEntry>();
+			List<Object> targetObjects = new ArrayList<Object>();
 			// store concrete type in DomainInfo
 			String classField = fm.getClassFieldName();
 			MappingUtil.internalDomainAccess.get()
@@ -950,7 +1026,11 @@ public class DomainAccess {
 			while(it.hasNext()) {
 				Entry<Object, Object> entry = it.next();
 				Object val = entry.getValue();
+				if (val instanceof Map<?, ?>)
+					val = domainAccessHandler.domainState.getCreateMapSurrogateFor((Map<Object, Object>)val);
 				Object key = entry.getKey();
+				if (key instanceof Map<?, ?>)
+					key = domainAccessHandler.domainState.getCreateMapSurrogateFor((Map<Object, Object>)key);
 				boolean keyMapsToProperty = MappingUtil.mapsToProperty(key.getClass());
 				boolean valMapsToProperty = MappingUtil.mapsToProperty(val.getClass());
 				Object target;
@@ -963,15 +1043,17 @@ public class DomainAccess {
 							containsMapTerm = true;
 						}
 						target = mapTerminator;
-					} else
+					} else {
 						target = val;
+						targetObjects.add(target);
+					}
 					relationKey = entry.getKey();
 				} else { // complex key always needs a MapEntry
 					// handle it like a list for correct removal of removed entries
-					MapEntry mapEntry = new MapEntry(key, val);
+					MapEntry mapEntry =  new MapEntry(key, val);
 					mapEntries.add(mapEntry);
 					target = mapEntry;
-					relationKey = mapEntry.getKeyCode();
+					relationKey = (int)0;
 				}
 				SourceField2TargetKey s2tKey =
 						new SourceField2TargetKey(domainObject, fm.getFieldName(), target);
@@ -997,6 +1079,9 @@ public class DomainAccess {
 							containsMapTerm);
 			for (IMapEntry mapEntry : mapEntries) {
 				recursiveCalculateClosure(mapEntry, fm, context, false); // don't delete
+			}
+			for (Object obj : targetObjects) {
+				recursiveCalculateClosure(obj, fm, context, false); // don't delete
 			}
 			removeObjectsIfNeeded(fm, context, mapEntriesToRemove);
 		}
@@ -1227,14 +1312,24 @@ public class DomainAccess {
 						compoundType = MappingUtil.internalDomainAccess.get()
 								.getFieldComponentType(classFieldName);
 					} else if (fieldKind == FieldKind.MAP) {
-						String classFieldName = fm.getClassFieldName();
-						// select the first concrete type in the CompoundType to instantiate.
-						// Most certainly there will only be one type in the CompoundType,
-						// anyway it must be instantiable as it has earlier been stored to the graph
-						map = (Map<Object, Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
-								.getConcreteFieldType(classFieldName).getType());
-						compoundType = MappingUtil.internalDomainAccess.get()
-								.getFieldComponentType(classFieldName);
+						if (context.parentObject instanceof iot.jcypher.domain.mapping.Map) {
+							map = domainAccessHandler.domainState.getMapForSurrogate(
+									(iot.jcypher.domain.mapping.Map)context.parentObject);
+						}
+						if (map == null) {
+							String classFieldName = fm.getClassFieldName();
+							// select the first concrete type in the CompoundType to instantiate.
+							// Most certainly there will only be one type in the CompoundType,
+							// anyway it must be instantiable as it has earlier been stored to the graph
+							map = (Map<Object, Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
+									.getConcreteFieldType(classFieldName).getType());
+							compoundType = MappingUtil.internalDomainAccess.get()
+									.getFieldComponentType(classFieldName);
+							if (context.parentObject instanceof iot.jcypher.domain.mapping.Map) {
+								domainAccessHandler.domainState.addMap2Surrogate(map,
+										(iot.jcypher.domain.mapping.Map)context.parentObject);
+							}
+						}
 					}
 					
 					// initialize for loop iteration
@@ -1296,12 +1391,21 @@ public class DomainAccess {
 									domainAccessHandler.domainState.add_Id2Object(domainObject, actNode.getId(),
 											resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
 									performMapping = true;
+									// recursion exit
+									if (!resolveDeep) {
+										context.addRecursionExitObject(domainObject);
+									}
 								} else {
-									if (resolveDeep &&
-											domainAccessHandler.domainState.getResolutionDepth(domainObject) !=
+									if (domainAccessHandler.domainState.getResolutionDepth(domainObject) !=
 												ResolutionDepth.DEEP) {
-										performMapping = true;
-										mapProperties = false; // properties have already been mapped
+										if (resolveDeep) {
+											performMapping = true;
+											mapProperties = false; // properties have already been mapped
+											domainAccessHandler.domainState.getLoadInfoFrom_Object2IdMap(domainObject)
+												.setResolutionDepth(ResolutionDepth.DEEP);
+											context.recursionExitObjects.remove(domainObject);
+										} else // recursion exit
+											context.addRecursionExitObject(domainObject);
 									}
 								}
 								
@@ -1335,6 +1439,8 @@ public class DomainAccess {
 												pe.fieldIndex = idx;
 												context.clauseRepetitionNumber = context.maxClauseRepetitionNumber;
 												pe.fieldName = fMap.getFieldName();
+												pe.propOrRelName = fMap.getPropertyOrRelationName();
+												pe.sourceType = fMap.getField().getDeclaringClass();
 												String ndName = this.buildNodeOrRelationName(context.path,
 														DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
 												boolean needToRepeat = false;
@@ -1353,6 +1459,8 @@ public class DomainAccess {
 													pe.fieldIndex = idx;
 													context.clauseRepetitionNumber = context.maxClauseRepetitionNumber;
 													pe.fieldName = fMap.getFieldName();
+													pe.propOrRelName = fMap.getPropertyOrRelationName();
+													pe.sourceType = fMap.getField().getDeclaringClass();
 													ndName = this.buildNodeOrRelationName(context.path,
 															DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
 													needToRepeat = false;
@@ -1403,8 +1511,13 @@ public class DomainAccess {
 									domainObject = collection;
 							} else if (fieldKind == FieldKind.MAP) {
 								addMapRelations_FillMap(context.parentObject, usedRelations,
-										fm.getPropertyOrRelationName(), map);
-								domainObject = map;
+										fm.getPropertyOrRelationName(), map, context.entry2DOMaps);
+								if (map.isEmpty()) {
+									// test for empty map, which evantually was mapped to a property
+									fm.mapPropertyToField(context.parentObject, parentNode);
+									domainObject = null;
+								} else
+									domainObject = map;
 							} else if (usedRelations.size() > 0) {
 								GrRelation rel = usedRelations.get(0);
 								domainAccessHandler.domainState.add_Id2Relation(
@@ -1412,6 +1525,8 @@ public class DomainAccess {
 												context.parentObject,
 												domainObject), rel.getId());
 							}
+							if (domainObject instanceof iot.jcypher.domain.mapping.Map)
+								domainObject = ((iot.jcypher.domain.mapping.Map)domainObject).getContent();
 							if (domainObject != null)
 								fm.setFieldValue(context.parentObject, domainObject);
 						}
@@ -1433,7 +1548,7 @@ public class DomainAccess {
 					GrRelation rel = rit.next();
 					Object domainObject = cit.next();
 					GrProperty prop = rel.getProperty(DomainAccessHandler.KeyProperty);
-					int idx = (Integer)MappingUtil.convertFromProperty(prop.getValue(), Integer.class, null);
+					int idx = (Integer)MappingUtil.convertFromProperty(prop.getValue(), Integer.class);
 					if (idx <= prevIndex)
 						needResort = true;
 					prevIndex = idx;
@@ -1459,7 +1574,7 @@ public class DomainAccess {
 			}
 			
 			private void addMapRelations_FillMap(Object start, List<GrRelation> relList,
-					String relType, Map<Object, Object> map) {
+					String relType, Map<Object, Object> map, List<MapEntry2DOMap> entry2DOMaps) {
 				try {
 					Map<Long, Boolean> handledRelations = new HashMap<Long, Boolean>();
 					Iterator<GrRelation> rit = relList.iterator();
@@ -1473,25 +1588,38 @@ public class DomainAccess {
 							GrProperty prop = rel.getProperty(DomainAccessHandler.KeyProperty);
 							GrProperty typeProp = rel.getProperty(DomainAccessHandler.KeyTypeProperty);
 							Object key = MappingUtil.convertFromProperty(prop.getValue(),
-									Class.forName(typeProp.getValue().toString()), null);
+									Class.forName(typeProp.getValue().toString()));
 							KeyedRelation irel = new KeyedRelation(relType, key, start, end);
 							Object val = null;
 							prop = rel.getProperty(DomainAccessHandler.ValueProperty);
 							if (prop != null) {
 								typeProp = rel.getProperty(DomainAccessHandler.ValueTypeProperty);
 								val = MappingUtil.convertFromProperty(prop.getValue(),
-										Class.forName(typeProp.getValue().toString()), null);
+										Class.forName(typeProp.getValue().toString()));
 								irel.setValue(val);
 							}
 							domainAccessHandler.domainState.add_Id2Relation(irel, relId);
 							
-							// fill map
-							if (end instanceof MapTerminator)
+							boolean fillMap = true;
+							if (end instanceof MapEntry) {
+								// store for later update
+								MapEntry2DOMap entry2DOMap = new MapEntry2DOMap((MapEntry)end, map);
+								entry2DOMaps.add(entry2DOMap);
+								fillMap = false;
+							}
+							
+							if (fillMap) {
+								if (!(end instanceof MapTerminator))
+									val = end;
+								
+								if (key instanceof iot.jcypher.domain.mapping.Map)
+									key = ((iot.jcypher.domain.mapping.Map)key).getContent();
+								if (val instanceof iot.jcypher.domain.mapping.Map)
+									val = ((iot.jcypher.domain.mapping.Map)val).getContent();
+								
+								// fill map
 								map.put(key, val);
-							else if (end instanceof MapEntry)
-								map.put(((MapEntry)end).getKey(), ((MapEntry)end).getValue());
-							else
-								map.put(key, end);
+							}
 						}
 					}
 				} catch(Throwable e) {
@@ -1559,6 +1687,8 @@ public class DomainAccess {
 				pe.fieldIndex = fieldIndex;
 				context.clauseRepetitionNumber = context.maxClauseRepetitionNumber;
 				pe.fieldName = fMap.getFieldName();
+				pe.propOrRelName = fMap.getPropertyOrRelationName();
+				pe.sourceType = fMap.getField().getDeclaringClass();
 				String nnm = this.buildNodeOrRelationName(context.path,
 						DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
 				int idx = nnm.indexOf('_', nnm.indexOf('_') + 1);
@@ -1590,7 +1720,7 @@ public class DomainAccess {
 				boolean subPathWalked = false;
 				// do the following check to avoid infinite loops
 				if (walkedToIndex) { // we are visiting the first time
-					if (context.getRecursionCount() >= domainAccessHandler.maxRecursionCount)
+					if (context.getPathSize() >= domainAccessHandler.maxPathSize)
 						resolveDeep = false;
 					// to make sure, that the node itself is added as an end  node to the query
 					if (fm != null)
@@ -1631,6 +1761,8 @@ public class DomainAccess {
 								PathElement pe = context.getLastPathElement();
 								pe.fieldIndex = idx;
 								pe.fieldName = fMap.getFieldName();
+								pe.propOrRelName = fMap.getPropertyOrRelationName();
+								pe.sourceType = fMap.getField().getDeclaringClass();
 								boolean isDone = this.next.calculateQuery(fMap, context);
 								if (!isDone) { // sub path not finished
 									needToComeBack = true;
@@ -1711,8 +1843,10 @@ public class DomainAccess {
 		private int maxClauseRepetitionNumber;
 		private boolean terminatesClause;
 		private List<String> alreadyTested;
+		private List<Object> recursionExitObjects;
+		private List<MapEntry2DOMap> entry2DOMaps;
 		
-		FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult,
+		private FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult,
 				List<String> queryEndNds, List<String> recursionExitNds) {
 			super();
 			this.domainObjectClass = domainObjectClass;
@@ -1724,6 +1858,8 @@ public class DomainAccess {
 			this.maxClauseRepetitionNumber = 0;
 			this.terminatesClause = false;
 			this.alreadyTested = new ArrayList<String>();
+			this.recursionExitObjects = new ArrayList<Object>();
+			this.entry2DOMaps = new ArrayList<MapEntry2DOMap>();
 		}
 		
 		private PathElement getLastPathElement() {
@@ -1741,6 +1877,44 @@ public class DomainAccess {
 				this.maxClauseRepetitionNumber++;
 				this.terminatesClause = false;
 			}
+		}
+		
+		private void addRecursionExitObject(Object obj) {
+			if (!this.recursionExitObjects.contains(obj))
+				this.recursionExitObjects.add(obj);
+		}
+	}
+	
+	/***********************************/
+	private class MapEntry2DOMap {
+		private MapEntry mapEntry;
+		private Map<Object, Object> map;
+		
+		private MapEntry2DOMap(MapEntry mapEntry, Map<Object, Object> map) {
+			super();
+			this.mapEntry = mapEntry;
+			this.map = map;
+		}
+
+		public void update() {
+			this.map.put(this.mapEntry.getKey(), this.mapEntry.getValue());
+		}
+
+		@Override
+		public int hashCode() {
+			return mapEntry.hashCode();
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			MapEntry2DOMap other = (MapEntry2DOMap) obj;
+			return this.mapEntry == other.mapEntry;
 		}
 	}
 	
@@ -1781,11 +1955,15 @@ public class DomainAccess {
 				PathElement peComp = this.path.get(sz - 1);
 				for (int i = sz - 2; i >= 0; i--) {
 					PathElement pe = this.path.get(i);
-					if (pe.sourceType.equals(peComp.sourceType) && pe.fieldName.equals(peComp.fieldName))
+					if (pe.sourceType.equals(peComp.sourceType) && pe.propOrRelName.equals(peComp.propOrRelName))
 						count++;
 				}
 			}
 			return count;
+		}
+		
+		private int getPathSize() {
+			return this.path.size();
 		}
 	}
 	
@@ -1794,6 +1972,7 @@ public class DomainAccess {
 		private Class<?> sourceType;
 		private String fieldName;
 		private int fieldIndex;
+		private String propOrRelName;
 		
 		private PathElement(Class<?> sourceType) {
 			super();

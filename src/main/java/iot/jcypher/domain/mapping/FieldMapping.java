@@ -28,7 +28,7 @@ public class FieldMapping {
 
 	private Field field;
 	private String fieldName;
-	private String propertyName;
+	protected String propertyName;
 	private String classFieldName;
 	
 	public FieldMapping(Field field) {
@@ -54,7 +54,7 @@ public class FieldMapping {
 				if (value != null) {
 					if (prop != null) {
 						Object propValue = MappingUtil.convertFromProperty(prop.getValue(), value.getClass(),
-								getListComponentType());
+								getComponentType(), getConcreteFieldType());
 						if (!propValue.equals(value)) {
 							addSimpleListComponentType2DomainInfo(value);
 							prop.setValue(value);
@@ -69,6 +69,14 @@ public class FieldMapping {
 				// a previously empty collection might hav been mapped to a property
 				// we need to remove the property
 				if (Collection.class.isAssignableFrom(getFieldType())) {
+					GrProperty prop = rNode.getProperty(this.propertyName);
+					if (prop != null)
+						prop.setValue(null);
+				}
+				
+				// a previously empty map might hav been mapped to a property
+				// we need to remove the property
+				if (Map.class.isAssignableFrom(getFieldType())) {
 					GrProperty prop = rNode.getProperty(this.propertyName);
 					if (prop != null)
 						prop.setValue(null);
@@ -98,7 +106,7 @@ public class FieldMapping {
 				if (propValue != null) { // allow null values in properties
 					Class<?> typ = this.field.getType();
 					propValue = MappingUtil.convertFromProperty(propValue, typ,
-							getListComponentType());
+							getComponentType(), getConcreteFieldType());
 					if (!propValue.equals(value)) {
 						this.field.set(domainObject, propValue);
 					}
@@ -158,6 +166,12 @@ public class FieldMapping {
 						} else { // empty lists are mapped to a property
 							value = null;
 						}
+					}
+					
+					if (Map.class.isAssignableFrom(this.field.getType())) {
+						Map map = (Map) this.field.getType().cast(value);
+						if (map.isEmpty()) // empty maps are mapped to a property
+							value = null;
 					}
 				}
 			}
@@ -232,11 +246,22 @@ public class FieldMapping {
 	 * only called when to check for a concrete simple component type
 	 * @return
 	 */
-	private Class<?> getListComponentType() {
+	private Class<?> getComponentType() {
 		if (getFieldKind() == FieldKind.COLLECTION) {
 			String classField = getClassFieldName();
 			CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
 				.getFieldComponentType(classField);
+			if (cType != null)
+				return cType.getType();
+		}
+		return null;
+	}
+	
+	private Class<?> getConcreteFieldType() {
+		if (getFieldKind() == FieldKind.MAP) {
+			String classField = getClassFieldName();
+			CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
+				.getConcreteFieldType(classField);
 			if (cType != null)
 				return cType.getType();
 		}
@@ -268,19 +293,34 @@ public class FieldMapping {
 	
 	public String getClassFieldName() {
 		if (this.classFieldName == null) {
-			StringBuilder sb = new StringBuilder();
-			sb.append(this.field.getDeclaringClass().getName());
-			sb.append('_');
-			sb.append(this.field.getName());
-			this.classFieldName = sb.toString();
+			this.classFieldName = createClassFieldName();
 		}
 		return this.classFieldName;
+	}
+	
+	private String createClassFieldName() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(this.field.getDeclaringClass().getName());
+		sb.append('_');
+		sb.append(this.getFieldName());
+		return sb.toString();
 	}
 
 	public FieldKind getFieldKind() {
 		Class<?> typ = this.field.getType();
 		return Collection.class.isAssignableFrom(typ) ? FieldKind.COLLECTION :
 			Map.class.isAssignableFrom(typ) ? FieldKind.MAP : FieldKind.SINGLE;
+	}
+	
+	protected String getDOClassFieldName() {
+		if (this.classFieldName == null) {
+			this.classFieldName = createClassFieldName();
+		}
+		return this.classFieldName;
+	}
+	
+	protected String getDOPropertyOrRelationName() {
+		return this.propertyName;
 	}
 
 	@Override
