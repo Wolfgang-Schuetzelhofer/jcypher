@@ -1036,11 +1036,13 @@ public class DomainAccess {
 				Object val = entry.getValue();
 				if (val instanceof Map<?, ?>)
 					val = domainAccessHandler.domainState
-						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)val);
+						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)val,
+								new SourceFieldKey(domainObject, fm.getFieldName()));
 				Object key = entry.getKey();
 				if (key instanceof Map<?, ?>)
 					key = domainAccessHandler.domainState
-						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)key);
+						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)key,
+								new SourceFieldKey(domainObject, fm.getFieldName()));
 				boolean keyMapsToProperty = MappingUtil.mapsToProperty(key.getClass());
 				boolean valMapsToProperty = MappingUtil.mapsToProperty(val.getClass());
 				Object target;
@@ -1171,6 +1173,7 @@ public class DomainAccess {
 			// in allExistingRels we have those which previously existed but don't exist in the collection or map any more
 			context.relationsToRemove.addAll(allExistingRels);
 			List<IMapEntry> mapEntriesToRemove = new ArrayList<IMapEntry>();
+			List<SourceField2TargetKey> removedRefs2Map = new ArrayList<SourceField2TargetKey>();
 			boolean mapTermAdded = false;
 			for(KeyedRelation kRel : allExistingRels) { // they are to be removed
 				Object end = kRel.getEnd();
@@ -1178,12 +1181,22 @@ public class DomainAccess {
 					// TODO is the check really needed
 					if (!mapEntriesToRemove.contains(end))
 						mapEntriesToRemove.add((MapEntry) end);
+					MapEntry me = (MapEntry)end;
+					if (me.getKey() instanceof iot.jcypher.domain.mapping.surrogate.Map)
+						removedRefs2Map.add(new SourceField2TargetKey(fieldKey, me.getKey()));
+					if (me.getValue() instanceof iot.jcypher.domain.mapping.surrogate.Map)
+						removedRefs2Map.add(new SourceField2TargetKey(fieldKey, me.getValue()));
 				} else if (end instanceof MapTerminator) {
 					if (!containsMapTerm && !mapTermAdded) {
 						mapTermAdded = true;
 						mapEntriesToRemove.add((MapTerminator)end);
 					}
+				} else if (end instanceof iot.jcypher.domain.mapping.surrogate.Map) {
+					removedRefs2Map.add(new SourceField2TargetKey(fieldKey, end));
 				}
+			}
+			for (SourceField2TargetKey ref : removedRefs2Map) {
+				domainAccessHandler.domainState.getSurrogateState().removeReference(ref);
 			}
 			return mapEntriesToRemove;
 		}

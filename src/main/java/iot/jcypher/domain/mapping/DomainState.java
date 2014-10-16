@@ -385,6 +385,17 @@ public class DomainState {
 			this.fieldName = fieldName;
 			this.target = target;
 		}
+		
+		public SourceField2TargetKey(SourceFieldKey sfk, Object target) {
+			super();
+			this.source = sfk.getSource();
+			this.fieldName = sfk.getFieldName();
+			this.target = target;
+		}
+
+		public Object getTarget() {
+			return target;
+		}
 
 		public SourceFieldKey getSourceFieldKey() {
 			return new SourceFieldKey(this.source, this.fieldName);
@@ -440,6 +451,14 @@ public class DomainState {
 			super();
 			this.source = src;
 			this.fieldName = fieldName;
+		}
+
+		public Object getSource() {
+			return source;
+		}
+
+		public String getFieldName() {
+			return fieldName;
 		}
 
 		@Override
