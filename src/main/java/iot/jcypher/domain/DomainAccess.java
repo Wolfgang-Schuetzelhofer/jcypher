@@ -33,10 +33,13 @@ import iot.jcypher.domain.mapping.DomainState.SourceFieldKey;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.FieldMapping.FieldKind;
 import iot.jcypher.domain.mapping.IMapEntry;
-import iot.jcypher.domain.mapping.MapEntry;
 import iot.jcypher.domain.mapping.MapTerminator;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
+import iot.jcypher.domain.mapping.surrogate.IDeferred;
+import iot.jcypher.domain.mapping.surrogate.MapEntry;
+import iot.jcypher.domain.mapping.surrogate.MapEntry2DOMap;
+import iot.jcypher.domain.mapping.surrogate.MapSurrogate2DO;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
@@ -191,7 +194,7 @@ public class DomainAccess {
 			return resultList;
 		}
 		
-		void loadDeep(List<Object> domainObjects, Set<MapEntry2DOMap> entry2DOMaps) {
+		void loadDeep(List<Object> domainObjects, Set<IDeferred> deferredSet) {
 			Map<Class<?>, List<Object>> byType = new HashMap<Class<?>, List<Object>>();
 			for (Object domainObject : domainObjects) {
 				List<Object> list = byType.get(domainObject.getClass());
@@ -204,12 +207,12 @@ public class DomainAccess {
 			Iterator<Entry<Class<?>, List<Object>>> it = byType.entrySet().iterator();
 			while(it.hasNext()) {
 				Entry<Class<?>, List<Object>> entry = it.next();
-				loadDeepByType(entry.getKey(), entry.getValue(), entry2DOMaps);
+				loadDeepByType(entry.getKey(), entry.getValue(), deferredSet);
 			}
 		}
 		
 		<T> void loadDeepByType(Class<T> domainObjectClass, List<Object> domainObjects,
-				Set<MapEntry2DOMap> entry2DOMaps) {
+				Set<IDeferred> deferredSet) {
 			InternalDomainAccess internalAccess = null;
 			ClosureQueryContext context = new ClosureQueryContext(domainObjectClass);
 			long[] ids = new long[domainObjects.size()];
@@ -225,7 +228,7 @@ public class DomainAccess {
 				boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
 				
 				if (repeat) { // has one or more match clauses
-					loadByIdsWithMatches(domainObjectClass, context, entry2DOMaps, ids);
+					loadByIdsWithMatches(domainObjectClass, context, deferredSet, ids);
 				} else { // only simple start by id clauses are needed
 					loadByIdsSimple(domainObjectClass, ids);
 				}
@@ -467,9 +470,9 @@ public class DomainAccess {
 		 * @return
 		 */
 		private <T> List<T> loadByIdsWithMatches(Class<T> domainObjectClass,
-				ClosureQueryContext context, Set<MapEntry2DOMap> entry2DOMaps, long... ids) {
+				ClosureQueryContext context, Set<IDeferred> deferredSet, long... ids) {
 			List<T> resultList = new ArrayList<T>();
-			Set<MapEntry2DOMap> e2DOMaps = entry2DOMaps;
+			Set<IDeferred> deferreds = deferredSet;
 			JcQuery query;
 			String nm = NodePrefix.concat(String.valueOf(0));
 			List<JcQuery> queries = new ArrayList<JcQuery>();
@@ -503,9 +506,9 @@ public class DomainAccess {
 			}
 			
 			boolean isRoot;
-			if (e2DOMaps == null) {
+			if (deferreds == null) {
 				isRoot = true;
-				e2DOMaps = new HashSet<MapEntry2DOMap>();
+				deferreds = new HashSet<IDeferred>();
 			} else
 				isRoot = false;
 			List<Object> objectsNotResolvedDeep = new ArrayList<Object>();
@@ -515,17 +518,22 @@ public class DomainAccess {
 				new ClosureCalculator().fillModel(fContext);
 				objectsNotResolvedDeep.addAll(fContext.recursionExitObjects);
 				resultList.add(fContext.domainObject);
-				e2DOMaps.addAll(fContext.entry2DOMaps);
+				deferreds.addAll(fContext.deferredList);
 			}
 			
 			if (!objectsNotResolvedDeep.isEmpty()) {
-				loadDeep(objectsNotResolvedDeep, e2DOMaps);
+				loadDeep(objectsNotResolvedDeep, deferreds);
 			}
 			
 			if (isRoot) {
 				// handle update of maps from MapEntries
-				for (MapEntry2DOMap e2DOMap : e2DOMaps) {
-					e2DOMap.update();
+				// first update surrogates
+				for (IDeferred deferred : deferreds) {
+					deferred.updateToSurrogate();
+				}
+				// now with all surrogates updated, update domain objects
+				for (IDeferred deferred : deferreds) {
+					deferred.updateToDomainObject();;
 				}
 			}
 			
@@ -1027,10 +1035,12 @@ public class DomainAccess {
 				Entry<Object, Object> entry = it.next();
 				Object val = entry.getValue();
 				if (val instanceof Map<?, ?>)
-					val = domainAccessHandler.domainState.getCreateMapSurrogateFor((Map<Object, Object>)val);
+					val = domainAccessHandler.domainState
+						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)val);
 				Object key = entry.getKey();
 				if (key instanceof Map<?, ?>)
-					key = domainAccessHandler.domainState.getCreateMapSurrogateFor((Map<Object, Object>)key);
+					key = domainAccessHandler.domainState
+						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)key);
 				boolean keyMapsToProperty = MappingUtil.mapsToProperty(key.getClass());
 				boolean valMapsToProperty = MappingUtil.mapsToProperty(val.getClass());
 				Object target;
@@ -1312,9 +1322,8 @@ public class DomainAccess {
 						compoundType = MappingUtil.internalDomainAccess.get()
 								.getFieldComponentType(classFieldName);
 					} else if (fieldKind == FieldKind.MAP) {
-						if (context.parentObject instanceof iot.jcypher.domain.mapping.Map) {
-							map = domainAccessHandler.domainState.getMapForSurrogate(
-									(iot.jcypher.domain.mapping.Map)context.parentObject);
+						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
+							map = ((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject).getContent();
 						}
 						if (map == null) {
 							String classFieldName = fm.getClassFieldName();
@@ -1325,9 +1334,9 @@ public class DomainAccess {
 									.getConcreteFieldType(classFieldName).getType());
 							compoundType = MappingUtil.internalDomainAccess.get()
 									.getFieldComponentType(classFieldName);
-							if (context.parentObject instanceof iot.jcypher.domain.mapping.Map) {
-								domainAccessHandler.domainState.addMap2Surrogate(map,
-										(iot.jcypher.domain.mapping.Map)context.parentObject);
+							if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
+								((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject)
+									.setContent(map);
 							}
 						}
 					}
@@ -1511,7 +1520,7 @@ public class DomainAccess {
 									domainObject = collection;
 							} else if (fieldKind == FieldKind.MAP) {
 								addMapRelations_FillMap(context.parentObject, usedRelations,
-										fm.getPropertyOrRelationName(), map, context.entry2DOMaps);
+										fm.getPropertyOrRelationName(), map, context.deferredList);
 								if (map.isEmpty()) {
 									// test for empty map, which evantually was mapped to a property
 									fm.mapPropertyToField(context.parentObject, parentNode);
@@ -1525,8 +1534,13 @@ public class DomainAccess {
 												context.parentObject,
 												domainObject), rel.getId());
 							}
-							if (domainObject instanceof iot.jcypher.domain.mapping.Map)
-								domainObject = ((iot.jcypher.domain.mapping.Map)domainObject).getContent();
+							if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
+								MapSurrogate2DO deferred = new MapSurrogate2DO(
+										fm, context.parentObject, (iot.jcypher.domain.mapping.surrogate.Map)domainObject);
+								context.deferredList.add(deferred);
+								domainObject = null;
+//								domainObject = ((iot.jcypher.domain.mapping.surrogate.Map)domainObject).getContent();
+							}
 							if (domainObject != null)
 								fm.setFieldValue(context.parentObject, domainObject);
 						}
@@ -1574,7 +1588,7 @@ public class DomainAccess {
 			}
 			
 			private void addMapRelations_FillMap(Object start, List<GrRelation> relList,
-					String relType, Map<Object, Object> map, List<MapEntry2DOMap> entry2DOMaps) {
+					String relType, Map<Object, Object> map, List<IDeferred> deferredList) {
 				try {
 					Map<Long, Boolean> handledRelations = new HashMap<Long, Boolean>();
 					Iterator<GrRelation> rit = relList.iterator();
@@ -1603,8 +1617,8 @@ public class DomainAccess {
 							boolean fillMap = true;
 							if (end instanceof MapEntry) {
 								// store for later update
-								MapEntry2DOMap entry2DOMap = new MapEntry2DOMap((MapEntry)end, map);
-								entry2DOMaps.add(entry2DOMap);
+								MapEntry2DOMap deferred = new MapEntry2DOMap((MapEntry)end, map);
+								deferredList.add(deferred);
 								fillMap = false;
 							}
 							
@@ -1612,10 +1626,10 @@ public class DomainAccess {
 								if (!(end instanceof MapTerminator))
 									val = end;
 								
-								if (key instanceof iot.jcypher.domain.mapping.Map)
-									key = ((iot.jcypher.domain.mapping.Map)key).getContent();
-								if (val instanceof iot.jcypher.domain.mapping.Map)
-									val = ((iot.jcypher.domain.mapping.Map)val).getContent();
+								if (key instanceof iot.jcypher.domain.mapping.surrogate.Map)
+									key = ((iot.jcypher.domain.mapping.surrogate.Map)key).getContent();
+								if (val instanceof iot.jcypher.domain.mapping.surrogate.Map)
+									val = ((iot.jcypher.domain.mapping.surrogate.Map)val).getContent();
 								
 								// fill map
 								map.put(key, val);
@@ -1844,7 +1858,7 @@ public class DomainAccess {
 		private boolean terminatesClause;
 		private List<String> alreadyTested;
 		private List<Object> recursionExitObjects;
-		private List<MapEntry2DOMap> entry2DOMaps;
+		private List<IDeferred> deferredList;
 		
 		private FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult,
 				List<String> queryEndNds, List<String> recursionExitNds) {
@@ -1859,7 +1873,7 @@ public class DomainAccess {
 			this.terminatesClause = false;
 			this.alreadyTested = new ArrayList<String>();
 			this.recursionExitObjects = new ArrayList<Object>();
-			this.entry2DOMaps = new ArrayList<MapEntry2DOMap>();
+			this.deferredList = new ArrayList<IDeferred>();
 		}
 		
 		private PathElement getLastPathElement() {
@@ -1882,39 +1896,6 @@ public class DomainAccess {
 		private void addRecursionExitObject(Object obj) {
 			if (!this.recursionExitObjects.contains(obj))
 				this.recursionExitObjects.add(obj);
-		}
-	}
-	
-	/***********************************/
-	private class MapEntry2DOMap {
-		private MapEntry mapEntry;
-		private Map<Object, Object> map;
-		
-		private MapEntry2DOMap(MapEntry mapEntry, Map<Object, Object> map) {
-			super();
-			this.mapEntry = mapEntry;
-			this.map = map;
-		}
-
-		public void update() {
-			this.map.put(this.mapEntry.getKey(), this.mapEntry.getValue());
-		}
-
-		@Override
-		public int hashCode() {
-			return mapEntry.hashCode();
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			MapEntry2DOMap other = (MapEntry2DOMap) obj;
-			return this.mapEntry == other.mapEntry;
 		}
 	}
 	

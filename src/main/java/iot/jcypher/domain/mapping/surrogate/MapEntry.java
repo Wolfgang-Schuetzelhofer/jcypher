@@ -14,7 +14,9 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domain.mapping;
+package iot.jcypher.domain.mapping.surrogate;
+
+import iot.jcypher.domain.mapping.IMapEntry;
 
 
 public class MapEntry implements IMapEntry {

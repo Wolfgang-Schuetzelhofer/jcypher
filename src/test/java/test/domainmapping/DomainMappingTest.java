@@ -193,6 +193,20 @@ public class DomainMappingTest extends AbstractTestSuite{
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
+		// modify - remove reference to multiDimMap_2
+		multiDimMap.put(multiDimMap_1, "was multiDimMap_2");
+		
+		errors = da.store(multiDimMapsLists);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
+		assertTrue(equals);
+		
 		return;
 	}
 	

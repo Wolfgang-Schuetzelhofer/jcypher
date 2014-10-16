@@ -14,23 +14,11 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domain.mapping;
+package iot.jcypher.domain.mapping.surrogate;
 
-public class Map {
+public interface IDeferred {
 
-	private java.util.Map<Object, Object> content;
-
-	public Map() {
-		super();
-	}
-
-	public Map(java.util.Map<Object, Object> content) {
-		super();
-		this.content = content;
-	}
-
-	public java.util.Map<Object, Object> getContent() {
-		return content;
-	}
+	public void updateToDomainObject();
 	
+	public void updateToSurrogate();
 }

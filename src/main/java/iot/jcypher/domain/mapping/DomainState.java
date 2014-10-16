@@ -17,6 +17,7 @@
 package iot.jcypher.domain.mapping;
 
 import iot.jcypher.domain.ResolutionDepth;
+import iot.jcypher.domain.mapping.surrogate.SurrogateState;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -33,8 +34,7 @@ public class DomainState {
 	private Map<Object, List<IRelation>> object2RelationsMap;
 	private Map<SourceField2TargetKey, List<KeyedRelation>> objectField2KeyedRelationsMap;
 	private Map<SourceFieldKey, List<KeyedRelation>> multiRelationsMap;
-	private Map<MapSurrogate_Key, iot.jcypher.domain.mapping.Map> map2SurrogateMap;
-	private Map<iot.jcypher.domain.mapping.Map, Map<Object, Object>> map2Map_Map;
+	private SurrogateState surrogateState;
 	
 	public DomainState() {
 		super();
@@ -44,8 +44,7 @@ public class DomainState {
 		this.object2RelationsMap = new HashMap<Object, List<IRelation>>();
 		this.objectField2KeyedRelationsMap = new HashMap<SourceField2TargetKey, List<KeyedRelation>>();
 		this.multiRelationsMap = new HashMap<SourceFieldKey, List<KeyedRelation>>();
-		this.map2SurrogateMap = new HashMap<MapSurrogate_Key, iot.jcypher.domain.mapping.Map>();
-		this.map2Map_Map = new HashMap<iot.jcypher.domain.mapping.Map, Map<Object, Object>>();
+		this.surrogateState = new SurrogateState();
 	}
 	
 	private void addTo_Object2IdMap(Object key, Long value, ResolutionDepth resolutionDepth) {
@@ -197,28 +196,10 @@ public class DomainState {
 		return this.id2ObjectMap.get(id);
 	}
 	
-	public void addMap2Surrogate(Map<Object, Object> map, iot.jcypher.domain.mapping.Map surrogate) {
-		this.map2SurrogateMap.put(new MapSurrogate_Key(map), surrogate);
-		this.map2Map_Map.put(surrogate, map);
+	public SurrogateState getSurrogateState() {
+		return surrogateState;
 	}
-	
-	public iot.jcypher.domain.mapping.Map getMapSurrogateFor (Map<Object, Object> map) {
-		return this.map2SurrogateMap.get(new MapSurrogate_Key(map));
-	}
-	
-	public Map<Object, Object> getMapForSurrogate(iot.jcypher.domain.mapping.Map surrogate) {
-		return this.map2Map_Map.get(surrogate);
-	}
-	
-	public iot.jcypher.domain.mapping.Map getCreateMapSurrogateFor (Map<Object, Object> map) {
-		iot.jcypher.domain.mapping.Map surrogate = getMapSurrogateFor(map);
-		if (surrogate == null) {
-			surrogate = new iot.jcypher.domain.mapping.Map(map);
-			addMap2Surrogate(map, surrogate);
-		}
-		return surrogate;
-	}
-	
+
 	/***********************************/
 	public interface IRelation {
 		public String getType();
@@ -494,31 +475,6 @@ public class DomainState {
 			return true;
 		}
 		
-	}
-	
-	/********************************/
-	public static class MapSurrogate_Key {
-		private Map<?, ?> map;
-		
-		public MapSurrogate_Key(Map<?, ?> map) {
-			super();
-			this.map = map;
-		}
-
-		@Override
-		public final boolean equals(Object o) {
-	        if (!(o instanceof MapSurrogate_Key))
-	            return false;
-	        MapSurrogate_Key e = (MapSurrogate_Key)o;
-	        Object k1 = this.map;
-	        Object k2 = e.map;
-	        return k1 == k2;
-	    }
-
-		@Override
-	    public final int hashCode() {
-	        return map==null   ? 0 : map.hashCode();
-	    }
 	}
 	
 	/********************************/
