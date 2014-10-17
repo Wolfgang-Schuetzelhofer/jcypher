@@ -16,26 +16,18 @@
 
 package iot.jcypher.domain.mapping.surrogate;
 
-import iot.jcypher.domain.mapping.DomainState.SourceField2TargetKey;
-import iot.jcypher.domain.mapping.DomainState.SourceFieldKey;
+import iot.jcypher.domain.mapping.DomainState.IRelation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.Map.Entry;
 
 public class SurrogateState {
 
 	private Map<SurrogateMap_Key, ReferredMap> map2SurrogateMap;
-	private static ThreadLocal<ChangeStore> changes =
-			new ThreadLocal<ChangeStore>() {
-				@Override
-				protected ChangeStore initialValue() {
-					return new ChangeStore();
-				}
-			};
 	
 	public SurrogateState() {
 		super();
@@ -50,35 +42,48 @@ public class SurrogateState {
 		return this.map2SurrogateMap.get(new SurrogateMap_Key(map));
 	}
 	
-	public iot.jcypher.domain.mapping.surrogate.Map getCreateMapSurrogateFor (Map<Object, Object> map,
-			SourceFieldKey reference) {
+	public iot.jcypher.domain.mapping.surrogate.Map getCreateMapSurrogateFor (Map<Object, Object> map) {
 		ReferredMap refMap = getReferredMap(map);
 		if (refMap == null) {
 			refMap = new ReferredMap(new iot.jcypher.domain.mapping.surrogate.Map(map));
 			addMap2ReferredMap(map, refMap);
 		}
-		refMap.addReference(reference);
 		return refMap.getMap();
 	}
 	
-	public void removeReference(SourceField2TargetKey ref) {
-		Object target = ref.getTarget();
+	public void addReference(IRelation ref) {
+		Object target = ref.getEnd();
 		if (target instanceof iot.jcypher.domain.mapping.surrogate.Map) {
 			ReferredMap refMap = getReferredMap(
 					((iot.jcypher.domain.mapping.surrogate.Map)target).getContent());
 			if (refMap != null) {
-				refMap.removeReference(ref.getSourceFieldKey());
+				refMap.addReference(ref);
 			}
 		}
 	}
 	
-	public void startChangeSession() {
-		changes.remove();
+	public void removeReference(IRelation ref) {
+		Object target = ref.getEnd();
+		if (target instanceof iot.jcypher.domain.mapping.surrogate.Map) {
+			ReferredMap refMap = getReferredMap(
+					((iot.jcypher.domain.mapping.surrogate.Map)target).getContent());
+			if (refMap != null) {
+				refMap.removeReference(ref);
+			}
+		}
 	}
 	
-	public void applyChanges() {
-		changes.get().applyChanges();
-		changes.remove();
+	public void removeUnreferenced() {
+		List<SurrogateMap_Key> toRemove = new ArrayList<SurrogateMap_Key>();
+		Iterator<Entry<SurrogateMap_Key, ReferredMap>> it = this.map2SurrogateMap.entrySet().iterator();
+		while(it.hasNext()) {
+			Entry<SurrogateMap_Key, ReferredMap> entry = it.next();
+			if (entry.getValue().getReferenceCount() == 0)
+				toRemove.add(entry.getKey());
+		}
+		for(SurrogateMap_Key k : toRemove) {
+			this.map2SurrogateMap.remove(k);
+		}
 	}
 	
 	/********************************/
@@ -109,39 +114,29 @@ public class SurrogateState {
 	/********************************/
 	public static class ReferredMap {
 		private iot.jcypher.domain.mapping.surrogate.Map map;
-		private List<SourceFieldKey> references;
+		private List<IRelation> references;
 		
 		public ReferredMap(iot.jcypher.domain.mapping.surrogate.Map map) {
 			super();
 			this.map = map;
-			this.references = new ArrayList<SourceFieldKey>();
+			this.references = new ArrayList<IRelation>();
 		}
 
 		public iot.jcypher.domain.mapping.surrogate.Map getMap() {
 			return map;
 		}
 		
-		public void addReference(SourceFieldKey reference) {
+		public void addReference(IRelation reference) {
 			if (!references.contains(reference))
 				references.add(reference);
 		}
 		
-		public void removeReference(SourceFieldKey reference) {
+		public void removeReference(IRelation reference) {
 			references.remove(reference);
 		}
 		
 		public int getReferenceCount() {
 			return references.size();
-		}
-	}
-	
-	/********************************/
-	private static class ChangeStore {
-		private Set<SourceField2TargetKey> added = new HashSet<SourceField2TargetKey>();
-		private Set<SourceField2TargetKey> removed = new HashSet<SourceField2TargetKey>();
-		
-		private void applyChanges() {
-			
 		}
 	}
 }

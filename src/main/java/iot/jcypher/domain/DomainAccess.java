@@ -311,6 +311,7 @@ public class DomainAccess {
 			UpdateContext context = new UpdateContext();
 			new ClosureCalculator().calculateClosure(domainObjects,
 					context);
+			context.surrogateChangeLog.applyChanges();
 			Graph graph = null;
 			Object domainObject;
 			Map<Integer, QueryNode2ResultNode> nodeIndexMap = null;
@@ -1008,6 +1009,8 @@ public class DomainAccess {
 										fm.getPropertyOrRelationName());
 								if (relat != null) {
 									context.relationsToRemove.add(relat);
+									if (relat.getEnd() instanceof iot.jcypher.domain.mapping.surrogate.Map)
+										context.surrogateChangeLog.removed.add(relat);
 								}
 							}
 						}
@@ -1036,13 +1039,11 @@ public class DomainAccess {
 				Object val = entry.getValue();
 				if (val instanceof Map<?, ?>)
 					val = domainAccessHandler.domainState
-						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)val,
-								new SourceFieldKey(domainObject, fm.getFieldName()));
+						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)val);
 				Object key = entry.getKey();
 				if (key instanceof Map<?, ?>)
 					key = domainAccessHandler.domainState
-						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)key,
-								new SourceFieldKey(domainObject, fm.getFieldName()));
+						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)key);
 				boolean keyMapsToProperty = MappingUtil.mapsToProperty(key.getClass());
 				boolean valMapsToProperty = MappingUtil.mapsToProperty(val.getClass());
 				Object target;
@@ -1078,6 +1079,8 @@ public class DomainAccess {
 				if (valMapsToProperty && keyMapsToProperty)
 					keyedRelation.setValue(val);
 				relats.add(keyedRelation);
+				if (target instanceof iot.jcypher.domain.mapping.surrogate.Map)
+					context.surrogateChangeLog.added.add(keyedRelation);
 				
 				// store component types in DomainInfo
 				MappingUtil.internalDomainAccess.get()
@@ -1133,6 +1136,8 @@ public class DomainAccess {
 		private void handleObjectInClosureCalc(Object relatedObject, Object domainObject,
 				UpdateContext context, FieldMapping fm) {
 			IRelation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, relatedObject);
+			if (relatedObject instanceof iot.jcypher.domain.mapping.surrogate.Map)
+				context.surrogateChangeLog.added.add(relat);
 			if (!domainAccessHandler.domainState.existsRelation(relat)) {
 				context.relations.add(relat); // relation not in db
 				
@@ -1173,7 +1178,6 @@ public class DomainAccess {
 			// in allExistingRels we have those which previously existed but don't exist in the collection or map any more
 			context.relationsToRemove.addAll(allExistingRels);
 			List<IMapEntry> mapEntriesToRemove = new ArrayList<IMapEntry>();
-			List<SourceField2TargetKey> removedRefs2Map = new ArrayList<SourceField2TargetKey>();
 			boolean mapTermAdded = false;
 			for(KeyedRelation kRel : allExistingRels) { // they are to be removed
 				Object end = kRel.getEnd();
@@ -1181,22 +1185,14 @@ public class DomainAccess {
 					// TODO is the check really needed
 					if (!mapEntriesToRemove.contains(end))
 						mapEntriesToRemove.add((MapEntry) end);
-					MapEntry me = (MapEntry)end;
-					if (me.getKey() instanceof iot.jcypher.domain.mapping.surrogate.Map)
-						removedRefs2Map.add(new SourceField2TargetKey(fieldKey, me.getKey()));
-					if (me.getValue() instanceof iot.jcypher.domain.mapping.surrogate.Map)
-						removedRefs2Map.add(new SourceField2TargetKey(fieldKey, me.getValue()));
 				} else if (end instanceof MapTerminator) {
 					if (!containsMapTerm && !mapTermAdded) {
 						mapTermAdded = true;
 						mapEntriesToRemove.add((MapTerminator)end);
 					}
 				} else if (end instanceof iot.jcypher.domain.mapping.surrogate.Map) {
-					removedRefs2Map.add(new SourceField2TargetKey(fieldKey, end));
+					context.surrogateChangeLog.removed.add(kRel);
 				}
-			}
-			for (SourceField2TargetKey ref : removedRefs2Map) {
-				domainAccessHandler.domainState.getSurrogateState().removeReference(ref);
 			}
 			return mapEntriesToRemove;
 		}
@@ -1984,6 +1980,26 @@ public class DomainAccess {
 		private Map<Object, GrNode> domObj2Node;
 		private List<DomRelation2ResultRelation> domRelation2Relations;
 		private Graph graph;
+		private SurrogateChangeLog surrogateChangeLog = new SurrogateChangeLog();
+		
+		/********************************/
+		private class SurrogateChangeLog {
+			private Set<IRelation> added = new HashSet<IRelation>();
+			private Set<IRelation> removed = new HashSet<IRelation>();
+			
+			private void applyChanges() {
+				removed.removeAll(added);
+				for (IRelation rel : added) {
+					domainAccessHandler.domainState.getSurrogateState()
+						.addReference(rel);
+				}
+				for (IRelation rel : removed) {
+					domainAccessHandler.domainState.getSurrogateState()
+						.removeReference(rel);
+				}
+				domainAccessHandler.domainState.getSurrogateState().removeUnreferenced();
+			}
+		}
 	}
 	
 	/***********************************/
