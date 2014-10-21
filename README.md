@@ -21,7 +21,7 @@ jcypher
 
 ## Documentation
 
-Please have a look at: https://github.com/Wolfgang-Schuetzelhofer/jcypher/wiki for a more comprehensive documentation. There you will also find code snippets, references to samples, and tipps on how
+Please have a look at: https://github.com/Wolfgang-Schuetzelhofer/jcypher/wiki for a more comprehensive documentation. There you will also find code snippets, references to samples, and tips on how
 to get started with JCypher. Furthermore you can find a roadmap and you are informed about future directions of JCypher.
 
 For more information about Neo4J have a look at: http://www.neo4j.org/
