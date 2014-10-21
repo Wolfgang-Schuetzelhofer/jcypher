@@ -16,31 +16,65 @@
 
 package iot.jcypher.domain.mapping.surrogate;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 public class MapEntry2DOMap implements IDeferred {
-	private MapEntry mapEntrySurrogate;
+	private MapEntry mapEntry;
 	private Map<Object, Object> map;
+	private MapSurrogate2MapEntry nextUpInTree;
+	private List<IDeferred> downInTree;
 
 	public MapEntry2DOMap(MapEntry mapEntry, Map<Object, Object> map) {
 		super();
-		this.mapEntrySurrogate = mapEntry;
+		this.mapEntry = mapEntry;
 		this.map = map;
+		this.downInTree = new ArrayList<IDeferred>();
 	}
 
 	@Override
-	public void updateToDomainObject() {
-		this.map.put(this.mapEntrySurrogate.getKey(), this.mapEntrySurrogate.getValue());
+	public void performUpdate() {
+		this.map.put(this.mapEntry.getKey(), this.mapEntry.getValue());
+		if (this.nextUpInTree != null)
+			this.nextUpInTree.modifiedBy(this);
 	}
 
 	@Override
-	public void updateToSurrogate() {
-		// nothing to do here
+	public void modifiedBy(IDeferred changer) {
+		this.downInTree.remove(changer);
+	}
+
+	public MapEntry getMapEntry() {
+		return mapEntry;
+	}
+	
+	public Map<Object, Object> getMap() {
+		return map;
+	}
+
+	public void setNextUpInTree(MapSurrogate2MapEntry surrogate) {
+		this.nextUpInTree = surrogate;
+		surrogate.addDownInTree(this);
+	}
+	
+	@Override
+	public boolean isLeaf() {
+		return this.downInTree.isEmpty();
+	}
+
+	public void addDownInTree(IDeferred dit) {
+		this.downInTree.add(dit);
+	}
+
+	@Override
+	public IDeferred nextUp() {
+		return this.nextUpInTree;
 	}
 
 	@Override
 	public int hashCode() {
-		return mapEntrySurrogate.hashCode();
+		return mapEntry.hashCode();
 	}
 
 	@Override
@@ -52,6 +86,6 @@ public class MapEntry2DOMap implements IDeferred {
 		if (getClass() != obj.getClass())
 			return false;
 		MapEntry2DOMap other = (MapEntry2DOMap) obj;
-		return this.mapEntrySurrogate == other.mapEntrySurrogate;
+		return this.mapEntry == other.mapEntry;
 	}
 }

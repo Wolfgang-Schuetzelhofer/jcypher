@@ -42,6 +42,16 @@ public class SurrogateState {
 		return this.map2SurrogateMap.get(new SurrogateMap_Key(map));
 	}
 	
+	public void addMap2ReferredMap(Map<Object, Object> map, iot.jcypher.domain.mapping.surrogate.Map surrogate) {
+		ReferredMap refMap = getReferredMap(map);
+		if (refMap != null && refMap.getMap() != surrogate)
+			throw new RuntimeException("error existing surrogate map");
+		if (refMap == null) {
+			refMap = new ReferredMap(surrogate);
+			addMap2ReferredMap(map, refMap);
+		}
+	}
+	
 	public iot.jcypher.domain.mapping.surrogate.Map getCreateMapSurrogateFor (Map<Object, Object> map) {
 		ReferredMap refMap = getReferredMap(map);
 		if (refMap == null) {
@@ -86,6 +96,10 @@ public class SurrogateState {
 		}
 	}
 	
+	public int size() {
+		return this.map2SurrogateMap.size();
+	}
+	
 	/********************************/
 	public static class SurrogateMap_Key {
 		private Map<?, ?> map;
@@ -107,7 +121,11 @@ public class SurrogateState {
 
 		@Override
 	    public final int hashCode() {
-	        return map==null   ? 0 : map.hashCode();
+			// cannot return the hashcode of the map
+			// as it changes when the content of the map changes
+			// this occurs during filling the map
+			// TODO find a better solution
+	        return 0;
 	    }
 	}
 	

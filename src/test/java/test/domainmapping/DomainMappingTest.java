@@ -129,6 +129,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testMultiMapList() {
 		List<JcError> errors;
@@ -155,6 +156,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		Map<Object, Object> multiDimMap = new HashMap<Object, Object>();
 		Map<Object, Object> multiDimMap_1 = new HashMap<Object, Object>();
 		Map<Object, Object> multiDimMap_2 = new HashMap<Object, Object>();
+		Map<Object, Object> multiDimMap_2_2 = new HashMap<Object, Object>();
 		
 		multiDimMap_1.put(first_1, second_1);
 		multiDimMap_1.put("third", third_1);
@@ -162,11 +164,14 @@ public class DomainMappingTest extends AbstractTestSuite{
 		multiDimMap_1.put("four", 4);
 		multiDimMap_1.put(5, "five");
 		
+		multiDimMap_2_2.put("simple_key", "simple_value");
+		
 		multiDimMap_2.put(first_2, second_2);
 		multiDimMap_2.put("third", third_2);
 		multiDimMap_2.put(third_2, "third again");
 		multiDimMap_2.put("six", 6);
 		multiDimMap_2.put(7, "seven");
+		multiDimMap_2.put(multiDimMap_2_2, 100);
 		
 		multiDimMap.put(multiDimMap_1, multiDimMap_2);
 		multiDimMap.put("first", multiDimMap_1);
@@ -192,6 +197,33 @@ public class DomainMappingTest extends AbstractTestSuite{
 		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
+		
+		Map<Object, Object> mDimMap;
+		Map<Object, Object> mDimMap_11 = null;
+		Map<Object, Object> mDimMap_12 = null;
+		Map<Object, Object> mDimMap_13 = null;
+		mDimMap = multiDimMapsLists_1.getMultiDimMap();
+		Iterator<Entry<Object, Object>> it = mDimMap.entrySet().iterator();
+		while(it.hasNext()) {
+			Entry<Object, Object> entry = it.next();
+			if (entry.getKey() instanceof Map<?, ?>)
+				mDimMap_11 = (Map<Object, Object>) entry.getKey();
+			else if (entry.getKey().equals("first"))
+				mDimMap_12 = (Map<Object, Object>) entry.getValue();
+			else if (entry.getKey().equals("second"))
+				mDimMap_13 = (Map<Object, Object>) entry.getValue();
+		}
+		assertTrue(mDimMap_11 != null && mDimMap_11 == mDimMap_12);
+		assertTrue(mDimMap_12 == mDimMap_13);
+		
+		// modify - remove reference to multiDimMap_2
+				mDimMap.put(mDimMap_11, "was multiDimMap_2");
+				
+				errors = da1.store(multiDimMapsLists_1);
+				if (errors.size() > 0) {
+					printErrors(errors);
+					throw new JcResultException(errors);
+				}
 		
 		// modify - remove reference to multiDimMap_2
 		multiDimMap.put(multiDimMap_1, "was multiDimMap_2");

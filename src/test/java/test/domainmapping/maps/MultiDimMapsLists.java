@@ -5,13 +5,13 @@ import java.util.Map;
 public class MultiDimMapsLists {
 
 	// any, any
-	private Map<?, ?> multiDimMap;
+	private Map<Object, Object> multiDimMap;
 
-	public Map<?, ?> getMultiDimMap() {
+	public Map<Object, Object> getMultiDimMap() {
 		return multiDimMap;
 	}
 
-	public void setMultiDimMap(Map<?, ?> multiDimMap) {
+	public void setMultiDimMap(Map<Object, Object> multiDimMap) {
 		this.multiDimMap = multiDimMap;
 	}
 }

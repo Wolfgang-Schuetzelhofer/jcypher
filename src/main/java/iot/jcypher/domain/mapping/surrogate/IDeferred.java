@@ -18,7 +18,19 @@ package iot.jcypher.domain.mapping.surrogate;
 
 public interface IDeferred {
 
-	public void updateToDomainObject();
+	public void performUpdate();
 	
-	public void updateToSurrogate();
+	/**
+	 * this deferred was modified by another one (the changer)
+	 * @param changer that has modified this deferred
+	 */
+	public void modifiedBy(IDeferred changer);
+	
+	public boolean isLeaf();
+	
+	/**
+	 * @return the next one up towards the root of the tree
+	 */
+	public IDeferred nextUp();
+	
 }

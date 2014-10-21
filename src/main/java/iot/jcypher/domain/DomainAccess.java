@@ -39,7 +39,7 @@ import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domain.mapping.surrogate.IDeferred;
 import iot.jcypher.domain.mapping.surrogate.MapEntry;
 import iot.jcypher.domain.mapping.surrogate.MapEntry2DOMap;
-import iot.jcypher.domain.mapping.surrogate.MapSurrogate2DO;
+import iot.jcypher.domain.mapping.surrogate.MapSurrogate2MapEntry;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
@@ -175,7 +175,7 @@ public class DomainAccess {
 				boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
 				
 				if (repeat) { // has one or more match clauses
-					resultList = loadByIdsWithMatches(domainObjectClass, context, null, ids);
+					resultList = loadByIdsWithMatches(domainObjectClass, context, null, null, ids);
 				} else { // only simple start by id clauses are needed
 					resultList = loadByIdsSimple(domainObjectClass, ids);
 				}
@@ -194,7 +194,7 @@ public class DomainAccess {
 			return resultList;
 		}
 		
-		void loadDeep(List<Object> domainObjects, Set<IDeferred> deferredSet) {
+		void loadDeep(List<Object> domainObjects, Set<IDeferred> deferredSet, SurrogateChangeLog surrogateChangeLog) {
 			Map<Class<?>, List<Object>> byType = new HashMap<Class<?>, List<Object>>();
 			for (Object domainObject : domainObjects) {
 				List<Object> list = byType.get(domainObject.getClass());
@@ -207,12 +207,12 @@ public class DomainAccess {
 			Iterator<Entry<Class<?>, List<Object>>> it = byType.entrySet().iterator();
 			while(it.hasNext()) {
 				Entry<Class<?>, List<Object>> entry = it.next();
-				loadDeepByType(entry.getKey(), entry.getValue(), deferredSet);
+				loadDeepByType(entry.getKey(), entry.getValue(), deferredSet, surrogateChangeLog);
 			}
 		}
 		
 		<T> void loadDeepByType(Class<T> domainObjectClass, List<Object> domainObjects,
-				Set<IDeferred> deferredSet) {
+				Set<IDeferred> deferredSet, SurrogateChangeLog surrogateChangeLog) {
 			InternalDomainAccess internalAccess = null;
 			ClosureQueryContext context = new ClosureQueryContext(domainObjectClass);
 			long[] ids = new long[domainObjects.size()];
@@ -228,7 +228,7 @@ public class DomainAccess {
 				boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
 				
 				if (repeat) { // has one or more match clauses
-					loadByIdsWithMatches(domainObjectClass, context, deferredSet, ids);
+					loadByIdsWithMatches(domainObjectClass, context, deferredSet, surrogateChangeLog, ids);
 				} else { // only simple start by id clauses are needed
 					loadByIdsSimple(domainObjectClass, ids);
 				}
@@ -312,6 +312,7 @@ public class DomainAccess {
 			new ClosureCalculator().calculateClosure(domainObjects,
 					context);
 			context.surrogateChangeLog.applyChanges();
+			int sz = domainState.getSurrogateState().size();
 			Graph graph = null;
 			Object domainObject;
 			Map<Integer, QueryNode2ResultNode> nodeIndexMap = null;
@@ -471,7 +472,8 @@ public class DomainAccess {
 		 * @return
 		 */
 		private <T> List<T> loadByIdsWithMatches(Class<T> domainObjectClass,
-				ClosureQueryContext context, Set<IDeferred> deferredSet, long... ids) {
+				ClosureQueryContext context, Set<IDeferred> deferredSet,
+				SurrogateChangeLog surrogateChangeLog, long... ids) {
 			List<T> resultList = new ArrayList<T>();
 			Set<IDeferred> deferreds = deferredSet;
 			JcQuery query;
@@ -510,12 +512,14 @@ public class DomainAccess {
 			if (deferreds == null) {
 				isRoot = true;
 				deferreds = new HashSet<IDeferred>();
+				surrogateChangeLog = new SurrogateChangeLog();
 			} else
 				isRoot = false;
 			List<Object> objectsNotResolvedDeep = new ArrayList<Object>();
 			for (int i = 0; i < ids.length; i++) {
 				FillModelContext<T> fContext = new FillModelContext<T>(domainObjectClass,
-						id2QueryResult.get(ids[i]), context.queryEndNodes, context.recursionExitNodes);
+						id2QueryResult.get(ids[i]), context.queryEndNodes, context.recursionExitNodes,
+						surrogateChangeLog);
 				new ClosureCalculator().fillModel(fContext);
 				objectsNotResolvedDeep.addAll(fContext.recursionExitObjects);
 				resultList.add(fContext.domainObject);
@@ -523,24 +527,61 @@ public class DomainAccess {
 			}
 			
 			if (!objectsNotResolvedDeep.isEmpty()) {
-				loadDeep(objectsNotResolvedDeep, deferreds);
+				loadDeep(objectsNotResolvedDeep, deferreds, surrogateChangeLog);
 			}
 			
 			if (isRoot) {
-				// handle update of maps from MapEntries
-				// first update surrogates
-				for (IDeferred deferred : deferreds) {
-					deferred.updateToSurrogate();
-				}
-				// now with all surrogates updated, update domain objects
-				for (IDeferred deferred : deferreds) {
-					deferred.updateToDomainObject();;
-				}
+				List<IDeferred> leafs = buildDeferredResolutionTree(deferreds);
+				// handle deferred updates
+				resolveDeferreds(leafs);
+				surrogateChangeLog.applyChanges();
 			}
 			
 			return resultList;
 		}
 		
+		private void resolveDeferreds(List<IDeferred> deferreds) {
+			for (int i = 0; i < deferreds.size(); i++) {
+				IDeferred deferred = deferreds.get(i);
+				while (deferred.isLeaf()) {
+					deferred.performUpdate();
+					deferred = deferred.nextUp();
+					if (deferred == null)
+						break;
+				}
+			}
+		}
+		
+		private List<IDeferred> buildDeferredResolutionTree(Set<IDeferred> deferreds) {
+			List<IDeferred> leafs = new ArrayList<IDeferred>();
+			for (IDeferred deferred : deferreds) {
+				if (deferred instanceof MapSurrogate2MapEntry) {
+					for (IDeferred def : deferreds) {
+						if (def instanceof MapEntry2DOMap) {
+							if (((MapSurrogate2MapEntry) deferred).getMapEntry().equals(((MapEntry2DOMap) def).getMapEntry())) {
+								((MapSurrogate2MapEntry) deferred).setNextUpInTree((MapEntry2DOMap) def);
+							}
+						}
+					}
+				} else if (deferred instanceof MapEntry2DOMap) {
+					for (IDeferred def : deferreds) {
+						if (def instanceof MapSurrogate2MapEntry) {
+							if (((MapEntry2DOMap) deferred).getMap() == ((MapSurrogate2MapEntry) def).getMapSurrogate().getContent()) {
+								((MapEntry2DOMap) deferred).setNextUpInTree((MapSurrogate2MapEntry) def);
+							}
+						}
+					}
+				}
+			}
+			
+			// find leafs
+			for (IDeferred deferred : deferreds) {
+				if (deferred.isLeaf())
+					leafs.add(deferred);
+			}
+			return leafs;
+		}
+
 		/**
 		 * has start by id clauses only
 		 * @param domainObjectClass
@@ -1346,6 +1387,8 @@ public class DomainAccess {
 							if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
 								((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject)
 									.setContent(map);
+								domainAccessHandler.domainState.getSurrogateState()
+									.addMap2ReferredMap(map, (iot.jcypher.domain.mapping.surrogate.Map)context.parentObject);
 							}
 						}
 					}
@@ -1528,8 +1571,8 @@ public class DomainAccess {
 								} else
 									domainObject = collection;
 							} else if (fieldKind == FieldKind.MAP) {
-								addMapRelations_FillMap(context.parentObject, usedRelations,
-										fm.getPropertyOrRelationName(), map, context.deferredList);
+								addMapRelations_FillMap(context, usedRelations,
+										fm.getPropertyOrRelationName(), map);
 								if (map.isEmpty()) {
 									// test for empty map, which evantually was mapped to a property
 									fm.mapPropertyToField(context.parentObject, parentNode);
@@ -1538,20 +1581,25 @@ public class DomainAccess {
 									domainObject = map;
 							} else if (usedRelations.size() > 0) {
 								GrRelation rel = usedRelations.get(0);
+								Relation relat = new Relation(fm.getPropertyOrRelationName(),
+										context.parentObject,
+										domainObject);
 								domainAccessHandler.domainState.add_Id2Relation(
-										new Relation(fm.getPropertyOrRelationName(),
-												context.parentObject,
-												domainObject), rel.getId());
+										relat, rel.getId());
+								if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Map)
+									context.surrogateChangeLog.added.add(relat);
 							}
 							if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
-								MapSurrogate2DO deferred = new MapSurrogate2DO(
-										fm, context.parentObject, (iot.jcypher.domain.mapping.surrogate.Map)domainObject);
+								// in this case parent must be a MapEntry
+								MapSurrogate2MapEntry deferred = new MapSurrogate2MapEntry(
+										fm, (MapEntry) context.parentObject, (iot.jcypher.domain.mapping.surrogate.Map)domainObject);
 								context.deferredList.add(deferred);
 								domainObject = null;
 //								domainObject = ((iot.jcypher.domain.mapping.surrogate.Map)domainObject).getContent();
 							}
-							if (domainObject != null)
+							if (domainObject != null) {
 								fm.setFieldValue(context.parentObject, domainObject);
+							}
 						}
 					}
 					context.path.remove(context.path.size() - 1); // remove the last one
@@ -1596,9 +1644,10 @@ public class DomainAccess {
 				}
 			}
 			
-			private void addMapRelations_FillMap(Object start, List<GrRelation> relList,
-					String relType, Map<Object, Object> map, List<IDeferred> deferredList) {
+			private <T> void addMapRelations_FillMap(FillModelContext<T> context, List<GrRelation> relList,
+					String relType, Map<Object, Object> map) {
 				try {
+					Object start = context.parentObject;
 					Map<Long, Boolean> handledRelations = new HashMap<Long, Boolean>();
 					Iterator<GrRelation> rit = relList.iterator();
 					while(rit.hasNext()) {
@@ -1627,7 +1676,7 @@ public class DomainAccess {
 							if (end instanceof MapEntry) {
 								// store for later update
 								MapEntry2DOMap deferred = new MapEntry2DOMap((MapEntry)end, map);
-								deferredList.add(deferred);
+								context.deferredList.add(deferred);
 								fillMap = false;
 							}
 							
@@ -1635,10 +1684,14 @@ public class DomainAccess {
 								if (!(end instanceof MapTerminator))
 									val = end;
 								
-								if (key instanceof iot.jcypher.domain.mapping.surrogate.Map)
+								if (key instanceof iot.jcypher.domain.mapping.surrogate.Map) {
 									key = ((iot.jcypher.domain.mapping.surrogate.Map)key).getContent();
-								if (val instanceof iot.jcypher.domain.mapping.surrogate.Map)
+									context.surrogateChangeLog.added.add(irel);
+								}
+								if (val instanceof iot.jcypher.domain.mapping.surrogate.Map) {
 									val = ((iot.jcypher.domain.mapping.surrogate.Map)val).getContent();
+									context.surrogateChangeLog.added.add(irel);
+								}
 								
 								// fill map
 								map.put(key, val);
@@ -1868,9 +1921,11 @@ public class DomainAccess {
 		private List<String> alreadyTested;
 		private List<Object> recursionExitObjects;
 		private List<IDeferred> deferredList;
+		private SurrogateChangeLog surrogateChangeLog;
 		
 		private FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult,
-				List<String> queryEndNds, List<String> recursionExitNds) {
+				List<String> queryEndNds, List<String> recursionExitNds,
+				SurrogateChangeLog surrogateChangeLog) {
 			super();
 			this.domainObjectClass = domainObjectClass;
 			this.qResult = qResult;
@@ -1883,6 +1938,7 @@ public class DomainAccess {
 			this.alreadyTested = new ArrayList<String>();
 			this.recursionExitObjects = new ArrayList<Object>();
 			this.deferredList = new ArrayList<IDeferred>();
+			this.surrogateChangeLog = surrogateChangeLog;
 		}
 		
 		private PathElement getLastPathElement() {
@@ -1981,25 +2037,6 @@ public class DomainAccess {
 		private List<DomRelation2ResultRelation> domRelation2Relations;
 		private Graph graph;
 		private SurrogateChangeLog surrogateChangeLog = new SurrogateChangeLog();
-		
-		/********************************/
-		private class SurrogateChangeLog {
-			private Set<IRelation> added = new HashSet<IRelation>();
-			private Set<IRelation> removed = new HashSet<IRelation>();
-			
-			private void applyChanges() {
-				removed.removeAll(added);
-				for (IRelation rel : added) {
-					domainAccessHandler.domainState.getSurrogateState()
-						.addReference(rel);
-				}
-				for (IRelation rel : removed) {
-					domainAccessHandler.domainState.getSurrogateState()
-						.removeReference(rel);
-				}
-				domainAccessHandler.domainState.getSurrogateState().removeUnreferenced();
-			}
-		}
 	}
 	
 	/***********************************/
@@ -2218,6 +2255,25 @@ public class DomainAccess {
 			}
 			Collections.sort(ret);
 			return ret;
+		}
+	}
+	
+	/********************************/
+	private class SurrogateChangeLog {
+		private Set<IRelation> added = new HashSet<IRelation>();
+		private Set<IRelation> removed = new HashSet<IRelation>();
+		
+		private void applyChanges() {
+			removed.removeAll(added);
+			for (IRelation rel : added) {
+				domainAccessHandler.domainState.getSurrogateState()
+					.addReference(rel);
+			}
+			for (IRelation rel : removed) {
+				domainAccessHandler.domainState.getSurrogateState()
+					.removeReference(rel);
+			}
+			domainAccessHandler.domainState.getSurrogateState().removeUnreferenced();
 		}
 	}
 	

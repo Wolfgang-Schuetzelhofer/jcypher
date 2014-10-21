@@ -21,8 +21,8 @@ import iot.jcypher.domain.mapping.IMapEntry;
 
 public class MapEntry implements IMapEntry {
 
-	protected Object key;
-	protected Object value;
+	private Object key;
+	private Object value;
 	
 	public MapEntry(Object key, Object value) {
 		super();
@@ -40,5 +40,13 @@ public class MapEntry implements IMapEntry {
 
 	public Object getValue() {
 		return value;
+	}
+
+	public void setKey(Object key) {
+		this.key = key;
+	}
+
+	public void setValue(Object value) {
+		this.value = value;
 	}
 }
