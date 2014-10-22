@@ -1,3 +1,7 @@
+reuse MapEntry objects ?
+
+optimize query building for MapEntry (- classFieldName)
+
 ---done--- relationKey for MapEntry must be unique for map
 		--> not required as the KeyedRelation is unique based on sourceField and MapEntry
 
@@ -29,7 +33,7 @@ Test in future versions:
 
 add unit test for SEPARATE clause
 
-reentrancy, multithreading !!
+reentrancy, multithreading, concurrency on db !!
 
 ---done--- fill relationToIdMap from load !!
 

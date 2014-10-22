@@ -37,6 +37,7 @@ import iot.jcypher.domain.mapping.MapTerminator;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domain.mapping.surrogate.IDeferred;
+import iot.jcypher.domain.mapping.surrogate.Map2DO;
 import iot.jcypher.domain.mapping.surrogate.MapEntry;
 import iot.jcypher.domain.mapping.surrogate.MapEntry2DOMap;
 import iot.jcypher.domain.mapping.surrogate.MapSurrogate2MapEntry;
@@ -311,8 +312,9 @@ public class DomainAccess {
 			UpdateContext context = new UpdateContext();
 			new ClosureCalculator().calculateClosure(domainObjects,
 					context);
+			//int sz = domainState.getSurrogateState().size();
 			context.surrogateChangeLog.applyChanges();
-			int sz = domainState.getSurrogateState().size();
+			//int sz1 = domainState.getSurrogateState().size();
 			Graph graph = null;
 			Object domainObject;
 			Map<Integer, QueryNode2ResultNode> nodeIndexMap = null;
@@ -559,7 +561,7 @@ public class DomainAccess {
 					for (IDeferred def : deferreds) {
 						if (def instanceof MapEntry2DOMap) {
 							if (((MapSurrogate2MapEntry) deferred).getMapEntry().equals(((MapEntry2DOMap) def).getMapEntry())) {
-								((MapSurrogate2MapEntry) deferred).setNextUpInTree((MapEntry2DOMap) def);
+								((MapSurrogate2MapEntry) deferred).setNextUpInTree(def);
 							}
 						}
 					}
@@ -567,7 +569,11 @@ public class DomainAccess {
 					for (IDeferred def : deferreds) {
 						if (def instanceof MapSurrogate2MapEntry) {
 							if (((MapEntry2DOMap) deferred).getMap() == ((MapSurrogate2MapEntry) def).getMapSurrogate().getContent()) {
-								((MapEntry2DOMap) deferred).setNextUpInTree((MapSurrogate2MapEntry) def);
+								((MapEntry2DOMap) deferred).setNextUpInTree(def);
+							}
+						} else if (def instanceof Map2DO) {
+							if (((MapEntry2DOMap) deferred).getMap() == ((Map2DO) def).getMap()) {
+								((MapEntry2DOMap) deferred).setNextUpInTree(def);
 							}
 						}
 					}
@@ -1573,12 +1579,18 @@ public class DomainAccess {
 							} else if (fieldKind == FieldKind.MAP) {
 								addMapRelations_FillMap(context, usedRelations,
 										fm.getPropertyOrRelationName(), map);
+								if (!(context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map)) {
+									// parent is an object that needs the map set to a field
+									// if the parent is a MapEntry, this domainObject cannot be a map,
+									// it must be a surrogate.Map
+									Map2DO deferred = new Map2DO(fm, map, context.parentObject);
+									context.deferredList.add(deferred);
+								}
 								if (map.isEmpty()) {
 									// test for empty map, which evantually was mapped to a property
 									fm.mapPropertyToField(context.parentObject, parentNode);
-									domainObject = null;
-								} else
-									domainObject = map;
+								}
+								domainObject = null;
 							} else if (usedRelations.size() > 0) {
 								GrRelation rel = usedRelations.get(0);
 								Relation relat = new Relation(fm.getPropertyOrRelationName(),

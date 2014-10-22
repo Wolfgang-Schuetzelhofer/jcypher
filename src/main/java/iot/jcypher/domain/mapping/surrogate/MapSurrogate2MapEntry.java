@@ -16,12 +16,9 @@
 
 package iot.jcypher.domain.mapping.surrogate;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import iot.jcypher.domain.mapping.FieldMapping;
 
-public class MapSurrogate2MapEntry implements IDeferred {
+public class MapSurrogate2MapEntry extends AbstractDeferred {
 
 	private static final String keyField = "key";
 	private static final String valueField = "value";
@@ -29,9 +26,6 @@ public class MapSurrogate2MapEntry implements IDeferred {
 	private FieldMapping fieldMapping;
 	private MapEntry mapEntry;
 	private Map mapSurrogate;
-	// the map entry of which I am either key or value.
-	private MapEntry2DOMap nextUpInTree;
-	private List<IDeferred> downInTree;
 	
 	public MapSurrogate2MapEntry(FieldMapping fieldMapping, MapEntry domainObject,
 			Map mapSurrogate) {
@@ -39,25 +33,17 @@ public class MapSurrogate2MapEntry implements IDeferred {
 		this.fieldMapping = fieldMapping;
 		this.mapEntry = domainObject;
 		this.mapSurrogate = mapSurrogate;
-		this.downInTree = new ArrayList<IDeferred>();
 	}
 
 	@Override
 	public void performUpdate() {
 		if (this.fieldMapping.getFieldName().equals(keyField)) {
 			this.mapEntry.setKey(this.mapSurrogate.getContent());
-			if (this.nextUpInTree != null)
-				this.nextUpInTree.modifiedBy(this);
+			modifyNextUp();
 		} else if (this.fieldMapping.getFieldName().equals(valueField)) {
 			this.mapEntry.setValue(this.mapSurrogate.getContent());
-			if (this.nextUpInTree != null)
-				this.nextUpInTree.modifiedBy(this);
+			modifyNextUp();
 		}
-	}
-
-	@Override
-	public void modifiedBy(IDeferred changer) {
-		this.downInTree.remove(changer);
 	}
 
 	public MapEntry getMapEntry() {
@@ -68,31 +54,12 @@ public class MapSurrogate2MapEntry implements IDeferred {
 		return mapSurrogate;
 	}
 
-	@Override
-	public boolean isLeaf() {
-		return this.downInTree.isEmpty();
-	}
-
-	@Override
-	public IDeferred nextUp() {
-		return this.nextUpInTree;
-	}
-
 	public boolean isKey () {
 		return this.fieldMapping.getFieldName().equals(keyField);
 	}
 	
 	public boolean isValue () {
 		return this.fieldMapping.getFieldName().equals(valueField);
-	}
-
-	public void setNextUpInTree(MapEntry2DOMap mapEntry2DOMap) {
-		this.nextUpInTree = mapEntry2DOMap;
-		mapEntry2DOMap.addDownInTree(this);
-	}
-	
-	public void addDownInTree(IDeferred dit) {
-		this.downInTree.add(dit);
 	}
 
 	@Override

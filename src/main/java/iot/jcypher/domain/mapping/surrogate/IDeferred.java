@@ -33,4 +33,6 @@ public interface IDeferred {
 	 */
 	public IDeferred nextUp();
 	
+	public void setNextUpInTree(IDeferred deferred);
+	
 }

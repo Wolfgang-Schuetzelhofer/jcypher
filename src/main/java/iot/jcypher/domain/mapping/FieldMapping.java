@@ -41,14 +41,20 @@ public class FieldMapping {
 		this.field.setAccessible(true);
 		this.propertyName = propertyName;
 	}
-
+	
 	public void mapPropertyFromField(Object domainObject, GrNode rNode) {
+		intMapPropertyFromField(domainObject, rNode);
+	}
+
+	protected Object intMapPropertyFromField(Object domainObject, GrNode rNode) {
+		Object ret = null;
 		try {
 			prepare(domainObject);
 			
 			if (getObjectNeedingRelation(domainObject) == null) { // also checks against DomainInfo
 				// we can map to a property
 				Object value = this.field.get(domainObject);
+				ret = value;
 				value = MappingUtil.convertToProperty(value);
 				GrProperty prop = rNode.getProperty(this.propertyName);
 				if (value != null) {
@@ -62,11 +68,11 @@ public class FieldMapping {
 					} else
 						rNode.addProperty(this.propertyName, value);
 				} else {
-					if (prop != null)
+					if (prop != null) // remove the property
 						prop.setValue(null);
 				}
 			} else {
-				// a previously empty collection might hav been mapped to a property
+				// a previously empty collection might have been mapped to a property
 				// we need to remove the property
 				if (Collection.class.isAssignableFrom(getFieldType())) {
 					GrProperty prop = rNode.getProperty(this.propertyName);
@@ -74,7 +80,7 @@ public class FieldMapping {
 						prop.setValue(null);
 				}
 				
-				// a previously empty map might hav been mapped to a property
+				// a previously empty map might have been mapped to a property
 				// we need to remove the property
 				if (Map.class.isAssignableFrom(getFieldType())) {
 					GrProperty prop = rNode.getProperty(this.propertyName);
@@ -82,10 +88,10 @@ public class FieldMapping {
 						prop.setValue(null);
 				}
 			}
-			
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
 		}
+		return ret;
 	}
 	
 	/**
@@ -104,7 +110,7 @@ public class FieldMapping {
 				hasProperty = true;
 				Object propValue = prop.getValue();
 				if (propValue != null) { // allow null values in properties
-					Class<?> typ = this.field.getType();
+					Class<?> typ = getFieldTypeInt(rNode);
 					propValue = MappingUtil.convertFromProperty(propValue, typ,
 							getComponentType(), getConcreteFieldType());
 					if (!propValue.equals(value)) {
@@ -277,6 +283,10 @@ public class FieldMapping {
 	}
 	
 	public Class<?> getFieldType () {
+		return this.field.getType();
+	}
+	
+	protected Class<?> getFieldTypeInt (GrNode rNode) {
 		return this.field.getType();
 	}
 	
