@@ -16,46 +16,26 @@
 
 package iot.jcypher.domain.mapping.surrogate;
 
-import java.util.ArrayList;
-import java.util.List;
+public class Collection extends AbstractSurrogate {
 
-public abstract class AbstractDeferred implements IDeferred{
+	private java.util.Collection<Object> c_content;
 
-	private IDeferred nextUpInTree;
-	private List<IDeferred> downInTree;
-	
-	public AbstractDeferred() {
+	public Collection() {
 		super();
-		this.downInTree = new ArrayList<IDeferred>();
+	}
+
+	public Collection(java.util.Collection<Object> content) {
+		super();
+		this.c_content = content;
 	}
 
 	@Override
-	public boolean isLeaf() {
-		return this.downInTree.isEmpty();
+	public java.util.Collection<Object> getContent() {
+		return c_content;
 	}
 
-	@Override
-	public IDeferred nextUp() {
-		return this.nextUpInTree;
+	public void setContent(java.util.Collection<Object> content) {
+		this.c_content = content;
 	}
 	
-	@Override
-	public void setNextUpInTree(IDeferred deferred) {
-		this.nextUpInTree = deferred;
-		((AbstractDeferred)deferred).addDownInTree(this);
-	}
-	
-	public void addDownInTree(IDeferred dit) {
-		this.downInTree.add(dit);
-	}
-	
-	@Override
-	public void modifiedBy(IDeferred changer) {
-		this.downInTree.remove(changer);
-	}
-	
-	protected void modifyNextUp() {
-		if (this.nextUpInTree != null)
-			this.nextUpInTree.modifiedBy(this);
-	}
 }

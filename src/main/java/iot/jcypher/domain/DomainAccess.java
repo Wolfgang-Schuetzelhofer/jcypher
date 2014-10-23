@@ -36,6 +36,7 @@ import iot.jcypher.domain.mapping.IMapEntry;
 import iot.jcypher.domain.mapping.MapTerminator;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
+import iot.jcypher.domain.mapping.surrogate.AbstractSurrogate;
 import iot.jcypher.domain.mapping.surrogate.IDeferred;
 import iot.jcypher.domain.mapping.surrogate.Map2DO;
 import iot.jcypher.domain.mapping.surrogate.MapEntry;
@@ -1056,7 +1057,7 @@ public class DomainAccess {
 										fm.getPropertyOrRelationName());
 								if (relat != null) {
 									context.relationsToRemove.add(relat);
-									if (relat.getEnd() instanceof iot.jcypher.domain.mapping.surrogate.Map)
+									if (relat.getEnd() instanceof AbstractSurrogate)
 										context.surrogateChangeLog.removed.add(relat);
 								}
 							}
@@ -1066,7 +1067,6 @@ public class DomainAccess {
 			}
 		}
 		
-		@SuppressWarnings("unchecked")
 		private void handleMapInClosureCalc(Map<Object, Object> map, Object domainObject,
 				UpdateContext context, FieldMapping fm) {
 			MapTerminator mapTerminator = null;
@@ -1086,11 +1086,11 @@ public class DomainAccess {
 				Object val = entry.getValue();
 				if (val instanceof Map<?, ?>)
 					val = domainAccessHandler.domainState
-						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)val);
+						.getSurrogateState().getCreateSurrogateFor(val, iot.jcypher.domain.mapping.surrogate.Map.class);
 				Object key = entry.getKey();
 				if (key instanceof Map<?, ?>)
 					key = domainAccessHandler.domainState
-						.getSurrogateState().getCreateMapSurrogateFor((Map<Object, Object>)key);
+						.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Map.class);
 				boolean keyMapsToProperty = MappingUtil.mapsToProperty(key.getClass());
 				boolean valMapsToProperty = MappingUtil.mapsToProperty(val.getClass());
 				Object target;
@@ -1153,20 +1153,31 @@ public class DomainAccess {
 			String typ = fm.getPropertyOrRelationName();
 			Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations =
 					new HashMap<SourceField2TargetKey, List<KeyedRelation>>();
+			List<Object> targetObjects = new ArrayList<Object>();
 			// store concrete type in DomainInfo
 			String classField = fm.getClassFieldName();
 			MappingUtil.internalDomainAccess.get()
 				.addConcreteFieldType(classField, coll.getClass());
 			int idx = 0;
-			for (Object elem : coll) {
+			Iterator<?> it = coll.iterator();
+			while(it.hasNext()) {
+				Object elem = it.next();
+				if (elem instanceof Collection<?>)
+					elem = domainAccessHandler.domainState
+							.getSurrogateState().getCreateSurrogateFor(elem,
+									iot.jcypher.domain.mapping.surrogate.Collection.class);
 				SourceField2TargetKey key =
 						new SourceField2TargetKey(domainObject, fm.getFieldName(), elem);
+				targetObjects.add(elem);
 				List<KeyedRelation> relats = keyedRelations.get(key);
 				if (relats == null) {
 					relats = new ArrayList<KeyedRelation>();
 					keyedRelations.put(key, relats);
 				}
-				relats.add(new KeyedRelation(typ, idx, domainObject, elem));
+				KeyedRelation keyedRelation = new KeyedRelation(typ, idx, domainObject, elem);
+				relats.add(keyedRelation);
+				if (elem instanceof iot.jcypher.domain.mapping.surrogate.Collection)
+					context.surrogateChangeLog.added.add(keyedRelation);
 				// store component type in DomainInfo
 				MappingUtil.internalDomainAccess.get()
 					.addFieldComponentType(classField, elem.getClass());
@@ -1175,7 +1186,7 @@ public class DomainAccess {
 			
 			handleKeyedRelationsModification(keyedRelations, context,
 					new SourceFieldKey(domainObject, fm.getFieldName()), false);
-			for (Object elem : coll) {
+			for (Object elem : targetObjects) {
 				recursiveCalculateClosure(elem, fm, context, false); // don't delete
 			}
 		}
@@ -1183,7 +1194,7 @@ public class DomainAccess {
 		private void handleObjectInClosureCalc(Object relatedObject, Object domainObject,
 				UpdateContext context, FieldMapping fm) {
 			IRelation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, relatedObject);
-			if (relatedObject instanceof iot.jcypher.domain.mapping.surrogate.Map)
+			if (relatedObject instanceof AbstractSurrogate)
 				context.surrogateChangeLog.added.add(relat);
 			if (!domainAccessHandler.domainState.existsRelation(relat)) {
 				context.relations.add(relat); // relation not in db
@@ -1237,7 +1248,7 @@ public class DomainAccess {
 						mapTermAdded = true;
 						mapEntriesToRemove.add((MapTerminator)end);
 					}
-				} else if (end instanceof iot.jcypher.domain.mapping.surrogate.Map) {
+				} else if (end instanceof AbstractSurrogate) {
 					context.surrogateChangeLog.removed.add(kRel);
 				}
 			}
@@ -1369,14 +1380,26 @@ public class DomainAccess {
 					Collection<Object> collection = null;
 					Map<Object, Object> map = null;
 					if (fieldKind == FieldKind.COLLECTION) {
-						String classFieldName = fm.getClassFieldName();
-						// select the first concrete type in the CompoundType to instantiate.
-						// Most certainly there will only be one type in the CompoundType,
-						// anyway it must be instantiable as it has earlier been stored to the graph
-						collection = (Collection<Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
-								.getConcreteFieldType(classFieldName).getType());
-						compoundType = MappingUtil.internalDomainAccess.get()
-								.getFieldComponentType(classFieldName);
+						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
+							collection = ((iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject).getContent();
+						}
+						if (collection == null) {
+							String classFieldName = fm.getClassFieldName();
+							// select the first concrete type in the CompoundType to instantiate.
+							// Most certainly there will only be one type in the CompoundType,
+							// anyway it must be instantiable as it has earlier been stored to the graph
+							collection = (Collection<Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
+									.getConcreteFieldType(classFieldName).getType());
+							compoundType = MappingUtil.internalDomainAccess.get()
+									.getFieldComponentType(classFieldName);
+							if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
+								((iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject)
+									.setContent(collection);
+								domainAccessHandler.domainState.getSurrogateState()
+									.addOriginal2Surrogate(collection,
+											(iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject);
+							}
+						}
 					} else if (fieldKind == FieldKind.MAP) {
 						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
 							map = ((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject).getContent();
@@ -1394,7 +1417,7 @@ public class DomainAccess {
 								((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject)
 									.setContent(map);
 								domainAccessHandler.domainState.getSurrogateState()
-									.addMap2ReferredMap(map, (iot.jcypher.domain.mapping.surrogate.Map)context.parentObject);
+									.addOriginal2Surrogate(map, (iot.jcypher.domain.mapping.surrogate.Map)context.parentObject);
 							}
 						}
 					}
@@ -1486,6 +1509,7 @@ public class DomainAccess {
 									ObjectMapping objectMapping = domainAccessHandler
 											.getCompoundObjectMappingFor(compoundType, domainObject.getClass());
 									Iterator<FieldMapping> it = objectMapping.fieldMappingsIterator();
+									boolean hasComplexFields = false;
 									int idx = 0;
 									while (it.hasNext()) {
 										FieldMapping fMap = domainAccessHandler.modifyFieldMapping(it.next(), fm);
@@ -1500,37 +1524,19 @@ public class DomainAccess {
 										if (fMap.needsRelationOrProperty()) {
 											mapped = fMap.mapPropertyToField(domainObject, actNode);
 										}
-										if (fMap.needsRelation() && resolveDeep) {
-											if (!mapped) {
-												PathElement pe = context.getLastPathElement();
-												pe.fieldIndex = idx;
-												context.clauseRepetitionNumber = context.maxClauseRepetitionNumber;
-												pe.fieldName = fMap.getFieldName();
-												pe.propOrRelName = fMap.getPropertyOrRelationName();
-												pe.sourceType = fMap.getField().getDeclaringClass();
-												String ndName = this.buildNodeOrRelationName(context.path,
-														DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
-												boolean needToRepeat = false;
-												if (isValidNodeName(ndName, context)) {
-													Object prevParent = context.parentObject;
-													context.parentObject = domainObject;
-													String rnm = this.buildNodeOrRelationName(context.path,
-															DomainAccessHandler.RelationPrefix, context.clauseRepetitionNumber);
-													this.fillModel(context, fMap, ndName, rnm, actNode);
-													context.parentObject = prevParent;
-												} else
-													needToRepeat = true; // need to repeat
-												context.alreadyTested.clear();
-												while(needToRepeat && morePathsToTest(context, fMap, idx)) {
-													pe = context.getLastPathElement();
+										if (fMap.needsRelation()) {
+											hasComplexFields = true;
+											if (resolveDeep) {
+												if (!mapped) {
+													PathElement pe = context.getLastPathElement();
 													pe.fieldIndex = idx;
 													context.clauseRepetitionNumber = context.maxClauseRepetitionNumber;
 													pe.fieldName = fMap.getFieldName();
 													pe.propOrRelName = fMap.getPropertyOrRelationName();
 													pe.sourceType = fMap.getField().getDeclaringClass();
-													ndName = this.buildNodeOrRelationName(context.path,
+													String ndName = this.buildNodeOrRelationName(context.path,
 															DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
-													needToRepeat = false;
+													boolean needToRepeat = false;
 													if (isValidNodeName(ndName, context)) {
 														Object prevParent = context.parentObject;
 														context.parentObject = domainObject;
@@ -1538,17 +1544,44 @@ public class DomainAccess {
 																DomainAccessHandler.RelationPrefix, context.clauseRepetitionNumber);
 														this.fillModel(context, fMap, ndName, rnm, actNode);
 														context.parentObject = prevParent;
-													} else {
-														if (moreClausesAvailable(ndName, context))
-															needToRepeat = true; // need to repeat
+													} else
+														needToRepeat = true; // need to repeat
+													context.alreadyTested.clear();
+													while(needToRepeat && morePathsToTest(context, fMap, idx)) {
+														pe = context.getLastPathElement();
+														pe.fieldIndex = idx;
+														context.clauseRepetitionNumber = context.maxClauseRepetitionNumber;
+														pe.fieldName = fMap.getFieldName();
+														pe.propOrRelName = fMap.getPropertyOrRelationName();
+														pe.sourceType = fMap.getField().getDeclaringClass();
+														ndName = this.buildNodeOrRelationName(context.path,
+																DomainAccessHandler.NodePrefix, context.clauseRepetitionNumber);
+														needToRepeat = false;
+														if (isValidNodeName(ndName, context)) {
+															Object prevParent = context.parentObject;
+															context.parentObject = domainObject;
+															String rnm = this.buildNodeOrRelationName(context.path,
+																	DomainAccessHandler.RelationPrefix, context.clauseRepetitionNumber);
+															this.fillModel(context, fMap, ndName, rnm, actNode);
+															context.parentObject = prevParent;
+														} else {
+															if (moreClausesAvailable(ndName, context))
+																needToRepeat = true; // need to repeat
+														}
 													}
+													context.updateMaxClauseRepetitionNumber();
 												}
-												context.updateMaxClauseRepetitionNumber();
 											}
 										} else {
 											if (mapProperties && !mapped)
 												fMap.mapPropertyToField(domainObject, actNode);
 										}
+									}
+									if (!hasComplexFields && !resolveDeep) {
+										context.recursionExitObjects.remove(domainObject);
+										// domainObject needs no further resolution
+										domainAccessHandler.domainState.getLoadInfoFrom_Object2IdMap(domainObject)
+											.setResolutionDepth(ResolutionDepth.DEEP);
 									}
 								}
 								

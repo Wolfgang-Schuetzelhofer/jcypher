@@ -27,71 +27,75 @@ import java.util.Map.Entry;
 
 public class SurrogateState {
 
-	private Map<SurrogateMap_Key, ReferredMap> map2SurrogateMap;
+	private Map<Surrogate_Key, ReferredSurrogate<?>> map2SurrogateMap;
 	
 	public SurrogateState() {
 		super();
-		this.map2SurrogateMap = new HashMap<SurrogateMap_Key, ReferredMap>();
+		this.map2SurrogateMap = new HashMap<Surrogate_Key, ReferredSurrogate<?>>();
 	}
 
-	private void addMap2ReferredMap(Map<Object, Object> map, ReferredMap refMap) {
-		this.map2SurrogateMap.put(new SurrogateMap_Key(map), refMap);
+	private <T extends AbstractSurrogate> void addOriginal2ReferredSurrogate(Object original, ReferredSurrogate<T> refMap) {
+		this.map2SurrogateMap.put(new Surrogate_Key(original), refMap);
 	}
 	
-	private ReferredMap getReferredMap (Map<Object, Object> map) {
-		return this.map2SurrogateMap.get(new SurrogateMap_Key(map));
+	@SuppressWarnings("rawtypes")
+	private ReferredSurrogate getReferredSurrogate (Object original) {
+		return this.map2SurrogateMap.get(new Surrogate_Key(original));
 	}
 	
-	public void addMap2ReferredMap(Map<Object, Object> map, iot.jcypher.domain.mapping.surrogate.Map surrogate) {
-		ReferredMap refMap = getReferredMap(map);
-		if (refMap != null && refMap.getMap() != surrogate)
+	@SuppressWarnings("unchecked")
+	public <T extends AbstractSurrogate> void addOriginal2Surrogate(Object original, T surrogate) {
+		ReferredSurrogate<T> refSurrogate = getReferredSurrogate(original);
+		if (refSurrogate != null && refSurrogate.getSurrogate() != surrogate)
 			throw new RuntimeException("error existing surrogate map");
-		if (refMap == null) {
-			refMap = new ReferredMap(surrogate);
-			addMap2ReferredMap(map, refMap);
+		if (refSurrogate == null) {
+			refSurrogate = new ReferredSurrogate<T>(surrogate);
+			addOriginal2ReferredSurrogate(original, refSurrogate);
 		}
 	}
 	
-	public iot.jcypher.domain.mapping.surrogate.Map getCreateMapSurrogateFor (Map<Object, Object> map) {
-		ReferredMap refMap = getReferredMap(map);
-		if (refMap == null) {
-			refMap = new ReferredMap(new iot.jcypher.domain.mapping.surrogate.Map(map));
-			addMap2ReferredMap(map, refMap);
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public <T extends AbstractSurrogate> T getCreateSurrogateFor (Object original,
+			Class<T> surrogateClass) {
+		ReferredSurrogate<T> refSurrogate = getReferredSurrogate(original);
+		if (refSurrogate == null) {
+			refSurrogate = new ReferredSurrogate(AbstractSurrogate.createSurrogate(original));
+			addOriginal2ReferredSurrogate(original, refSurrogate);
 		}
-		return refMap.getMap();
+		return refSurrogate.getSurrogate();
 	}
 	
 	public void addReference(IRelation ref) {
 		Object target = ref.getEnd();
-		if (target instanceof iot.jcypher.domain.mapping.surrogate.Map) {
-			ReferredMap refMap = getReferredMap(
-					((iot.jcypher.domain.mapping.surrogate.Map)target).getContent());
-			if (refMap != null) {
-				refMap.addReference(ref);
+		if (target instanceof AbstractSurrogate) {
+			ReferredSurrogate<?> refSurrogate = getReferredSurrogate(
+					((AbstractSurrogate)target).getContent());
+			if (refSurrogate != null) {
+				refSurrogate.addReference(ref);
 			}
 		}
 	}
 	
 	public void removeReference(IRelation ref) {
 		Object target = ref.getEnd();
-		if (target instanceof iot.jcypher.domain.mapping.surrogate.Map) {
-			ReferredMap refMap = getReferredMap(
-					((iot.jcypher.domain.mapping.surrogate.Map)target).getContent());
-			if (refMap != null) {
-				refMap.removeReference(ref);
+		if (target instanceof AbstractSurrogate) {
+			ReferredSurrogate<?> refSurrogate = getReferredSurrogate(
+					((AbstractSurrogate)target).getContent());
+			if (refSurrogate != null) {
+				refSurrogate.removeReference(ref);
 			}
 		}
 	}
 	
 	public void removeUnreferenced() {
-		List<SurrogateMap_Key> toRemove = new ArrayList<SurrogateMap_Key>();
-		Iterator<Entry<SurrogateMap_Key, ReferredMap>> it = this.map2SurrogateMap.entrySet().iterator();
+		List<Surrogate_Key> toRemove = new ArrayList<Surrogate_Key>();
+		Iterator<Entry<Surrogate_Key, ReferredSurrogate<?>>> it = this.map2SurrogateMap.entrySet().iterator();
 		while(it.hasNext()) {
-			Entry<SurrogateMap_Key, ReferredMap> entry = it.next();
+			Entry<Surrogate_Key, ReferredSurrogate<?>> entry = it.next();
 			if (entry.getValue().getReferenceCount() == 0)
 				toRemove.add(entry.getKey());
 		}
-		for(SurrogateMap_Key k : toRemove) {
+		for(Surrogate_Key k : toRemove) {
 			this.map2SurrogateMap.remove(k);
 		}
 	}
@@ -101,47 +105,51 @@ public class SurrogateState {
 	}
 	
 	/********************************/
-	public static class SurrogateMap_Key {
-		private Map<?, ?> map;
+	public static class Surrogate_Key {
+		private Object original;
 		
-		private SurrogateMap_Key(Map<?, ?> map) {
+		private Surrogate_Key(Object org) {
 			super();
-			this.map = map;
+			this.original = org;
 		}
 
 		@Override
 		public final boolean equals(Object o) {
-	        if (!(o instanceof SurrogateMap_Key))
+	        if (!(o instanceof Surrogate_Key))
 	            return false;
-	        SurrogateMap_Key e = (SurrogateMap_Key)o;
-	        Object k1 = this.map;
-	        Object k2 = e.map;
+	        Surrogate_Key e = (Surrogate_Key)o;
+	        Object k1 = this.original;
+	        Object k2 = e.original;
 	        return k1 == k2;
 	    }
 
 		@Override
 	    public final int hashCode() {
-			// cannot return the hashcode of the map
-			// as it changes when the content of the map changes
-			// this occurs during filling the map
+			// cannot return the hashcode of the map or collection
+			// as it changes when the content of the map or collection changes
+			// this occurs during filling the map or collection
 			// TODO find a better solution
-	        return 0;
+			if (this.original instanceof Map<?, ?>)
+				return 0;
+			else
+				return 1;
 	    }
 	}
 	
 	/********************************/
-	public static class ReferredMap {
-		private iot.jcypher.domain.mapping.surrogate.Map map;
+	public static class ReferredSurrogate<T extends AbstractSurrogate> {
+		// the surrogate is either a surrogate.Map or a surrogate.Collection
+		private T surrogate;
 		private List<IRelation> references;
 		
-		public ReferredMap(iot.jcypher.domain.mapping.surrogate.Map map) {
+		public ReferredSurrogate(T surrogate) {
 			super();
-			this.map = map;
+			this.surrogate = surrogate;
 			this.references = new ArrayList<IRelation>();
 		}
 
-		public iot.jcypher.domain.mapping.surrogate.Map getMap() {
-			return map;
+		public T getSurrogate() {
+			return this.surrogate;
 		}
 		
 		public void addReference(IRelation reference) {

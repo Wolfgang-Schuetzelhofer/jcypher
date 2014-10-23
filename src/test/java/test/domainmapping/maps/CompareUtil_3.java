@@ -17,6 +17,8 @@
 package test.domainmapping.maps;
 
 import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -38,6 +40,12 @@ public class CompareUtil_3 {
 				return false;
 		} else if (!equalsMap(m_1.getMultiDimMap(),
 				m_2.getMultiDimMap()))
+			return false;
+		if (m_1.getMultiDimList() == null) {
+			if (m_2.getMultiDimList() != null)
+				return false;
+		} else if (!equalsList(m_1.getMultiDimList(),
+				m_2.getMultiDimList()))
 			return false;
 		return true;
 	}
@@ -82,13 +90,29 @@ public class CompareUtil_3 {
 			return false;
 		return true;
 	}
+	
+	@SuppressWarnings("rawtypes")
+	public static boolean equalsList(List list_1, List list_2) {
+		 if (list_1 == list_2)
+            return true;
+        if (list_1.size() != list_2.size())
+			return false;
+
+        ListIterator<?> e1 = list_1.listIterator();
+        ListIterator<?> e2 = list_2.listIterator();
+        while (e1.hasNext() && e2.hasNext()) {
+            Object o1 = e1.next();
+            Object o2 = e2.next();
+            if (!(o1==null ? o2==null : equalsObjects(o1, o2)))
+                return false;
+        }
+        return !(e1.hasNext() || e2.hasNext());
+	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	public static boolean equalsMap(Map map_1, Map map_2) {
 		if (map_1 == map_2)
 			return true;
-		if (!(map_2 instanceof Map))
-			return false;
 		if (map_1.size() != map_2.size())
 			return false;
 

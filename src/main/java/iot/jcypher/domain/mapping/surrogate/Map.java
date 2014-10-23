@@ -16,9 +16,9 @@
 
 package iot.jcypher.domain.mapping.surrogate;
 
-public class Map {
+public class Map extends AbstractSurrogate {
 
-	private java.util.Map<Object, Object> content;
+	private java.util.Map<Object, Object> m_content;
 
 	public Map() {
 		super();
@@ -26,15 +26,16 @@ public class Map {
 
 	public Map(java.util.Map<Object, Object> content) {
 		super();
-		this.content = content;
+		this.m_content = content;
 	}
 
+	@Override
 	public java.util.Map<Object, Object> getContent() {
-		return content;
+		return m_content;
 	}
 
 	public void setContent(java.util.Map<Object, Object> content) {
-		this.content = content;
+		this.m_content = content;
 	}
 	
 }

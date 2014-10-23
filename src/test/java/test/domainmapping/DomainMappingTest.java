@@ -129,9 +129,71 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Test
-	public void testMultiMapList() {
+	public void testMultiList() {
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		MultiDimMapsLists multiDimMapsLists = new MultiDimMapsLists();
+		MultiDimMapsLists multiDimMapsLists_1;
+		boolean equals;
+		Address first = new Address();
+		DistrictAddress second = new DistrictAddress();
+		Address third = new Address();
+		Address first_1 = new Address();
+		DistrictAddress second_1 = new DistrictAddress();
+		Address third_1 = new Address();
+		Address first_2 = new Address();
+		DistrictAddress second_2 = new DistrictAddress();
+		Address third_2 = new Address();
+		
+		buildMapTestAny2Any(first, second, third);
+		buildMapTestAny2Any(first_1, second_1, third_1);
+		buildMapTestAny2Any(first_2, second_2, third_2);
+		
+		// init multiDimList
+		List<Object> multiDimList = new ArrayList<Object>();
+		List<Object> multiDimList_1 = new ArrayList<Object>();
+		List<Object> multiDimList_2 = new ArrayList<Object>();
+		
+		multiDimList_1.add(first_1);
+		multiDimList_1.add(second_1);
+		multiDimList_1.add(third_1);
+		multiDimList_2.add("first");
+		multiDimList_2.add("second");
+		multiDimList_2.add("third");
+		
+		multiDimList.add(first);
+		multiDimList.add(multiDimList_1);
+		multiDimList.add(multiDimList_2);
+		
+		multiDimMapsLists.setMultiDimList(multiDimList);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(multiDimMapsLists);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
+		assertTrue(equals);
+		
+		return;
+	}
+	
+	@SuppressWarnings("unchecked")
+	//@Test
+	public void testMultiMap() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		DomainAccess da1;
@@ -234,7 +296,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	//@Test
-	public void testMultiMapList_02() {
+	public void testMultiMap_02() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		DomainAccess da1;
