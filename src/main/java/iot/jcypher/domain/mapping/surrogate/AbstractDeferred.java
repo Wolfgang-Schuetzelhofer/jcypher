@@ -17,16 +17,18 @@
 package iot.jcypher.domain.mapping.surrogate;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public abstract class AbstractDeferred implements IDeferred{
 
-	private IDeferred nextUpInTree;
+	protected List<IDeferred> upInTree;
 	private List<IDeferred> downInTree;
 	
 	public AbstractDeferred() {
 		super();
 		this.downInTree = new ArrayList<IDeferred>();
+		this.upInTree = new ArrayList<IDeferred>();
 	}
 
 	@Override
@@ -35,14 +37,16 @@ public abstract class AbstractDeferred implements IDeferred{
 	}
 
 	@Override
-	public IDeferred nextUp() {
-		return this.nextUpInTree;
+	public Iterator<IDeferred> nextUp() {
+		return this.upInTree.iterator();
 	}
 	
 	@Override
-	public void setNextUpInTree(IDeferred deferred) {
-		this.nextUpInTree = deferred;
-		((AbstractDeferred)deferred).addDownInTree(this);
+	public void addNextUpInTree(IDeferred deferred) {
+		if (!this.upInTree.contains(deferred)) {
+			this.upInTree.add(deferred);
+			((AbstractDeferred)deferred).addDownInTree(this);
+		}
 	}
 	
 	public void addDownInTree(IDeferred dit) {
@@ -55,7 +59,8 @@ public abstract class AbstractDeferred implements IDeferred{
 	}
 	
 	protected void modifyNextUp() {
-		if (this.nextUpInTree != null)
-			this.nextUpInTree.modifiedBy(this);
+		for(IDeferred def :this.upInTree) {
+			def.modifiedBy(this);
+		}
 	}
 }

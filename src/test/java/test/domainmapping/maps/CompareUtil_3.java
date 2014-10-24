@@ -113,6 +113,8 @@ public class CompareUtil_3 {
 	public static boolean equalsMap(Map map_1, Map map_2) {
 		if (map_1 == map_2)
 			return true;
+		if (map_2 == null)
+			return false;
 		if (map_1.size() != map_2.size())
 			return false;
 

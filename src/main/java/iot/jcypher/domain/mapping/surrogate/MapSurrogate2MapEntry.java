@@ -16,31 +16,30 @@
 
 package iot.jcypher.domain.mapping.surrogate;
 
-import iot.jcypher.domain.mapping.FieldMapping;
 
 public class MapSurrogate2MapEntry extends AbstractDeferred {
 
-	private static final String keyField = "key";
-	private static final String valueField = "value";
+	public static final String keyField = "key";
+	public static final String valueField = "value";
 	
-	private FieldMapping fieldMapping;
+	private String field;
 	private MapEntry mapEntry;
 	private Map mapSurrogate;
 	
-	public MapSurrogate2MapEntry(FieldMapping fieldMapping, MapEntry domainObject,
+	public MapSurrogate2MapEntry(String field, MapEntry domainObject,
 			Map mapSurrogate) {
 		super();
-		this.fieldMapping = fieldMapping;
+		this.field = field;
 		this.mapEntry = domainObject;
 		this.mapSurrogate = mapSurrogate;
 	}
 
 	@Override
 	public void performUpdate() {
-		if (this.fieldMapping.getFieldName().equals(keyField)) {
+		if (this.field.equals(keyField)) {
 			this.mapEntry.setKey(this.mapSurrogate.getContent());
 			modifyNextUp();
-		} else if (this.fieldMapping.getFieldName().equals(valueField)) {
+		} else if (this.field.equals(valueField)) {
 			this.mapEntry.setValue(this.mapSurrogate.getContent());
 			modifyNextUp();
 		}
@@ -55,11 +54,18 @@ public class MapSurrogate2MapEntry extends AbstractDeferred {
 	}
 
 	public boolean isKey () {
-		return this.fieldMapping.getFieldName().equals(keyField);
+		return this.field.equals(keyField);
 	}
 	
 	public boolean isValue () {
-		return this.fieldMapping.getFieldName().equals(valueField);
+		return this.field.equals(valueField);
+	}
+
+	@Override
+	public void addNextUpInTree(IDeferred deferred) {
+		if (!upInTree.isEmpty())
+			throw new RuntimeException("can only have one parent!");
+		super.addNextUpInTree(deferred);
 	}
 
 	@Override
@@ -69,7 +75,7 @@ public class MapSurrogate2MapEntry extends AbstractDeferred {
 		result = prime * result
 				+ ((mapEntry == null) ? 0 : mapEntry.hashCode());
 		result = prime * result
-				+ ((fieldMapping == null) ? 0 : fieldMapping.hashCode());
+				+ ((field == null) ? 0 : field.hashCode());
 		result = prime * result
 				+ ((mapSurrogate == null) ? 0 : mapSurrogate.hashCode());
 		return result;
@@ -89,10 +95,10 @@ public class MapSurrogate2MapEntry extends AbstractDeferred {
 				return false;
 		} else if (!mapEntry.equals(other.mapEntry))
 			return false;
-		if (fieldMapping == null) {
-			if (other.fieldMapping != null)
+		if (field == null) {
+			if (other.field != null)
 				return false;
-		} else if (!fieldMapping.equals(other.fieldMapping))
+		} else if (!field.equals(other.field))
 			return false;
 		if (mapSurrogate != other.mapSurrogate)
 			return false;

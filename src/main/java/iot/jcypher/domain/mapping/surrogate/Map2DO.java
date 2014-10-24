@@ -36,7 +36,7 @@ public class Map2DO extends AbstractDeferred {
 
 	@Override
 	public void performUpdate() {
-		if (!this.map.isEmpty()) // empty maps have been mapped to aproperty
+		if (!this.map.isEmpty()) // empty maps have been mapped to a property
 			this.fieldMapping.setFieldValue(this.domainObject, this.map);
 		modifyNextUp();
 	}

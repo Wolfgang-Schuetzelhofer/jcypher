@@ -16,6 +16,8 @@
 
 package iot.jcypher.domain.mapping.surrogate;
 
+import java.util.Iterator;
+
 public interface IDeferred {
 
 	public void performUpdate();
@@ -31,8 +33,8 @@ public interface IDeferred {
 	/**
 	 * @return the next one up towards the root of the tree
 	 */
-	public IDeferred nextUp();
+	public Iterator<IDeferred> nextUp();
 	
-	public void setNextUpInTree(IDeferred deferred);
+	public void addNextUpInTree(IDeferred deferred);
 	
 }

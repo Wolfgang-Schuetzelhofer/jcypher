@@ -536,21 +536,19 @@ public class DomainAccess {
 			if (isRoot) {
 				List<IDeferred> leafs = buildDeferredResolutionTree(deferreds);
 				// handle deferred updates
-				resolveDeferreds(leafs);
+				resolveDeferreds(leafs.iterator());
 				surrogateChangeLog.applyChanges();
 			}
 			
 			return resultList;
 		}
 		
-		private void resolveDeferreds(List<IDeferred> deferreds) {
-			for (int i = 0; i < deferreds.size(); i++) {
-				IDeferred deferred = deferreds.get(i);
-				while (deferred.isLeaf()) {
+		private void resolveDeferreds(Iterator<IDeferred> it) {
+			while(it.hasNext()) {
+				IDeferred deferred = it.next();
+				if (deferred.isLeaf()) {
 					deferred.performUpdate();
-					deferred = deferred.nextUp();
-					if (deferred == null)
-						break;
+					resolveDeferreds(deferred.nextUp());
 				}
 			}
 		}
@@ -562,7 +560,7 @@ public class DomainAccess {
 					for (IDeferred def : deferreds) {
 						if (def instanceof MapEntry2DOMap) {
 							if (((MapSurrogate2MapEntry) deferred).getMapEntry().equals(((MapEntry2DOMap) def).getMapEntry())) {
-								((MapSurrogate2MapEntry) deferred).setNextUpInTree(def);
+								((MapSurrogate2MapEntry) deferred).addNextUpInTree(def);
 							}
 						}
 					}
@@ -570,11 +568,11 @@ public class DomainAccess {
 					for (IDeferred def : deferreds) {
 						if (def instanceof MapSurrogate2MapEntry) {
 							if (((MapEntry2DOMap) deferred).getMap() == ((MapSurrogate2MapEntry) def).getMapSurrogate().getContent()) {
-								((MapEntry2DOMap) deferred).setNextUpInTree(def);
+								((MapEntry2DOMap) deferred).addNextUpInTree(def);
 							}
 						} else if (def instanceof Map2DO) {
 							if (((MapEntry2DOMap) deferred).getMap() == ((Map2DO) def).getMap()) {
-								((MapEntry2DOMap) deferred).setNextUpInTree(def);
+								((MapEntry2DOMap) deferred).addNextUpInTree(def);
 							}
 						}
 					}
@@ -1637,7 +1635,7 @@ public class DomainAccess {
 							if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
 								// in this case parent must be a MapEntry
 								MapSurrogate2MapEntry deferred = new MapSurrogate2MapEntry(
-										fm, (MapEntry) context.parentObject, (iot.jcypher.domain.mapping.surrogate.Map)domainObject);
+										fm.getFieldName(), (MapEntry) context.parentObject, (iot.jcypher.domain.mapping.surrogate.Map)domainObject);
 								context.deferredList.add(deferred);
 								domainObject = null;
 //								domainObject = ((iot.jcypher.domain.mapping.surrogate.Map)domainObject).getContent();
@@ -1671,6 +1669,9 @@ public class DomainAccess {
 					KeyedRelation irel = new KeyedRelation(relType, idx, start, domainObject);
 					domainAccessHandler.domainState.add_Id2Relation(irel, rel.getId());
 					toResort.add(irel);
+					if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
+						String tst = null;
+					}
 				}
 				
 				if (needResort) {
@@ -1723,24 +1724,22 @@ public class DomainAccess {
 								MapEntry2DOMap deferred = new MapEntry2DOMap((MapEntry)end, map);
 								context.deferredList.add(deferred);
 								fillMap = false;
+							} else if (!(end instanceof MapTerminator)) {
+								val = end;
+								if (val instanceof iot.jcypher.domain.mapping.surrogate.Map) {
+										// key instanceof iot.jcypher.domain.mapping.surrogate.Map can not happen
+									MapEntry me = new MapEntry(key, null);
+									IDeferred deferred = new MapEntry2DOMap(me, map);
+									context.deferredList.add(deferred);
+									deferred = new MapSurrogate2MapEntry(
+											MapSurrogate2MapEntry.valueField, me, (iot.jcypher.domain.mapping.surrogate.Map)val);
+									context.deferredList.add(deferred);
+									fillMap = false;
+								}
 							}
 							
-							if (fillMap) {
-								if (!(end instanceof MapTerminator))
-									val = end;
-								
-								if (key instanceof iot.jcypher.domain.mapping.surrogate.Map) {
-									key = ((iot.jcypher.domain.mapping.surrogate.Map)key).getContent();
-									context.surrogateChangeLog.added.add(irel);
-								}
-								if (val instanceof iot.jcypher.domain.mapping.surrogate.Map) {
-									val = ((iot.jcypher.domain.mapping.surrogate.Map)val).getContent();
-									context.surrogateChangeLog.added.add(irel);
-								}
-								
-								// fill map
+							if (fillMap)
 								map.put(key, val);
-							}
 						}
 					}
 				} catch(Throwable e) {
