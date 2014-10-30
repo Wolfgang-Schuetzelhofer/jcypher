@@ -17,30 +17,30 @@
 package iot.jcypher.domain.mapping.surrogate;
 
 
-public class MapSurrogate2MapEntry extends AbstractDeferred {
+public class Surrogate2MapEntry extends AbstractDeferred implements ISurrogate2Entry {
 
 	public static final String keyField = "key";
 	public static final String valueField = "value";
 	
 	private String field;
 	private MapEntry mapEntry;
-	private Map mapSurrogate;
+	private AbstractSurrogate surrogate;
 	
-	public MapSurrogate2MapEntry(String field, MapEntry domainObject,
-			Map mapSurrogate) {
+	public Surrogate2MapEntry(String field, MapEntry domainObject,
+			AbstractSurrogate surrogate) {
 		super();
 		this.field = field;
 		this.mapEntry = domainObject;
-		this.mapSurrogate = mapSurrogate;
+		this.surrogate = surrogate;
 	}
 
 	@Override
 	public void performUpdate() {
 		if (this.field.equals(keyField)) {
-			this.mapEntry.setKey(this.mapSurrogate.getContent());
+			this.mapEntry.setKey(this.surrogate.getContent());
 			modifyNextUp();
 		} else if (this.field.equals(valueField)) {
-			this.mapEntry.setValue(this.mapSurrogate.getContent());
+			this.mapEntry.setValue(this.surrogate.getContent());
 			modifyNextUp();
 		}
 	}
@@ -49,8 +49,8 @@ public class MapSurrogate2MapEntry extends AbstractDeferred {
 		return mapEntry;
 	}
 	
-	public Map getMapSurrogate() {
-		return mapSurrogate;
+	public AbstractSurrogate getSurrogate() {
+		return surrogate;
 	}
 
 	public boolean isKey () {
@@ -77,7 +77,7 @@ public class MapSurrogate2MapEntry extends AbstractDeferred {
 		result = prime * result
 				+ ((field == null) ? 0 : field.hashCode());
 		result = prime * result
-				+ ((mapSurrogate == null) ? 0 : mapSurrogate.hashCode());
+				+ ((surrogate == null) ? 0 : surrogate.hashCode());
 		return result;
 	}
 
@@ -89,7 +89,7 @@ public class MapSurrogate2MapEntry extends AbstractDeferred {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		MapSurrogate2MapEntry other = (MapSurrogate2MapEntry) obj;
+		Surrogate2MapEntry other = (Surrogate2MapEntry) obj;
 		if (mapEntry == null) {
 			if (other.mapEntry != null)
 				return false;
@@ -100,9 +100,14 @@ public class MapSurrogate2MapEntry extends AbstractDeferred {
 				return false;
 		} else if (!field.equals(other.field))
 			return false;
-		if (mapSurrogate != other.mapSurrogate)
+		if (surrogate != other.surrogate)
 			return false;
 		return true;
+	}
+
+	@Override
+	public Object entry2Update() {
+		return getMapEntry();
 	}
 	
 }

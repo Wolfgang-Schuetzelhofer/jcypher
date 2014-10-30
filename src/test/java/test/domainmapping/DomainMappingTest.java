@@ -155,6 +155,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		List<Object> multiDimList = new ArrayList<Object>();
 		List<Object> multiDimList_1 = new ArrayList<Object>();
 		List<Object> multiDimList_2 = new ArrayList<Object>();
+		List<Object> multiDimList_3 = new ArrayList<Object>();
 		
 		multiDimList_1.add(first_1);
 		multiDimList_1.add(second_1);
@@ -162,12 +163,16 @@ public class DomainMappingTest extends AbstractTestSuite{
 		multiDimList_2.add("first");
 		multiDimList_2.add("second");
 		multiDimList_2.add("third");
+		multiDimList_3.add(100);
+		multiDimList_3.add(200);
+		multiDimList_3.add(300);
 		
 		multiDimList.add(first);
 		multiDimList.add(multiDimList_1);
 		multiDimList.add(multiDimList_2);
+		multiDimList.add(multiDimList_3);
 		
-		multiDimMapsLists.setMultiDimList(multiDimList);
+		multiDimMapsLists.setMultiDimList(multiDimList_3);
 		
 		errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {

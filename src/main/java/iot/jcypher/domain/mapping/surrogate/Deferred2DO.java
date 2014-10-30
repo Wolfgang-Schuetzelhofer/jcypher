@@ -16,48 +16,42 @@
 
 package iot.jcypher.domain.mapping.surrogate;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collection;
 import java.util.Map;
 
-public class MapEntry2DOMap extends AbstractDeferred {
-	private MapEntry mapEntry;
-	private Map<Object, Object> map;
+import iot.jcypher.domain.mapping.FieldMapping;
 
-	public MapEntry2DOMap(MapEntry mapEntry, Map<Object, Object> map) {
+public class Deferred2DO extends AbstractDeferred {
+
+	private FieldMapping fieldMapping;
+	// a map or a collection
+	private Object deferred;
+	private Object domainObject;
+	
+	public Deferred2DO(FieldMapping fieldMapping, Object deferred,
+			Object domainObject) {
 		super();
-		this.mapEntry = mapEntry;
-		this.map = map;
+		this.fieldMapping = fieldMapping;
+		this.deferred = deferred;
+		this.domainObject = domainObject;
 	}
 
 	@Override
 	public void performUpdate() {
-		this.map.put(this.mapEntry.getKey(), this.mapEntry.getValue());
+		if (!this.isEmpty()) // empty maps or lists have been mapped to a property
+			this.fieldMapping.setFieldValue(this.domainObject, this.deferred);
 		modifyNextUp();
 	}
-
-	public MapEntry getMapEntry() {
-		return mapEntry;
+	
+	private boolean isEmpty() {
+		if (this.deferred instanceof Map<?, ?>)
+			return ((Map<?, ?>)this.deferred).isEmpty();
+		else if (this.deferred instanceof Collection<?>)
+			return ((Collection<?>)this.deferred).isEmpty();
+		return this.deferred != null;
 	}
 	
-	public Map<Object, Object> getMap() {
-		return map;
-	}
-
-	@Override
-	public int hashCode() {
-		return mapEntry.hashCode();
-	}
-
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		MapEntry2DOMap other = (MapEntry2DOMap) obj;
-		return this.mapEntry == other.mapEntry;
+	public Object getDeferred() {
+		return this.deferred;
 	}
 }

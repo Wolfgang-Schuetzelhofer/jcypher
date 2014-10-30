@@ -158,6 +158,8 @@ public class CompareUtil_3 {
 				return false;
 		} else if (o_1 instanceof Map && o_2 instanceof Map) {
 			return CompareUtil_3.equalsMap((Map)o_1, (Map)o_2);
+		} else if (o_1 instanceof List && o_2 instanceof List) {
+			return CompareUtil_3.equalsList((List)o_1, (List)o_2);
 		} else if (!o_1.equals(o_2))
 			return false; 
 		
