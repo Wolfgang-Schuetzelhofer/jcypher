@@ -20,22 +20,21 @@ import iot.jcypher.domain.mapping.CompoundObjectType.CType;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 
-import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Map;
 
 public class FieldMapping {
 
-	private Field field;
+	private IField field;
 	private String fieldName;
 	protected String propertyName;
 	private String classFieldName;
 	
-	public FieldMapping(Field field) {
+	public FieldMapping(IField field) {
 		this(field, field.getName());
 	}
 	
-	public FieldMapping(Field field, String propertyName) {
+	public FieldMapping(IField field, String propertyName) {
 		super();
 		this.field = field;
 		this.field.setAccessible(true);
@@ -188,13 +187,15 @@ public class FieldMapping {
 	}
 	
 	/**
-	 * @return true if the field type is Object.class, because at runtime this
-	 * can lead to a simple type (e.g. Integer) which can be mapped to a property,
+	 * @return true if the field type is Object.class or a map or list, because at runtime this
+	 * can lead to a simple type (e.g. Integer), or to an empty or simple type array which can be mapped to a property,
 	 * or it can lead to a complex type which requires a relation in the graph.
 	 * It is therefore necessary to look at properties and relations.
 	 */
 	public boolean needsRelationOrProperty() {
-		return this.field.getType().equals(Object.class);
+		return this.field.getType().equals(Object.class) ||
+				this.getFieldKind() == FieldKind.MAP ||
+				this.getFieldKind() == FieldKind.COLLECTION;
 	}
 	
 	/**
@@ -278,7 +279,7 @@ public class FieldMapping {
 		return this.propertyName;
 	}
 	
-	public Field getField() {
+	public IField getField() {
 		return this.field;
 	}
 	
@@ -318,6 +319,10 @@ public class FieldMapping {
 
 	public FieldKind getFieldKind() {
 		Class<?> typ = this.field.getType();
+		return getFieldKind(typ);
+	}
+	
+	public static FieldKind getFieldKind(Class<?> typ) {
 		return Collection.class.isAssignableFrom(typ) ? FieldKind.COLLECTION :
 			Map.class.isAssignableFrom(typ) ? FieldKind.MAP : FieldKind.SINGLE;
 	}

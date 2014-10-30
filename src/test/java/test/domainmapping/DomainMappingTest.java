@@ -172,7 +172,8 @@ public class DomainMappingTest extends AbstractTestSuite{
 		multiDimList.add(multiDimList_2);
 		multiDimList.add(multiDimList_3);
 		
-		multiDimMapsLists.setMultiDimList(multiDimList_3);
+//		multiDimMapsLists.setMultiDimList(multiDimList_3);
+		multiDimMapsLists.setMultiDimList(multiDimList);
 		
 		errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
@@ -301,7 +302,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	//@Test
-	public void testMultiMap_02() {
+	public void testMultiMap_EmptyAndNull() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
 		DomainAccess da1;

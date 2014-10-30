@@ -16,7 +16,11 @@
 
 package iot.jcypher.domain.mapping;
 
+import iot.jcypher.domain.mapping.FieldMapping.FieldKind;
+import iot.jcypher.domain.mapping.surrogate.Collection;
+import iot.jcypher.domain.mapping.surrogate.Map;
 import iot.jcypher.domain.mapping.surrogate.MapEntry;
+import iot.jcypher.domain.mapping.surrogate.SurrogateField;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
@@ -45,10 +49,19 @@ public class DefaultObjectMappingCreator {
 		for (int i = 0;i < fields.length; i++) {
 			if (!Modifier.isTransient(fields[i].getModifiers())) {
 				FieldMapping fieldMapping;
-				if (clazz.equals(MapEntry.class) && fields[i].getName().equals(ValueField))
-					fieldMapping = new ValueAndTypeMapping(fields[i]);
+				IField field;
+				FieldKind fieldKind = FieldMapping.getFieldKind(fields[i].getType());
+				if (fieldKind == FieldKind.MAP && !fields[i].getDeclaringClass().equals(Map.class))
+					field = new SurrogateField(fields[i]);
+				else if (fieldKind == FieldKind.COLLECTION && !fields[i].getDeclaringClass().equals(Collection.class))
+					field = new SurrogateField(fields[i]);
 				else
-					fieldMapping = new FieldMapping(fields[i]);
+					field = new DirectField(fields[i]);
+				
+				if (clazz.equals(MapEntry.class) && fields[i].getName().equals(ValueField))
+					fieldMapping = new ValueAndTypeMapping(field);
+				else
+					fieldMapping = new FieldMapping(field);
 				objectMapping.addFieldMapping(fieldMapping);
 			}
 		}

@@ -14,27 +14,47 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domain.mapping.surrogate;
+package iot.jcypher.domain.mapping;
 
-public class Map extends AbstractSurrogate {
+import java.lang.reflect.Field;
 
-	private java.util.Map<Object, Object> m_content;
+public class DirectField implements IField {
 
-	public Map() {
+	private Field field;
+	
+	public DirectField(Field field) {
 		super();
-	}
-
-	public Map(java.util.Map<Object, Object> content) {
-		super();
-		this.m_content = content;
+		this.field = field;
 	}
 
 	@Override
-	public java.util.Map<Object, Object> getContent() {
-		return m_content;
+	public String getName() {
+		return this.field.getName();
 	}
 
-	public void setContent(java.util.Map<Object, Object> content) {
-		this.m_content = content;
+	@Override
+	public void setAccessible(boolean b) {
+		this.field.setAccessible(b);
 	}
+
+	@Override
+	public Object get(Object obj) throws IllegalArgumentException, IllegalAccessException {
+		return this.field.get(obj);
+	}
+
+	@Override
+	public void set(Object target, Object value) throws IllegalArgumentException, IllegalAccessException {
+		this.field.set(target, value);
+	}
+
+	@Override
+	public Class<?> getType() {
+		return this.field.getType();
+	}
+
+	@Override
+	public Class<?> getDeclaringClass() {
+		return this.field.getDeclaringClass();
+	}
+
 }

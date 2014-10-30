@@ -16,19 +16,16 @@
 
 package iot.jcypher.domain.mapping.surrogate;
 
-import java.util.Collection;
-import java.util.Map;
-
 import iot.jcypher.domain.mapping.FieldMapping;
 
 public class Deferred2DO extends AbstractDeferred {
 
 	private FieldMapping fieldMapping;
 	// a map or a collection
-	private Object deferred;
+	private AbstractSurrogate deferred;
 	private Object domainObject;
 	
-	public Deferred2DO(FieldMapping fieldMapping, Object deferred,
+	public Deferred2DO(FieldMapping fieldMapping, AbstractSurrogate deferred,
 			Object domainObject) {
 		super();
 		this.fieldMapping = fieldMapping;
@@ -38,20 +35,11 @@ public class Deferred2DO extends AbstractDeferred {
 
 	@Override
 	public void performUpdate() {
-		if (!this.isEmpty()) // empty maps or lists have been mapped to a property
-			this.fieldMapping.setFieldValue(this.domainObject, this.deferred);
+		this.fieldMapping.setFieldValue(this.domainObject, this.deferred);
 		modifyNextUp();
 	}
 	
-	private boolean isEmpty() {
-		if (this.deferred instanceof Map<?, ?>)
-			return ((Map<?, ?>)this.deferred).isEmpty();
-		else if (this.deferred instanceof Collection<?>)
-			return ((Collection<?>)this.deferred).isEmpty();
-		return this.deferred != null;
-	}
-	
-	public Object getDeferred() {
+	public AbstractSurrogate getDeferred() {
 		return this.deferred;
 	}
 }

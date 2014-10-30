@@ -37,5 +37,4 @@ public class Collection extends AbstractSurrogate {
 	public void setContent(java.util.Collection<Object> content) {
 		this.c_content = content;
 	}
-	
 }

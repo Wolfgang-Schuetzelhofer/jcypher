@@ -575,7 +575,7 @@ public class DomainAccess {
 								deferred.addNextUpInTree(def);
 							}
 						} else if (def instanceof Deferred2DO) {
-							if (((IEntryUpdater) deferred).objectToUpdate() == ((Deferred2DO) def).getDeferred()) {
+							if (((IEntryUpdater) deferred).objectToUpdate() == ((Deferred2DO) def).getDeferred().getContent()) {
 								deferred.addNextUpInTree(def);
 							}
 						}
@@ -1599,11 +1599,6 @@ public class DomainAccess {
 						
 						if (!isRoot) {
 							if (fieldKind == FieldKind.COLLECTION) {
-								if (!(context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection)) {
-									// parent is an object that needs the collection set to a field
-									Deferred2DO deferred = new Deferred2DO(fm, collection, context.parentObject);
-									context.deferredList.add(deferred);
-								}
 								addCollectionRelations(context, usedRelations, collection,
 										fm.getPropertyOrRelationName());
 								if (collection.isEmpty()) {
@@ -1615,13 +1610,6 @@ public class DomainAccess {
 							} else if (fieldKind == FieldKind.MAP) {
 								addMapRelations_FillMap(context, usedRelations,
 										fm.getPropertyOrRelationName(), map);
-								if (!(context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map)) {
-									// parent is an object that needs the map set to a field
-									// if the parent is a MapEntry, this domainObject cannot be a map,
-									// it must be a surrogate.Map
-									Deferred2DO deferred = new Deferred2DO(fm, map, context.parentObject);
-									context.deferredList.add(deferred);
-								}
 								if (map.isEmpty()) {
 									// test for empty map, which evantually was mapped to a property
 									fm.mapPropertyToField(context.parentObject, parentNode);
@@ -1638,12 +1626,17 @@ public class DomainAccess {
 									context.surrogateChangeLog.added.add(relat);
 							}
 							if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
-								// in this case parent must be a MapEntry
-								Surrogate2MapEntry deferred = new Surrogate2MapEntry(
+								IDeferred deferred;
+								if (context.parentObject instanceof MapEntry) {
+									deferred = new Surrogate2MapEntry(
 										fm.getFieldName(), (MapEntry) context.parentObject, (iot.jcypher.domain.mapping.surrogate.Map)domainObject);
+								} else {
+									// TODO are there more possibilities ? maps in lists and vice versa ?
+									deferred = new Deferred2DO(fm,
+											(iot.jcypher.domain.mapping.surrogate.Map)domainObject, context.parentObject);
+								}
 								context.deferredList.add(deferred);
 								domainObject = null;
-//								domainObject = ((iot.jcypher.domain.mapping.surrogate.Map)domainObject).getContent();
 							}
 							if (domainObject != null) {
 								fm.setFieldValue(context.parentObject, domainObject);
@@ -2359,6 +2352,10 @@ public class DomainAccess {
 		public void addConcreteFieldType(String classField, Class<?> type) {
 			DomainInfo di = domainAccessHandler.getAvailableDomainInfo();
 			di.addConcreteFieldType(classField, type);
+		}
+		
+		public DomainState getDomainState() {
+			return domainAccessHandler.domainState;
 		}
 	}
 }

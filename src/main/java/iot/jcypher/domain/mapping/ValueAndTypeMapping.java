@@ -3,17 +3,15 @@ package iot.jcypher.domain.mapping;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 
-import java.lang.reflect.Field;
-
 public class ValueAndTypeMapping extends FieldMapping {
 
 	private static final String TypePostfix = "Type";
 	
-	public ValueAndTypeMapping(Field field) {
+	public ValueAndTypeMapping(IField field) {
 		super(field);
 	}
 
-	public ValueAndTypeMapping(Field field, String propertyName) {
+	public ValueAndTypeMapping(IField field, String propertyName) {
 		super(field, propertyName);
 	}
 
