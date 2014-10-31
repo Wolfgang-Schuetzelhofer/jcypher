@@ -14,31 +14,37 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domain.mapping.surrogate;
+package test.domainmapping.util;
 
-import java.util.Iterator;
+import java.util.List;
 
-public interface IDeferred {
+public class AlreadyCompared {
+	private Object object1;
+	private Object object2;
+	private boolean result;
+	
+	public AlreadyCompared(Object object1, Object object2) {
+		super();
+		this.object1 = object1;
+		this.object2 = object2;
+	}
+	
+	public boolean setResult(boolean b) {
+		this.result = b;
+		return b;
+	}
+	
+	public boolean getResult() {
+		return result;
+	}
 
-	public void performUpdate();
-	
-	/**
-	 * this deferred was modified by another one (the changer)
-	 * @param changer that has modified this deferred
-	 */
-	public void modifiedBy(IDeferred changer);
-	
-	public boolean isLeaf();
-	
-	public boolean isRoot();
-	
-	/**
-	 * @return the next one up towards the root of the tree
-	 */
-	public Iterator<IDeferred> nextUp();
-	
-	public void addNextUpInTree(IDeferred deferred);
-	
-	public void breakLoop();
-	
+	public static AlreadyCompared alreadyCompared(Object obj1, Object obj2,
+			List<AlreadyCompared> alreadyCompareds) {
+		for (AlreadyCompared ac : alreadyCompareds) {
+			if ((ac.object1 == obj1 && ac.object2 == obj2) ||
+					(ac.object1 == obj2 && ac.object2 == obj2))
+				return ac;
+		}
+		return null;
+	}
 }

@@ -38,15 +38,8 @@ public class ValueAndTypeMapping extends FieldMapping {
 	@Override
 	protected Class<?> getFieldTypeInt(GrNode rNode) {
 		String propName = getPropertyOrRelationName().concat(TypePostfix);
-		GrProperty typeProp = rNode.getProperty(propName);
-		Class<?> clazz;
-		if (typeProp != null) {
-			try {
-				clazz = Class.forName(typeProp.getValue().toString());
-			} catch (ClassNotFoundException e) {
-				throw new RuntimeException(e);
-			}
-		} else
+		Class<?> clazz = getTypeFromProperty(rNode, propName);
+		if (clazz == null)
 			clazz = super.getFieldTypeInt(rNode);
 		return clazz;
 	}

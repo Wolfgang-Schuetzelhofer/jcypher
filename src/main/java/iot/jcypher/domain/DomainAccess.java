@@ -37,8 +37,8 @@ import iot.jcypher.domain.mapping.MapTerminator;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domain.mapping.surrogate.AbstractSurrogate;
-import iot.jcypher.domain.mapping.surrogate.IDeferred;
 import iot.jcypher.domain.mapping.surrogate.Deferred2DO;
+import iot.jcypher.domain.mapping.surrogate.IDeferred;
 import iot.jcypher.domain.mapping.surrogate.IEntryUpdater;
 import iot.jcypher.domain.mapping.surrogate.ISurrogate2Entry;
 import iot.jcypher.domain.mapping.surrogate.ListEntriesUpdater;
@@ -538,7 +538,14 @@ public class DomainAccess {
 			}
 			
 			if (isRoot) {
-				List<IDeferred> leafs = buildDeferredResolutionTree(deferreds);
+				buildDeferredResolutionTree(deferreds);
+				handleLoops(deferreds);
+				// find leafs
+				List<IDeferred> leafs = new ArrayList<IDeferred>();
+				for (IDeferred deferred : deferreds) {
+					if (deferred.isLeaf())
+						leafs.add(deferred);
+				}
 				// handle deferred updates
 				resolveDeferreds(leafs.iterator());
 				surrogateChangeLog.applyChanges();
@@ -547,6 +554,14 @@ public class DomainAccess {
 			return resultList;
 		}
 		
+		private void handleLoops(Set<IDeferred> deferreds) {
+			for (IDeferred deferred : deferreds) {
+				if (deferred.isRoot()) {
+					deferred.breakLoop();
+				}
+			}
+		}
+
 		private void resolveDeferreds(Iterator<IDeferred> it) {
 			while(it.hasNext()) {
 				IDeferred deferred = it.next();
@@ -557,8 +572,7 @@ public class DomainAccess {
 			}
 		}
 		
-		private List<IDeferred> buildDeferredResolutionTree(Set<IDeferred> deferreds) {
-			List<IDeferred> leafs = new ArrayList<IDeferred>();
+		private void buildDeferredResolutionTree(Set<IDeferred> deferreds) {
 			for (IDeferred deferred : deferreds) {
 				if (deferred instanceof ISurrogate2Entry) {
 					for (IDeferred def : deferreds) {
@@ -582,13 +596,6 @@ public class DomainAccess {
 					}
 				}
 			}
-			
-			// find leafs
-			for (IDeferred deferred : deferreds) {
-				if (deferred.isLeaf())
-					leafs.add(deferred);
-			}
-			return leafs;
 		}
 
 		/**
@@ -1625,15 +1632,15 @@ public class DomainAccess {
 								if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Map)
 									context.surrogateChangeLog.added.add(relat);
 							}
-							if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
+							if (domainObject instanceof AbstractSurrogate) {
 								IDeferred deferred;
 								if (context.parentObject instanceof MapEntry) {
 									deferred = new Surrogate2MapEntry(
-										fm.getFieldName(), (MapEntry) context.parentObject, (iot.jcypher.domain.mapping.surrogate.Map)domainObject);
+										fm.getFieldName(), (MapEntry) context.parentObject, (AbstractSurrogate)domainObject);
 								} else {
 									// TODO are there more possibilities ? maps in lists and vice versa ?
 									deferred = new Deferred2DO(fm,
-											(iot.jcypher.domain.mapping.surrogate.Map)domainObject, context.parentObject);
+											(AbstractSurrogate)domainObject, context.parentObject);
 								}
 								context.deferredList.add(deferred);
 								domainObject = null;

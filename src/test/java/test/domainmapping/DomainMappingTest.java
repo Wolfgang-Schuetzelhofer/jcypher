@@ -194,6 +194,79 @@ public class DomainMappingTest extends AbstractTestSuite{
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
+		multiDimList_3.clear();
+		multiDimList_3.add(second_1);
+		
+		errors = da.store(multiDimMapsLists);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
+		assertTrue(equals);
+		
+		boolean identical = ((List<?>)multiDimMapsLists_1.getMultiDimList().get(1)).get(1) ==
+				((List<?>)multiDimMapsLists_1.getMultiDimList().get(3)).get(0);
+		assertTrue(identical);
+		
+		multiDimList_3.clear();
+		multiDimList_3.add(multiDimMapsLists.getMultiDimList());
+		
+		errors = da.store(multiDimMapsLists);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
+		assertTrue(equals);
+		
+		return;
+	}
+	
+	//@Test
+	public void testMultiList_loop() {
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		MultiDimMapsLists multiDimMapsLists = new MultiDimMapsLists();
+		MultiDimMapsLists multiDimMapsLists_1;
+		boolean equals;
+		
+		// init multiDimList
+		List<Object> multiDimList = new ArrayList<Object>();
+		List<Object> multiDimList_1 = new ArrayList<Object>();
+		
+		multiDimList_1.add(multiDimList);
+		
+		multiDimList.add(multiDimList_1);
+		
+		multiDimMapsLists.setMultiDimList(multiDimList);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(multiDimMapsLists);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
+		assertTrue(equals);
+		
 		return;
 	}
 	

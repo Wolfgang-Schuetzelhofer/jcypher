@@ -57,26 +57,33 @@ public class FieldMapping {
 				value = MappingUtil.convertToProperty(value);
 				GrProperty prop = rNode.getProperty(this.propertyName);
 				if (value != null) {
+					boolean propModified = false;
 					if (prop != null) {
 						Object propValue = MappingUtil.convertFromProperty(prop.getValue(), value.getClass(),
-								getComponentType(), getConcreteFieldType());
+								getComponentType(rNode), getConcreteFieldType());
 						if (!propValue.equals(value)) {
-							addSimpleListComponentType2DomainInfo(value);
 							prop.setValue(value);
+							propModified = true;
 						}
-					} else
+					} else {
 						rNode.addProperty(this.propertyName, value);
+						propModified = true;
+					}
+					if (propModified)
+						storeSimpleListComponentType(value, rNode);
 				} else {
 					if (prop != null) // remove the property
 						prop.setValue(null);
 				}
 			} else {
+				boolean clearAdditional = false;
 				// a previously empty collection might have been mapped to a property
 				// we need to remove the property
 				if (Collection.class.isAssignableFrom(getFieldType())) {
 					GrProperty prop = rNode.getProperty(this.propertyName);
 					if (prop != null)
 						prop.setValue(null);
+					clearAdditional = true;
 				}
 				
 				// a previously empty map might have been mapped to a property
@@ -85,7 +92,11 @@ public class FieldMapping {
 					GrProperty prop = rNode.getProperty(this.propertyName);
 					if (prop != null)
 						prop.setValue(null);
+					clearAdditional = true;
 				}
+				
+				if (clearAdditional) // e.g. type property
+					clearAdditionalProperties(rNode);
 			}
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
@@ -93,6 +104,11 @@ public class FieldMapping {
 		return ret;
 	}
 	
+	protected void clearAdditionalProperties(GrNode rNode) {
+		// do nothing in this implementation
+		// overwritten by subclasses
+	}
+
 	/**
 	 * @param domainObject
 	 * @param rNode
@@ -111,7 +127,7 @@ public class FieldMapping {
 				if (propValue != null) { // allow null values in properties
 					Class<?> typ = getFieldTypeInt(rNode);
 					propValue = MappingUtil.convertFromProperty(propValue, typ,
-							getComponentType(), getConcreteFieldType());
+							getComponentType(rNode), getConcreteFieldType());
 					if (!propValue.equals(value)) {
 						this.field.set(domainObject, propValue);
 					}
@@ -230,37 +246,18 @@ public class FieldMapping {
 		return needRelation;
 	}
 	
-	@SuppressWarnings("rawtypes")
-	private void addSimpleListComponentType2DomainInfo(Object value) {
-		// check for list (collection) containing primitive or simple types
-		if (Collection.class.isAssignableFrom(this.field.getType())) {
-			Collection coll = (Collection) this.field.getType().cast(value);
-			if (coll.size() > 0) {
-				Object elem = coll.iterator().next();
-				Class<?> type = elem.getClass();
-				// test the first element,
-				// assuming all elements are of the same type !!!
-				if (MappingUtil.isSimpleType(type)) { // elements are of primitive or simple type
-					// store component type in DomainInfo
-					MappingUtil.internalDomainAccess.get()
-						.addFieldComponentType(getClassFieldName(), elem.getClass());
-				}
-			}
-		}
+	protected void storeSimpleListComponentType(Object value, GrNode rNode) {
+		// do nothing in this implementation
+		// overwritten by subclasses
 	}
 	
 	/**
 	 * only called when to check for a concrete simple component type
 	 * @return
 	 */
-	private Class<?> getComponentType() {
-		if (getFieldKind() == FieldKind.COLLECTION) {
-			String classField = getClassFieldName();
-			CompoundObjectType cType = MappingUtil.internalDomainAccess.get()
-				.getFieldComponentType(classField);
-			if (cType != null)
-				return cType.getType();
-		}
+	protected Class<?> getComponentType(GrNode rNode) {
+		// do nothing in this implementation
+		// overwritten by subclasses
 		return null;
 	}
 	
@@ -358,6 +355,19 @@ public class FieldMapping {
 		} else if (!field.equals(other.getField()))
 			return false;
 		return true;
+	}
+	
+	protected Class<?> getTypeFromProperty(GrNode rNode, String propertyName) {
+		GrProperty typeProp = rNode.getProperty(propertyName);
+		Class<?> clazz = null;
+		if (typeProp != null) {
+			try {
+				clazz = Class.forName(typeProp.getValue().toString());
+			} catch (ClassNotFoundException e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return clazz;
 	}
 	
 	/***********************************/

@@ -42,4 +42,17 @@ public class Deferred2DO extends AbstractDeferred {
 	public AbstractSurrogate getDeferred() {
 		return this.deferred;
 	}
+
+	@Override
+	public boolean isRoot() {
+		return true;
+	}
+
+	@Override
+	public void breakLoop() {
+		for (IDeferred deferred : this.downInTree) {
+			deferred.breakLoop();
+		}
+	}
+	
 }

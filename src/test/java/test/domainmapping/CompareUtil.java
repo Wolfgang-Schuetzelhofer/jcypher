@@ -20,6 +20,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
+import test.domainmapping.util.AlreadyCompared;
+
 public class CompareUtil {
 
 	public static boolean equalsPerson(Person person1, Person person2) {
@@ -35,9 +37,9 @@ public class CompareUtil {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
 			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = alreadyCompared(person1, person2, acs);
+		AlreadyCompared ac = AlreadyCompared.alreadyCompared(person1, person2, acs);
 		if (ac != null) // avoid infinite loops
-			return ac.result;
+			return ac.getResult();
 		
 		ac = new AlreadyCompared(person1, person2);
 		acs.add(ac);
@@ -159,33 +161,5 @@ public class CompareUtil {
 		} else if (!company_1.getAreaCodes().equals(company_2.getAreaCodes()))
 			return false;
 		return true;
-	}
-	
-	private static AlreadyCompared alreadyCompared(Object obj1, Object obj2,
-			List<AlreadyCompared> alreadyCompareds) {
-		for (AlreadyCompared ac : alreadyCompareds) {
-			if ((ac.object1 == obj1 && ac.object2 == obj2) ||
-					(ac.object1 == obj2 && ac.object2 == obj2))
-				return ac;
-		}
-		return null;
-	}
-	
-	/************************************/
-	private static class AlreadyCompared {
-		private Object object1;
-		private Object object2;
-		private boolean result;
-		
-		private AlreadyCompared(Object object1, Object object2) {
-			super();
-			this.object1 = object1;
-			this.object2 = object2;
-		}
-		
-		private boolean setResult(boolean b) {
-			this.result = b;
-			return b;
-		}
 	}
 }

@@ -60,6 +60,8 @@ public class DefaultObjectMappingCreator {
 				
 				if (clazz.equals(MapEntry.class) && fields[i].getName().equals(ValueField))
 					fieldMapping = new ValueAndTypeMapping(field);
+				else if (clazz.equals(Collection.class)) // has only one field, don't need to test for field name
+					fieldMapping = new ListFieldMapping(field);
 				else
 					fieldMapping = new FieldMapping(field);
 				objectMapping.addFieldMapping(fieldMapping);

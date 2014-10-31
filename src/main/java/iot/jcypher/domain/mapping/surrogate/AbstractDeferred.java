@@ -23,7 +23,7 @@ import java.util.List;
 public abstract class AbstractDeferred implements IDeferred{
 
 	protected List<IDeferred> upInTree;
-	private List<IDeferred> downInTree;
+	protected List<IDeferred> downInTree;
 	
 	public AbstractDeferred() {
 		super();
@@ -34,6 +34,11 @@ public abstract class AbstractDeferred implements IDeferred{
 	@Override
 	public boolean isLeaf() {
 		return this.downInTree.isEmpty();
+	}
+
+	@Override
+	public boolean isRoot() {
+		return false;
 	}
 
 	@Override
@@ -58,9 +63,38 @@ public abstract class AbstractDeferred implements IDeferred{
 		this.downInTree.remove(changer);
 	}
 	
+	public void removeFromDownTree(IDeferred def) {
+		this.downInTree.remove(def);
+	}
+	
+	public void removeFromUpTree(IDeferred def) {
+		this.upInTree.remove(def);
+	}
+	
 	protected void modifyNextUp() {
 		for(IDeferred def :this.upInTree) {
 			def.modifiedBy(this);
 		}
 	}
+
+	@Override
+	public void breakLoop() {
+		List<IDeferred> loopEnds = new ArrayList<IDeferred>();
+		loopsTo(this, loopEnds);
+		// I am in downTree of each one in loopEnds
+		for (IDeferred deferred : loopEnds) {
+			((AbstractDeferred)deferred).removeFromDownTree(this);
+			removeFromUpTree(deferred);
+		}
+	}
+	
+	private void loopsTo(IDeferred def, List<IDeferred> loopEnds) {
+		for (IDeferred deferred : this.downInTree) {
+			if (deferred.equals(def))
+				loopEnds.add(this);
+			else
+				((AbstractDeferred)deferred).loopsTo(def, loopEnds);
+		}
+	}
+	
 }

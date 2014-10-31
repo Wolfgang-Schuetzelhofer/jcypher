@@ -50,6 +50,7 @@ public class ListEntriesUpdater extends AbstractDeferred implements IEntryUpdate
 				list.add(entry.getIndex(), entry.getSurrogate().getContent());
 			}
 		}
+		modifyNextUp();
 	}
 	
 	public void updateFrom(Surrogate2ListEntry s2ListEntry) {
