@@ -141,10 +141,10 @@ public class DomainMappingTest extends AbstractTestSuite{
 		boolean equals;
 		
 		List<Object> multiDimList = new ArrayList<Object>();
-//		List<Object> multiDimList_1 = new ArrayList<Object>();
+		List<Object> multiDimList_1 = new ArrayList<Object>();
 		
 		Map<Object, Object> multiDimMap = new HashMap<Object, Object>();
-//		Map<Object, Object> multiDimMap_1 = new HashMap<Object, Object>();
+		Map<Object, Object> multiDimMap_1 = new HashMap<Object, Object>();
 		
 		multiDimList.add(new Mark("list_root"));
 		multiDimMap.put("mark", new Mark("map_root"));
@@ -167,6 +167,25 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
+		assertTrue(equals);
+		
+		multiDimList_1.add(new Mark("list_1"));
+		multiDimMap_1.put("mark", new Mark("map_1"));
+		multiDimList_1.add(multiDimMap_1);
+		multiDimMap_1.put("list_1", multiDimList_1);
+		
+		multiDimList.add(multiDimList_1);
+		multiDimMap.put("map_1", multiDimMap_1);
+		
+		errors = da.store(multiDimMapsLists);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
 		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());

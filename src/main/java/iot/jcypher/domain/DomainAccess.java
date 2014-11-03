@@ -1649,6 +1649,7 @@ public class DomainAccess {
 										fm.getFieldName(), (MapEntry) context.parentObject, (AbstractSurrogate)domainObject);
 								} else {
 									// TODO are there more possibilities ? maps in lists and vice versa ?
+									// no, because there is no equivalent to MapEntry stored in the graph for lists
 									deferred = new Deferred2DO(fm,
 											(AbstractSurrogate)domainObject, context.parentObject);
 								}
@@ -1685,13 +1686,13 @@ public class DomainAccess {
 					KeyedRelation irel = new KeyedRelation(relType, idx, context.parentObject, domainObject);
 					domainAccessHandler.domainState.add_Id2Relation(irel, rel.getId());
 					boolean fillList = true;
-					if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
+					if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.AbstractSurrogate) {
 						if (listUpdater == null) {
 							listUpdater = new ListEntriesUpdater(coll);
 							context.deferredList.add(listUpdater);
 						}
 						IDeferred deferred = new Surrogate2ListEntry(idx, listUpdater,
-								(iot.jcypher.domain.mapping.surrogate.Collection)domainObject);
+								(iot.jcypher.domain.mapping.surrogate.AbstractSurrogate)domainObject);
 						context.deferredList.add(deferred);
 						fillList = false;
 					}
@@ -1753,13 +1754,13 @@ public class DomainAccess {
 								fillMap = false;
 							} else if (!(end instanceof MapTerminator)) {
 								val = end;
-								if (val instanceof iot.jcypher.domain.mapping.surrogate.Map) {
+								if (val instanceof iot.jcypher.domain.mapping.surrogate.AbstractSurrogate) {
 										// key instanceof iot.jcypher.domain.mapping.surrogate.Map can not happen
 									MapEntry me = new MapEntry(key, null);
 									IDeferred deferred = new MapEntryUpdater(me, map);
 									context.deferredList.add(deferred);
 									deferred = new Surrogate2MapEntry(
-											Surrogate2MapEntry.valueField, me, (iot.jcypher.domain.mapping.surrogate.Map)val);
+											Surrogate2MapEntry.valueField, me, (iot.jcypher.domain.mapping.surrogate.AbstractSurrogate)val);
 									context.deferredList.add(deferred);
 									fillMap = false;
 								}
