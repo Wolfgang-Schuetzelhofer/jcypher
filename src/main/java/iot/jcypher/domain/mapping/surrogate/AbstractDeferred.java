@@ -78,23 +78,71 @@ public abstract class AbstractDeferred implements IDeferred{
 	}
 
 	@Override
-	public void breakLoop() {
-		List<IDeferred> loopEnds = new ArrayList<IDeferred>();
-		loopsTo(this, loopEnds);
-		// I am in downTree of each one in loopEnds
-		for (IDeferred deferred : loopEnds) {
-			((AbstractDeferred)deferred).removeFromDownTree(this);
-			removeFromUpTree(deferred);
+	public void breakLoops() {
+		LoopContext context = new LoopContext();
+		detectLoops(context);
+	}
+	
+	private void detectLoops(LoopContext context) {
+		context.addToPath(this);
+		this.walkDown(context);
+		context.removePathElement(this);
+	}
+	
+	private void walkDown(LoopContext context) {
+		int sz = this.downInTree.size();
+		for (int i = sz - 1; i >= 0; i--) {
+			IDeferred def = this.downInTree.get(i);
+			IDeferred lpc = context.findLoopConnector(def);
+			if (lpc != null) { // loop detected
+				this.removeFromDownTree(lpc);
+				((AbstractDeferred)lpc).removeFromUpTree(this);
+			} else { // continue walk down
+				((AbstractDeferred)def).detectLoops(context);
+			}
 		}
 	}
 	
-	private void loopsTo(IDeferred def, List<IDeferred> loopEnds) {
-		for (IDeferred deferred : this.downInTree) {
-			if (deferred.equals(def))
-				loopEnds.add(this);
-			else
-				((AbstractDeferred)deferred).loopsTo(def, loopEnds);
+	/***************************************/
+	private static class LoopContext {
+		private List<IDeferred> path;
+		
+		public LoopContext() {
+			super();
+			this.path = new ArrayList<IDeferred>();
 		}
+		
+		private void addToPath(IDeferred deferred) {
+			if (this.path.contains(deferred))
+				throw new RuntimeException("error in add to path");
+			this.path.add(deferred);
+		}
+		
+		private void removePathElement(IDeferred deferred) {
+			int level = this.path.size() - 1;
+			IDeferred def = this.path.remove(level);
+			if (!deferred.equals(def))
+				throw new RuntimeException("error in remove from path");
+		}
+
+		private IDeferred findLoopConnector(IDeferred deferred) {
+			for (IDeferred def : this.path) {
+				if (def.equals(deferred)) {
+					return def;
+				}
+			}
+			return null;
+		}
+		
+		/*******************************/
+//		private class PathElement {
+//			private IDeferred start;
+//
+//			private PathElement(IDeferred start) {
+//				super();
+//				this.start = start;
+//			}
+//			
+//		}
 	}
-	
 }

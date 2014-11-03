@@ -49,9 +49,9 @@ public class Deferred2DO extends AbstractDeferred {
 	}
 
 	@Override
-	public void breakLoop() {
+	public void breakLoops() {
 		for (IDeferred deferred : this.downInTree) {
-			deferred.breakLoop();
+			deferred.breakLoops();
 		}
 	}
 	

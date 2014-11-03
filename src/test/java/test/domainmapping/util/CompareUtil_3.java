@@ -14,7 +14,7 @@
  * limitations under the License.
  ************************************************************************/
 
-package test.domainmapping.maps;
+package test.domainmapping.util;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -24,8 +24,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import test.domainmapping.Address;
-import test.domainmapping.ambiguous.CompareUtil_2;
-import test.domainmapping.util.AlreadyCompared;
+import test.domainmapping.maps.MapContainer;
+import test.domainmapping.maps.Mark;
+import test.domainmapping.maps.MultiDimMapsLists;
 
 public class CompareUtil_3 {
 	
@@ -40,7 +41,7 @@ public class CompareUtil_3 {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
 			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = checkAlreadyCompared(m_1, m_2, alreadyCompareds);
+		AlreadyCompared ac = checkAlreadyCompared(m_1, m_2, acs);
 		if (ac != null) // avoid infinite loops
 			return ac.getResult();
 		
@@ -115,7 +116,7 @@ public class CompareUtil_3 {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
 			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = checkAlreadyCompared(list_1, list_2, alreadyCompareds);
+		AlreadyCompared ac = checkAlreadyCompared(list_1, list_2, acs);
 		if (ac != null) // avoid infinite loops
 			return ac.getResult();
 		
@@ -145,7 +146,7 @@ public class CompareUtil_3 {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
 			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = checkAlreadyCompared(map_1, map_2, alreadyCompareds);
+		AlreadyCompared ac = checkAlreadyCompared(map_1, map_2, acs);
 		if (ac != null) // avoid infinite loops
 			return ac.getResult();
 		
@@ -195,7 +196,7 @@ public class CompareUtil_3 {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
 			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = checkAlreadyCompared(o_1, o_2, alreadyCompareds);
+		AlreadyCompared ac = checkAlreadyCompared(o_1, o_2, acs);
 		if (ac != null) // avoid infinite loops
 			return ac.getResult();
 		
@@ -215,9 +216,39 @@ public class CompareUtil_3 {
 			return ac.setResult(CompareUtil_3.equalsMap((Map)o_1, (Map)o_2, alreadyCompareds));
 		} else if (o_1 instanceof List && o_2 instanceof List) {
 			return ac.setResult(CompareUtil_3.equalsList((List)o_1, (List)o_2, alreadyCompareds));
+		} else if (o_1 instanceof Mark && o_2 instanceof Mark) {
+			return ac.setResult(CompareUtil_3.equalsMark((Mark)o_1, (Mark)o_2, alreadyCompareds));
 		} else if (!o_1.equals(o_2))
 			return ac.setResult(false); 
 		
+		return true;
+	}
+	
+	private static boolean equalsMark(Mark m_1, Mark m_2, List<AlreadyCompared> alreadyCompareds) {
+		List<AlreadyCompared> acs = alreadyCompareds;
+		if (acs == null)
+			acs = new ArrayList<AlreadyCompared>();
+		AlreadyCompared ac = checkAlreadyCompared(m_1, m_2, acs);
+		if (ac != null) // avoid infinite loops
+			return ac.getResult();
+		
+		ac = new AlreadyCompared(m_1, m_2);
+		acs.add(ac);
+		
+		ac.setResult(true);
+		if (m_1 == m_2)
+			return true;
+		if (m_1 != null && m_2 == null)
+			return ac.setResult(false);
+		if (m_2 != null && m_1 == null)
+			return ac.setResult(false);
+		if (m_1.getClass() != m_2.getClass())
+			return ac.setResult(false);
+		if (m_1.getName() == null) {
+			if (m_2.getName() != null)
+				return ac.setResult(false);
+		} else if (!m_1.getName().equals(m_2.getName()))
+			return ac.setResult(false);
 		return true;
 	}
 	

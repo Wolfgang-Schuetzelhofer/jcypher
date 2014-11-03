@@ -14,13 +14,20 @@
  * limitations under the License.
  ************************************************************************/
 
-package test.domainmapping.ambiguous;
+package test.domainmapping.util;
 
 import java.util.List;
 import java.util.ListIterator;
 
 import test.domainmapping.Address;
-import test.domainmapping.CompareUtil;
+import test.domainmapping.ambiguous.AbstractPerson;
+import test.domainmapping.ambiguous.Broker;
+import test.domainmapping.ambiguous.District;
+import test.domainmapping.ambiguous.DistrictAddress;
+import test.domainmapping.ambiguous.IPerson;
+import test.domainmapping.ambiguous.JPerson;
+import test.domainmapping.ambiguous.MultiBroker;
+import test.domainmapping.ambiguous.NPerson;
 
 
 public class CompareUtil_2 {

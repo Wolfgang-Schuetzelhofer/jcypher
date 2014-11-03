@@ -14,13 +14,16 @@
  * limitations under the License.
  ************************************************************************/
 
-package test.domainmapping;
+package test.domainmapping.util;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
 
-import test.domainmapping.util.AlreadyCompared;
+import test.domainmapping.Address;
+import test.domainmapping.Company;
+import test.domainmapping.Contact;
+import test.domainmapping.Person;
 
 public class CompareUtil {
 

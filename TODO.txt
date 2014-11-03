@@ -1,3 +1,7 @@
+docu: domain objects must have default constructor
+
+avoid stack overflow on mixed (simple complex) lists (they are not supported)
+
 optimization: dynamic max query length
 
 mapping of java arrays

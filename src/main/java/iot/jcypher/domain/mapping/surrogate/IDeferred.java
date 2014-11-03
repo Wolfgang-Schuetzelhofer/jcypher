@@ -39,6 +39,6 @@ public interface IDeferred {
 	
 	public void addNextUpInTree(IDeferred deferred);
 	
-	public void breakLoop();
+	public void breakLoops();
 	
 }

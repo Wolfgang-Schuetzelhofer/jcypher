@@ -557,7 +557,7 @@ public class DomainAccess {
 		private void handleLoops(Set<IDeferred> deferreds) {
 			for (IDeferred deferred : deferreds) {
 				if (deferred.isRoot()) {
-					deferred.breakLoop();
+					deferred.breakLoops();
 				}
 			}
 		}
@@ -1096,10 +1096,16 @@ public class DomainAccess {
 				if (val instanceof Map<?, ?>)
 					val = domainAccessHandler.domainState
 						.getSurrogateState().getCreateSurrogateFor(val, iot.jcypher.domain.mapping.surrogate.Map.class);
+				else if (val instanceof Collection<?>)
+					val = domainAccessHandler.domainState
+					.getSurrogateState().getCreateSurrogateFor(val, iot.jcypher.domain.mapping.surrogate.Collection.class);
 				Object key = entry.getKey();
-				if (key instanceof Map<?, ?>)
+				if (key instanceof Collection<?>)
 					key = domainAccessHandler.domainState
-						.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Map.class);
+						.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Collection.class);
+				else if (key instanceof Map<?, ?>)
+					key = domainAccessHandler.domainState
+					.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Map.class);
 				boolean keyMapsToProperty = MappingUtil.mapsToProperty(key.getClass());
 				boolean valMapsToProperty = MappingUtil.mapsToProperty(val.getClass());
 				Object target;
@@ -1175,6 +1181,10 @@ public class DomainAccess {
 					elem = domainAccessHandler.domainState
 							.getSurrogateState().getCreateSurrogateFor(elem,
 									iot.jcypher.domain.mapping.surrogate.Collection.class);
+				else if (elem instanceof Map<?, ?>)
+					elem = domainAccessHandler.domainState
+							.getSurrogateState().getCreateSurrogateFor(elem,
+									iot.jcypher.domain.mapping.surrogate.Map.class);
 				SourceField2TargetKey key =
 						new SourceField2TargetKey(domainObject, fm.getFieldName(), elem);
 				targetObjects.add(elem);

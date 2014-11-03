@@ -56,16 +56,18 @@ import org.junit.Test;
 
 import test.AbstractTestSuite;
 import test.domainmapping.ambiguous.Broker;
-import test.domainmapping.ambiguous.CompareUtil_2;
 import test.domainmapping.ambiguous.District;
 import test.domainmapping.ambiguous.DistrictAddress;
 import test.domainmapping.ambiguous.IPerson;
 import test.domainmapping.ambiguous.JPerson;
 import test.domainmapping.ambiguous.MultiBroker;
 import test.domainmapping.ambiguous.NPerson;
-import test.domainmapping.maps.CompareUtil_3;
 import test.domainmapping.maps.MapContainer;
+import test.domainmapping.maps.Mark;
 import test.domainmapping.maps.MultiDimMapsLists;
+import test.domainmapping.util.CompareUtil;
+import test.domainmapping.util.CompareUtil_2;
+import test.domainmapping.util.CompareUtil_3;
 
 public class DomainMappingTest extends AbstractTestSuite{
 
@@ -130,6 +132,51 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@Test
+	public void testLists_Maps() {
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		MultiDimMapsLists multiDimMapsLists = new MultiDimMapsLists();
+		MultiDimMapsLists multiDimMapsLists_1;
+		boolean equals;
+		
+		List<Object> multiDimList = new ArrayList<Object>();
+//		List<Object> multiDimList_1 = new ArrayList<Object>();
+		
+		Map<Object, Object> multiDimMap = new HashMap<Object, Object>();
+//		Map<Object, Object> multiDimMap_1 = new HashMap<Object, Object>();
+		
+		multiDimList.add(new Mark("list_root"));
+		multiDimMap.put("mark", new Mark("map_root"));
+		multiDimList.add(multiDimMap);
+		multiDimMap.put("list_root", multiDimList);
+		
+		multiDimMapsLists.setMultiDimList(multiDimList);
+		multiDimMapsLists.setMultiDimMap(multiDimMap);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(multiDimMapsLists);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
+		assertTrue(equals);
+		
+		return;
+	}
+	
+	//@Test
 	public void testMultiList() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
@@ -244,6 +291,61 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		multiDimList_1.add(multiDimList);
 		
+		multiDimList.add(multiDimList_1);
+		
+		multiDimMapsLists.setMultiDimList(multiDimList);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(multiDimMapsLists);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
+		
+		da1 = new DomainAccess(dbAccess, domainName);
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
+		assertTrue(equals);
+		
+		return;
+	}
+	
+	//@Test
+	public void testMultiList_loop_02() {
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		MultiDimMapsLists multiDimMapsLists = new MultiDimMapsLists();
+		MultiDimMapsLists multiDimMapsLists_1;
+		boolean equals;
+		
+		// init multiDimList
+		List<Object> multiDimList = new ArrayList<Object>();
+		List<Object> multiDimList_1 = new ArrayList<Object>();
+		List<Object> multiDimList_2 = new ArrayList<Object>();
+		List<Object> multiDimList_3 = new ArrayList<Object>();
+		
+		multiDimList_3.add(new Mark("three"));
+		multiDimList_3.add(multiDimList_1);
+		multiDimList_3.add(multiDimList_1);
+		multiDimList_3.add(multiDimList);
+		
+		multiDimList_2.add(new Mark("two"));
+		multiDimList_2.add(multiDimList_3);
+		multiDimList_2.add(multiDimList_1);
+		multiDimList_2.add(multiDimList_2);
+		
+		multiDimList_1.add(new Mark("one"));
+		multiDimList_1.add(multiDimList_2);
+		
+		multiDimList.add(new Mark("root"));
 		multiDimList.add(multiDimList_1);
 		
 		multiDimMapsLists.setMultiDimList(multiDimList);
@@ -1182,9 +1284,9 @@ public class DomainMappingTest extends AbstractTestSuite{
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
-		check = checkDomainInfoNodeAgainst(
-				"[Address=test.domainmapping.Address, Company=test.domainmapping.Company," +
-					" Contact=test.domainmapping.Contact, Person=test.domainmapping.Person]");
+		check = checkDomainInfoNodeAgainst("[Address=test.domainmapping.Address," +
+				" Collection=iot.jcypher.domain.mapping.surrogate.Collection, Company=test.domainmapping.Company," +
+				" Contact=test.domainmapping.Contact, Person=test.domainmapping.Person]");
 		assertTrue("Test Domain Info node", check);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
