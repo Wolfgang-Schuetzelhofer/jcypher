@@ -169,7 +169,9 @@ public class DomainMappingTest extends AbstractTestSuite{
 		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		Object obj = da1.loadById(Object.class, syncInfo_1.getId());
+		assertTrue(obj instanceof MultiDimMapsLists);
+		multiDimMapsLists_1 = (MultiDimMapsLists) obj;
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		

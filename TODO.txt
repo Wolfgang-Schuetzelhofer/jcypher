@@ -1,6 +1,8 @@
+START.node(n).byId(ids) now works, some queries can be made simpler now
+
 docu: domain objects must have default constructor
 
-avoid stack overflow on mixed (simple complex) lists (they are not supported)
+avoid stack overflow on mixed (simple / complex) lists (they are not supported)
 
 optimization: dynamic max query length
 
@@ -29,7 +31,7 @@ ambiguous with null values -- revisit
 
 handle Date subclasses
 
-map lists of lists, maps of maps, maps of lists, lists of maps
+---done--- map lists of lists, maps of maps, maps of lists, lists of maps
 
 ---done--- delete property when updating from empty to nonempty list needing relation
 

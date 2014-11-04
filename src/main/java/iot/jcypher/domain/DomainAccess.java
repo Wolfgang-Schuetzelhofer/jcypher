@@ -65,7 +65,6 @@ import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.query.writer.Format;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
 import iot.jcypher.result.Util;
@@ -168,22 +167,31 @@ public class DomainAccess {
 			this.type2CompoundTypeMap = new HashMap<Class<?>, CompoundObjectType>();
 		}
 		
+		@SuppressWarnings("unchecked")
 		<T> List<T> loadByIds(Class<T> domainObjectClass, long... ids) {
 			List<T> resultList;
 			
 			InternalDomainAccess internalAccess = null;
-			ClosureQueryContext context = new ClosureQueryContext(domainObjectClass);
 			try {
 				internalAccess = MappingUtil.internalDomainAccess.get();
 				MappingUtil.internalDomainAccess.set(new InternalDomainAccess());
 				updateMappingsIfNeeded();
-				new ClosureCalculator().calculateClosureQuery(context);
-				boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
-				
-				if (repeat) { // has one or more match clauses
-					resultList = loadByIdsWithMatches(domainObjectClass, context, null, null, ids);
-				} else { // only simple start by id clauses are needed
-					resultList = loadByIdsSimple(domainObjectClass, ids);
+				Map<Class<?>, List<Long>> typeMap = queryConcreteTypes(ids);
+				Iterator<Entry<Class<?>, List<Long>>> it = typeMap.entrySet().iterator();
+				while(it.hasNext()) {
+					Entry<Class<?>, List<Long>> entry = it.next();
+					if (!domainObjectClass.isAssignableFrom(entry.getKey()))
+						throw new RuntimeException("concrete type must be the same or a subtype of: "
+									+ domainObjectClass.getName());
+					ClosureQueryContext context = new ClosureQueryContext(entry.getKey());
+					new ClosureCalculator().calculateClosureQuery(context);
+					boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
+					
+					if (repeat) { // has one or more match clauses
+						loadByIdsWithMatches(entry.getKey(), context, null, null, entry.getValue());
+					} else { // only simple start by id clauses are needed
+						loadByIdsSimple(entry.getKey(), entry.getValue());
+					}
 				}
 			} catch(Throwable e) {
 				if (!(e instanceof RuntimeException))
@@ -197,6 +205,10 @@ public class DomainAccess {
 					MappingUtil.internalDomainAccess.remove();
 			}
 
+			resultList = new ArrayList<T>(ids.length);
+			for (long id : ids) {
+				resultList.add((T)domainState.getFrom_Id2ObjectMap(id));
+			}
 			return resultList;
 		}
 		
@@ -221,10 +233,10 @@ public class DomainAccess {
 				Set<IDeferred> deferredSet, SurrogateChangeLog surrogateChangeLog) {
 			InternalDomainAccess internalAccess = null;
 			ClosureQueryContext context = new ClosureQueryContext(domainObjectClass);
-			long[] ids = new long[domainObjects.size()];
+			List<Long> ids = new ArrayList<Long>(domainObjects.size());
 			for (int i = 0; i < domainObjects.size(); i++) {
-				ids[i] = this.domainState.getLoadInfoFrom_Object2IdMap(
-						domainObjects.get(i)).getId();
+				ids.add(this.domainState.getLoadInfoFrom_Object2IdMap(
+						domainObjects.get(i)).getId());
 			}
 			try {
 				internalAccess = MappingUtil.internalDomainAccess.get();
@@ -294,6 +306,41 @@ public class DomainAccess {
 					ret.add(new SyncInfo(-1, null));
 			}
 			return ret;
+		}
+		
+		private Map<Class<?>, List<Long>> queryConcreteTypes(long[] ids) {
+			JcQuery query = new JcQuery();
+			JcNode n = new JcNode("n");
+			IClause[] clauses = new IClause[] {
+				START.node(n).byId(ids),
+				RETURN.value(n)
+			};
+			query.setClauses(clauses);
+			JcQueryResult result = dbAccess.execute(query);
+			List<JcError> errors = Util.collectErrors(result);
+			if (errors.size() > 0) {
+				throw new JcResultException(errors);
+			}
+			Map<Class<?>, List<Long>> byType = new HashMap<Class<?>, List<Long>>();
+			DomainInfo di = loadDomainInfoIfNeeded();
+			List<GrNode> nodes = result.resultOf(n);
+			for (GrNode node : nodes) {
+				List<GrLabel> labels = node.getLabels();
+				for (GrLabel label : labels) {
+					String lab = label.getName();
+					Class<?> typ = di.getClassForLabel(lab);
+					if (typ != null) {
+						List<Long> list = byType.get(typ);
+						if (list == null) {
+							list = new ArrayList<Long>();
+							byType.put(typ, list);
+						}
+						list.add(node.getId());
+						break;
+					}
+				}
+			}
+			return byType;
 		}
 		
 		private void updateMappingsIfNeeded() {
@@ -480,7 +527,7 @@ public class DomainAccess {
 		 */
 		private <T> List<T> loadByIdsWithMatches(Class<T> domainObjectClass,
 				ClosureQueryContext context, Set<IDeferred> deferredSet,
-				SurrogateChangeLog surrogateChangeLog, long... ids) {
+				SurrogateChangeLog surrogateChangeLog, List<Long> ids) {
 			List<T> resultList = new ArrayList<T>();
 			Set<IDeferred> deferreds = deferredSet;
 			JcQuery query;
@@ -488,22 +535,23 @@ public class DomainAccess {
 			List<JcQuery> queries = new ArrayList<JcQuery>();
 			Map<Long, JcQueryResult> id2QueryResult = new HashMap<Long, JcQueryResult>();
 			List<Long> queryIds = new ArrayList<Long>();
-			for (int i = 0; i < ids.length; i++) {
+			for (int i = 0; i < ids.size(); i++) {
 				// if the object has already been loaded it will be reloaded (updated)
+				long id = ids.get(i);
 				query = new JcQuery();
 				JcNode n = new JcNode(nm);
 				List<IClause> clauses = new ArrayList<IClause>();
-				clauses.add(START.node(n).byId(ids[i]));
+				clauses.add(START.node(n).byId(id));
 				clauses.addAll(context.matchClauses);
 				clauses.add(RETURN.ALL());
 				IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
 				query.setClauses(clausesArray);
 				queries.add(query);
-				queryIds.add(ids[i]);
+				queryIds.add(id);
 			}
 			
 			if (queries.size() > 0) { // at least one node has to be (re)loaded
-				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
+//				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
 				List<JcQueryResult> results = this.dbAccess.execute(queries);
 				List<JcError> errors = Util.collectErrors(results);
 				if (errors.size() > 0) {
@@ -523,9 +571,9 @@ public class DomainAccess {
 			} else
 				isRoot = false;
 			List<Object> objectsNotResolvedDeep = new ArrayList<Object>();
-			for (int i = 0; i < ids.length; i++) {
+			for (int i = 0; i < ids.size(); i++) {
 				FillModelContext<T> fContext = new FillModelContext<T>(domainObjectClass,
-						id2QueryResult.get(ids[i]), context.queryEndNodes, context.recursionExitNodes,
+						id2QueryResult.get(ids.get(i)), context.queryEndNodes, context.recursionExitNodes,
 						surrogateChangeLog);
 				new ClosureCalculator().fillModel(fContext);
 				objectsNotResolvedDeep.addAll(fContext.recursionExitObjects);
@@ -605,21 +653,22 @@ public class DomainAccess {
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
-		private <T> List<T> loadByIdsSimple(Class<T> domainObjectClass, long... ids) {
+		private <T> List<T> loadByIdsSimple(Class<T> domainObjectClass, List<Long> ids) {
 			List<T> resultList = new ArrayList<T>();
 			List<IClause> clauses = new ArrayList<IClause>();
 			Map<Long, JcNode> id2QueryNode = new HashMap<Long, JcNode>();
 			Map<Long, T> id2Object = new HashMap<Long, T>();
-			for (int i = 0; i < ids.length; i++) {
+			for (int i = 0; i < ids.size(); i++) {
+				long id = ids.get(i);
 				// check if domain objects have already been loaded
-				T obj = (T) this.domainState.getFrom_Id2ObjectMap(ids[i]);
+				T obj = (T) this.domainState.getFrom_Id2ObjectMap(id);
 				if (obj != null)
-					id2Object.put(ids[i], obj);
+					id2Object.put(id, obj);
 
 				// if the object has already been loaded it will be reloaded (updated)
 				JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
-				id2QueryNode.put(ids[i], n);
-				clauses.add(START.node(n).byId(ids[i]));
+				id2QueryNode.put(id, n);
+				clauses.add(START.node(n).byId(id));
 			}
 			
 			JcQueryResult result = null;
@@ -635,12 +684,13 @@ public class DomainAccess {
 				}
 			}
 			
-			for (int i = 0; i < ids.length; i++) {
-				T obj = id2Object.get(ids[i]);
-				GrNode rNode = result.resultOf(id2QueryNode.get(ids[i])).get(0);
+			for (int i = 0; i < ids.size(); i++) {
+				long id = ids.get(i);
+				T obj = id2Object.get(id);
+				GrNode rNode = result.resultOf(id2QueryNode.get(id)).get(0);
 				T resObj = createIfNeeded_MapProperties(domainObjectClass, rNode, obj);
 				if (obj == null)
-					this.domainState.add_Id2Object(resObj, ids[i], ResolutionDepth.DEEP);
+					this.domainState.add_Id2Object(resObj, id, ResolutionDepth.DEEP);
 				else
 					this.domainState.getLoadInfoFrom_Object2IdMap(obj)
 						.setResolutionDepth(ResolutionDepth.DEEP);
@@ -988,7 +1038,6 @@ public class DomainAccess {
 				}
 				return query;
 			}
-			
 		}
 	}
 	
