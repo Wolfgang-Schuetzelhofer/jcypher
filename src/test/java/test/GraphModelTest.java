@@ -26,6 +26,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+//@Ignore
 public class GraphModelTest extends AbstractTestSuite {
 
 	private static IDBAccess dbAccess;

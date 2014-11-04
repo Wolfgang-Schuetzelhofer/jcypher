@@ -16,6 +16,7 @@ import org.junit.Test;
 
 import util.TestDataReader;
 
+//@Ignore
 public class JsonTest extends AbstractTestSuite {
 
 	@Test

@@ -39,7 +39,7 @@ import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
-import iot.jcypher.result.Util;
+import iot.jcypher.util.Util;
 
 import java.util.ArrayList;
 import java.util.Calendar;

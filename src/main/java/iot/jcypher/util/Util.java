@@ -14,11 +14,15 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.result;
+package iot.jcypher.util;
 
+import iot.jcypher.CypherWriter;
+import iot.jcypher.JSONWriter;
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.query.writer.Format;
+import iot.jcypher.query.writer.WriterContext;
+import iot.jcypher.result.JcError;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -65,12 +69,12 @@ public class Util {
 		System.out.println("QUERY: " + title + " --------------------");
 		// map to Cypher
 		System.out.println("CYPHER --------------------");
-		String cypher = iot.jcypher.samples.Util.toCypher(query, format);
+		String cypher = iot.jcypher.util.Util.toCypher(query, format);
 		System.out.println("--------------------");
 		System.out.println(cypher);
 		
 		// map to JSON
-		String json = iot.jcypher.samples.Util.toJSON(query, format);
+		String json = iot.jcypher.util.Util.toJSON(query, format);
 		System.out.println("");
 		System.out.println("JSON   --------------------");
 		System.out.println(json);
@@ -89,13 +93,13 @@ public class Util {
 		// map to Cypher
 		System.out.println("CYPHER --------------------");
 		for(int i = 0; i < queries.size(); i++) {
-			String cypher = iot.jcypher.samples.Util.toCypher(queries.get(i), format);
+			String cypher = iot.jcypher.util.Util.toCypher(queries.get(i), format);
 			System.out.println("--------------------");
 			System.out.println(cypher);
 		}
 		
 		// map to JSON
-		String json = iot.jcypher.samples.Util.toJSON(queries, format);
+		String json = iot.jcypher.util.Util.toJSON(queries, format);
 		System.out.println("");
 		System.out.println("JSON   --------------------");
 		System.out.println(json);
@@ -174,5 +178,28 @@ public class Util {
 				sb.append(err.getAdditionalInfo());
 			}
 		}
+	}
+
+	public static String toCypher(JcQuery query, Format pretty) {
+		WriterContext context = new WriterContext();
+		context.cypherFormat = pretty;
+		CypherWriter.toCypherExpression(query, context);
+		return context.buffer.toString();
+	}
+
+	public static String toJSON(JcQuery query, Format pretty) {
+		WriterContext context = new WriterContext();
+		//ContextAccess.setUseTransactionalEndpoint(true, context);
+		context.cypherFormat = pretty;
+		JSONWriter.toJSON(query, context);
+		return context.buffer.toString();
+	}
+
+	public static String toJSON(List<JcQuery> queries, Format pretty) {
+		WriterContext context = new WriterContext();
+		//ContextAccess.setUseTransactionalEndpoint(true, context);
+		context.cypherFormat = pretty;
+		JSONWriter.toJSON(queries, context);
+		return context.buffer.toString();
 	}
 }

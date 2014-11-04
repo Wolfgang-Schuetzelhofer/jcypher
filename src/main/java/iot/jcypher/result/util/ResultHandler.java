@@ -55,7 +55,7 @@ import iot.jcypher.query.values.ValueWriter;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.result.JcError;
-import iot.jcypher.result.Util;
+import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

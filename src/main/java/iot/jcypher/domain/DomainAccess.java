@@ -67,7 +67,7 @@ import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.result.JcError;
 import iot.jcypher.result.JcResultException;
-import iot.jcypher.result.Util;
+import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

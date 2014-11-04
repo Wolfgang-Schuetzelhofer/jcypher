@@ -16,6 +16,7 @@
 
 package test;
 
+import static org.junit.Assert.assertFalse;
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.DBAccessFactory;
@@ -28,17 +29,17 @@ import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.result.Util;
+import iot.jcypher.util.Util;
 
 import java.util.Properties;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import static org.junit.Assert.assertFalse;
 
 import util.TestDataReader;
 
+//@Ignore
 public class DBAccessTest extends AbstractTestSuite {
 
 	private static IDBAccess dbAccess;

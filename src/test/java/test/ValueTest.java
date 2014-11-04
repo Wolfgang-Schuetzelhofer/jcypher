@@ -21,14 +21,12 @@ import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcPath;
-import iot.jcypher.query.values.JcPrimitive;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.MATH;
 import iot.jcypher.query.values.ValueElement;
 import iot.jcypher.query.writer.Format;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
 import util.TestDataReader;

@@ -55,7 +55,7 @@ reentrancy, multithreading, concurrency on db !!
 
 Problem: DISTINCT with Multiple RETURNs
 
-Consolidate Util classes
+---done--- Consolidate Util classes
 
 ---done--- reuse ExecutionEngine
 
