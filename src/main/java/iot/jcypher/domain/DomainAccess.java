@@ -106,14 +106,16 @@ public class DomainAccess {
 		return this.domainAccessHandler.store(domainObjects);
 	}
 	
-	public <T> T loadById(Class<T> domainObjectClass, long id) {
+	public <T> T loadById(Class<T> domainObjectClass, int resolutionDepth, long id) {
 		long[] ids = new long[] {id};
-		List<T> ret = this.domainAccessHandler.loadByIds(domainObjectClass, ids);
+		List<T> ret = this.domainAccessHandler.loadByIds(domainObjectClass,
+				resolutionDepth, ids);
 		return ret.get(0);
 	}
 	
-	public <T> List<T> loadByIds(Class<T> domainObjectClass, long... ids) {
-		return this.domainAccessHandler.loadByIds(domainObjectClass, ids);
+	public <T> List<T> loadByIds(Class<T> domainObjectClass, int resolutionDepth, long... ids) {
+		return this.domainAccessHandler.loadByIds(domainObjectClass,
+				resolutionDepth, ids);
 	}
 	
 	public SyncInfo getSyncInfo(Object domainObject) {
@@ -168,7 +170,7 @@ public class DomainAccess {
 		}
 		
 		@SuppressWarnings("unchecked")
-		<T> List<T> loadByIds(Class<T> domainObjectClass, long... ids) {
+		<T> List<T> loadByIds(Class<T> domainObjectClass, int resolutionDepth, long... ids) {
 			List<T> resultList;
 			
 			InternalDomainAccess internalAccess = null;
@@ -187,10 +189,15 @@ public class DomainAccess {
 					new ClosureCalculator().calculateClosureQuery(context);
 					boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
 					
+					List<IdAndDepth> idList = new ArrayList<IdAndDepth>(entry.getValue().size());
+					for (Long id : entry.getValue()) {
+						idList.add(new IdAndDepth(id, 0));
+					}
 					if (repeat) { // has one or more match clauses
-						loadByIdsWithMatches(entry.getKey(), context, null, null, entry.getValue());
+						loadByIdsWithMatches(entry.getKey(), context, null, null, idList,
+								resolutionDepth);
 					} else { // only simple start by id clauses are needed
-						loadByIdsSimple(entry.getKey(), entry.getValue());
+						loadByIdsSimple(entry.getKey(), idList);
 					}
 				}
 			} catch(Throwable e) {
@@ -212,31 +219,40 @@ public class DomainAccess {
 			return resultList;
 		}
 		
-		void loadDeep(List<Object> domainObjects, Set<IDeferred> deferredSet, SurrogateChangeLog surrogateChangeLog) {
-			Map<Class<?>, List<Object>> byType = new HashMap<Class<?>, List<Object>>();
-			for (Object domainObject : domainObjects) {
-				List<Object> list = byType.get(domainObject.getClass());
+		@SuppressWarnings("rawtypes")
+		void loadDeep(List<FillModelContext.ResolvedDepth> objectsNotResolvedDeep, Set<IDeferred> deferredSet,
+				SurrogateChangeLog surrogateChangeLog, int resolutionDepth) {
+			Map<Class<?>, List<FillModelContext.ResolvedDepth>> byType =
+					new HashMap<Class<?>, List<FillModelContext.ResolvedDepth>>();
+			for (FillModelContext.ResolvedDepth notResolvedDeep : objectsNotResolvedDeep) {
+				List<FillModelContext.ResolvedDepth> list = byType.get(notResolvedDeep.domainObject.getClass());
 				if (list == null) {
-					list = new ArrayList<Object>();
-					byType.put(domainObject.getClass(), list);
+					list = new ArrayList<FillModelContext.ResolvedDepth>();
+					byType.put(notResolvedDeep.domainObject.getClass(), list);
 				}
-				list.add(domainObject);
+				list.add(notResolvedDeep);
 			}
-			Iterator<Entry<Class<?>, List<Object>>> it = byType.entrySet().iterator();
+			Iterator<Entry<Class<?>, List<FillModelContext.ResolvedDepth>>> it = byType.entrySet().iterator();
 			while(it.hasNext()) {
-				Entry<Class<?>, List<Object>> entry = it.next();
-				loadDeepByType(entry.getKey(), entry.getValue(), deferredSet, surrogateChangeLog);
+				Entry<Class<?>, List<FillModelContext.ResolvedDepth>> entry = it.next();
+				loadDeepByType(entry.getKey(), entry.getValue(), deferredSet, surrogateChangeLog,
+						resolutionDepth);
 			}
 		}
 		
-		<T> void loadDeepByType(Class<T> domainObjectClass, List<Object> domainObjects,
-				Set<IDeferred> deferredSet, SurrogateChangeLog surrogateChangeLog) {
+		@SuppressWarnings("rawtypes")
+		<T> void loadDeepByType(Class<T> domainObjectClass,
+				List<FillModelContext.ResolvedDepth> objectsNotResolvedDeep,
+				Set<IDeferred> deferredSet, SurrogateChangeLog surrogateChangeLog,
+				int resolutionDepth) {
 			InternalDomainAccess internalAccess = null;
 			ClosureQueryContext context = new ClosureQueryContext(domainObjectClass);
-			List<Long> ids = new ArrayList<Long>(domainObjects.size());
-			for (int i = 0; i < domainObjects.size(); i++) {
-				ids.add(this.domainState.getLoadInfoFrom_Object2IdMap(
-						domainObjects.get(i)).getId());
+			List<IdAndDepth> idList = new ArrayList<IdAndDepth>(objectsNotResolvedDeep.size());
+			for (int i = 0; i < objectsNotResolvedDeep.size(); i++) {
+				FillModelContext.ResolvedDepth resDepth = objectsNotResolvedDeep.get(i);
+				idList.add(new IdAndDepth(this.domainState.getLoadInfoFrom_Object2IdMap(
+						resDepth.domainObject).getId(),
+						resDepth.resolvedDepth));
 			}
 			try {
 				internalAccess = MappingUtil.internalDomainAccess.get();
@@ -246,9 +262,10 @@ public class DomainAccess {
 				boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
 				
 				if (repeat) { // has one or more match clauses
-					loadByIdsWithMatches(domainObjectClass, context, deferredSet, surrogateChangeLog, ids);
+					loadByIdsWithMatches(domainObjectClass, context, deferredSet, surrogateChangeLog, idList,
+							resolutionDepth);
 				} else { // only simple start by id clauses are needed
-					loadByIdsSimple(domainObjectClass, ids);
+					loadByIdsSimple(domainObjectClass, idList);
 				}
 			} catch(Throwable e) {
 				if (!(e instanceof RuntimeException))
@@ -527,7 +544,8 @@ public class DomainAccess {
 		 */
 		private <T> List<T> loadByIdsWithMatches(Class<T> domainObjectClass,
 				ClosureQueryContext context, Set<IDeferred> deferredSet,
-				SurrogateChangeLog surrogateChangeLog, List<Long> ids) {
+				SurrogateChangeLog surrogateChangeLog, List<IdAndDepth> idList,
+				int resolutionDepth) {
 			List<T> resultList = new ArrayList<T>();
 			Set<IDeferred> deferreds = deferredSet;
 			JcQuery query;
@@ -535,9 +553,9 @@ public class DomainAccess {
 			List<JcQuery> queries = new ArrayList<JcQuery>();
 			Map<Long, JcQueryResult> id2QueryResult = new HashMap<Long, JcQueryResult>();
 			List<Long> queryIds = new ArrayList<Long>();
-			for (int i = 0; i < ids.size(); i++) {
+			for (int i = 0; i < idList.size(); i++) {
 				// if the object has already been loaded it will be reloaded (updated)
-				long id = ids.get(i);
+				long id = idList.get(i).id;
 				query = new JcQuery();
 				JcNode n = new JcNode(nm);
 				List<IClause> clauses = new ArrayList<IClause>();
@@ -570,11 +588,13 @@ public class DomainAccess {
 				surrogateChangeLog = new SurrogateChangeLog();
 			} else
 				isRoot = false;
-			List<Object> objectsNotResolvedDeep = new ArrayList<Object>();
-			for (int i = 0; i < ids.size(); i++) {
+			@SuppressWarnings("rawtypes")
+			List<FillModelContext.ResolvedDepth> objectsNotResolvedDeep =
+					new ArrayList<FillModelContext.ResolvedDepth>();
+			for (int i = 0; i < idList.size(); i++) {
 				FillModelContext<T> fContext = new FillModelContext<T>(domainObjectClass,
-						id2QueryResult.get(ids.get(i)), context.queryEndNodes, context.recursionExitNodes,
-						surrogateChangeLog);
+						id2QueryResult.get(idList.get(i).id), context.queryEndNodes, context.recursionExitNodes,
+						surrogateChangeLog, resolutionDepth, idList.get(i).depth);
 				new ClosureCalculator().fillModel(fContext);
 				objectsNotResolvedDeep.addAll(fContext.recursionExitObjects);
 				resultList.add(fContext.domainObject);
@@ -582,7 +602,8 @@ public class DomainAccess {
 			}
 			
 			if (!objectsNotResolvedDeep.isEmpty()) {
-				loadDeep(objectsNotResolvedDeep, deferreds, surrogateChangeLog);
+				loadDeep(objectsNotResolvedDeep, deferreds, surrogateChangeLog,
+						resolutionDepth);
 			}
 			
 			if (isRoot) {
@@ -653,13 +674,13 @@ public class DomainAccess {
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
-		private <T> List<T> loadByIdsSimple(Class<T> domainObjectClass, List<Long> ids) {
+		private <T> List<T> loadByIdsSimple(Class<T> domainObjectClass, List<IdAndDepth> idList) {
 			List<T> resultList = new ArrayList<T>();
 			List<IClause> clauses = new ArrayList<IClause>();
 			Map<Long, JcNode> id2QueryNode = new HashMap<Long, JcNode>();
 			Map<Long, T> id2Object = new HashMap<Long, T>();
-			for (int i = 0; i < ids.size(); i++) {
-				long id = ids.get(i);
+			for (int i = 0; i < idList.size(); i++) {
+				long id = idList.get(i).id;
 				// check if domain objects have already been loaded
 				T obj = (T) this.domainState.getFrom_Id2ObjectMap(id);
 				if (obj != null)
@@ -684,8 +705,8 @@ public class DomainAccess {
 				}
 			}
 			
-			for (int i = 0; i < ids.size(); i++) {
-				long id = ids.get(i);
+			for (int i = 0; i < idList.size(); i++) {
+				long id = idList.get(i).id;
 				T obj = id2Object.get(id);
 				GrNode rNode = result.resultOf(id2QueryNode.get(id)).get(0);
 				T resObj = createIfNeeded_MapProperties(domainObjectClass, rNode, obj);
@@ -890,6 +911,18 @@ public class DomainAccess {
 				throw new RuntimeException(e);
 			}
 			return ret;
+		}
+		
+		/****************************************/
+		private class IdAndDepth {
+			private long id;
+			private int depth;
+			
+			private IdAndDepth(long id, int depth) {
+				super();
+				this.id = id;
+				this.depth = depth;
+			}
 		}
 
 		/****************************************/
@@ -1440,9 +1473,12 @@ public class DomainAccess {
 					context.path.add(new PathElement(pureType));
 					
 					boolean resolveDeep = true;
-					if (context.recursionExitNodes.contains(nnm)) { // exit recursion
+					boolean maxDepthReached = context.maxResolutionDepth >= 0 &&
+							context.maxResolutionDepth == context.currentDepth;
+					if (maxDepthReached)
 						resolveDeep = false;
-					}
+					else if (context.recursionExitNodes.contains(nnm)) // exit recursion
+						resolveDeep = false;
 					
 					FieldKind fieldKind = fm != null ? fm.getFieldKind() : FieldKind.SINGLE;
 					Collection<Object> collection = null;
@@ -1550,20 +1586,29 @@ public class DomainAccess {
 											resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
 									performMapping = true;
 									// recursion exit
-									if (!resolveDeep) {
-										context.addRecursionExitObject(domainObject);
+									if (!resolveDeep && !maxDepthReached) {
+										context.addRecursionExitObject(domainObject, context.currentDepth);
 									}
 								} else {
+									// domainObject has at least been shallowly mapped
 									if (domainAccessHandler.domainState.getResolutionDepth(domainObject) !=
 												ResolutionDepth.DEEP) {
+										boolean removed = false;
+										if (maxDepthReached) {
+											context.removeRecursionExitObject(domainObject);
+											removed = true;
+										}
 										if (resolveDeep) {
 											performMapping = true;
 											mapProperties = false; // properties have already been mapped
 											domainAccessHandler.domainState.getLoadInfoFrom_Object2IdMap(domainObject)
 												.setResolutionDepth(ResolutionDepth.DEEP);
-											context.recursionExitObjects.remove(domainObject);
-										} else // recursion exit
-											context.addRecursionExitObject(domainObject);
+											if (!removed)
+												context.removeRecursionExitObject(domainObject);
+										} else { // recursion exit
+											if (!maxDepthReached)
+												context.addRecursionExitObject(domainObject, context.currentDepth);
+										}
 									}
 								}
 								
@@ -1610,7 +1655,9 @@ public class DomainAccess {
 														context.parentObject = domainObject;
 														String rnm = this.buildNodeOrRelationName(context.path,
 																DomainAccessHandler.RelationPrefix, context.clauseRepetitionNumber);
+														context.currentDepth++;
 														this.fillModel(context, fMap, ndName, rnm, actNode);
+														context.currentDepth--;
 														context.parentObject = prevParent;
 													} else
 														needToRepeat = true; // need to repeat
@@ -1630,7 +1677,9 @@ public class DomainAccess {
 															context.parentObject = domainObject;
 															String rnm = this.buildNodeOrRelationName(context.path,
 																	DomainAccessHandler.RelationPrefix, context.clauseRepetitionNumber);
+															context.currentDepth++;
 															this.fillModel(context, fMap, ndName, rnm, actNode);
+															context.currentDepth--;
 															context.parentObject = prevParent;
 														} else {
 															if (moreClausesAvailable(ndName, context))
@@ -1645,12 +1694,16 @@ public class DomainAccess {
 												fMap.mapPropertyToField(domainObject, actNode);
 										}
 									}
+									boolean removed = false;
 									if (!hasComplexFields && !resolveDeep) {
-										context.recursionExitObjects.remove(domainObject);
+										context.removeRecursionExitObject(domainObject);
+										removed = true;
 										// domainObject needs no further resolution
 										domainAccessHandler.domainState.getLoadInfoFrom_Object2IdMap(domainObject)
 											.setResolutionDepth(ResolutionDepth.DEEP);
 									}
+									if (maxDepthReached && !removed)
+										context.removeRecursionExitObject(domainObject);
 								}
 							}
 							
@@ -2040,13 +2093,16 @@ public class DomainAccess {
 		private int maxClauseRepetitionNumber;
 		private boolean terminatesClause;
 		private List<String> alreadyTested;
-		private List<Object> recursionExitObjects;
+		private List<ResolvedDepth> recursionExitObjects;
 		private List<IDeferred> deferredList;
 		private SurrogateChangeLog surrogateChangeLog;
+		private int maxResolutionDepth;
+		private int currentDepth;
 		
 		private FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult,
 				List<String> queryEndNds, List<String> recursionExitNds,
-				SurrogateChangeLog surrogateChangeLog) {
+				SurrogateChangeLog surrogateChangeLog,
+				int maxResolutionDepth, int startDepth) {
 			super();
 			this.domainObjectClass = domainObjectClass;
 			this.qResult = qResult;
@@ -2057,9 +2113,11 @@ public class DomainAccess {
 			this.maxClauseRepetitionNumber = 0;
 			this.terminatesClause = false;
 			this.alreadyTested = new ArrayList<String>();
-			this.recursionExitObjects = new ArrayList<Object>();
+			this.recursionExitObjects = new ArrayList<ResolvedDepth>();
 			this.deferredList = new ArrayList<IDeferred>();
 			this.surrogateChangeLog = surrogateChangeLog;
+			this.maxResolutionDepth = maxResolutionDepth;
+			this.currentDepth = startDepth;
 		}
 		
 		private PathElement getLastPathElement() {
@@ -2079,9 +2137,41 @@ public class DomainAccess {
 			}
 		}
 		
-		private void addRecursionExitObject(Object obj) {
-			if (!this.recursionExitObjects.contains(obj))
-				this.recursionExitObjects.add(obj);
+		private void addRecursionExitObject(Object obj, int resolvedDepth) {
+			if (!this.contains(this.recursionExitObjects, obj))
+				this.recursionExitObjects.add(new ResolvedDepth(obj, resolvedDepth));
+		}
+		
+		private void removeRecursionExitObject(Object obj) {
+			int idx = -1;
+			for (int i = 0; i < this.recursionExitObjects.size(); i++) {
+				if (this.recursionExitObjects.get(i).domainObject.equals(obj)) {
+					idx = i;
+					break;
+				}
+			}
+			if (idx != -1)
+				this.recursionExitObjects.remove(idx);
+		}
+		
+		private boolean contains(List<ResolvedDepth> list, Object obj) {
+			for (ResolvedDepth rd : list) {
+				if (rd.domainObject.equals(obj))
+					return true;
+			}
+			return false;
+		}
+		
+		/*********************************/
+		private class ResolvedDepth {
+			private Object domainObject;
+			private int resolvedDepth;
+			
+			private ResolvedDepth(Object domainObject, int resolvedDepth) {
+				super();
+				this.domainObject = domainObject;
+				this.resolvedDepth = resolvedDepth;
+			}
 		}
 	}
 	

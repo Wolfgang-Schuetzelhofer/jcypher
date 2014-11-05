@@ -46,6 +46,7 @@ public class CompareUtil {
 		
 		ac = new AlreadyCompared(person1, person2);
 		acs.add(ac);
+		ac.setResult(true);
 
 		if (person1.getMainAddress() == null) {
 			if (person2.getMainAddress() != null)
@@ -81,9 +82,8 @@ public class CompareUtil {
 			if (person2.getAddresses() != null)
 				return ac.setResult(false);
 		} else if (!equalsAddresses(person1.getAddresses(), person2.getAddresses()))
-			return false;
+			return ac.setResult(false);
 		
-		ac.setResult(true); // equal so far
 		if (person1.getBestFriend() == null) {
 			if (person2.getBestFriend() != null)
 				return ac.setResult(false);

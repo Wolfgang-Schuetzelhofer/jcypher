@@ -18,6 +18,7 @@ package test.domainmapping;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import iot.jcypher.JcQuery;
 import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.DBAccessFactory;
@@ -65,9 +66,11 @@ import test.domainmapping.ambiguous.NPerson;
 import test.domainmapping.maps.MapContainer;
 import test.domainmapping.maps.Mark;
 import test.domainmapping.maps.MultiDimMapsLists;
+import test.domainmapping.resolutiondepth.LinkedElement;
 import test.domainmapping.util.CompareUtil;
 import test.domainmapping.util.CompareUtil_2;
 import test.domainmapping.util.CompareUtil_3;
+import test.domainmapping.util.CompareUtil_4;
 
 public class DomainMappingTest extends AbstractTestSuite{
 
@@ -76,7 +79,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	
 	@BeforeClass
 	public static void before() {
-		domainName = "PEOPLE-DOMAIN";
+		domainName = "TEST-DOMAIN";
 		Properties props = new Properties();
 		
 		// properties for remote access and for embedded access
@@ -132,6 +135,94 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@Test
+	public void testResolutionDepth() {
+		List<JcError> errors;
+		DomainAccess da = new DomainAccess(dbAccess, domainName);
+		DomainAccess da1;
+		boolean equals;
+		LinkedElement elem = new LinkedElement("0",
+			new LinkedElement("1",
+				new LinkedElement("2",
+						new LinkedElement("3",
+								new LinkedElement("4",
+										new LinkedElement("5",
+												new LinkedElement("6")))))));
+		LinkedElement elem_1;
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(elem);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(elem);
+		
+		int depth = -1;
+		da1 = new DomainAccess(dbAccess, domainName);
+		elem_1 = da1.loadById(LinkedElement.class, depth, syncInfo_1.getId());
+		equals = CompareUtil_4.equalsLinkedElements(elem, elem_1, depth);
+		assertTrue(equals);
+		int resolvedDepth = CompareUtil_4.getDepth(elem_1);
+		assertEquals("resolution depth", 6, resolvedDepth);
+		
+		depth = 5;
+		da1 = new DomainAccess(dbAccess, domainName);
+		elem_1 = da1.loadById(LinkedElement.class, depth, syncInfo_1.getId());
+		equals = CompareUtil_4.equalsLinkedElements(elem, elem_1, depth);
+		assertTrue(equals);
+		resolvedDepth = CompareUtil_4.getDepth(elem_1);
+		assertEquals("resolution depth", depth, resolvedDepth);
+		
+		depth = 4;
+		da1 = new DomainAccess(dbAccess, domainName);
+		elem_1 = da1.loadById(LinkedElement.class, depth, syncInfo_1.getId());
+		equals = CompareUtil_4.equalsLinkedElements(elem, elem_1, depth);
+		assertTrue(equals);
+		resolvedDepth = CompareUtil_4.getDepth(elem_1);
+		assertEquals("resolution depth", depth, resolvedDepth);
+		
+		depth = 3;
+		da1 = new DomainAccess(dbAccess, domainName);
+		elem_1 = da1.loadById(LinkedElement.class, depth, syncInfo_1.getId());
+		equals = CompareUtil_4.equalsLinkedElements(elem, elem_1, depth);
+		assertTrue(equals);
+		resolvedDepth = CompareUtil_4.getDepth(elem_1);
+		assertEquals("resolution depth", depth, resolvedDepth);
+		
+		depth = 2;
+		da1 = new DomainAccess(dbAccess, domainName);
+		elem_1 = da1.loadById(LinkedElement.class, depth, syncInfo_1.getId());
+		equals = CompareUtil_4.equalsLinkedElements(elem, elem_1, depth);
+		assertTrue(equals);
+		resolvedDepth = CompareUtil_4.getDepth(elem_1);
+		assertEquals("resolution depth", depth, resolvedDepth);
+		
+		depth = 1;
+		da1 = new DomainAccess(dbAccess, domainName);
+		elem_1 = da1.loadById(LinkedElement.class, depth, syncInfo_1.getId());
+		equals = CompareUtil_4.equalsLinkedElements(elem, elem_1, depth);
+		assertTrue(equals);
+		resolvedDepth = CompareUtil_4.getDepth(elem_1);
+		assertEquals("resolution depth", depth, resolvedDepth);
+		
+		depth = 0;
+		da1 = new DomainAccess(dbAccess, domainName);
+		elem_1 = da1.loadById(LinkedElement.class, depth, syncInfo_1.getId());
+		equals = CompareUtil_4.equalsLinkedElements(elem, elem_1, depth);
+		assertTrue(equals);
+		resolvedDepth = CompareUtil_4.getDepth(elem_1);
+		assertEquals("resolution depth", depth, resolvedDepth);
+		
+		return;
+	}
+	
+	//@Test
 	public void testLists_Maps() {
 		List<JcError> errors;
 		DomainAccess da = new DomainAccess(dbAccess, domainName);
@@ -169,7 +260,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		Object obj = da1.loadById(Object.class, syncInfo_1.getId());
+		Object obj = da1.loadById(Object.class, -1, syncInfo_1.getId());
 		assertTrue(obj instanceof MultiDimMapsLists);
 		multiDimMapsLists_1 = (MultiDimMapsLists) obj;
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
@@ -190,7 +281,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -258,7 +349,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -272,7 +363,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -290,7 +381,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -331,7 +422,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -386,7 +477,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -458,7 +549,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -490,7 +581,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists = da.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists = da.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -528,7 +619,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -541,7 +632,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -553,7 +644,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -565,7 +656,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		
@@ -577,7 +668,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, syncInfo_1.getId());
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
 		assertTrue(equals);
 		return;
@@ -622,7 +713,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		SyncInfo syncInfo_1 = da.getSyncInfo(mapContainer);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		mapContainer_1 = da1.loadById(MapContainer.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
 		assertTrue(equals);
 		
@@ -635,7 +726,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		mapContainer_1 = da1.loadById(MapContainer.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
 		assertTrue(equals);
 		
@@ -655,7 +746,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		mapContainer_1 = da1.loadById(MapContainer.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
 		assertTrue(equals);
 		
@@ -672,7 +763,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		mapContainer_1 = da1.loadById(MapContainer.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
 		assertTrue(equals);
 		
@@ -687,7 +778,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		mapContainer_1 = da1.loadById(MapContainer.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
 		assertTrue(equals);
 		
@@ -702,7 +793,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		mapContainer_1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		mapContainer_1 = da1.loadById(MapContainer.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_3.equalsMapContainer(mapContainer, mapContainer_1);
 		assertTrue(equals);
 		
@@ -735,7 +826,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		SyncInfo syncInfo_1 = da.getSyncInfo(addressMap);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		addressMap1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		addressMap1 = da1.loadById(MapContainer.class, -1, syncInfo_1.getId());
 //		equals = CompareUtil_2.equalsBroker(addressMap, addressMap1);
 //		assertTrue(equals);
 		
@@ -870,7 +961,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		addressMap1 = da1.loadById(MapContainer.class, syncInfo_1.getId());
+		addressMap1 = da1.loadById(MapContainer.class, -1, syncInfo_1.getId());
 //		equals = CompareUtil_2.equalsBroker(addressMap, addressMap1);
 //		assertTrue(equals);
 		
@@ -932,11 +1023,11 @@ public class DomainMappingTest extends AbstractTestSuite{
 //		equals = CompareUtil_2.equalsIPerson(person2, person22);
 //		assertTrue(equals);
 		
-		broker21 = da1.loadById(Broker.class, syncInfo_1.getId());
+		broker21 = da1.loadById(Broker.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_2.equalsBroker(broker1, broker21);
 		assertTrue(equals);
 		
-		broker22 = da1.loadById(Broker.class, syncInfo_2.getId());
+		broker22 = da1.loadById(Broker.class, -1, syncInfo_2.getId());
 		equals = CompareUtil_2.equalsBroker(broker2, broker22);
 		assertTrue(equals);
 		
@@ -948,7 +1039,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		broker22 = da1.loadById(Broker.class, syncInfo_2.getId());
+		broker22 = da1.loadById(Broker.class, -1, syncInfo_2.getId());
 		equals = CompareUtil_2.equalsBroker(broker2, broker22);
 		assertTrue(equals);
 		
@@ -960,7 +1051,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		broker22 = da1.loadById(Broker.class, syncInfo_2.getId());
+		broker22 = da1.loadById(Broker.class, -1, syncInfo_2.getId());
 		equals = CompareUtil_2.equalsBroker(broker2, broker22);
 		assertTrue(equals);
 		
@@ -972,7 +1063,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		broker22 = da1.loadById(Broker.class, syncInfo_2.getId());
+		broker22 = da1.loadById(Broker.class, -1, syncInfo_2.getId());
 		equals = CompareUtil_2.equalsBroker(broker2, broker22);
 		assertTrue(equals);
 		
@@ -984,7 +1075,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		broker22 = da1.loadById(Broker.class, syncInfo_2.getId());
+		broker22 = da1.loadById(Broker.class, -1, syncInfo_2.getId());
 		equals = CompareUtil_2.equalsBroker(broker2, broker22);
 		assertTrue(equals);
 		
@@ -1019,7 +1110,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		SyncInfo syncInfo_1 = da.getSyncInfo(multiBroker);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		multiBroker1 = da1.loadById(MultiBroker.class, syncInfo_1.getId());
+		multiBroker1 = da1.loadById(MultiBroker.class, -1, syncInfo_1.getId());
 		equals = CompareUtil_2.equalsMultiBroker(multiBroker, multiBroker1);
 		assertTrue(equals);
 		
@@ -1057,7 +1148,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		SyncInfo syncInfo = da.getSyncInfo(john);
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		john_1 = da1.loadById(Person.class, syncInfo.getId());
+		john_1 = da1.loadById(Person.class, -1, syncInfo.getId());
 		equals = CompareUtil.equalsPerson(john, john_1);
 		assertTrue(equals);
 		
@@ -1070,7 +1161,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		john_1 = da1.loadById(Person.class, syncInfo.getId());
+		john_1 = da1.loadById(Person.class, -1, syncInfo.getId());
 		equals = CompareUtil.equalsPerson(john, john_1);
 		assertTrue(equals);
 		
@@ -1091,7 +1182,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 //		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		john_1 = da1.loadById(Person.class, syncInfo.getId());
+		john_1 = da1.loadById(Person.class, -1, syncInfo.getId());
 		equals = CompareUtil.equalsPerson(john, john_1);
 		assertTrue(equals);
 		
@@ -1104,7 +1195,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		john_1 = da1.loadById(Person.class, syncInfo.getId());
+		john_1 = da1.loadById(Person.class, -1, syncInfo.getId());
 		equals = CompareUtil.equalsPerson(john, john_1);
 		assertTrue(equals);
 		
@@ -1145,7 +1236,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		da1 = new DomainAccess(dbAccess, domainName);
 		Company globCom_1;
-		globCom_1 = da1.loadById(Company.class, syncInfo.getId());
+		globCom_1 = da1.loadById(Company.class, -1, syncInfo.getId());
 		
 		boolean isEqual = CompareUtil.equalsCompany(globCom, globCom_1);
 		assertTrue("Test for equality of domain objects", isEqual);
@@ -1160,7 +1251,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		globCom_1 = da1.loadById(Company.class, syncInfo.getId());
+		globCom_1 = da1.loadById(Company.class, -1, syncInfo.getId());
 		
 		isEqual = CompareUtil.equalsCompany(globCom, globCom_1);
 		assertTrue("Test for equality of domain objects", isEqual);
@@ -1176,7 +1267,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		da1 = new DomainAccess(dbAccess, domainName);
 		Person james_1;
-		james_1 = da1.loadById(Person.class, syncInfo.getId());
+		james_1 = da1.loadById(Person.class, -1, syncInfo.getId());
 		
 		isEqual = CompareUtil.equalsPerson(james, james_1);
 		assertTrue("Test for equality of domain objects", isEqual);
@@ -1190,7 +1281,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		da1 = new DomainAccess(dbAccess, domainName);
-		james_1 = da1.loadById(Person.class, syncInfo.getId());
+		james_1 = da1.loadById(Person.class, -1, syncInfo.getId());
 		
 		isEqual = CompareUtil.equalsPerson(james, james_1);
 		assertTrue("Test for equality of domain objects", isEqual);
@@ -1230,7 +1321,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		da = new DomainAccess(dbAccess, domainName);
 		Company globCom_1;
-		globCom_1 = da.loadById(Company.class, syncInfo.getId());
+		globCom_1 = da.loadById(Company.class, -1, syncInfo.getId());
 		
 		boolean isEqual = CompareUtil.equalsCompany(globCom, globCom_1);
 		assertTrue("Test for equality of domain objects", isEqual);
@@ -1246,7 +1337,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		da = new DomainAccess(dbAccess, domainName);
 		Person james_1;
-		james_1 = da.loadById(Person.class, syncInfo.getId());
+		james_1 = da.loadById(Person.class, -1, syncInfo.getId());
 		
 		isEqual = CompareUtil.equalsPerson(james, james_1);
 		assertTrue("Test for equality of domain objects", isEqual);
@@ -1293,7 +1384,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		SyncInfo syncInfo = da.getSyncInfo(john);
-		john_1 = da.loadById(Person.class, syncInfo.getId());
+		john_1 = da.loadById(Person.class, -1, syncInfo.getId());
 		boolean isIdentical = john == john_1;
 		assertTrue("Test for identity of domain objects", isIdentical);
 		
@@ -1312,7 +1403,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		da1 = new DomainAccess(dbAccess, domainName);
 		try {
-			john_1 = da1.loadById(Person.class, syncInfo.getId());
+			john_1 = da1.loadById(Person.class, -1, syncInfo.getId());
 		} catch (Exception e) {
 			if (e instanceof JcResultException) {
 				errors = ((JcResultException)e).getErrors();
@@ -1395,7 +1486,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		da1 = new DomainAccess(dbAccess, domainName); 
 		try {
-			john_1 = da1.loadById(Person.class, syncInfo.getId());
+			john_1 = da1.loadById(Person.class, -1, syncInfo.getId());
 		} catch (Exception e) {
 			if (e instanceof JcResultException) {
 				errors = ((JcResultException)e).getErrors();
@@ -1414,12 +1505,12 @@ public class DomainMappingTest extends AbstractTestSuite{
 		try {
 			//keanu_1 = dc.loadById(Person.class, 0);
 //			List<Person> persons = dc.loadByIds(Person.class, 0, 3);
-			addr_1 = da.loadById(Address.class, 1);
-			addr_1 = da.loadById(Address.class, 1);
+			addr_1 = da.loadById(Address.class, -1, 1);
+			addr_1 = da.loadById(Address.class, -1, 1);
 			
-			john_1 = da1.loadById(Person.class, 0);
-			john_1 = da.loadById(Person.class, 0);
-			james_1 = da.loadById(Person.class, 3);
+			john_1 = da1.loadById(Person.class, -1, 0);
+			john_1 = da.loadById(Person.class, -1, 0);
+			james_1 = da.loadById(Person.class, -1, 3);
 			john_1.setFirstName("Keanu Kevin");
 			da.store(john_1);
 		} catch (Exception e) {
