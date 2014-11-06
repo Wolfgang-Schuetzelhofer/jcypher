@@ -16,7 +16,7 @@
 
 package iot.jcypher.domain.mapping;
 
-import iot.jcypher.domain.DomainAccess.InternalDomainAccess;
+import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

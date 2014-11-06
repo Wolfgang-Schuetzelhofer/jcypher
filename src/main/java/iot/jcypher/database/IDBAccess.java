@@ -18,9 +18,9 @@ package iot.jcypher.database;
 
 import java.util.List;
 
-import iot.jcypher.JcQuery;
-import iot.jcypher.JcQueryResult;
-import iot.jcypher.result.JcError;
+import iot.jcypher.query.JcQuery;
+import iot.jcypher.query.JcQueryResult;
+import iot.jcypher.query.result.JcError;
 
 public interface IDBAccess {
 

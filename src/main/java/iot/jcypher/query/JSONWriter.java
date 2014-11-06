@@ -14,7 +14,7 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher;
+package iot.jcypher.query;
 
 import iot.jcypher.query.writer.ContextAccess;
 import iot.jcypher.query.writer.Format;

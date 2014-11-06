@@ -16,21 +16,21 @@
 
 package iot.jcypher.database.internal;
 
-import iot.jcypher.JcQuery;
-import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrRelation;
+import iot.jcypher.query.JcQuery;
+import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.DO;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
+import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.result.JcError;
-import iot.jcypher.result.JcResultException;
 import iot.jcypher.util.Util;
 
 import java.io.ByteArrayOutputStream;

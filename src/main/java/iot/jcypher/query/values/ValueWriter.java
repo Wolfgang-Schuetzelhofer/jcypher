@@ -16,7 +16,7 @@
 
 package iot.jcypher.query.values;
 
-import iot.jcypher.CypherWriter.PrimitiveCypherWriter;
+import iot.jcypher.query.CypherWriter.PrimitiveCypherWriter;
 import iot.jcypher.query.values.FunctionCapsule.FunctionEnd;
 import iot.jcypher.query.values.FunctionCapsule.FunctionStart;
 import iot.jcypher.query.values.operators.OPERATOR;

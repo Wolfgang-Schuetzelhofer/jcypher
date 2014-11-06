@@ -16,7 +16,7 @@
 
 package iot.jcypher.graph;
 
-import iot.jcypher.result.util.ResultHandler;
+import iot.jcypher.query.result.util.ResultHandler;
 
 public abstract class GrElement extends PersistableItem {
 

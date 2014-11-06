@@ -14,10 +14,8 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.result.util;
+package iot.jcypher.query.result.util;
 
-import iot.jcypher.JcQuery;
-import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
@@ -32,6 +30,8 @@ import iot.jcypher.graph.SyncState;
 import iot.jcypher.graph.internal.ChangeListener;
 import iot.jcypher.graph.internal.GrId;
 import iot.jcypher.graph.internal.LocalId;
+import iot.jcypher.query.JcQuery;
+import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.pattern.Node;
 import iot.jcypher.query.api.pattern.Relation;
@@ -40,6 +40,7 @@ import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.DO;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.START;
+import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcElement;
@@ -54,7 +55,6 @@ import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueWriter;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.WriterContext;
-import iot.jcypher.result.JcError;
 import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;

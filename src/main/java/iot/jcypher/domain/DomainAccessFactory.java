@@ -16,29 +16,17 @@
 
 package iot.jcypher.domain;
 
-public class SyncInfo {
+import iot.jcypher.database.IDBAccess;
+import iot.jcypher.domain.internal.DomainAccess;
 
-	private long id;
-	private ResolutionDepth resolutionDepth;
-	
-	public SyncInfo(long id, ResolutionDepth resolutionDepth) {
-		super();
-		this.id = id;
-		this.resolutionDepth = resolutionDepth;
-	}
+public class DomainAccessFactory {
 
-	public long getId() {
-		return id;
+	/**
+	 * @param dbAccess the graph database connection
+	 * @param domainName
+	 * @return
+	 */
+	public static IDomainAccess createDomainAccess(IDBAccess dbAccess, String domainName) {
+		return new DomainAccess(dbAccess, domainName);
 	}
-
-	public ResolutionDepth getResolutionDepth() {
-		return resolutionDepth;
-	}
-
-	@Override
-	public String toString() {
-		return "SyncInfo [id=" + id + ", resolutionDepth=" + resolutionDepth
-				+ "]";
-	}
-	
 }

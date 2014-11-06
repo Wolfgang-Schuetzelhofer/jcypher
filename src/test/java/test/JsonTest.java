@@ -1,6 +1,6 @@
 package test;
 
-import iot.jcypher.JcQuery;
+import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.DO;

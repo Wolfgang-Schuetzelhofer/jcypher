@@ -19,10 +19,10 @@ package iot.jcypher.graph;
 import java.util.Collections;
 import java.util.List;
 
-import iot.jcypher.JcQuery;
 import iot.jcypher.database.IDBAccess;
-import iot.jcypher.result.JcError;
-import iot.jcypher.result.util.ResultHandler;
+import iot.jcypher.query.JcQuery;
+import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.util.ResultHandler;
 
 public class Graph {
 

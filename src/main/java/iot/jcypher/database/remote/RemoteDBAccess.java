@@ -16,15 +16,15 @@
 
 package iot.jcypher.database.remote;
 
-import iot.jcypher.JSONWriter;
-import iot.jcypher.JcQuery;
-import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
+import iot.jcypher.query.JSONWriter;
+import iot.jcypher.query.JcQuery;
+import iot.jcypher.query.JcQueryResult;
+import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.writer.ContextAccess;
 import iot.jcypher.query.writer.WriterContext;
-import iot.jcypher.result.JcError;
 
 import java.io.StringReader;
 import java.util.ArrayList;

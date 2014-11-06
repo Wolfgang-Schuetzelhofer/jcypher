@@ -14,11 +14,12 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domain;
+package iot.jcypher.domain.internal;
 
-import iot.jcypher.JcQuery;
-import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domain.ResolutionDepth;
+import iot.jcypher.domain.SyncInfo;
 import iot.jcypher.domain.mapping.CompoundObjectMapping;
 import iot.jcypher.domain.mapping.CompoundObjectType;
 import iot.jcypher.domain.mapping.DefaultObjectMappingCreator;
@@ -52,6 +53,8 @@ import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.graph.Graph;
+import iot.jcypher.query.JcQuery;
+import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.pattern.Node;
 import iot.jcypher.query.factories.clause.CREATE;
@@ -62,11 +65,11 @@ import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.factories.clause.WHERE;
+import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.result.JcError;
-import iot.jcypher.result.JcResultException;
 import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
@@ -83,7 +86,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-public class DomainAccess {
+public class DomainAccess implements IDomainAccess {
 	
 	private DomainAccessHandler domainAccessHandler;
 
@@ -96,16 +99,19 @@ public class DomainAccess {
 		this.domainAccessHandler = new DomainAccessHandler(dbAccess, domainName);
 	}
 
+	@Override
 	public List<JcError> store(Object domainObject) {
 		List<Object> domainObjects = new ArrayList<Object>();
 		domainObjects.add(domainObject);
 		return this.store(domainObjects);
 	}
 	
+	@Override
 	public List<JcError> store(List<Object> domainObjects) {
 		return this.domainAccessHandler.store(domainObjects);
 	}
 	
+	@Override
 	public <T> T loadById(Class<T> domainObjectClass, int resolutionDepth, long id) {
 		long[] ids = new long[] {id};
 		List<T> ret = this.domainAccessHandler.loadByIds(domainObjectClass,
@@ -113,11 +119,13 @@ public class DomainAccess {
 		return ret.get(0);
 	}
 	
+	@Override
 	public <T> List<T> loadByIds(Class<T> domainObjectClass, int resolutionDepth, long... ids) {
 		return this.domainAccessHandler.loadByIds(domainObjectClass,
 				resolutionDepth, ids);
 	}
 	
+	@Override
 	public SyncInfo getSyncInfo(Object domainObject) {
 		List<Object> domainObjects = new ArrayList<Object>();
 		domainObjects.add(domainObject);
@@ -125,6 +133,7 @@ public class DomainAccess {
 		return ret.get(0);
 	}
 	
+	@Override
 	public List<SyncInfo> getSyncInfos(List<Object> domainObjects) {
 		return this.domainAccessHandler.getSyncInfos(domainObjects);
 	}

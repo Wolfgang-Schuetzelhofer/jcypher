@@ -2,8 +2,6 @@ package test;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import iot.jcypher.JcQuery;
-import iot.jcypher.JcQueryResult;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -13,11 +11,13 @@ import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrPropertyContainer;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.graph.Graph;
+import iot.jcypher.query.JcQuery;
+import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.values.JcNode;
-import iot.jcypher.result.JcError;
 
 import java.util.List;
 import java.util.Properties;

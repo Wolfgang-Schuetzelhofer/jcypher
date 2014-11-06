@@ -14,28 +14,31 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.result;
+package iot.jcypher.query.result;
 
-import java.util.List;
+public class JcError {
 
-public class JcResultException extends RuntimeException {
-
-	private static final long serialVersionUID = 1L;
+	private String codeOrType;
+	private String message;
+	private String additionalInfo;
 	
-	private List<JcError> errors;
-
-	public JcResultException(List<JcError> errors) {
+	public JcError(String codeOrType, String message, String info) {
 		super();
-		this.errors = errors;
+		this.codeOrType = codeOrType;
+		this.message = message;
+		this.additionalInfo = info;
 	}
-	
-	public JcResultException(List<JcError> errors, String message) {
-		super(message);
-		this.errors = errors;
+	public String getCodeOrType() {
+		return codeOrType;
 	}
-
-	public List<JcError> getErrors() {
-		return errors;
+	public String getMessage() {
+		return message;
 	}
-
+	/**
+	 * may be null
+	 * @return
+	 */
+	public String getAdditionalInfo() {
+		return additionalInfo;
+	}
 }

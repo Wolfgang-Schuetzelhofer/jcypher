@@ -17,7 +17,7 @@
 package iot.jcypher.graph;
 
 import iot.jcypher.graph.internal.GrId;
-import iot.jcypher.result.util.ResultHandler;
+import iot.jcypher.query.result.util.ResultHandler;
 
 import java.util.List;
 

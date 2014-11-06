@@ -14,31 +14,28 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.result.util;
+package iot.jcypher.query.result;
 
-import java.util.ArrayList;
 import java.util.List;
 
-public class LocalIdBuilder {
+public class JcResultException extends RuntimeException {
 
-	private long nextId = 0l;
-	private List<Long> freeIds;
+	private static final long serialVersionUID = 1L;
 	
-	public void releaseId(long id) {
-		if (this.freeIds == null)
-			this.freeIds = new ArrayList<Long>();
-		Long lid = new Long(id);
-		if (!this.freeIds.contains(lid))
-			this.freeIds.add(lid);
+	private List<JcError> errors;
+
+	public JcResultException(List<JcError> errors) {
+		super();
+		this.errors = errors;
 	}
 	
-	public long getId() {
-		if (this.freeIds != null && this.freeIds.size() > 0) {
-			return this.freeIds.remove(this.freeIds.size() - 1).longValue();
-		} else {
-			long ret = this.nextId;
-			this.nextId++;
-			return ret;
-		}
+	public JcResultException(List<JcError> errors, String message) {
+		super(message);
+		this.errors = errors;
 	}
+
+	public List<JcError> getErrors() {
+		return errors;
+	}
+
 }

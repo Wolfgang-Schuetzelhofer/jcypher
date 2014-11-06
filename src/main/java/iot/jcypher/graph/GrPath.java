@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import iot.jcypher.graph.internal.GrId;
-import iot.jcypher.result.util.ResultHandler;
+import iot.jcypher.query.result.util.ResultHandler;
 
 public class GrPath {
 

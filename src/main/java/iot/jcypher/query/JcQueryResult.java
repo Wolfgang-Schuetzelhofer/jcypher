@@ -14,13 +14,15 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher;
+package iot.jcypher.query;
 
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.graph.Graph;
+import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.util.ResultHandler;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
@@ -29,8 +31,6 @@ import iot.jcypher.query.values.JcPath;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.JcValue;
-import iot.jcypher.result.JcError;
-import iot.jcypher.result.util.ResultHandler;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;

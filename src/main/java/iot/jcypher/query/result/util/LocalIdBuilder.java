@@ -14,31 +14,31 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domain;
+package iot.jcypher.query.result.util;
 
-public class SyncInfo {
+import java.util.ArrayList;
+import java.util.List;
 
-	private long id;
-	private ResolutionDepth resolutionDepth;
+public class LocalIdBuilder {
+
+	private long nextId = 0l;
+	private List<Long> freeIds;
 	
-	public SyncInfo(long id, ResolutionDepth resolutionDepth) {
-		super();
-		this.id = id;
-		this.resolutionDepth = resolutionDepth;
+	public void releaseId(long id) {
+		if (this.freeIds == null)
+			this.freeIds = new ArrayList<Long>();
+		Long lid = new Long(id);
+		if (!this.freeIds.contains(lid))
+			this.freeIds.add(lid);
 	}
-
+	
 	public long getId() {
-		return id;
+		if (this.freeIds != null && this.freeIds.size() > 0) {
+			return this.freeIds.remove(this.freeIds.size() - 1).longValue();
+		} else {
+			long ret = this.nextId;
+			this.nextId++;
+			return ret;
+		}
 	}
-
-	public ResolutionDepth getResolutionDepth() {
-		return resolutionDepth;
-	}
-
-	@Override
-	public String toString() {
-		return "SyncInfo [id=" + id + ", resolutionDepth=" + resolutionDepth
-				+ "]";
-	}
-	
 }

@@ -16,13 +16,13 @@
 
 package iot.jcypher.util;
 
-import iot.jcypher.CypherWriter;
-import iot.jcypher.JSONWriter;
-import iot.jcypher.JcQuery;
-import iot.jcypher.JcQueryResult;
+import iot.jcypher.query.CypherWriter;
+import iot.jcypher.query.JSONWriter;
+import iot.jcypher.query.JcQuery;
+import iot.jcypher.query.JcQueryResult;
+import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.WriterContext;
-import iot.jcypher.result.JcError;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
