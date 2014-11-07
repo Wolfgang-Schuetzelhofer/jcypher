@@ -161,7 +161,7 @@ public class Util {
 		return errors;
 	}
 	
-	private static void appendErrorList(List<JcError> errors, StringBuilder sb) {
+	public static void appendErrorList(List<JcError> errors, StringBuilder sb) {
 		int num = errors.size();
 		for (int i = 0; i < num; i++) {
 			JcError err = errors.get(i);

@@ -41,7 +41,7 @@ public class CompareUtil_3 {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
 			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = checkAlreadyCompared(m_1, m_2, acs);
+		AlreadyCompared ac = AlreadyCompared.alreadyCompared(m_1, m_2, acs);
 		if (ac != null) // avoid infinite loops
 			return ac.getResult();
 		
@@ -116,7 +116,7 @@ public class CompareUtil_3 {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
 			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = checkAlreadyCompared(list_1, list_2, acs);
+		AlreadyCompared ac = AlreadyCompared.alreadyCompared(list_1, list_2, acs);
 		if (ac != null) // avoid infinite loops
 			return ac.getResult();
 		
@@ -146,7 +146,7 @@ public class CompareUtil_3 {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
 			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = checkAlreadyCompared(map_1, map_2, acs);
+		AlreadyCompared ac = AlreadyCompared.alreadyCompared(map_1, map_2, acs);
 		if (ac != null) // avoid infinite loops
 			return ac.getResult();
 		
@@ -196,30 +196,22 @@ public class CompareUtil_3 {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
 			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = checkAlreadyCompared(o_1, o_2, acs);
-		if (ac != null) // avoid infinite loops
-			return ac.getResult();
-		
-		ac = new AlreadyCompared(o_1, o_2);
-		acs.add(ac);
-		
-		ac.setResult(true);
 		
 		if (o_1 == o_2)
 			return true;
 		if (o_1 instanceof Address && o_2 instanceof Address)
-			return ac.setResult(CompareUtil_2.equalsAddress((Address)o_1, (Address)o_2));
+			return CompareUtil_2.equalsAddress((Address)o_1, (Address)o_2);
 		if (o_1 == null) {
 			if (o_2 != null)
-				return ac.setResult(false);
+				return false;
 		} else if (o_1 instanceof Map && o_2 instanceof Map) {
-			return ac.setResult(CompareUtil_3.equalsMap((Map)o_1, (Map)o_2, alreadyCompareds));
+			return CompareUtil_3.equalsMap((Map)o_1, (Map)o_2, alreadyCompareds);
 		} else if (o_1 instanceof List && o_2 instanceof List) {
-			return ac.setResult(CompareUtil_3.equalsList((List)o_1, (List)o_2, alreadyCompareds));
+			return CompareUtil_3.equalsList((List)o_1, (List)o_2, alreadyCompareds);
 		} else if (o_1 instanceof Mark && o_2 instanceof Mark) {
-			return ac.setResult(CompareUtil_3.equalsMark((Mark)o_1, (Mark)o_2, alreadyCompareds));
+			return CompareUtil_3.equalsMark((Mark)o_1, (Mark)o_2, alreadyCompareds);
 		} else if (!o_1.equals(o_2))
-			return ac.setResult(false); 
+			return false; 
 		
 		return true;
 	}
@@ -228,7 +220,7 @@ public class CompareUtil_3 {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
 			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = checkAlreadyCompared(m_1, m_2, acs);
+		AlreadyCompared ac = AlreadyCompared.alreadyCompared(m_1, m_2, acs);
 		if (ac != null) // avoid infinite loops
 			return ac.getResult();
 		
@@ -250,11 +242,5 @@ public class CompareUtil_3 {
 		} else if (!m_1.getName().equals(m_2.getName()))
 			return ac.setResult(false);
 		return true;
-	}
-	
-	private static AlreadyCompared checkAlreadyCompared(Object o1, Object o2, List<AlreadyCompared> alreadyCompareds) {
-		List<AlreadyCompared> acs = alreadyCompareds;
-		AlreadyCompared ac = AlreadyCompared.alreadyCompared(o1, o2, acs);
-		return ac;
 	}
 }

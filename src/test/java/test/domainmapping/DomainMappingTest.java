@@ -88,7 +88,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 	}
 	
 	@AfterClass
@@ -265,7 +265,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testLists_Maps() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -331,7 +331,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testMultiList() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -431,7 +431,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testMultiList_loop() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -472,7 +472,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testMultiList_loop_02() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -528,7 +528,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@SuppressWarnings("unchecked")
-	//@Test
+	@Test
 	public void testMultiMap() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -631,7 +631,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testMultiMap_EmptyAndNull() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -717,7 +717,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testMapAny2Any() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -843,7 +843,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testMapSimple2Simple() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -900,7 +900,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testMap() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -1011,7 +1011,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testAmbiguous() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -1125,7 +1125,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testAmbiguous_02() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -1161,7 +1161,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@SuppressWarnings({ "unused", "rawtypes", "unchecked" })
-	//@Test
+	@Test
 	public void testUpdateComplex_EmptyList2NotEmptyList() {
 		
 		List<JcError> errors;
@@ -1246,7 +1246,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@SuppressWarnings("unchecked")
-	//@Test
+	@Test
 	public void testUpdateSimple_EmptyList2NotEmptyList() {
 		
 		List<JcError> errors;
@@ -1332,7 +1332,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testLoadEmptyLists() {
 		
 		List<JcError> errors;
@@ -1388,7 +1388,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testStoreDomainObjects() {
 		Person john_1, james_1;
 		Address addr_1;
@@ -1463,107 +1463,16 @@ public class DomainMappingTest extends AbstractTestSuite{
 		ntc.add(new NodesToCheck("Address", 2));
 		ntc.add(new NodesToCheck("Contact", 1));
 		ntc.add(new NodesToCheck("Company", 1));
+		ntc.add(new NodesToCheck("Collection", 2));
 		List<RelationsToCheck> rtc = new ArrayList<RelationsToCheck>();
-		rtc.add(new RelationsToCheck("address", 2));
+		rtc.add(new RelationsToCheck("address", 1));
+		rtc.add(new RelationsToCheck("mainAddress", 1));
 		rtc.add(new RelationsToCheck("contact", 1));
+		rtc.add(new RelationsToCheck("luckyNumbers", 1));
+		rtc.add(new RelationsToCheck("areaCodes", 1));
 		
 		check = checkForNodesAndRelations(ntc, rtc);
 		assertTrue("Test for nodes and relations in graph", check);
-		
-		james.setLuckyNumbers(new ArrayList<Integer>());
-		errors = da.store(james);
-		if (errors.size() > 0) {
-			printErrors(errors);
-		}
-		
-		// test if update query is empty (or no update query at all)
-		errors = da.store(james);
-		if (errors.size() > 0) {
-			printErrors(errors);
-		}
-		
-		errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		errors = da1.store(globCom);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		
-//		
-//		keanu.setFirstName("Keanu_1");
-		john.setContact(null);
-		errors = da.store(domainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-		}
-		
-		james.setContact(email);
-		errors = da.store(domainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-		}
-		
-		james.setMainAddress(address);
-		errors = da.store(domainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-		}
-		
-		john.setBestFriend(james);
-		james.setBestFriend(john);
-		errors = da.store(domainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-		}
-		
-		john.setBestFriend(null);
-		errors = da.store(domainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-		}
-		
-		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName); 
-		try {
-			john_1 = da1.loadById(Person.class, -1, syncInfo.getId());
-		} catch (Exception e) {
-			if (e instanceof JcResultException) {
-				errors = ((JcResultException)e).getErrors();
-				printErrors(errors);
-				return;
-			}
-			throw e;
-		}
-		
-		james.setBestFriend(null);
-		errors = da.store(domainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-		}
-
-		try {
-			//keanu_1 = dc.loadById(Person.class, 0);
-//			List<Person> persons = dc.loadByIds(Person.class, 0, 3);
-			addr_1 = da.loadById(Address.class, -1, 1);
-			addr_1 = da.loadById(Address.class, -1, 1);
-			
-			john_1 = da1.loadById(Person.class, -1, 0);
-			john_1 = da.loadById(Person.class, -1, 0);
-			james_1 = da.loadById(Person.class, -1, 3);
-			john_1.setFirstName("Keanu Kevin");
-			da.store(john_1);
-		} catch (Exception e) {
-			if (e instanceof JcResultException) {
-				errors = ((JcResultException)e).getErrors();
-				printErrors(errors);
-				return;
-			}
-			throw e;
-		}
 		return;
 	}
 	
