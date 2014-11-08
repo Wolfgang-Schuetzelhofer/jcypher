@@ -33,5 +33,19 @@ public interface IDomainAccess {
 	public abstract List<JcError> store(List<Object> domainObjects);
 
 	public abstract List<JcError> store(Object domainObject);
+	
+	/**
+	 * answer the number of instances of a certain type stored in the domain graph
+	 * @param type
+	 * @return the number of instances
+	 */
+	public long numberOfInstancesOf(Class<?> type);
+	
+	/**
+	 * answer the numbers of instances of the specified types stored in the domain graph
+	 * @param types a list of types
+	 * @return a list containing the instances counts
+	 */
+	public List<Long> numberOfInstancesOf(List<Class<?>> types);
 
 }

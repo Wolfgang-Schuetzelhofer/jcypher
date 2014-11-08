@@ -24,6 +24,8 @@ import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
+import iot.jcypher.domain.DomainInformation;
+import iot.jcypher.domain.DomainInformation.DomainObjectType;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.SyncInfo;
 import iot.jcypher.graph.GrNode;
@@ -88,7 +90,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 	}
 	
 	@AfterClass
@@ -132,6 +134,93 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		check = dbAccess.isDatabaseEmpty();
 		assertTrue("Test Domain is empty", check);
+		return;
+	}
+	
+	@Test
+	public void testDomainInformation() {
+		List<JcError> errors;
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, "TEST-1-DOMAIN");
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, "TEST-2-DOMAIN");
+		
+		Address address = new Address();
+		address.setCity("Vienna");
+		address.setStreet("Alserstrasse");
+		address.setNumber(10);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(address);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da1.store(address);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		List<String> available = DomainInformation.availableDomains(dbAccess);
+		assertEquals("[TEST-1-DOMAIN, TEST-2-DOMAIN]", available.toString());
+		
+		return;
+	}
+	
+	@Test
+	public void testDomainInformation_02() {
+		List<JcError> errors;
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		DomainInformation di;
+		Broker broker1 = new Broker();
+		Broker broker2 = new Broker();
+		MultiBroker multiBroker = new MultiBroker();
+		
+		buildAmbiguousTestObjects(broker1, broker2, multiBroker);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		List<Object> domainObjects = new ArrayList<Object>();
+		domainObjects.add(broker1);
+		domainObjects.add(broker2);
+		
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		di = DomainInformation.forDomain(dbAccess, domainName);
+		List<DomainObjectType> doTypes = di.getDomainObjectTypes();
+		assertEquals("[DomainObjectType [typeName=test.domainmapping.Address]," +
+				" DomainObjectType [typeName=test.domainmapping.ambiguous.Broker]," +
+				" DomainObjectType [typeName=test.domainmapping.ambiguous.District]," +
+				" DomainObjectType [typeName=test.domainmapping.ambiguous.DistrictAddress]," +
+				" DomainObjectType [typeName=test.domainmapping.ambiguous.JPerson]," +
+				" DomainObjectType [typeName=test.domainmapping.ambiguous.NPerson]]", doTypes.toString());
+		
+		// once more to check for stored infoNodeId
+		List<DomainObjectType> doTypes_1 = di.getDomainObjectTypes();
+		assertEquals("[DomainObjectType [typeName=test.domainmapping.Address]," +
+				" DomainObjectType [typeName=test.domainmapping.ambiguous.Broker]," +
+				" DomainObjectType [typeName=test.domainmapping.ambiguous.District]," +
+				" DomainObjectType [typeName=test.domainmapping.ambiguous.DistrictAddress]," +
+				" DomainObjectType [typeName=test.domainmapping.ambiguous.JPerson]," +
+				" DomainObjectType [typeName=test.domainmapping.ambiguous.NPerson]]", doTypes_1.toString());
+		
+		List<Class<?>> types = di.getRawTypes(doTypes_1);
+		IDomainAccess da1 = di.getDomainAccess();
+		List<Long> instancesCount = da1.numberOfInstancesOf(types);
+		assertEquals("[7, 2, 2, 1, 1, 1]", instancesCount.toString());
 		return;
 	}
 	

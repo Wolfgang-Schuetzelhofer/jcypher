@@ -70,6 +70,7 @@ import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
@@ -127,7 +128,7 @@ public class DomainAccess implements IDomainAccess {
 	
 	@Override
 	public SyncInfo getSyncInfo(Object domainObject) {
-		List<Object> domainObjects = new ArrayList<Object>();
+		List<Object> domainObjects = new ArrayList<Object>(1);
 		domainObjects.add(domainObject);
 		List<SyncInfo> ret = this.domainAccessHandler.getSyncInfos(domainObjects);
 		return ret.get(0);
@@ -138,9 +139,23 @@ public class DomainAccess implements IDomainAccess {
 		return this.domainAccessHandler.getSyncInfos(domainObjects);
 	}
 	
+	@Override
+	public long numberOfInstancesOf(Class<?> type) {
+		List<Class<?>> types = new ArrayList<Class<?>>(1);
+		types.add(type);
+		List<Long> ret = this.domainAccessHandler.numberOfInstancesOf(types);
+		return ret.get(0);
+	}
+
+	@Override
+	public List<Long> numberOfInstancesOf(List<Class<?>> types) {
+		return this.domainAccessHandler.numberOfInstancesOf(types);
+	}
+
 	/**********************************************************************/
 	private class DomainAccessHandler {
 		private static final String NodePrefix = "n_";
+		private static final String NumberPrefix = "num_";
 		private static final String RelationPrefix = "r_";
 		private static final String DomainInfoNodeLabel = "DomainInfo";
 		private static final String DomainInfoNameProperty = "name";
@@ -334,6 +349,54 @@ public class DomainAccess implements IDomainAccess {
 			return ret;
 		}
 		
+		List<Long> numberOfInstancesOf(List<Class<?>> types) {
+			updateMappingsIfNeeded();
+			List<Long> resultList = new ArrayList<Long>();
+			List<Integer> cumulationList = new ArrayList<Integer>(types.size());
+			List<JcQuery> queries = new ArrayList<JcQuery>();
+			JcNode n = new JcNode(NodePrefix.concat(String.valueOf(0)));
+			JcNumber num = new JcNumber(NumberPrefix.concat(String.valueOf(0)));
+			for (Class<?> type : types) {
+				Iterator<CompoundObjectType> it = getCompoundTypeFor(type).typeIterator();
+				int cumulation = 0;
+				while(it.hasNext()) {
+					cumulation++;
+					Class<?> rawType = it.next().getType();
+					String nodeLabel = domainInfo.getLabelForClass(rawType);
+					JcQuery query = new JcQuery();
+					query.setClauses(new IClause[]{
+							MATCH.node(n).label(nodeLabel),
+							RETURN.count().value(n).AS(num)
+					});
+					queries.add(query);
+				}
+				cumulationList.add(cumulation);
+			}
+//			Util.printQueries(queries, "INSTANCE-COUNT", Format.PRETTY_1);
+			List<JcQueryResult> results = this.dbAccess.execute(queries);
+			List<JcError> errors = Util.collectErrors(results);
+			if (errors.size() > 0) {
+				throw new JcResultException(errors);
+			}
+//			Util.printResults(results, "INSTANCE-COUNT", Format.PRETTY_1);
+			
+			int idx = 0;
+			for (int i = 0; i< cumulationList.size(); i++) {
+				int cumulation = cumulationList.get(i);
+				long count = 0;
+				while (cumulation > 0) {
+					JcQueryResult result = results.get(idx);
+					BigDecimal res = result.resultOf(num).get(0);
+					count = count + res.longValue();
+					idx++;
+					cumulation--;
+				}
+				resultList.add(count);
+			}
+			
+			return resultList;
+		}
+		
 		private Map<Class<?>, List<Long>> queryConcreteTypes(long[] ids) {
 			JcQuery query = new JcQuery();
 			JcNode n = new JcNode("n");
@@ -371,18 +434,7 @@ public class DomainAccess implements IDomainAccess {
 		
 		private void updateMappingsIfNeeded() {
 			if (this.domainInfo == null) {
-				DomainInfo dInfo = loadDomainInfoIfNeeded();
-				Set<Class<?>> classes = dInfo.getAllStoredDomainClasses();
-				Iterator<Class<?>> it = classes.iterator();
-				while(it.hasNext()) {
-					Class<?> clazz = it.next();
-					ObjectMapping objectMapping = this.mappings.get(clazz);
-					if (objectMapping == null) {
-						objectMapping = DefaultObjectMappingCreator.createObjectMapping(clazz);
-						this.mappings.put(clazz, objectMapping);
-						this.updateCompoundTypeMapWith(clazz);
-					}
-				}
+				loadDomainInfoIfNeeded();
 			}
 		}
 
@@ -870,6 +922,19 @@ public class DomainAccess implements IDomainAccess {
 						.updateDomainInfo(result);
 				} else
 					throw new JcResultException(errors);
+				
+				// update thetype2CompoundTypeMap
+				Set<Class<?>> classes = this.domainInfo.getAllStoredDomainClasses();
+				Iterator<Class<?>> it = classes.iterator();
+				while(it.hasNext()) {
+					Class<?> clazz = it.next();
+					ObjectMapping objectMapping = this.mappings.get(clazz);
+					if (objectMapping == null) {
+						objectMapping = DefaultObjectMappingCreator.createObjectMapping(clazz);
+						this.mappings.put(clazz, objectMapping);
+						this.updateCompoundTypeMapWith(clazz);
+					}
+				}
 			}
 			return this.domainInfo;
 		}
@@ -2426,6 +2491,10 @@ public class DomainAccess implements IDomainAccess {
 		
 		private Class<?> getClassForLabel(String label) {
 			return this.label2ClassMap.get(label);
+		}
+		
+		private String getLabelForClass(Class<?> clazz) {
+			return this.class2labelMap.get(clazz);
 		}
 		
 		private Set<Class<?>> getAllStoredDomainClasses() {
