@@ -70,7 +70,6 @@ import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
@@ -301,29 +300,29 @@ public class DomainAccess implements IDomainAccess {
 						queries.add(query);
 					}
 				}
-				Util.printQueries(queries, "LOAD-BY-TYPE-COUNT", Format.PRETTY_1);
+//				Util.printQueries(queries, "LOAD-BY-TYPE-COUNT", Format.PRETTY_1);
 				List<JcQueryResult> results = this.dbAccess.execute(queries);
 				List<JcError> errors = Util.collectErrors(results);
 				if (errors.size() > 0) {
 					throw new JcResultException(errors);
 				}
-				Util.printResults(results, "LOAD-BY-TYPE-COUNT", Format.PRETTY_1);
+//				Util.printResults(results, "LOAD-BY-TYPE-COUNT", Format.PRETTY_1);
 				List<Integer> counts = new ArrayList<Integer>(results.size());
 				for (JcQueryResult result : results) {
 					BigDecimal res = result.resultOf(num).get(0);
 					counts.add(res.intValue());
 				}
 				
-				int remain = offset;
-				int total = count;
+				int nextOffset = offset;
+				int remainLen = count;
 				for (int nums : counts) {
 					int reduceLen;
 					// calc offset
-					if (remain > 0) {
-							remain = remain - nums;
-						if (remain <= 0) {
-							offsets.add(nums + remain);
-							reduceLen = -remain + 1; // correct for size vs. offset (index starts with 0)
+					if (nextOffset > 0) {
+							nextOffset = nextOffset - nums;
+						if (nextOffset <= 0) {
+							offsets.add(nums + nextOffset);
+							reduceLen = -nextOffset;
 						} else {
 							offsets.add(nums); // skip elements of this type
 							reduceLen = 0;
@@ -334,13 +333,10 @@ public class DomainAccess implements IDomainAccess {
 					}
 					
 					// calc count
-					if (count >= 0) {
-						if (total > 0) {
-							total = total - reduceLen;
-							if (total > 0)
-								lens.add(reduceLen);
-							else
-								lens.add(-total);
+					if (count >= 0) { // number of objects to read is limited 
+						if (remainLen > 0) {
+							remainLen = remainLen - reduceLen;
+							lens.add(reduceLen + (remainLen < 0 ? remainLen : 0));
 						} else
 							lens.add(0); // we are past the maximum number to read
 					} else
@@ -374,7 +370,7 @@ public class DomainAccess implements IDomainAccess {
 					idx++;
 				}
 			}
-			Util.printQueries(queries, "LOAD-BY-TYPE", Format.PRETTY_1);
+//			Util.printQueries(queries, "LOAD-BY-TYPE", Format.PRETTY_1);
 			List<JcQueryResult> results = this.dbAccess.execute(queries);
 			List<JcError> errors = Util.collectErrors(results);
 			if (errors.size() > 0) {
@@ -389,17 +385,15 @@ public class DomainAccess implements IDomainAccess {
 				if (nodeLabel != null) {
 					if (lens.get(idx) != 0) { // no query in that case
 						JcQueryResult result = results.get(resIdx);
+						List<BigDecimal> rList = result.resultOf(num);
+						int sz = lens.get(idx) + offsets.get(idx);
+						sz = sz == -1 ? rList.size() : sz > rList.size() ? rList.size() : sz;
+						for (int i = offsets.get(idx); i < sz; i++) {
+							ids.add(rList.get(i).longValue());
+						}
 						resIdx++;
 					}
 					idx++;
-				}
-			}
-			
-			
-			for (JcQueryResult result : results) {
-				List<BigDecimal> rList = result.resultOf(num);
-				for (BigDecimal r : rList) {
-					ids.add(r.longValue());
 				}
 			}
 			long[] idsArray = new long[ids.size()];

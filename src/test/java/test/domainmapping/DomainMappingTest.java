@@ -173,6 +173,16 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		List<Object> result_2 = da1.loadByType(Object.class, -1, 5, 3);
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		List<Object> result_3 = da1.loadByType(Object.class, -1, 4, 3);
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		result_1 = da1.loadByType(Object.class, -1, 0, -1);
+		
+		result_2 = da1.loadByType(Object.class, -1, 5, 3);
+		
+		result_3 = da1.loadByType(Object.class, -1, 4, 3);
 		return;
 	}
 	
