@@ -29,6 +29,8 @@ public interface IDomainAccess {
 	public <T> List<T> loadByIds(Class<T> domainObjectClass, int resolutionDepth, long... ids);
 
 	public <T> T loadById(Class<T> domainObjectClass, int resolutionDepth, long id);
+	
+	public <T> List<T> loadByType(Class<T> domainObjectClass, int resolutionDepth, int offset, int count);
 
 	public abstract List<JcError> store(List<Object> domainObjects);
 

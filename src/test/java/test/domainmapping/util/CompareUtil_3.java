@@ -59,13 +59,13 @@ public class CompareUtil_3 {
 			if (m_2.getMultiDimMap() != null)
 				return ac.setResult(false);
 		} else if (!equalsMap(m_1.getMultiDimMap(),
-				m_2.getMultiDimMap(), alreadyCompareds))
+				m_2.getMultiDimMap(), acs))
 			return ac.setResult(false);
 		if (m_1.getMultiDimList() == null) {
 			if (m_2.getMultiDimList() != null)
 				return ac.setResult(false);
 		} else if (!equalsList(m_1.getMultiDimList(),
-				m_2.getMultiDimList(), alreadyCompareds))
+				m_2.getMultiDimList(), acs))
 			return ac.setResult(false);
 		return true;
 	}
@@ -112,6 +112,29 @@ public class CompareUtil_3 {
 	}
 	
 	@SuppressWarnings("rawtypes")
+	public static boolean equalsUnorderedList(List list_1, List list_2) {
+		ArrayList<AlreadyCompared> acs = new ArrayList<AlreadyCompared>();
+		if (list_1.size() != list_2.size())
+        	return false;
+		ListIterator<?> e1 = list_1.listIterator();
+        while (e1.hasNext()) {
+        	boolean found = false;
+            Object o1 = e1.next();
+            ListIterator<?> e2 = list_2.listIterator();
+            while (e2.hasNext()) {
+	            Object o2 = e2.next();
+	            if (o1==null ? o2==null : equalsObjects(o1, o2, acs)) {
+	            	found = true;
+	            	break;
+	            }
+            }
+            if (!found)
+            	return false;
+        }
+        return true;
+	}
+	
+	@SuppressWarnings("rawtypes")
 	private static boolean equalsList(List list_1, List list_2, List<AlreadyCompared> alreadyCompareds) {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
@@ -135,7 +158,7 @@ public class CompareUtil_3 {
         while (e1.hasNext() && e2.hasNext()) {
             Object o1 = e1.next();
             Object o2 = e2.next();
-            if (!(o1==null ? o2==null : equalsObjects(o1, o2, alreadyCompareds)))
+            if (!(o1==null ? o2==null : equalsObjects(o1, o2, acs)))
             	return ac.setResult(false);
         }
         return ac.setResult(!(e1.hasNext() || e2.hasNext()));
@@ -174,7 +197,7 @@ public class CompareUtil_3 {
 					Entry<Object, Object> e_2 = it_2.next();
 					Object key_2 = e_2.getKey();
 					Object value_2 = e_2.getValue();
-					if (equalsObjects(key_1, key_2, alreadyCompareds) && equalsObjects(value_1, value_2, alreadyCompareds)) {
+					if (equalsObjects(key_1, key_2, acs) && equalsObjects(value_1, value_2, acs)) {
 						found = true;
 						break;
 					}
@@ -205,11 +228,11 @@ public class CompareUtil_3 {
 			if (o_2 != null)
 				return false;
 		} else if (o_1 instanceof Map && o_2 instanceof Map) {
-			return CompareUtil_3.equalsMap((Map)o_1, (Map)o_2, alreadyCompareds);
+			return CompareUtil_3.equalsMap((Map)o_1, (Map)o_2, acs);
 		} else if (o_1 instanceof List && o_2 instanceof List) {
-			return CompareUtil_3.equalsList((List)o_1, (List)o_2, alreadyCompareds);
+			return CompareUtil_3.equalsList((List)o_1, (List)o_2, acs);
 		} else if (o_1 instanceof Mark && o_2 instanceof Mark) {
-			return CompareUtil_3.equalsMark((Mark)o_1, (Mark)o_2, alreadyCompareds);
+			return CompareUtil_3.equalsMark((Mark)o_1, (Mark)o_2, acs);
 		} else if (!o_1.equals(o_2))
 			return false; 
 		

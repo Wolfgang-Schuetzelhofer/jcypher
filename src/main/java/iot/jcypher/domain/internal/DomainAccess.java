@@ -127,6 +127,12 @@ public class DomainAccess implements IDomainAccess {
 	}
 	
 	@Override
+	public <T> List<T> loadByType(Class<T> domainObjectClass, int resolutionDepth,
+			int offset, int count) {
+		return this.domainAccessHandler.loadByType(domainObjectClass, resolutionDepth, offset, count);
+	}
+
+	@Override
 	public SyncInfo getSyncInfo(Object domainObject) {
 		List<Object> domainObjects = new ArrayList<Object>(1);
 		domainObjects.add(domainObject);
@@ -155,7 +161,6 @@ public class DomainAccess implements IDomainAccess {
 	/**********************************************************************/
 	private class DomainAccessHandler {
 		private static final String NodePrefix = "n_";
-		private static final String NumberPrefix = "num_";
 		private static final String RelationPrefix = "r_";
 		private static final String DomainInfoNodeLabel = "DomainInfo";
 		private static final String DomainInfoNameProperty = "name";
@@ -264,6 +269,147 @@ public class DomainAccess implements IDomainAccess {
 			}
 		}
 		
+		<T> List<T> loadByType(Class<T> domainObjectClass, int resolutionDepth,
+				int offset, int count) {
+			if (offset < 0)
+				throw new RuntimeException("offset must be >= 0");
+			updateMappingsIfNeeded();
+			CompoundObjectType cType = getCompoundTypeFor(domainObjectClass);
+			List<Class<?>> typeList = cType.getTypes();
+			// make sure we have always the same order
+			Collections.sort(typeList, new Comparator<Class<?>>() {
+				@Override
+				public int compare(Class<?> o1, Class<?> o2) {
+					return o1.getName().compareTo(o2.getName());
+				}
+			});
+			int numTypes = typeList.size();
+			JcNode n = new JcNode("n");
+			JcNumber num = new JcNumber("num");
+			List<Integer> offsets = new ArrayList<Integer>(numTypes);
+			List<Integer> lens = new ArrayList<Integer>(numTypes);
+			if (numTypes > 1 && (offset > 0 || count >= 0)) {
+				List<JcQuery> queries = new ArrayList<JcQuery>(numTypes);
+				for (Class<?> rawType : typeList) {
+					String nodeLabel = domainInfo.getLabelForClass(rawType);
+					if (nodeLabel != null) {
+						JcQuery query = new JcQuery();
+						query.setClauses(new IClause[]{
+								MATCH.node(n).label(nodeLabel),
+								RETURN.count().value(n).AS(num)
+						});
+						queries.add(query);
+					}
+				}
+				Util.printQueries(queries, "LOAD-BY-TYPE-COUNT", Format.PRETTY_1);
+				List<JcQueryResult> results = this.dbAccess.execute(queries);
+				List<JcError> errors = Util.collectErrors(results);
+				if (errors.size() > 0) {
+					throw new JcResultException(errors);
+				}
+				Util.printResults(results, "LOAD-BY-TYPE-COUNT", Format.PRETTY_1);
+				List<Integer> counts = new ArrayList<Integer>(results.size());
+				for (JcQueryResult result : results) {
+					BigDecimal res = result.resultOf(num).get(0);
+					counts.add(res.intValue());
+				}
+				
+				int remain = offset;
+				int total = count;
+				for (int nums : counts) {
+					int reduceLen;
+					// calc offset
+					if (remain > 0) {
+							remain = remain - nums;
+						if (remain <= 0) {
+							offsets.add(nums + remain);
+							reduceLen = -remain + 1; // correct for size vs. offset (index starts with 0)
+						} else {
+							offsets.add(nums); // skip elements of this type
+							reduceLen = 0;
+						}
+					} else {
+						offsets.add(0);
+						reduceLen = nums;
+					}
+					
+					// calc count
+					if (count >= 0) {
+						if (total > 0) {
+							total = total - reduceLen;
+							if (total > 0)
+								lens.add(reduceLen);
+							else
+								lens.add(-total);
+						} else
+							lens.add(0); // we are past the maximum number to read
+					} else
+						lens.add(reduceLen);
+				}
+			} else {
+				if (numTypes == 1) {
+					offsets.add(offset);
+					lens.add(count);
+				} else {
+					for (int i = 0; i < numTypes; i++) {
+						offsets.add(0);
+						lens.add(-1);
+					}
+				}
+			}
+			
+			List<JcQuery> queries = new ArrayList<JcQuery>(numTypes);
+			int idx = 0;
+			for (Class<?> rawType : typeList) {
+				String nodeLabel = domainInfo.getLabelForClass(rawType);
+				if (nodeLabel != null) {
+					if (lens.get(idx) != 0) { // otherwise there is a distinct number of elements or -1
+						JcQuery query = new JcQuery();
+						query.setClauses(new IClause[]{
+								MATCH.node(n).label(nodeLabel),
+								RETURN.value(n.id()).AS(num)
+						});
+						queries.add(query);
+					}
+					idx++;
+				}
+			}
+			Util.printQueries(queries, "LOAD-BY-TYPE", Format.PRETTY_1);
+			List<JcQueryResult> results = this.dbAccess.execute(queries);
+			List<JcError> errors = Util.collectErrors(results);
+			if (errors.size() > 0) {
+				throw new JcResultException(errors);
+			}
+//			Util.printResults(results, "LOAD-BY-TYPE", Format.PRETTY_1);
+			List<Long> ids = new ArrayList<Long>();
+			idx = 0;
+			int resIdx = 0;
+			for (Class<?> rawType : typeList) {
+				String nodeLabel = domainInfo.getLabelForClass(rawType);
+				if (nodeLabel != null) {
+					if (lens.get(idx) != 0) { // no query in that case
+						JcQueryResult result = results.get(resIdx);
+						resIdx++;
+					}
+					idx++;
+				}
+			}
+			
+			
+			for (JcQueryResult result : results) {
+				List<BigDecimal> rList = result.resultOf(num);
+				for (BigDecimal r : rList) {
+					ids.add(r.longValue());
+				}
+			}
+			long[] idsArray = new long[ids.size()];
+			for (int i = 0; i < ids.size(); i++) {
+				idsArray[i] = ids.get(i).longValue();
+			}
+			
+			return loadByIds(domainObjectClass, resolutionDepth, idsArray);
+		}
+		
 		@SuppressWarnings("rawtypes")
 		<T> void loadDeepByType(Class<T> domainObjectClass,
 				List<FillModelContext.ResolvedDepth> objectsNotResolvedDeep,
@@ -354,8 +500,8 @@ public class DomainAccess implements IDomainAccess {
 			List<Long> resultList = new ArrayList<Long>();
 			List<Integer> cumulationList = new ArrayList<Integer>(types.size());
 			List<JcQuery> queries = new ArrayList<JcQuery>();
-			JcNode n = new JcNode(NodePrefix.concat(String.valueOf(0)));
-			JcNumber num = new JcNumber(NumberPrefix.concat(String.valueOf(0)));
+			JcNode n = new JcNode("n");
+			JcNumber num = new JcNumber("num");
 			for (Class<?> type : types) {
 				Iterator<CompoundObjectType> it = getCompoundTypeFor(type).typeIterator();
 				int cumulation = 0;

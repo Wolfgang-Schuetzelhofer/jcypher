@@ -16,7 +16,9 @@
 
 package iot.jcypher.domain.mapping;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 public class CompoundObjectType {
 
@@ -61,6 +63,12 @@ public class CompoundObjectType {
 		return this.type;
 	}
 	
+	public List<Class<?>> getTypes() {
+		List<Class<?>> typeList = new ArrayList<Class<?>>();
+		this.addType(typeList);
+		return typeList;
+	}
+	
 	public CType getCType() {
 		return this.cType;
 	}
@@ -80,6 +88,12 @@ public class CompoundObjectType {
 			idx++;
 		}
 		return sb.toString();
+	}
+	
+	private void addType(List<Class<?>> typeList) {
+		typeList.add(this.type);
+		if (this.next != null)
+			next.addType(typeList);
 	}
 	
 	/********************************************/

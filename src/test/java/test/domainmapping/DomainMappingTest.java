@@ -138,6 +138,45 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@Test
+	public void testLoadByType() {
+		List<JcError> errors;
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		Broker broker1 = new Broker();
+		Broker broker2 = new Broker();
+		MultiBroker multiBroker = new MultiBroker();
+		
+		List<Object> addresses = buildAmbiguousTestObjects(broker1, broker2, multiBroker);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		List<Object> domainObjects = new ArrayList<Object>();
+		domainObjects.add(broker1);
+		domainObjects.add(broker2);
+		
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		List<Address> result = da1.loadByType(Address.class, -1, 0, -1);
+		boolean equals = CompareUtil_3.equalsUnorderedList(addresses, result);
+		assertTrue(equals);
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		List<Object> result_1 = da1.loadByType(Object.class, -1, 0, -1);
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		List<Object> result_2 = da1.loadByType(Object.class, -1, 5, 3);
+		return;
+	}
+	
+	@Test
 	public void testDomainInformation() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, "TEST-1-DOMAIN");
@@ -1758,12 +1797,16 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 	}
 
-	private void buildAmbiguousTestObjects(Broker broker1, Broker broker2,
+	private List<Object> buildAmbiguousTestObjects(Broker broker1, Broker broker2,
 			MultiBroker multiBroker) {
+		List<Object> ret = new ArrayList<Object>();
+		
 		Address address = new Address();
 		address.setCity("Munich");
 		address.setStreet("Main Street");
 		address.setNumber(9);
+		
+		ret.add(address);
 		
 		NPerson nPerson = new NPerson();
 		nPerson.setNamePart1("Sam");
@@ -1776,10 +1819,14 @@ public class DomainMappingTest extends AbstractTestSuite{
 		address.setNumber(2);
 		nPerson.setWorkAddress(address);
 		
+		ret.add(address);
+		
 		address = new Address();
 		address.setCity("San Francisco");
 		address.setStreet("Kearny Street");
 		address.setNumber(28);
+		
+		ret.add(address);
 		
 		JPerson jPerson = new JPerson();
 		jPerson.setNamePart1("Global Company");
@@ -1791,6 +1838,9 @@ public class DomainMappingTest extends AbstractTestSuite{
 		address.setStreet("Market Street");
 		address.setNumber(29);
 		jPerson.setContactAddress(address);
+		
+		ret.add(address);
+		
 		DistrictAddress dAddress = new DistrictAddress();
 		dAddress.setCity("San Francisco");
 		dAddress.setStreet("Embarcadero Center");
@@ -1803,6 +1853,8 @@ public class DomainMappingTest extends AbstractTestSuite{
 		dAddress.setSubDistrict(district);
 		jPerson.setPostalAddress(dAddress);
 		
+		ret.add(dAddress);
+		
 		broker1.setWorksWith(nPerson);
 		address = new Address();
 		address.setCity("New York");
@@ -1810,12 +1862,16 @@ public class DomainMappingTest extends AbstractTestSuite{
 		address.setNumber(35);
 		broker1.setAddress(address);
 		
+		ret.add(address);
+		
 		broker2.setWorksWith(jPerson);
 		address = new Address();
 		address.setCity("Brussels");
 		address.setStreet("Main Road");
 		address.setNumber(168);
 		broker2.setAddress(address);
+		
+		ret.add(address);
 		
 		List<IPerson> persons = new ArrayList<IPerson>();
 		persons.add(jPerson);
@@ -1827,6 +1883,10 @@ public class DomainMappingTest extends AbstractTestSuite{
 		address.setStreet("Am Graben");
 		address.setNumber(5);
 		multiBroker.setAddress(address);
+		
+//		ret.add(address);
+		
+		return ret;
 	}
 
 	@SuppressWarnings({ "rawtypes", "unchecked" })
