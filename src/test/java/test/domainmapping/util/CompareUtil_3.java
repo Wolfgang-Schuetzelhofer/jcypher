@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import test.domainmapping.Address;
+import test.domainmapping.ambiguous.Broker;
 import test.domainmapping.maps.MapContainer;
 import test.domainmapping.maps.Mark;
 import test.domainmapping.maps.MultiDimMapsLists;
@@ -135,6 +136,11 @@ public class CompareUtil_3 {
 	}
 	
 	@SuppressWarnings("rawtypes")
+	public static boolean equalsList(List list_1, List list_2) {
+		return equalsList(list_1, list_2, null);
+	}
+	
+	@SuppressWarnings("rawtypes")
 	private static boolean equalsList(List list_1, List list_2, List<AlreadyCompared> alreadyCompareds) {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
@@ -233,6 +239,8 @@ public class CompareUtil_3 {
 			return CompareUtil_3.equalsList((List)o_1, (List)o_2, acs);
 		} else if (o_1 instanceof Mark && o_2 instanceof Mark) {
 			return CompareUtil_3.equalsMark((Mark)o_1, (Mark)o_2, acs);
+		} else if (o_1 instanceof Broker && o_2 instanceof Broker) {
+			return CompareUtil_2.equalsBroker((Broker)o_1, (Broker)o_2);
 		} else if (!o_1.equals(o_2))
 			return false; 
 		

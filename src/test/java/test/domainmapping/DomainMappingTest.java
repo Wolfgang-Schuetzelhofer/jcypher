@@ -173,16 +173,30 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		List<Object> result_2 = da1.loadByType(Object.class, -1, 5, 3);
+		List<Object> compare = result_1.subList(5, 8);
+		equals = CompareUtil_3.equalsList(compare, result_2);
+		assertTrue(equals);
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		List<Object> result_3 = da1.loadByType(Object.class, -1, 4, 3);
+		compare = result_1.subList(4, 7);
+		equals = CompareUtil_3.equalsList(compare, result_3);
+		assertTrue(equals);
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		result_1 = da1.loadByType(Object.class, -1, 0, -1);
 		
 		result_2 = da1.loadByType(Object.class, -1, 5, 3);
+		equals = result_2.get(0) == result_1.get(5) &&
+				result_2.get(1) == result_1.get(6) &&
+				result_2.get(2) == result_1.get(7);
+		assertTrue(equals);
 		
 		result_3 = da1.loadByType(Object.class, -1, 4, 3);
+		equals = result_3.get(0) == result_1.get(4) &&
+				result_3.get(1) == result_1.get(5) &&
+				result_3.get(2) == result_1.get(6);
+		assertTrue(equals);
 		return;
 	}
 	
