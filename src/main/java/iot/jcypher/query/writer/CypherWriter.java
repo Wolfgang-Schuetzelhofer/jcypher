@@ -14,8 +14,9 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.query;
+package iot.jcypher.query.writer;
 
+import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.api.APIObject;
 import iot.jcypher.query.api.APIObjectAccess;
 import iot.jcypher.query.api.IClause;
@@ -73,10 +74,6 @@ import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
 import iot.jcypher.query.values.ValueWriter;
-import iot.jcypher.query.writer.Pretty;
-import iot.jcypher.query.writer.QueryParam;
-import iot.jcypher.query.writer.QueryParamSet;
-import iot.jcypher.query.writer.WriterContext;
 
 import java.util.List;
 

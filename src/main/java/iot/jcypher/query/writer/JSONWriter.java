@@ -14,14 +14,9 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.query;
+package iot.jcypher.query.writer;
 
-import iot.jcypher.query.writer.ContextAccess;
-import iot.jcypher.query.writer.Format;
-import iot.jcypher.query.writer.IQueryParam;
-import iot.jcypher.query.writer.QueryParam;
-import iot.jcypher.query.writer.QueryParamSet;
-import iot.jcypher.query.writer.WriterContext;
+import iot.jcypher.query.JcQuery;
 
 import java.io.StringWriter;
 import java.util.ArrayList;

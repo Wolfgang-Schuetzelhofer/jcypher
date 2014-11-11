@@ -18,10 +18,10 @@ package iot.jcypher.database.embedded;
 
 import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
-import iot.jcypher.query.CypherWriter;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.writer.CypherWriter;
 import iot.jcypher.query.writer.IQueryParam;
 import iot.jcypher.query.writer.QueryParam;
 import iot.jcypher.query.writer.QueryParamSet;

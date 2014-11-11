@@ -16,12 +16,12 @@
 
 package iot.jcypher.query.values;
 
-import iot.jcypher.query.CypherWriter.PrimitiveCypherWriter;
 import iot.jcypher.query.values.FunctionCapsule.FunctionEnd;
 import iot.jcypher.query.values.FunctionCapsule.FunctionStart;
 import iot.jcypher.query.values.operators.OPERATOR;
 import iot.jcypher.query.values.operators.OPTYPE;
 import iot.jcypher.query.writer.WriterContext;
+import iot.jcypher.query.writer.CypherWriter.PrimitiveCypherWriter;
 
 import java.util.ArrayList;
 import java.util.List;

@@ -20,15 +20,15 @@ import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 
-import iot.jcypher.query.CypherWriter;
-import iot.jcypher.query.JSONWriter;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.values.ValueElement;
 import iot.jcypher.query.values.ValueWriter;
+import iot.jcypher.query.writer.CypherWriter;
 import iot.jcypher.query.writer.Format;
+import iot.jcypher.query.writer.JSONWriter;
 import iot.jcypher.query.writer.WriterContext;
 
 public class AbstractTestSuite {
