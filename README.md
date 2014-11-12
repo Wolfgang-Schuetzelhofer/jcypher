@@ -11,7 +11,7 @@ jcypher
    The DSL provides all the power and expressiveness of the Cypher language.
 
 - At the next level of abstraction, access to graph databases is provided based on a generic graph model.
-   The model consists of nodes, relations, and paths, together with properties, labels, and types. While simple, the model allows to easily manipulate graphs.
+   The model consists of nodes, relations, and paths, together with properties, labels, and types. While simple, the model allows to easily navigate and manipulate graphs.
 
 - At the top level, arbitrarily complex business domains can be mapped to graph databases in a completely non-invasive way (not even annotations invading the business model).
 
