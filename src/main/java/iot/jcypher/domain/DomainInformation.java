@@ -33,6 +33,10 @@ import iot.jcypher.util.Util;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Provides general informations about domains.
+ *
+ */
 public class DomainInformation {
 	
 	private static final String DomainInfoNodeLabel = "DomainInfo";
@@ -175,14 +179,27 @@ public class DomainInformation {
 			this.nodeLabel = nodeLabel;
 		}
 
+		/**
+		 * Answer the fully qualified name of the java type.
+		 * @return the fully qualified name of the java type.
+		 */
 		public String getTypeName() {
 			return typeName;
 		}
 
+		/**
+		 * Answer label of nodes to which domain objects of that type are mapped.
+		 * @return a node label
+		 */
 		public String getNodeLabel() {
 			return nodeLabel;
 		}
 
+		/**
+		 * Answer the java type (Class).
+		 * Note: this may raise a ClassNotFoundException
+		 * @return the java type
+		 */
 		public Class<?> getType() {
 			if (this.type == null) {
 				try {

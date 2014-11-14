@@ -17,6 +17,7 @@
 package iot.jcypher.database.embedded;
 
 import iot.jcypher.database.DBProperties;
+import iot.jcypher.database.DBType;
 
 import java.util.Properties;
 
@@ -32,6 +33,11 @@ public class InMemoryDBAccess extends AbstractEmbeddedDBAccess {
 		this.properties = properties;
 	}
 
+	@Override
+	public DBType getDBType() {
+		return DBType.IN_MEMORY;
+	}
+	
 	@Override
 	protected GraphDatabaseService createGraphDB() {
 		GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder();

@@ -22,6 +22,10 @@ import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.result.JcError;
 
+/**
+ * Provides access to a graph database.
+ *
+ */
 public interface IDBAccess {
 
 	/**
@@ -48,6 +52,12 @@ public interface IDBAccess {
 	 * @return true if not a single node or relation is contained in the graph database
 	 */
 	public boolean isDatabaseEmpty();
+	
+	/**
+	 * Answer the type of database access (REMOTE, EMBEDDED, IN_MEMORY)
+	 * @return a DBType
+	 */
+	public DBType getDBType();
 	
 	/**
 	 * close the database connection

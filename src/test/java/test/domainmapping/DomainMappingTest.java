@@ -90,7 +90,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 	}
 	
 	@AfterClass
@@ -101,7 +101,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 	}
 	
-	//@Test
+	@Test
 	public void testClearDomain() {
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		List<JcError> errors;
@@ -1086,55 +1086,6 @@ public class DomainMappingTest extends AbstractTestSuite{
 		addressMap.getString2IntegerMap().put("two", 3);
 		addressMap.getString2IntegerMap().remove("three");
 		
-		// modify complex2Complex
-//		Address first = null;
-//		Address second = null;
-//		Address third = null;
-//		Address first_1 = null;
-//		Address second_1 = null;
-//		Address third_1 = null;
-//		Iterator<Entry<Address, Address>> it = addressMap.getAddress2AddressMap().entrySet().iterator();
-//		while(it.hasNext()) {
-//			Entry<Address, Address> entry = it.next();
-//			if (entry.getKey().getStreet().equals("Embarcadero Center")) {
-//				second = entry.getKey();
-//				third_1 = entry.getValue();
-//			} else if (entry.getKey().getStreet().equals("52nd Street")) {
-//				third = entry.getKey();
-//				first_1 = entry.getValue();
-//			} else if (entry.getKey().getStreet().equals("Main Street")) {
-//				first = entry.getKey();
-//				second_1 = entry.getValue();
-//			}
-//		}
-//		addressMap.getAddress2AddressMap().put(second, first_1);
-//		addressMap.getAddress2AddressMap().put(third, second_1);
-//		addressMap.getAddress2AddressMap().remove(first);
-		
-		// modify complex2Simple
-//		Address embarcadero = null;
-//		Address newYork = null;
-//		Address munich = null;
-//		Iterator<Entry<Address, String>> it = addressMap.getAddress2StringMap().entrySet().iterator();
-//		while(it.hasNext()) {
-//			Entry<Address, String> entry = it.next();
-//			if (entry.getKey().getStreet().equals("Embarcadero Center"))
-//				embarcadero = entry.getKey();
-//			else if (entry.getKey().getStreet().equals("52nd Street"))
-//				newYork = entry.getKey();
-//			else if (entry.getKey().getStreet().equals("Main Street"))
-//				munich = entry.getKey();
-//		}
-//		addressMap.getAddress2StringMap().put(newYork, "second");
-//		addressMap.getAddress2StringMap().put(embarcadero, "third");
-//		addressMap.getAddress2StringMap().remove(munich);
-		
-		// modify simple2Complex
-//		Address second = addressMap.getString2AddressMap().get("second");
-//		Address third = addressMap.getString2AddressMap().get("third");
-//		addressMap.getString2AddressMap().put("second", third);
-//		addressMap.getString2AddressMap().put("third", second);
-//		addressMap.getString2AddressMap().remove("first");
 		
 		// store modification
 		errors = da.store(addressMap);

@@ -17,6 +17,7 @@
 package iot.jcypher.database.remote;
 
 import iot.jcypher.database.DBProperties;
+import iot.jcypher.database.DBType;
 import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
 import iot.jcypher.query.JcQuery;
@@ -121,6 +122,11 @@ public class RemoteDBAccess implements IDBAccessInit {
 	@Override
 	public List<JcError> clearDatabase() {
 		return DBUtil.clearDatabase(this);
+	}
+
+	@Override
+	public DBType getDBType() {
+		return DBType.REMOTE;
 	}
 
 	@Override

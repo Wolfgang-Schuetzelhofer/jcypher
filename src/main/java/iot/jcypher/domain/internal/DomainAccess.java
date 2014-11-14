@@ -16,6 +16,7 @@
 
 package iot.jcypher.domain.internal;
 
+import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.ResolutionDepth;
@@ -70,6 +71,7 @@ import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
@@ -545,6 +547,11 @@ public class DomainAccess implements IDomainAccess {
 				RETURN.value(n)
 			};
 			query.setClauses(clauses);
+			// TODO check in later versions of neo4j if params work
+			// with embedded and in_memory databases
+			if (this.dbAccess.getDBType() != DBType.REMOTE)
+				query.setExtractParams(false);
+//			Util.printQuery(query, "Query concrete type", Format.PRETTY_1);
 			JcQueryResult result = dbAccess.execute(query);
 			List<JcError> errors = Util.collectErrors(result);
 			if (errors.size() > 0) {
@@ -1193,6 +1200,11 @@ public class DomainAccess implements IDomainAccess {
 			@Override
 			public boolean isDatabaseEmpty() {
 				return this.delegate.isDatabaseEmpty();
+			}
+
+			@Override
+			public DBType getDBType() {
+				return this.delegate.getDBType();
 			}
 
 			@Override

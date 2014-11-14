@@ -17,6 +17,7 @@
 package iot.jcypher.database.embedded;
 
 import iot.jcypher.database.DBProperties;
+import iot.jcypher.database.DBType;
 
 import java.util.Properties;
 
@@ -36,6 +37,11 @@ public class EmbeddedDBAccess extends AbstractEmbeddedDBAccess {
 		if (this.properties.getProperty(DBProperties.DATABASE_DIR) == null)
 			throw new RuntimeException("missing property: '"
 					+ DBProperties.DATABASE_DIR + "' in database configuration");
+	}
+
+	@Override
+	public DBType getDBType() {
+		return DBType.EMBEDDED;
 	}
 
 	@Override

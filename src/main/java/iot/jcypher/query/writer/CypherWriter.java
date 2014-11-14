@@ -1007,6 +1007,8 @@ public class CypherWriter {
 		public static void writePrimitiveValue(Object val, WriterContext context) {
 			if (val instanceof Number) {
 				context.buffer.append(val.toString());
+			} else if (val instanceof Boolean) {
+				context.buffer.append(val.toString());
 			} else if (val instanceof List<?>) {
 				context.buffer.append('[');
 				List<?> list = (List<?>)val;

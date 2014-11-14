@@ -19,6 +19,10 @@ package iot.jcypher.domain;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.internal.DomainAccess;
 
+/**
+ * A Factory for creating domain accessors.
+ *
+ */
 public class DomainAccessFactory {
 
 	/**
