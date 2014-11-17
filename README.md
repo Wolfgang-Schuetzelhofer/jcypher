@@ -3,7 +3,7 @@ jcypher
 
 ## Introduction
 
-**JCypher** aims to provide seamlessly integrated Java access to graph databases (Neo4J) at different levels of abstraction.
+**JCypher** provides seamlessly integrated Java access to graph databases (Neo4J) at different levels of abstraction.
 
 - At the bottom level a 'Native Java DSL' in form of a fluent Java API allows to intuitively and comfortably formulate queries against graph databases.
    The DSL (Domain Specific Language) is based on the CYPHER language. Hence the name JCypher.
@@ -35,7 +35,7 @@ You may add JCypher as a Maven dependency:
 <dependency>
   <groupId>net.iot-solutions.graphdb</groupId>
    <artifactId>jcypher</artifactId>
-   <version>1.0.0</version>
+   <version>2.0.0</version>
 </dependency>
 ```
 
