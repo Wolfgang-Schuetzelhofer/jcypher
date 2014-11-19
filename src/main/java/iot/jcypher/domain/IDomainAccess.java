@@ -16,6 +16,7 @@
 
 package iot.jcypher.domain;
 
+import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.query.result.JcError;
 
 import java.util.List;
@@ -126,5 +127,11 @@ public interface IDomainAccess {
 	 * @return a list containing the instances counts
 	 */
 	public List<Long> numberOfInstancesOf(List<Class<?>> types);
+	
+	/**
+	 * create a new domain query
+	 * @return a DomainQuery
+	 */
+	public DomainQuery createQuery();
 
 }

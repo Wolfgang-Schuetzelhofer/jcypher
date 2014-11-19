@@ -94,4 +94,8 @@ public class ValueAccess {
 	public static ValueElement getPredecessor(ValueElement ve) {
 		return ve.getPredecessor();
 	}
+	
+	public static JcString createJcString(String name, Object val, ValueElement predecessor, IOperatorOrFunction opf) {
+		return new JcString(name, val, predecessor, opf);
+	}
 }

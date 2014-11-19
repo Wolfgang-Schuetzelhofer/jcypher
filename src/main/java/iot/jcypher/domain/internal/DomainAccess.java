@@ -48,6 +48,7 @@ import iot.jcypher.domain.mapping.surrogate.MapEntry;
 import iot.jcypher.domain.mapping.surrogate.MapEntryUpdater;
 import iot.jcypher.domain.mapping.surrogate.Surrogate2ListEntry;
 import iot.jcypher.domain.mapping.surrogate.Surrogate2MapEntry;
+import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
@@ -157,6 +158,11 @@ public class DomainAccess implements IDomainAccess {
 	@Override
 	public List<Long> numberOfInstancesOf(List<Class<?>> types) {
 		return this.domainAccessHandler.numberOfInstancesOf(types);
+	}
+
+	@Override
+	public DomainQuery createQuery() {
+		return new DomainQuery(this);
 	}
 
 	/**********************************************************************/

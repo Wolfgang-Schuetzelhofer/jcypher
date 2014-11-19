@@ -16,7 +16,6 @@
 
 package iot.jcypher.query.values;
 
-import iot.jcypher.query.values.operators.OPERATOR;
 
 public class JcValue extends ValueElement {
 	

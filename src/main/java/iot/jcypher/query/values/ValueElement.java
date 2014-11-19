@@ -27,7 +27,7 @@ public class ValueElement implements IFragment {
 		super();
 	}
 	
-	ValueElement(ValueElement pred, IOperatorOrFunction opf) {
+	protected ValueElement(ValueElement pred, IOperatorOrFunction opf) {
 		super();
 		this.predecessor = pred;
 		this.operatorOrFunction = opf;
