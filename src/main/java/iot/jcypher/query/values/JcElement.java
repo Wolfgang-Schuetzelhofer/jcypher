@@ -62,6 +62,15 @@ public abstract class JcElement extends JcValue {
 	
 	/**
 	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>access a named boolean property, return a <b>JcBoolean</b></i></div>
+	 * <br/>
+	 */
+	public JcBoolean booleanProperty(String name) {
+		return new JcBoolean(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
 	 * <div color='red' style="font-size:18px;color:red"><i>access a named collection property, return a <b>JcCollection</b></i></div>
 	 * <br/>
 	 */

@@ -20,6 +20,7 @@ public class PredicateExpression implements IASTObject {
 
 	private Object value_1;
 	private Operator operator;
+	private Object value_2;
 	private int negationCount;
 
 	public PredicateExpression(Object value_1) {
@@ -36,6 +37,14 @@ public class PredicateExpression implements IASTObject {
 		this.operator = operator;
 	}
 	
+	public Object getValue_2() {
+		return value_2;
+	}
+
+	public void setValue_2(Object value_2) {
+		this.value_2 = value_2;
+	}
+
 	public void addNegation() {
 		this.negationCount++;
 	}

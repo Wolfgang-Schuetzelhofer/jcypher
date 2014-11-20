@@ -24,6 +24,14 @@ public class JcBoolean extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcBoolean(String name) {
-		super(name, null, null, null);
+		this(name, null, null, null);
+	}
+	
+	JcBoolean(Object val, ValueElement predecessor, IOperatorOrFunction opf) {
+		this(null, val, predecessor, opf);
+	}
+	
+	JcBoolean(String name, Object val, ValueElement predecessor, IOperatorOrFunction opf) {
+		super(name, val, predecessor, opf);
 	}
 }

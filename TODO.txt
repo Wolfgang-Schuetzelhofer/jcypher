@@ -1,3 +1,5 @@
+test inner classes
+
 START.node(n).byId(ids) now works, some queries can be made simpler now
 
 docu: domain objects must have default constructor

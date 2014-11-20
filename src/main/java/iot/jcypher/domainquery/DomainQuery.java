@@ -17,11 +17,15 @@
 package iot.jcypher.domainquery;
 
 import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.BooleanOperation;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.domainquery.ast.ConcatenateExpression;
+import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.ast.PredicateExpression;
+import iot.jcypher.domainquery.internal.QueryExecutor;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -30,17 +34,11 @@ import java.util.Map;
 
 public class DomainQuery {
 
-	private IDomainAccess domainAccess;
-	private List<IASTObject> astObjects;
-	private List<DomainObjectMatch<?>> domainObjectMatches;
-	private Map<String, Parameter> parameters;
-
+	private QueryExecutor queryExecutor;
+	
 	public DomainQuery(IDomainAccess domainAccess) {
 		super();
-		this.domainAccess = domainAccess;
-		this.astObjects = new ArrayList<IASTObject>();
-		this.domainObjectMatches = new ArrayList<DomainObjectMatch<?>>();
-		this.parameters = new HashMap<String, Parameter>();
+		this.queryExecutor = new QueryExecutor(domainAccess);
 	}
 	
 	/**
@@ -49,8 +47,10 @@ public class DomainQuery {
 	 * @return a DomainObjectMatch for a specific type of domain objects
 	 */
 	public <T> DomainObjectMatch<T> createMatch(Class<T> domainObjectType) {
-		DomainObjectMatch<T> ret = new DomainObjectMatch<>(domainObjectType);
-		this.domainObjectMatches.add(ret);
+		DomainObjectMatch<T> ret =APIAccess.createDomainObjectMatch(domainObjectType,
+				this.queryExecutor.getDomainObjectMatches().size(),
+				this.queryExecutor.getConverterFor(domainObjectType));
+		this.queryExecutor.getDomainObjectMatches().add(ret);
 		return ret;
 	}
 	
@@ -60,12 +60,7 @@ public class DomainQuery {
 	 * @return a query parameter
 	 */
 	public Parameter parameter(String name) {
-		Parameter param = this.parameters.get(name);
-		if (param == null) {
-			param = new Parameter(name);
-			this.parameters.put(name, param);
-		}
-		return param;
+		return this.queryExecutor.parameter(name);
 	}
 	
 	/**
@@ -76,8 +71,37 @@ public class DomainQuery {
 	 */
 	public BooleanOperation WHERE(Object value) {
 		PredicateExpression pe = new PredicateExpression(value);
-		this.astObjects.add(pe);
-		BooleanOperation ret = new BooleanOperation(pe);
+		this.queryExecutor.getAstObjects().add(pe);
+		BooleanOperation ret = APIAccess.createBooleanOperation(pe);
 		return ret;
+	}
+	
+	/**
+	 * Or two predicate expressions
+	 */
+	public void OR() {
+		this.queryExecutor.getAstObjects().add(new ConcatenateExpression(Concatenator.OR));
+	}
+	
+	/**
+	 * Open a block, encapsulating predicate expressions
+	 */
+	public void BR_OPEN() {
+		this.queryExecutor.getAstObjects().add(new ConcatenateExpression(Concatenator.BR_OPEN));
+	}
+	
+	/**
+	 * Close a block, encapsulating predicate expressions
+	 */
+	public void BR_CLOSE() {
+		this.queryExecutor.getAstObjects().add(new ConcatenateExpression(Concatenator.BR_CLOSE));
+	}
+	
+	/**
+	 * Execute the domain query
+	 * @return a DomainQueryResult
+	 */
+	public DomainQueryResult execute() {
+		return this.queryExecutor.execute();
 	}
 }

@@ -17,10 +17,11 @@
 package iot.jcypher.domainquery.api;
 
 import iot.jcypher.domainquery.ast.PredicateExpression;
+import iot.jcypher.domainquery.ast.PredicateExpression.Operator;
 
 public class BooleanOperation extends APIObject {
 
-	public BooleanOperation(PredicateExpression pe) {
+	BooleanOperation(PredicateExpression pe) {
 		this.astObject = pe;
 	}
 	
@@ -30,6 +31,8 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	public <E> void EQUALS(E value) {
+		getPredicateExpression().setOperator(Operator.EQUALS);
+		getPredicateExpression().setValue_2(value);
 	}
 	
 	/**
@@ -48,6 +51,8 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	public <E> void LT(E value) {
+		getPredicateExpression().setOperator(Operator.LT);
+		getPredicateExpression().setValue_2(value);
 	}
 	
 	/**
@@ -56,6 +61,8 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	public <E> void LTE(E value) {
+		getPredicateExpression().setOperator(Operator.LTE);
+		getPredicateExpression().setValue_2(value);
 	}
 	
 	/**
@@ -64,6 +71,8 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	public <E> void GT(E value) {
+		getPredicateExpression().setOperator(Operator.GT);
+		getPredicateExpression().setValue_2(value);
 	}
 	
 	/**
@@ -72,6 +81,8 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	public <E> void GTE(E value) {
+		getPredicateExpression().setOperator(Operator.GTE);
+		getPredicateExpression().setValue_2(value);
 	}
 	
 	/**
@@ -80,6 +91,8 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	public void LIKE(String regex) {
+		getPredicateExpression().setOperator(Operator.LIKE);
+		getPredicateExpression().setValue_2(regex);
 	}
 	
 	/**
@@ -88,6 +101,7 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	public void IS_NULL() {
+		getPredicateExpression().setOperator(Operator.IS_NULL);
 	}
 	
 	/**
@@ -97,6 +111,8 @@ public class BooleanOperation extends APIObject {
 	 */
 	@SuppressWarnings("unchecked")
 	public <E> void IN_list(E... value) {
+		getPredicateExpression().setOperator(Operator.IN);
+		getPredicateExpression().setValue_2(value);
 	}
 	
 	/**
@@ -105,6 +121,8 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	public <E> void IN(DomainObjectMatch<E> domainObjects) {
+		getPredicateExpression().setOperator(Operator.IN);
+		getPredicateExpression().setValue_2(domainObjects);
 	}
 	
 	private PredicateExpression getPredicateExpression() {

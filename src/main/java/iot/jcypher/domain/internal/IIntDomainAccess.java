@@ -14,14 +14,11 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domainquery.ast;
+package iot.jcypher.domain.internal;
 
-import iot.jcypher.query.values.ValueElement;
+import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 
-public class DqObject extends ValueElement {
+public interface IIntDomainAccess {
 
-	public DqObject() {
-		super(null, null);
-	}
-
+	public InternalDomainAccess getInternalDomainAccess();
 }

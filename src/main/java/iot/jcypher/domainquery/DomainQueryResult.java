@@ -14,32 +14,8 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domain.mapping;
+package iot.jcypher.domainquery;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+public class DomainQueryResult {
 
-public class SimpleObjectMapping extends ObjectMapping {
-
-	private List<FieldMapping> fieldMappings = new ArrayList<FieldMapping>();
-	
-	public void addFieldMapping(FieldMapping fieldMapping) {
-		this.fieldMappings.add(fieldMapping);
-	}
-
-	@Override
-	public Iterator<FieldMapping> fieldMappingsIterator() {
-		return this.fieldMappings.iterator();
-	}
-
-	@Override
-	public String getPropertyNameForField(String fieldName) {
-		for (FieldMapping fm : this.fieldMappings) {
-			if (fm.getFieldName().equals(fieldName))
-				return fm.getPropertyOrRelationName();
-		}
-		return null;
-	}
-	
 }

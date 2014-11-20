@@ -14,32 +14,24 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domain.mapping;
+package iot.jcypher.domainquery.api;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+import iot.jcypher.domainquery.ast.PredicateExpression;
+import iot.jcypher.domainquery.internal.QueryExecutor.Attribute2PropertyNameConverter;
+import iot.jcypher.query.values.JcNode;
 
-public class SimpleObjectMapping extends ObjectMapping {
+public class APIAccess {
 
-	private List<FieldMapping> fieldMappings = new ArrayList<FieldMapping>();
-	
-	public void addFieldMapping(FieldMapping fieldMapping) {
-		this.fieldMappings.add(fieldMapping);
-	}
-
-	@Override
-	public Iterator<FieldMapping> fieldMappingsIterator() {
-		return this.fieldMappings.iterator();
-	}
-
-	@Override
-	public String getPropertyNameForField(String fieldName) {
-		for (FieldMapping fm : this.fieldMappings) {
-			if (fm.getFieldName().equals(fieldName))
-				return fm.getPropertyOrRelationName();
-		}
-		return null;
+	public static BooleanOperation createBooleanOperation(PredicateExpression pe) {
+		return new BooleanOperation(pe);
 	}
 	
+	public static <T> DomainObjectMatch<T> createDomainObjectMatch(Class<T> domainObjectType,
+			int num, Attribute2PropertyNameConverter propNameConverter) {
+		return new DomainObjectMatch<T>(domainObjectType, num, propNameConverter);
+	}
+	
+	public static JcNode getNode(DomainObjectMatch<?> dom) {
+		return dom.getNode();
+	}
 }

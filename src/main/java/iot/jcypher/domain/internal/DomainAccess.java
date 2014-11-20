@@ -72,7 +72,6 @@ import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
@@ -89,9 +88,10 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-public class DomainAccess implements IDomainAccess {
+public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	
 	private DomainAccessHandler domainAccessHandler;
+	private InternalDomainAccess internalDomainAccess;
 
 	/**
 	 * @param dbAccess the graph database connection
@@ -165,6 +165,13 @@ public class DomainAccess implements IDomainAccess {
 		return new DomainQuery(this);
 	}
 
+	@Override
+	public InternalDomainAccess getInternalDomainAccess() {
+		if (this.internalDomainAccess == null)
+			this.internalDomainAccess = new InternalDomainAccess();
+		return this.internalDomainAccess;
+	}
+
 	/**********************************************************************/
 	private class DomainAccessHandler {
 		private static final String NodePrefix = "n_";
@@ -212,7 +219,7 @@ public class DomainAccess implements IDomainAccess {
 			InternalDomainAccess internalAccess = null;
 			try {
 				internalAccess = MappingUtil.internalDomainAccess.get();
-				MappingUtil.internalDomainAccess.set(new InternalDomainAccess());
+				MappingUtil.internalDomainAccess.set(getInternalDomainAccess());
 				updateMappingsIfNeeded();
 				Map<Class<?>, List<Long>> typeMap = queryConcreteTypes(ids);
 				Iterator<Entry<Class<?>, List<Long>>> it = typeMap.entrySet().iterator();
@@ -428,7 +435,7 @@ public class DomainAccess implements IDomainAccess {
 			}
 			try {
 				internalAccess = MappingUtil.internalDomainAccess.get();
-				MappingUtil.internalDomainAccess.set(new InternalDomainAccess());
+				MappingUtil.internalDomainAccess.set(getInternalDomainAccess());
 				updateMappingsIfNeeded();
 				new ClosureCalculator().calculateClosureQuery(context);
 				boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;
@@ -457,7 +464,7 @@ public class DomainAccess implements IDomainAccess {
 			InternalDomainAccess internalAccess = null;
 			try {
 				internalAccess = MappingUtil.internalDomainAccess.get();
-				MappingUtil.internalDomainAccess.set(new InternalDomainAccess());
+				MappingUtil.internalDomainAccess.set(getInternalDomainAccess());
 				context = this.updateLocalGraph(domainObjects);
 			} finally {
 				if (internalAccess != null)
@@ -1036,6 +1043,10 @@ public class DomainAccess implements IDomainAccess {
 		
 		private ObjectMapping getObjectMappingFor(Object domainObject) {
 			Class<?> clazz = domainObject.getClass();
+			return getObjectMappingFor(clazz);
+		}
+		
+		private ObjectMapping getObjectMappingFor(Class<?> clazz) {
 			ObjectMapping objectMapping = this.mappings.get(clazz);
 			if (objectMapping == null) {
 				objectMapping = DefaultObjectMappingCreator.createObjectMapping(clazz);
@@ -1076,7 +1087,7 @@ public class DomainAccess implements IDomainAccess {
 				} else
 					throw new JcResultException(errors);
 				
-				// update thetype2CompoundTypeMap
+				// update the type2CompoundTypeMap
 				Set<Class<?>> classes = this.domainInfo.getAllStoredDomainClasses();
 				Iterator<Class<?>> it = classes.iterator();
 				while(it.hasNext()) {
@@ -2727,6 +2738,10 @@ public class DomainAccess implements IDomainAccess {
 	/***********************************/
 	public class InternalDomainAccess {
 
+		private InternalDomainAccess() {
+			super();
+		}
+
 		public CompoundObjectType getFieldComponentType(String classField) {
 			DomainInfo di = domainAccessHandler.loadDomainInfoIfNeeded();
 			return di.getFieldComponentType(classField);
@@ -2749,6 +2764,12 @@ public class DomainAccess implements IDomainAccess {
 		
 		public DomainState getDomainState() {
 			return domainAccessHandler.domainState;
+		}
+		
+		public String getPropertyName(Class<?> domainObjectType, String attributeName) {
+			domainAccessHandler.updateMappingsIfNeeded();
+			ObjectMapping om = domainAccessHandler.getObjectMappingFor(domainObjectType);
+			return om.getPropertyNameForField(attributeName);
 		}
 	}
 }

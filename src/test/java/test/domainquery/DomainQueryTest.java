@@ -23,6 +23,7 @@ import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domainquery.DomainQuery;
+import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
@@ -67,6 +68,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 	public void testDomainQuery_01() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		IDomainAccess da1;
 		
 //		Population domainPopulator = new Population();
 //		
@@ -84,11 +86,21 @@ public class DomainQueryTest extends AbstractTestSuite {
 //			throw new JcResultException(errors);
 //		}
 		
-		DomainQuery dq = da.createQuery();
-		DomainObjectMatch<Person> john_smith = dq.createMatch(Person.class);
-		dq.WHERE(john_smith.stringAtttribute("firstName")).EQUALS("John");
-		dq.WHERE(john_smith.stringAtttribute("lastName")).NOT().EQUALS("John");
-		dq.WHERE(john_smith.stringAtttribute("lastName")).EQUALS(dq.parameter("lastName"));
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		DomainQuery q = da1.createQuery();
+		DomainObjectMatch<Person> smith = q.createMatch(Person.class);
+		q.WHERE(smith.stringAtttribute("firstName")).EQUALS("John");
+		q.WHERE(smith.stringAtttribute("firstName")).NOT().EQUALS("Caroline");
+		q.WHERE(smith.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
+		q.BR_OPEN();
+			q.WHERE(smith.stringAtttribute("firstName")).EQUALS("Angelina");
+			q.OR();
+			q.WHERE(smith.stringAtttribute("firstName")).EQUALS("Jeremy");
+		q.BR_CLOSE();
+		
+		q.parameter("lastName").setValue("Smith");
+		
+		DomainQueryResult result = q.execute();
 		
 		return;
 	}

@@ -16,20 +16,25 @@
 
 package iot.jcypher.domainquery.api;
 
-import iot.jcypher.domainquery.ast.DqObject;
+import iot.jcypher.domainquery.internal.QueryExecutor.Attribute2PropertyNameConverter;
+import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcString;
-import iot.jcypher.query.values.ValueAccess;
-import iot.jcypher.query.values.operators.OPERATOR;
 
 
 public class DomainObjectMatch<T> {
 
-	private Class<T> domainObjectType;
-	private DqObject dqObject;
+	private static final String nodePrefix = "n_";
 	
-	public DomainObjectMatch(Class<T> targetType) {
+	private Class<T> domainObjectType;
+	private JcNode node;
+	private Attribute2PropertyNameConverter propNameConverter;
+	
+	DomainObjectMatch(Class<T> targetType, int num,
+			Attribute2PropertyNameConverter propNameConverter) {
 		super();
 		this.domainObjectType = targetType;
+		this.node = new JcNode(nodePrefix.concat(String.valueOf(num)));
+		this.propNameConverter = propNameConverter;
 	}
 	
 	/**
@@ -38,14 +43,17 @@ public class DomainObjectMatch<T> {
 	 * @return a JcString
 	 */
 	public JcString stringAtttribute(String name) {
-		JcString ret = ValueAccess.createJcString(name, null, getDqObject(),
-				OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+		String propName = this.propNameConverter.convert(name);
+		JcString ret = this.node.stringProperty(propName);
 		return ret;
 	}
-	
-	private DqObject getDqObject() {
-		if (this.dqObject == null)
-			this.dqObject = new DqObject();
-		return this.dqObject;
+
+	Class<T> getDomainObjectType() {
+		return domainObjectType;
 	}
+
+	JcNode getNode() {
+		return node;
+	}
+	
 }

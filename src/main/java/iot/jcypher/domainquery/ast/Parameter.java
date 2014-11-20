@@ -19,10 +19,19 @@ package iot.jcypher.domainquery.ast;
 public class Parameter {
 
 	private String name;
+	private Object value;
 
 	public Parameter(String name) {
 		super();
 		this.name = name;
+	}
+
+	public Object getValue() {
+		return value;
+	}
+
+	public void setValue(Object value) {
+		this.value = value;
 	}
 	
 }

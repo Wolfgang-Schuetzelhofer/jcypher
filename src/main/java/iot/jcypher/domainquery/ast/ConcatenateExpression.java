@@ -14,32 +14,19 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domain.mapping;
+package iot.jcypher.domainquery.ast;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+public class ConcatenateExpression implements IASTObject {
 
-public class SimpleObjectMapping extends ObjectMapping {
-
-	private List<FieldMapping> fieldMappings = new ArrayList<FieldMapping>();
+	private Concatenator concatenator;
 	
-	public void addFieldMapping(FieldMapping fieldMapping) {
-		this.fieldMappings.add(fieldMapping);
+	public ConcatenateExpression(Concatenator concatenator) {
+		super();
+		this.concatenator = concatenator;
 	}
 
-	@Override
-	public Iterator<FieldMapping> fieldMappingsIterator() {
-		return this.fieldMappings.iterator();
+	/*****************************************************************/
+	public enum Concatenator {
+		OR, BR_OPEN, BR_CLOSE
 	}
-
-	@Override
-	public String getPropertyNameForField(String fieldName) {
-		for (FieldMapping fm : this.fieldMappings) {
-			if (fm.getFieldName().equals(fieldName))
-				return fm.getPropertyOrRelationName();
-		}
-		return null;
-	}
-	
 }

@@ -35,6 +35,11 @@ public class CompoundObjectMapping extends ObjectMapping {
 		return this.fieldsToAccept == null || this.fieldsToAccept.contains(fieldMapping);
 	}
 
+	@Override
+	public String getPropertyNameForField(String fieldName) {
+		throw new RuntimeException("not suppported");
+	}
+
 	/****************************************/
 	public class FieldMappingIterator implements Iterator<FieldMapping> {
 
