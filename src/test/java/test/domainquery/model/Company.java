@@ -14,37 +14,17 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.query.values;
+package test.domainquery.model;
 
+public class Company extends Subject {
 
-public abstract class JcPrimitive extends JcValue {
+	private String name;
 
-	private Object value;
-	
-	JcPrimitive() {
-		super();
-	}
-	
-	JcPrimitive(Object val, ValueElement predecessor, IOperatorOrFunction opf) {
-		this(null, val, predecessor, opf);
-	}
-	
-	JcPrimitive(String name, Object val, ValueElement predecessor, IOperatorOrFunction opf) {
-		super(name, predecessor, opf);
-		this.value = val;
-	}
-	
-	Object getValue() {
-		return value;
+	public String getName() {
+		return name;
 	}
 
-	void setValue(Object value) {
-		this.value = value;
+	public void setName(String name) {
+		this.name = name;
 	}
-	
-	protected void copyShallowTo(ValueElement target) {
-		super.copyShallowTo(target);
-		((JcPrimitive)target).value = this.value;
-	}
-
 }

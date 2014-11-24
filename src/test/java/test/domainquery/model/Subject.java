@@ -21,7 +21,16 @@ import java.util.List;
 
 public abstract class Subject {
 	
+	private String id;
 	private List<PointOfContact> pointsOfContact;
+
+	public String getId() {
+		return id;
+	}
+
+	public void setId(String id) {
+		this.id = id;
+	}
 
 	public List<PointOfContact> getPointsOfContact() {
 		if (this.pointsOfContact == null)

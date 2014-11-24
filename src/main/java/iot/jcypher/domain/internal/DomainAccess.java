@@ -117,14 +117,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	@Override
 	public <T> T loadById(Class<T> domainObjectClass, int resolutionDepth, long id) {
 		long[] ids = new long[] {id};
-		List<T> ret = this.domainAccessHandler.loadByIds(domainObjectClass,
+		List<T> ret = this.domainAccessHandler.loadByIds(domainObjectClass, null,
 				resolutionDepth, ids);
 		return ret.get(0);
 	}
 	
 	@Override
 	public <T> List<T> loadByIds(Class<T> domainObjectClass, int resolutionDepth, long... ids) {
-		return this.domainAccessHandler.loadByIds(domainObjectClass,
+		return this.domainAccessHandler.loadByIds(domainObjectClass, null,
 				resolutionDepth, ids);
 	}
 	
@@ -213,7 +213,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		}
 		
 		@SuppressWarnings("unchecked")
-		<T> List<T> loadByIds(Class<T> domainObjectClass, int resolutionDepth, long... ids) {
+		<T> List<T> loadByIds(Class<T> domainObjectClass,
+				Map<Class<?>, List<Long>> type2IdsMap, int resolutionDepth, long... ids) {
 			List<T> resultList;
 			
 			InternalDomainAccess internalAccess = null;
@@ -221,7 +222,9 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				internalAccess = MappingUtil.internalDomainAccess.get();
 				MappingUtil.internalDomainAccess.set(getInternalDomainAccess());
 				updateMappingsIfNeeded();
-				Map<Class<?>, List<Long>> typeMap = queryConcreteTypes(ids);
+				Map<Class<?>, List<Long>> typeMap = type2IdsMap;
+				if (typeMap == null)
+					typeMap = queryConcreteTypes(ids);
 				Iterator<Entry<Class<?>, List<Long>>> it = typeMap.entrySet().iterator();
 				while(it.hasNext()) {
 					Entry<Class<?>, List<Long>> entry = it.next();
@@ -287,16 +290,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				int offset, int count) {
 			if (offset < 0)
 				throw new RuntimeException("offset must be >= 0");
-			updateMappingsIfNeeded();
-			CompoundObjectType cType = getCompoundTypeFor(domainObjectClass);
-			List<Class<?>> typeList = cType.getTypes();
-			// make sure we have always the same order
-			Collections.sort(typeList, new Comparator<Class<?>>() {
-				@Override
-				public int compare(Class<?> o1, Class<?> o2) {
-					return o1.getName().compareTo(o2.getName());
-				}
-			});
+			List<Class<?>> typeList = this.getCompoundTypesFor(domainObjectClass);
 			int numTypes = typeList.size();
 			JcNode n = new JcNode("n");
 			JcNumber num = new JcNumber("num");
@@ -416,7 +410,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				idsArray[i] = ids.get(i).longValue();
 			}
 			
-			return loadByIds(domainObjectClass, resolutionDepth, idsArray);
+			return loadByIds(domainObjectClass, null, resolutionDepth, idsArray);
 		}
 		
 		@SuppressWarnings("rawtypes")
@@ -1149,6 +1143,20 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				throw new RuntimeException(e);
 			}
 			return ret;
+		}
+		
+		private List<Class<?>> getCompoundTypesFor(Class<?> domainObjectType) {
+			updateMappingsIfNeeded();
+			CompoundObjectType cType = getCompoundTypeFor(domainObjectType);
+			List<Class<?>> typeList = cType.getTypes(true); // no abstract types and interfaces
+			// make sure we have always the same order
+			Collections.sort(typeList, new Comparator<Class<?>>() {
+				@Override
+				public int compare(Class<?> o1, Class<?> o2) {
+					return o1.getName().compareTo(o2.getName());
+				}
+			});
+			return typeList;
 		}
 		
 		/****************************************/
@@ -2766,10 +2774,27 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			return domainAccessHandler.domainState;
 		}
 		
-		public String getPropertyName(Class<?> domainObjectType, String attributeName) {
+		public ObjectMapping getObjectMappingFor(Class<?> domainObjectType) {
 			domainAccessHandler.updateMappingsIfNeeded();
-			ObjectMapping om = domainAccessHandler.getObjectMappingFor(domainObjectType);
-			return om.getPropertyNameForField(attributeName);
+			return domainAccessHandler.getObjectMappingFor(domainObjectType);
+		}
+		
+		public List<Class<?>> getCompoundTypesFor(Class<?> domainObjectType) {
+			return domainAccessHandler.getCompoundTypesFor(domainObjectType);
+		}
+		
+		public String getLabelForClass(Class<?> clazz) {
+			domainAccessHandler.updateMappingsIfNeeded();
+			return domainAccessHandler.domainInfo.getLabelForClass(clazz);
+		}
+		
+		public JcQueryResult execute(JcQuery query) {
+			return domainAccessHandler.dbAccess.execute(query);
+		}
+		
+		public <T> List<T> loadByIds(Class<T> domainObjectClass,
+				Map<Class<?>, List<Long>> type2IdsMap, int resolutionDepth, long... ids) {
+			return domainAccessHandler.loadByIds(domainObjectClass, type2IdsMap, resolutionDepth, ids);
 		}
 	}
 }

@@ -16,25 +16,41 @@
 
 package iot.jcypher.domainquery.api;
 
-import iot.jcypher.domainquery.internal.QueryExecutor.Attribute2PropertyNameConverter;
+import java.util.ArrayList;
+import java.util.List;
+
+import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcString;
+import iot.jcypher.query.values.ValueAccess;
 
 
 public class DomainObjectMatch<T> {
 
 	private static final String nodePrefix = "n_";
+	private static final String separator = "_";
 	
 	private Class<T> domainObjectType;
-	private JcNode node;
-	private Attribute2PropertyNameConverter propNameConverter;
+	private String baseNodeName;
+	private List<JcNode> nodes;
+	private List<Class<?>> typeList;
+	private MappingInfo mappingInfo;
 	
 	DomainObjectMatch(Class<T> targetType, int num,
-			Attribute2PropertyNameConverter propNameConverter) {
+			MappingInfo mappingInfo) {
 		super();
 		this.domainObjectType = targetType;
-		this.node = new JcNode(nodePrefix.concat(String.valueOf(num)));
-		this.propNameConverter = propNameConverter;
+		this.mappingInfo = mappingInfo;
+		init(num);
+	}
+	
+	private void init(int num) {
+		this.baseNodeName = nodePrefix.concat(String.valueOf(num));
+		this.typeList = this.mappingInfo.getCompoundTypesFor(this.domainObjectType);
+		this.nodes = new ArrayList<JcNode>(this.typeList.size());
+		for (int i = 0; i < this.typeList.size(); i++) {
+			this.nodes.add(new JcNode(this.baseNodeName.concat(separator).concat(String.valueOf(i))));
+		}
 	}
 	
 	/**
@@ -43,8 +59,20 @@ public class DomainObjectMatch<T> {
 	 * @return a JcString
 	 */
 	public JcString stringAtttribute(String name) {
-		String propName = this.propNameConverter.convert(name);
-		JcString ret = this.node.stringProperty(propName);
+		JcString ret = null;
+		List<JcNode> validFor = new ArrayList<JcNode>();
+		for (int i = 0; i < this.typeList.size(); i++) {
+			String propName = this.mappingInfo.attribute2Property(name, this.typeList.get(i));
+			if (propName != null) {
+				validFor.add(this.nodes.get(i));
+				if (ret == null) {
+					ret = this.nodes.get(i).stringProperty(propName);
+					ValueAccess.setHint(ret, validFor);
+				}
+			}
+		}
+		if (ret == null)
+			throw new RuntimeException("attribute: [" + name + "] does not exist");
 		return ret;
 	}
 
@@ -52,8 +80,20 @@ public class DomainObjectMatch<T> {
 		return domainObjectType;
 	}
 
-	JcNode getNode() {
-		return node;
+	List<JcNode> getNodes() {
+		return nodes;
+	}
+
+	List<Class<?>> getTypeList() {
+		return typeList;
+	}
+
+	MappingInfo getMappingInfo() {
+		return mappingInfo;
+	}
+
+	String getBaseNodeName() {
+		return baseNodeName;
 	}
 	
 }

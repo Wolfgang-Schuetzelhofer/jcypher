@@ -26,6 +26,7 @@ import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.internal.QueryExecutor;
+import iot.jcypher.query.values.ValueElement;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -49,7 +50,7 @@ public class DomainQuery {
 	public <T> DomainObjectMatch<T> createMatch(Class<T> domainObjectType) {
 		DomainObjectMatch<T> ret =APIAccess.createDomainObjectMatch(domainObjectType,
 				this.queryExecutor.getDomainObjectMatches().size(),
-				this.queryExecutor.getConverterFor(domainObjectType));
+				this.queryExecutor.getMappingInfo());
 		this.queryExecutor.getDomainObjectMatches().add(ret);
 		return ret;
 	}
@@ -66,10 +67,12 @@ public class DomainQuery {
 	/**
 	 * Start formulating a predicate expression.
 	 * A predicate expression yields a boolean value.
-	 * @param value the value to formulate the predicate expression upon.
+	 * <br/>Takes an expression like 'person.stringAttribute("name")', yielding an attribute,
+	 *	<br/>e.g. WHERE(person.stringAttribute("name")).EQUALS(...)
+	 * @param value the value(expression) to formulate the predicate expression upon.
 	 * @return
 	 */
-	public BooleanOperation WHERE(Object value) {
+	public BooleanOperation WHERE(ValueElement value) {
 		PredicateExpression pe = new PredicateExpression(value);
 		this.queryExecutor.getAstObjects().add(pe);
 		BooleanOperation ret = APIAccess.createBooleanOperation(pe);
@@ -102,6 +105,12 @@ public class DomainQuery {
 	 * @return a DomainQueryResult
 	 */
 	public DomainQueryResult execute() {
-		return this.queryExecutor.execute();
+		DomainQueryResult ret = new DomainQueryResult(this);
+		this.queryExecutor.execute();
+		return ret;
+	}
+	
+	QueryExecutor getQueryExecutor() {
+		return this.queryExecutor;
 	}
 }

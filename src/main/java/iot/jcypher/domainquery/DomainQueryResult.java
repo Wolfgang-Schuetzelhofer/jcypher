@@ -16,6 +16,20 @@
 
 package iot.jcypher.domainquery;
 
-public class DomainQueryResult {
+import iot.jcypher.domainquery.api.DomainObjectMatch;
 
+import java.util.List;
+
+public class DomainQueryResult {
+	
+	private DomainQuery domainQuery;
+
+	DomainQueryResult(DomainQuery domainQuery) {
+		super();
+		this.domainQuery = domainQuery;
+	}
+
+	public <T> List<T> resultOf(DomainObjectMatch<T> match) {
+		return this.domainQuery.getQueryExecutor().loadResult(match);
+	}
 }

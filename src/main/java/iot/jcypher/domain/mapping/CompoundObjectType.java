@@ -16,6 +16,7 @@
 
 package iot.jcypher.domain.mapping;
 
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -63,9 +64,15 @@ public class CompoundObjectType {
 		return this.type;
 	}
 	
-	public List<Class<?>> getTypes() {
+	/**
+	 * Answer a list of types of this CompoundObjectType.
+	 * @param noAbstractTypes if true, no abstract types and no interfaces are answered,
+	 * else all types of the CompoundObjectType are answered.
+	 * @return a list of java Classes
+	 */
+	public List<Class<?>> getTypes(boolean noAbstractTypes) {
 		List<Class<?>> typeList = new ArrayList<Class<?>>();
-		this.addType(typeList);
+		this.addType(typeList, noAbstractTypes);
 		return typeList;
 	}
 	
@@ -90,10 +97,12 @@ public class CompoundObjectType {
 		return sb.toString();
 	}
 	
-	private void addType(List<Class<?>> typeList) {
-		typeList.add(this.type);
+	private void addType(List<Class<?>> typeList, boolean noAbstractTypes) {
+		if (!noAbstractTypes ||
+				(!this.type.isInterface() && !Modifier.isAbstract(this.type.getModifiers())))
+			typeList.add(this.type);
 		if (this.next != null)
-			next.addType(typeList);
+			next.addType(typeList, noAbstractTypes);
 	}
 	
 	/********************************************/

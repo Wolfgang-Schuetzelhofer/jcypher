@@ -22,6 +22,7 @@ import java.util.List;
 import test.domainquery.model.Address;
 import test.domainquery.model.Area;
 import test.domainquery.model.AreaType;
+import test.domainquery.model.Company;
 import test.domainquery.model.Gender;
 import test.domainquery.model.Person;
 
@@ -56,6 +57,7 @@ public class Population {
 		createSmithFamily(domainObjects);
 		createBerghammers(domainObjects);
 		createMore(domainObjects);
+		createCompanies(domainObjects);
 		
 		return domainObjects;
 	}
@@ -93,14 +95,18 @@ public class Population {
 		smith_address.setArea(sanFrancisco);
 		
 		Person john_smith = new Person("John", "Smith", Gender.MALE);
+		john_smith.setId("smith");
 		john_smith.getPointsOfContact().add(smith_address);
 		Person caroline_smith = new Person("Caroline", "Smith", Gender.FEMALE);
+		caroline_smith.setId("smith");
 		caroline_smith.getPointsOfContact().add(smith_address);
 		Person angie_smith = new Person("Angelina", "Smith", Gender.FEMALE);
+		angie_smith.setId("smith");
 		angie_smith.getPointsOfContact().add(smith_address);
 		angie_smith.setMother(caroline_smith);
 		angie_smith.setFather(john_smith);
 		Person jery_smith = new Person("Jeremy", "Smith", Gender.MALE);
+		jery_smith.setId("smith");
 		jery_smith.getPointsOfContact().add(smith_address);
 		jery_smith.setMother(caroline_smith);
 		jery_smith.setFather(john_smith);
@@ -116,10 +122,13 @@ public class Population {
 		berghammer_address.setArea(munic);
 		
 		Person hans_berghammer = new Person("Hans", "Berghammer", Gender.MALE);
+		hans_berghammer.setId("berghammer");
 		hans_berghammer.getPointsOfContact().add(berghammer_address);
 		Person gerda_berhammer = new Person("Gerda", "Berghammer", Gender.FEMALE);
+		gerda_berhammer.setId("berghammer");
 		gerda_berhammer.getPointsOfContact().add(berghammer_address);
 		Person christa_berhammer = new Person("Christa", "Berghammer", Gender.FEMALE);
+		christa_berhammer.setId("berghammer");
 		christa_berhammer.getPointsOfContact().add(berghammer_address);
 		christa_berhammer.setMother(gerda_berhammer);
 		christa_berhammer.setFather(hans_berghammer);
@@ -148,5 +157,17 @@ public class Population {
 		domainObjects.add(jim_watson);
 		domainObjects.add(sarah_clark);
 		domainObjects.add(herbert_maier);
+	}
+	
+	private void createCompanies(List<Object> domainObjects) {
+		Address globCom_address = new Address("Kearny Street", 29);
+		globCom_address.setArea(sanFrancisco);
+		
+		Company globCom = new Company();
+		globCom.setId("globcom");
+		globCom.setName("Global Company");
+		globCom.getPointsOfContact().add(globCom_address);
+		
+		domainObjects.add(globCom);
 	}
 }

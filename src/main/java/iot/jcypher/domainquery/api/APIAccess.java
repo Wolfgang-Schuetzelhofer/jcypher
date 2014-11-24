@@ -16,8 +16,10 @@
 
 package iot.jcypher.domainquery.api;
 
+import java.util.List;
+
 import iot.jcypher.domainquery.ast.PredicateExpression;
-import iot.jcypher.domainquery.internal.QueryExecutor.Attribute2PropertyNameConverter;
+import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
 import iot.jcypher.query.values.JcNode;
 
 public class APIAccess {
@@ -27,11 +29,27 @@ public class APIAccess {
 	}
 	
 	public static <T> DomainObjectMatch<T> createDomainObjectMatch(Class<T> domainObjectType,
-			int num, Attribute2PropertyNameConverter propNameConverter) {
-		return new DomainObjectMatch<T>(domainObjectType, num, propNameConverter);
+			int num, MappingInfo mappingInfo) {
+		return new DomainObjectMatch<T>(domainObjectType, num, mappingInfo);
 	}
 	
-	public static JcNode getNode(DomainObjectMatch<?> dom) {
-		return dom.getNode();
+	public static List<JcNode> getNodes(DomainObjectMatch<?> dom) {
+		return dom.getNodes();
+	}
+	
+	public static List<Class<?>> getTypeList(DomainObjectMatch<?> dom) {
+		return dom.getTypeList();
+	}
+	
+	public static MappingInfo getMappingInfo(DomainObjectMatch<?> dom) {
+		return dom.getMappingInfo();
+	}
+	
+	public static String getBaseNodeName(DomainObjectMatch<?> dom) {
+		return dom.getBaseNodeName();
+	}
+	
+	public static <T> Class<T> getDomainObjectType(DomainObjectMatch<T> dom) {
+		return dom.getDomainObjectType();
 	}
 }

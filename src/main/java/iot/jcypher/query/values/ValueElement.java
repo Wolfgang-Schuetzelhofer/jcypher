@@ -22,6 +22,8 @@ public class ValueElement implements IFragment {
 
 	private ValueElement predecessor;
 	private IOperatorOrFunction operatorOrFunction;
+	// allows to maintain additional info
+	private Object hint;
 
 	ValueElement() {
 		super();
@@ -77,5 +79,28 @@ public class ValueElement implements IFragment {
 
 	void setOperatorOrFunction(IOperatorOrFunction operatorOrFunction) {
 		this.operatorOrFunction = operatorOrFunction;
+	}
+	
+	Object getHint() {
+		return hint;
+	}
+
+	void setHint(Object hint) {
+		this.hint = hint;
+	}
+
+	ValueElement cloneShallow() {
+		try {
+			ValueElement ret = getClass().newInstance();
+			copyShallowTo(ret);
+			return ret;
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	protected void copyShallowTo(ValueElement target) {
+		target.operatorOrFunction = this.operatorOrFunction;
+		target.hint = this.hint;
 	}
 }

@@ -78,7 +78,7 @@ public class ValueAccess {
 	public static ValueElement findFirst(ValueElement ve) {
 		ValueElement first = ve;
 		while (first.getPredecessor() != null) {
-			first = ve.getPredecessor();
+			first = first.getPredecessor();
 		}
 		return first;
 	}
@@ -95,7 +95,25 @@ public class ValueAccess {
 		return ve.getPredecessor();
 	}
 	
-	public static JcString createJcString(String name, Object val, ValueElement predecessor, IOperatorOrFunction opf) {
-		return new JcString(name, val, predecessor, opf);
+	public static void setPredecessor(ValueElement ve, ValueElement predecessor) {
+		ve.setPredecessor(predecessor);
+	}
+	
+	public static ValueElement cloneShallow(ValueElement ve) {
+		return ve.cloneShallow();
+	}
+	
+	public static void setHint(ValueElement ve, Object hint) {
+		ve.setHint(hint);
+	}
+	
+	public static Object getAnyHint(ValueElement ve) {
+		ValueElement toTest = ve;
+		while (toTest != null) {
+			if (toTest.getHint() != null)
+				return toTest.getHint();
+			toTest = toTest.getPredecessor();
+		}
+		return null;
 	}
 }

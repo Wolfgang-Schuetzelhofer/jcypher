@@ -25,6 +25,10 @@ public class ConcatenateExpression implements IASTObject {
 		this.concatenator = concatenator;
 	}
 
+	public Concatenator getConcatenator() {
+		return concatenator;
+	}
+
 	/*****************************************************************/
 	public enum Concatenator {
 		OR, BR_OPEN, BR_CLOSE

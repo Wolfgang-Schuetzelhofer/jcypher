@@ -55,5 +55,10 @@ public class JcValue extends ValueElement {
 	void setName(String name) {
 		this.name = name;
 	}
+	
+	protected void copyShallowTo(ValueElement target) {
+		super.copyShallowTo(target);
+		((JcValue)target).name = this.name;
+	}
 
 }
