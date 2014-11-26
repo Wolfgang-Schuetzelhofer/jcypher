@@ -57,5 +57,5 @@ public abstract class ObjectMapping {
 		return true;
 	}
 	
-	public abstract String getPropertyNameForField(String fieldName);
+	public abstract FieldMapping getFieldMappingForField(String fieldName);
 }

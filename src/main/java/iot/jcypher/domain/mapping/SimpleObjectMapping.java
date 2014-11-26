@@ -34,10 +34,10 @@ public class SimpleObjectMapping extends ObjectMapping {
 	}
 
 	@Override
-	public String getPropertyNameForField(String fieldName) {
+	public FieldMapping getFieldMappingForField(String fieldName) {
 		for (FieldMapping fm : this.fieldMappings) {
 			if (fm.getFieldName().equals(fieldName))
-				return fm.getPropertyOrRelationName();
+				return fm;
 		}
 		return null;
 	}

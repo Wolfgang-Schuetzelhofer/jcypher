@@ -36,7 +36,7 @@ public class CompoundObjectMapping extends ObjectMapping {
 	}
 
 	@Override
-	public String getPropertyNameForField(String fieldName) {
+	public FieldMapping getFieldMappingForField(String fieldName) {
 		throw new RuntimeException("not suppported");
 	}
 

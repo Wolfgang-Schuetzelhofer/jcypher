@@ -17,7 +17,9 @@
 package iot.jcypher.domainquery.internal;
 
 import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.internal.IIntDomainAccess;
+import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -56,6 +58,7 @@ import java.util.Set;
 public class QueryExecutor {
 
 	private static final String idPrefix = "id_";
+	private static final char separator = '_';
 	
 	private IDomainAccess domainAccess;
 	private List<IASTObject> astObjects;
@@ -131,12 +134,17 @@ public class QueryExecutor {
 		List<Long> allIds = new ArrayList<Long>();
 		for (QueryContext.IdsPerType idsPerType : idsPerTypeList) {
 			List<Long> ids = type2IdsMap.get(idsPerType.type);
+			boolean addList = false;
 			if (ids == null) {
 				ids = new ArrayList<Long>();
-				type2IdsMap.put(idsPerType.type, ids);
+				addList = true;
 			}
 			ids.addAll(idsPerType.ids);
 			allIds.addAll(idsPerType.ids);
+			if (ids.isEmpty())
+				addList = false;
+			if (addList)
+				type2IdsMap.put(idsPerType.type, ids);
 		}
 		long[] idsArray = new long[allIds.size()];
 		for (int i = 0; i < allIds.size(); i++) {
@@ -152,11 +160,19 @@ public class QueryExecutor {
 		
 		JcQuery buildQuery(QueryContext context) {
 			List<ClausesPerType> clausesPerType = new ArrayList<ClausesPerType>();
+			List<ExpressionsPerDOM> xpressionsPerDom = new ArrayList<ExpressionsPerDOM>();
 			for (DomainObjectMatch<?> dom : domainObjectMatches) {
-				List<IASTObject> xpressionsForDom = findXpressionsFor(dom);
-				if (xpressionsForDom != null) {
-					clausesPerType.addAll(buildClausesFor(dom, xpressionsForDom));
+				StateContext stateContext = findXpressionsFor(dom);
+				if (stateContext.state == State.HAS_XPRESSION) {
+					xpressionsPerDom.add(new ExpressionsPerDOM(dom, stateContext.candidates,
+							stateContext.dependencies));
 				}
+			}
+			
+			xpressionsPerDom = orderByDependencies(xpressionsPerDom);
+			
+			for (ExpressionsPerDOM xpd : xpressionsPerDom) {
+				clausesPerType.addAll(buildClausesFor(xpd.domainObjectMatch, xpd.xPressions));
 			}
 			
 			List<IClause> clauses = new ArrayList<IClause>();
@@ -198,13 +214,11 @@ public class QueryExecutor {
 		
 		void extractUniqueIds(JcQueryResult result, List<QueryContext.IdsPerType> idsPerTypeList) {
 			Set<Long> uniqueIds = new LinkedHashSet<Long>();
-			int cnt = 0;
 			for (QueryContext.IdsPerType idsPerType : idsPerTypeList) {
 				uniqueIds.clear();
 				List<BigDecimal> idList = result.resultOf(idsPerType.jcNumber);
 				for (BigDecimal bd : idList) {
 					if (bd != null) {
-						cnt++;
 						uniqueIds.add(bd.longValue());
 					}
 				}
@@ -212,6 +226,45 @@ public class QueryExecutor {
 				idsPerType.ids.addAll(uniqueIds);
 			}
 			return;
+		}
+
+		private List<ExpressionsPerDOM> orderByDependencies(
+				List<ExpressionsPerDOM> xpressionsPerDom) {
+			List<ExpressionsPerDOM> ordered = new ArrayList<ExpressionsPerDOM>(xpressionsPerDom.size());
+			List<ExpressionsPerDOM> tryingToAdd = new ArrayList<ExpressionsPerDOM>(xpressionsPerDom.size());
+			
+			for (ExpressionsPerDOM xpd : xpressionsPerDom) {
+				addRecursive(xpd, xpressionsPerDom, ordered, tryingToAdd);
+			}
+			
+			return ordered;
+		}
+		
+		private void addRecursive(ExpressionsPerDOM add, List<ExpressionsPerDOM> xpressionsPerDom,
+				List<ExpressionsPerDOM> ordered, List<ExpressionsPerDOM> tryingToAdd) {
+			if (tryingToAdd.contains(add))
+				throw new RuntimeException("cyclic dependencies in WHERE clauses");
+			if (add.dependencies == null || add.dependencies.isEmpty()) {
+				if (!ordered.contains(add))
+					ordered.add(add);
+			} else {
+				tryingToAdd.add(add);
+				for (DomainObjectMatch<?> dom : add.dependencies) {
+					ExpressionsPerDOM xpd = getXprPerDom(dom, xpressionsPerDom);
+					addRecursive(xpd, xpressionsPerDom, ordered, tryingToAdd);
+				}
+				tryingToAdd.remove(add);
+				ordered.add(add);
+			}
+		}
+		
+		private ExpressionsPerDOM getXprPerDom(DomainObjectMatch<?> dom,
+				List<ExpressionsPerDOM> xpressionsPerDom) {
+			for (ExpressionsPerDOM xpd : xpressionsPerDom) {
+				if (xpd.domainObjectMatch.equals(dom))
+					return xpd;
+			}
+			return null;
 		}
 
 		private List<ClausesPerType> buildClausesFor(DomainObjectMatch<?> dom,
@@ -399,7 +452,7 @@ public class QueryExecutor {
 			return;
 		}
 
-		private List<IASTObject> findXpressionsFor(DomainObjectMatch<?> dom) {
+		private StateContext findXpressionsFor(DomainObjectMatch<?> dom) {
 			String baseNodeName = APIAccess.getBaseNodeName(dom);
 			StateContext context = new StateContext();
 			for (int i = 0; i < astObjects.size(); i++) {
@@ -409,12 +462,12 @@ public class QueryExecutor {
 			if (context.blockCount != 0)
 				throw new RuntimeException("bracket close mismatch");
 			if (context.state == State.HAS_XPRESSION) {
-				return removeEmptyBlocks(context.candidates);
+				removeEmptyBlocks(context.candidates);
 			}
-			return null;
+			return context;
 		}
 
-		private List<IASTObject> removeEmptyBlocks(List<IASTObject> candidates) {
+		private void removeEmptyBlocks(List<IASTObject> candidates) {
 			List<Integer> toRemove = new ArrayList<Integer>();
 			List<Integer> candidatesIndices = new ArrayList<Integer>();
 			for (int i = 0; i < candidates.size(); i++) {
@@ -454,27 +507,27 @@ public class QueryExecutor {
 				// toggle between close and open index (they are always pairwise)
 				prevCloseIndex = prevCloseIndex == -1 ? idx : -1;
 			}
-			return candidates;
 		}
 
 		private void testXpressionFor(String baseNodeName,
 				IASTObject astObj, StateContext context) {
 			if (astObj instanceof PredicateExpression) {
 				PredicateExpression pred = (PredicateExpression)astObj;
+				boolean isXpr = false;
 				String nodeName_1 = getNodeName(pred.getValue_1());
 				if (nodeName_1 != null) {
 					if (nodeName_1.indexOf(baseNodeName) == 0) {
 						context.candidates.add(astObj);
+						isXpr = true;
 						context.state = State.HAS_XPRESSION;
-						return;
 					}
 				}
-				String nodeName_2 = getNodeName(pred.getValue_2());
-				if (nodeName_2 != null) {
-					if (nodeName_2.indexOf(baseNodeName) == 0) {
-						context.candidates.add(astObj);
-						context.state = State.HAS_XPRESSION;
-						return;
+				if (isXpr) {
+					String nodeName_2 = getNodeName(pred.getValue_2());
+					if (nodeName_2 != null) {
+						if (nodeName_2.indexOf(baseNodeName) < 0) {
+							context.addDependency(nodeName_2);
+						}
 					}
 				}
 			} else if (astObj instanceof ConcatenateExpression) {
@@ -505,12 +558,25 @@ public class QueryExecutor {
 			private State state;
 			private int blockCount;
 			private List<IASTObject> candidates;
+			private List<String> dependencies;
 			
 			private StateContext() {
 				super();
 				this.state = State.INIT;
 				this.blockCount = 0;
 				this.candidates = new ArrayList<IASTObject>();
+			}
+			
+			private void addDependency(String nodeName) {
+				String nn = nodeName;
+				if (this.dependencies == null)
+					this.dependencies = new ArrayList<String>();
+				int idx = nodeName.indexOf(separator);
+				idx = nodeName.indexOf(separator, idx + 1);
+				if (idx >= 0)
+					nn = nodeName.substring(0, idx);
+				if (!this.dependencies.contains(nn))
+					this.dependencies.add(nn);
 			}
 		}
 		
@@ -534,6 +600,31 @@ public class QueryExecutor {
 				this.valid = true;
 				this.previousOr = false;
 				this.testForNextIsOr = false;
+			}
+		}
+		
+		/*************************************/
+		private class ExpressionsPerDOM {
+			private DomainObjectMatch<?> domainObjectMatch;
+			private List<IASTObject> xPressions;
+			private List<DomainObjectMatch<?>> dependencies;
+			
+			private ExpressionsPerDOM(DomainObjectMatch<?> domainObjectMatch,
+					List<IASTObject> xPressions, List<String> deps) {
+				super();
+				this.domainObjectMatch = domainObjectMatch;
+				this.xPressions = xPressions;
+				if (deps != null) {
+					this.dependencies = new ArrayList<DomainObjectMatch<?>>(deps.size());
+					for (String nn : deps) {
+						for (DomainObjectMatch<?> dom : domainObjectMatches) {
+							if (APIAccess.getBaseNodeName(dom).equals(nn)) {
+								this.dependencies.add(dom);
+								break;
+							}
+						}
+					}
+				}
 			}
 		}
 	}
@@ -598,16 +689,19 @@ public class QueryExecutor {
 			super();
 		}
 
+		public ObjectMapping getObjectMappingFor(Class<?> domainObjectType) {
+			return ((IIntDomainAccess)domainAccess).getInternalDomainAccess()
+					.getObjectMappingFor(domainObjectType);
+		}
+		
 		/**
 		 * may return null
 		 * @param attribName
 		 * @param domainObjectType
 		 * @return
 		 */
-		public String attribute2Property(String attribName, Class<?> domainObjectType) {
-			ObjectMapping om = ((IIntDomainAccess)domainAccess).getInternalDomainAccess()
-					.getObjectMappingFor(domainObjectType);
-			return om.getPropertyNameForField(attribName);
+		public FieldMapping getFieldMapping(String attribName, Class<?> domainObjectType) {
+			return getObjectMappingFor(domainObjectType).getFieldMappingForField(attribName);
 		}
 		
 		public List<Class<?>> getCompoundTypesFor(Class<?> domainObjectType) {
@@ -618,6 +712,10 @@ public class QueryExecutor {
 		public String getLabelForClass(Class<?> clazz) {
 			return ((IIntDomainAccess)domainAccess).getInternalDomainAccess()
 					.getLabelForClass(clazz);
+		}
+		
+		public InternalDomainAccess getInternalDomainAccess() {
+			return ((IIntDomainAccess)domainAccess).getInternalDomainAccess();
 		}
 	}
 }

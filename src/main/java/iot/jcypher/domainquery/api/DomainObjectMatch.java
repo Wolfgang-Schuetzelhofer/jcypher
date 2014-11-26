@@ -19,8 +19,12 @@ package iot.jcypher.domainquery.api;
 import java.util.ArrayList;
 import java.util.List;
 
+import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
+import iot.jcypher.domain.mapping.FieldMapping;
+import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
 import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcProperty;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.ValueAccess;
 
@@ -29,6 +33,8 @@ public class DomainObjectMatch<T> {
 
 	private static final String nodePrefix = "n_";
 	private static final String separator = "_";
+	private static final String msg_1 = "attributes used in WHERE clauses must be of simple type." +
+									" Not true for attribute [";
 	
 	private Class<T> domainObjectType;
 	private String baseNodeName;
@@ -54,6 +60,34 @@ public class DomainObjectMatch<T> {
 	}
 	
 	/**
+	 * Access an attribute
+	 * @param name the attribute name
+	 * @return
+	 */
+	public JcProperty atttribute(String name) {
+		JcProperty ret = null;
+		List<JcNode> validFor = new ArrayList<JcNode>();
+		for (int i = 0; i < this.typeList.size(); i++) {
+			FieldMapping fm = this.mappingInfo.getFieldMapping(name, typeList.get(i));
+			String propName = this.getPropertyOrRelationName(fm);
+			if (propName != null) {
+				if (needsRelation(fm))
+					throw new RuntimeException(msg_1 + name + "] " +
+							"in domain object type: [" + domainObjectType.getName() + "]");
+				validFor.add(this.nodes.get(i));
+				if (ret == null) {
+					ret = this.nodes.get(i).property(propName);
+					ValueAccess.setHint(ret, validFor);
+				}
+			}
+		}
+		if (ret == null)
+			throw new RuntimeException("attribute: [" + name + "] does not exist " +
+							"in domain object type: [" + domainObjectType.getName() + "]");
+		return ret;
+	}
+	
+	/**
 	 * Access a string attribute
 	 * @param name the attribute name
 	 * @return a JcString
@@ -62,8 +96,12 @@ public class DomainObjectMatch<T> {
 		JcString ret = null;
 		List<JcNode> validFor = new ArrayList<JcNode>();
 		for (int i = 0; i < this.typeList.size(); i++) {
-			String propName = this.mappingInfo.attribute2Property(name, this.typeList.get(i));
+			FieldMapping fm = this.mappingInfo.getFieldMapping(name, typeList.get(i));
+			String propName = this.getPropertyOrRelationName(fm);
 			if (propName != null) {
+				if (needsRelation(fm))
+					throw new RuntimeException(msg_1 + name + "] " +
+							"in domain object type: [" + domainObjectType.getName() + "]");
 				validFor.add(this.nodes.get(i));
 				if (ret == null) {
 					ret = this.nodes.get(i).stringProperty(propName);
@@ -72,7 +110,8 @@ public class DomainObjectMatch<T> {
 			}
 		}
 		if (ret == null)
-			throw new RuntimeException("attribute: [" + name + "] does not exist");
+			throw new RuntimeException("attribute: [" + name + "] does not exist " +
+							"in domain object type: [" + domainObjectType.getName() + "]");
 		return ret;
 	}
 
@@ -96,4 +135,31 @@ public class DomainObjectMatch<T> {
 		return baseNodeName;
 	}
 	
+	/**
+	 * may return null
+	 * @param attribName
+	 * @param type
+	 * @return
+	 */
+	private String getPropertyOrRelationName(FieldMapping fm) {
+		if (fm != null)
+			return fm.getPropertyOrRelationName();
+		return null;
+	}
+	
+	private boolean needsRelation(FieldMapping fm) {
+		boolean ret;
+		InternalDomainAccess internalAccess = null;
+		try {
+			internalAccess = MappingUtil.internalDomainAccess.get();
+			MappingUtil.internalDomainAccess.set(this.mappingInfo.getInternalDomainAccess());
+			ret = fm.needsRelation();
+		} finally {
+			if (internalAccess != null)
+				MappingUtil.internalDomainAccess.set(internalAccess);
+			else
+				MappingUtil.internalDomainAccess.remove();
+		}
+		return ret;
+	}
 }

@@ -70,6 +70,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		List<JcError> errors;
 //		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		IDomainAccess da1;
+		DomainQueryResult result;
 		
 //		Population domainPopulator = new Population();
 //		
@@ -88,67 +89,63 @@ public class DomainQueryTest extends AbstractTestSuite {
 //		}
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/******************************************/
 //		DomainQuery q = da1.createQuery();
-//		DomainObjectMatch<Subject> smith_01 = q.createMatch(Subject.class);
+//		DomainObjectMatch<Subject> smith = q.createMatch(Subject.class);
+//		DomainObjectMatch<Subject> bergHammer = q.createMatch(Subject.class);
+//		DomainObjectMatch<Subject> watson = q.createMatch(Subject.class);
 //		q.BR_OPEN();
-//			q.WHERE(smith_01.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
+//			q.WHERE(smith.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
+//			q.WHERE(smith.stringAtttribute("id")).EQUALS("smith");
 //			q.BR_OPEN();
-//				q.WHERE(smith_01.stringAtttribute("firstName")).EQUALS("Angelina");
+//				q.WHERE(smith.stringAtttribute("firstName")).EQUALS("Angelina");
 //				q.OR();
-//				q.WHERE(smith_01.stringAtttribute("firstName")).EQUALS("Jeremy");
-//		q.BR_CLOSE();
+//				q.WHERE(smith.stringAtttribute("firstName")).EQUALS("Jeremy");
+//			q.BR_CLOSE();
+//			q.BR_OPEN();
+//				q.WHERE(bergHammer.stringAtttribute("lastName")).EQUALS("Berghammer");
+//				q.OR();
+//				q.WHERE(bergHammer.stringAtttribute("id")).EQUALS("berghammer");
+//			q.BR_CLOSE();
 //		q.BR_CLOSE();
 //		
 //		q.parameter("lastName").setValue("Smith");
 //		
-//		DomainQueryResult result = q.execute();
+//		DomainQueryResult result = null;
+//		try {
+//			result = q.execute();
+//		} catch (Throwable e) {
+//			e.printStackTrace();
+//		}
+//		List<Subject> smithResult = result.resultOf(smith);
+//		List<Subject> bergHammerResult = result.resultOf(bergHammer);
 		
 		/******************************************/
 		DomainQuery q = da1.createQuery();
-		DomainObjectMatch<Subject> smith = q.createMatch(Subject.class);
-		DomainObjectMatch<Subject> bergHammer = q.createMatch(Subject.class);
-		DomainObjectMatch<Subject> watson = q.createMatch(Subject.class);
-		q.BR_OPEN();
-			q.WHERE(smith.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
-			q.WHERE(smith.stringAtttribute("id")).EQUALS("smith");
-			q.BR_OPEN();
-				q.WHERE(smith.stringAtttribute("firstName")).EQUALS("Angelina");
-				q.OR();
-				q.WHERE(smith.stringAtttribute("firstName")).EQUALS("Jeremy");
-			q.BR_CLOSE();
-			q.BR_OPEN();
-				q.WHERE(bergHammer.stringAtttribute("lastName")).EQUALS("Berghammer");
-				q.OR();
-				q.WHERE(bergHammer.stringAtttribute("id")).EQUALS("berghammer");
-			q.BR_CLOSE();
-		q.BR_CLOSE();
-		
-		q.parameter("lastName").setValue("Smith");
-		
-		DomainQueryResult result = null;
-		try {
-			result = q.execute();
-		} catch (Throwable e) {
-			e.printStackTrace();
-		}
-		List<Subject> smithResult = result.resultOf(smith);
-		List<Subject> bergHammerResult = result.resultOf(bergHammer);
-		
-		/******************************************/
-		q = da1.createQuery();
-		DomainObjectMatch<Subject> smith_1 = q.createMatch(Subject.class);
-		q.WHERE(smith_1.stringAtttribute("firstName")).EQUALS("John");
-		q.WHERE(smith_1.stringAtttribute("firstName")).NOT().EQUALS("Caroline");
-		q.WHERE(smith_1.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
-		q.BR_OPEN();
-			q.WHERE(smith_1.stringAtttribute("firstName")).EQUALS("Angelina");
-			q.OR();
-			q.WHERE(smith_1.stringAtttribute("firstName")).EQUALS("Jeremy");
-		q.BR_CLOSE();
+//		DomainObjectMatch<Subject> smith_1 = q.createMatch(Subject.class);
+//		q.WHERE(smith_1.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
+//		q.WHERE(smith_1.stringAtttribute("firstName")).NOT().EQUALS("Caroline");
+//		q.WHERE(smith_1.stringAtttribute("firstName")).NOT().EQUALS("Angelina");
+//		
+//		q.parameter("lastName").setValue("Smith");
+//		
+//		DomainQueryResult result = q.execute();
+//		
+//		List<Subject> smith_1Result = result.resultOf(smith_1);
+//		
+//		/******************************************/
+//		q = da1.createQuery();
+		DomainObjectMatch<Subject> has_clark_firstName = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> clark = q.createMatch(Subject.class);
+		q.WHERE(clark.atttribute("lastName")).EQUALS("Clark");
+		q.WHERE(has_clark_firstName.atttribute("firstName")).EQUALS(clark.atttribute("firstName"));
 		
 		q.parameter("lastName").setValue("Smith");
 		
 		result = q.execute();
+		List<Subject> clarkResult = result.resultOf(clark);
+		List<Subject> has_clark_firstNameResult = result.resultOf(has_clark_firstName);
 		
 		return;
 	}

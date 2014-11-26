@@ -146,7 +146,7 @@ public class Population {
 		
 		Address clark_address = new Address("Pearl Street", 124);
 		clark_address.setArea(newYorkCity);
-		Person sarah_clark = new Person("Sarah", "Clark", Gender.FEMALE);
+		Person sarah_clark = new Person("Angelina", "Clark", Gender.FEMALE);
 		sarah_clark.getPointsOfContact().add(clark_address);
 		
 		Address maier_address = new Address("Lackner Gasse", 12);
