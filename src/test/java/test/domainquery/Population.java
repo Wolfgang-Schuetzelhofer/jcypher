@@ -95,18 +95,18 @@ public class Population {
 		smith_address.setArea(sanFrancisco);
 		
 		Person john_smith = new Person("John", "Smith", Gender.MALE);
-		john_smith.setId("smith");
+		john_smith.setMatchString("smith");
 		john_smith.getPointsOfContact().add(smith_address);
 		Person caroline_smith = new Person("Caroline", "Smith", Gender.FEMALE);
-		caroline_smith.setId("smith");
+		caroline_smith.setMatchString("smith");
 		caroline_smith.getPointsOfContact().add(smith_address);
 		Person angie_smith = new Person("Angelina", "Smith", Gender.FEMALE);
-		angie_smith.setId("smith");
+		angie_smith.setMatchString("smith");
 		angie_smith.getPointsOfContact().add(smith_address);
 		angie_smith.setMother(caroline_smith);
 		angie_smith.setFather(john_smith);
 		Person jery_smith = new Person("Jeremy", "Smith", Gender.MALE);
-		jery_smith.setId("smith");
+		jery_smith.setMatchString("smith");
 		jery_smith.getPointsOfContact().add(smith_address);
 		jery_smith.setMother(caroline_smith);
 		jery_smith.setFather(john_smith);
@@ -122,13 +122,13 @@ public class Population {
 		berghammer_address.setArea(munic);
 		
 		Person hans_berghammer = new Person("Hans", "Berghammer", Gender.MALE);
-		hans_berghammer.setId("berghammer");
+		hans_berghammer.setMatchString("berghammer");
 		hans_berghammer.getPointsOfContact().add(berghammer_address);
 		Person gerda_berhammer = new Person("Gerda", "Berghammer", Gender.FEMALE);
-		gerda_berhammer.setId("berghammer");
+		gerda_berhammer.setMatchString("berghammer");
 		gerda_berhammer.getPointsOfContact().add(berghammer_address);
 		Person christa_berhammer = new Person("Christa", "Berghammer", Gender.FEMALE);
-		christa_berhammer.setId("berghammer");
+		christa_berhammer.setMatchString("berghammer");
 		christa_berhammer.getPointsOfContact().add(berghammer_address);
 		christa_berhammer.setMother(gerda_berhammer);
 		christa_berhammer.setFather(hans_berghammer);
@@ -142,21 +142,28 @@ public class Population {
 		Address watson_address = new Address("Broadway", 53);
 		watson_address.setArea(newYorkCity);
 		Person jim_watson = new Person("Jim", "Watson", Gender.MALE);
+		jim_watson.setMatchString("match_2");
 		jim_watson.getPointsOfContact().add(watson_address);
 		
 		Address clark_address = new Address("Pearl Street", 124);
 		clark_address.setArea(newYorkCity);
-		Person sarah_clark = new Person("Angelina", "Clark", Gender.FEMALE);
-		sarah_clark.getPointsOfContact().add(clark_address);
+		Person angie_clark = new Person("Angelina", "Clark", Gender.FEMALE);
+		angie_clark.setMatchString("match_1");
+		angie_clark.getPointsOfContact().add(clark_address);
 		
 		Address maier_address = new Address("Lackner Gasse", 12);
 		maier_address.setArea(vienna_17);
 		Person herbert_maier = new Person("Herbert", "Maier", Gender.MALE);
+		herbert_maier.setMatchString("match_1");
 		herbert_maier.getPointsOfContact().add(maier_address);
+		Person sarah_maier = new Person("Sarah", "Maier", Gender.FEMALE);
+		sarah_maier.setMatchString("match_2");
+		sarah_maier.getPointsOfContact().add(maier_address);
 		
 		domainObjects.add(jim_watson);
-		domainObjects.add(sarah_clark);
+		domainObjects.add(angie_clark);
 		domainObjects.add(herbert_maier);
+		domainObjects.add(sarah_maier);
 	}
 	
 	private void createCompanies(List<Object> domainObjects) {
@@ -164,7 +171,7 @@ public class Population {
 		globCom_address.setArea(sanFrancisco);
 		
 		Company globCom = new Company();
-		globCom.setId("globcom");
+		globCom.setMatchString("match_1");
 		globCom.setName("Global Company");
 		globCom.getPointsOfContact().add(globCom_address);
 		

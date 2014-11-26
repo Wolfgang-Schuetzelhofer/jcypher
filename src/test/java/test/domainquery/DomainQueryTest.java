@@ -122,7 +122,8 @@ public class DomainQueryTest extends AbstractTestSuite {
 //		List<Subject> bergHammerResult = result.resultOf(bergHammer);
 		
 		/******************************************/
-		DomainQuery q = da1.createQuery();
+		DomainQuery q;
+//		q = da1.createQuery();
 //		DomainObjectMatch<Subject> smith_1 = q.createMatch(Subject.class);
 //		q.WHERE(smith_1.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
 //		q.WHERE(smith_1.stringAtttribute("firstName")).NOT().EQUALS("Caroline");
@@ -136,16 +137,34 @@ public class DomainQueryTest extends AbstractTestSuite {
 //		
 //		/******************************************/
 //		q = da1.createQuery();
-		DomainObjectMatch<Subject> has_clark_firstName = q.createMatch(Subject.class);
-		DomainObjectMatch<Subject> clark = q.createMatch(Subject.class);
-		q.WHERE(clark.atttribute("lastName")).EQUALS("Clark");
-		q.WHERE(has_clark_firstName.atttribute("firstName")).EQUALS(clark.atttribute("firstName"));
+//		DomainObjectMatch<Subject> has_clark_firstName = q.createMatch(Subject.class);
+//		DomainObjectMatch<Subject> clark = q.createMatch(Subject.class);
+//		q.WHERE(clark.atttribute("lastName")).EQUALS("Clark");
+//		q.WHERE(has_clark_firstName.atttribute("firstName")).EQUALS(clark.atttribute("firstName"));
+//		
+//		q.parameter("lastName").setValue("Smith");
+//		
+//		result = q.execute();
+//		List<Subject> clarkResult = result.resultOf(clark);
+//		List<Subject> has_clark_firstNameResult = result.resultOf(has_clark_firstName);
+		
+		/******************************************/
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> matching = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> match = q.createMatch(Subject.class);
+		q.BR_OPEN();
+			q.WHERE(match.atttribute("lastName")).EQUALS("Watson");
+			q.OR();
+			q.WHERE(match.atttribute("name")).EQUALS("Global Company");
+		q.BR_CLOSE();
+		
+		q.WHERE(matching.atttribute("matchString")).EQUALS(match.atttribute("matchString"));
 		
 		q.parameter("lastName").setValue("Smith");
 		
 		result = q.execute();
-		List<Subject> clarkResult = result.resultOf(clark);
-		List<Subject> has_clark_firstNameResult = result.resultOf(has_clark_firstName);
+		List<Subject> matchingResult = result.resultOf(matching);
+		List<Subject> matchResult = result.resultOf(match);
 		
 		return;
 	}

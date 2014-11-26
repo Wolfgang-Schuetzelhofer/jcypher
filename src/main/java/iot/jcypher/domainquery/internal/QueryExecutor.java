@@ -34,7 +34,6 @@ import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.predicate.BooleanOperation;
 import iot.jcypher.query.api.predicate.Concat;
-import iot.jcypher.query.api.predicate.IBeforePredicate;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.WHERE;
@@ -243,7 +242,7 @@ public class QueryExecutor {
 		private void addRecursive(ExpressionsPerDOM add, List<ExpressionsPerDOM> xpressionsPerDom,
 				List<ExpressionsPerDOM> ordered, List<ExpressionsPerDOM> tryingToAdd) {
 			if (tryingToAdd.contains(add))
-				throw new RuntimeException("cyclic dependencies in WHERE clauses");
+				throw new RuntimeException("circular dependencies in WHERE clauses");
 			if (add.dependencies == null || add.dependencies.isEmpty()) {
 				if (!ordered.contains(add))
 					ordered.add(add);
@@ -338,58 +337,106 @@ public class QueryExecutor {
 			iot.jcypher.query.api.predicate.Concatenator ret = null;
 			// handle negations
 			int neg = pred.getNegationCount();
-			IBeforePredicate beforePred = null;
+			Concat concat_1 = null;
 			BooleanOperation booleanOp;
 			for (int i = neg; neg > 0; neg--) {
 				if (i == neg) {
 					if (concat == null)
-						beforePred = WHERE.NOT();
+						concat_1 = (Concat)WHERE.NOT();
 					else
-						beforePred = concat.NOT();
+						concat_1 = (Concat)concat.NOT();
 				} else
-					beforePred = beforePred.NOT();
+					concat_1 = (Concat)concat_1.NOT();
 			}
+			
+			if (concat_1 == null)
+				concat_1 = concat;
 			
 			ValueElement val_1 = testAndCloneIfNeeded(pred.getValue_1(), clausesPerType);
 			if (val_1 != null) { // if either really null or invalid
-				if (beforePred != null)
-					booleanOp = beforePred.valueOf(val_1);
-				else { // no negation(s)
-					if (concat == null)
-						booleanOp = WHERE.valueOf(val_1);
-					else
-						booleanOp = concat.valueOf(val_1);
-				}
 				
 				Object val_2 = pred.getValue_2();
 				if (val_2 instanceof Parameter)
 					val_2 = ((Parameter)val_2).getValue();
-				Operator op = pred.getOperator();
-				if (op == Operator.EQUALS)
-					ret = booleanOp.EQUALS(val_2);
-				else if (op == Operator.GT)
-					ret = booleanOp.GT(val_2);
-				else if (op == Operator.GTE)
-					ret = booleanOp.GTE(val_2);
-				else if (op == Operator.IN) {
-					if (val_2 instanceof DomainObjectMatch<?>) {
-						//TODO
-					} else if (val_2.getClass().isArray())
-						ret = booleanOp.IN_list(val_2);
-				} else if (op == Operator.IS_NULL)
-					ret = booleanOp.IS_NULL();
-				else if (op == Operator.LIKE)
-					ret = booleanOp.REGEX(val_2.toString());
-				else if (op == Operator.LT)
-					ret = booleanOp.LT(val_2);
-				else if (op == Operator.LTE)
-					ret = booleanOp.LTE(val_2);
+				
+				List<Object> val_2s = null;
+				if (val_2 instanceof ValueElement) {
+					val_2s = buildAllInstances((ValueElement)val_2);
+				} else if (val_2 != null) {
+					val_2s = new ArrayList<Object>();
+					val_2s.add(val_2);
+				}
+				int cnt = val_2s != null ? val_2s.size() : 1;
+				
+				if (cnt > 1) { // encapsulate by brackets
+					if (concat_1 != null)
+						concat_1 = concat_1.BR_OPEN();
+					else { // no negation(s)
+						concat_1 = WHERE.BR_OPEN();
+					}
+				}
+				
+				if (concat_1 == null)
+					booleanOp = WHERE.valueOf(val_1);
+				else
+					booleanOp = concat_1.valueOf(val_1);
+				
+				for (int i = 0; i < cnt; i++) {
+					if (val_2s != null)
+						val_2 = val_2s.get(i);
+					Operator op = pred.getOperator();
+					if (op == Operator.EQUALS)
+						ret = booleanOp.EQUALS(val_2);
+					else if (op == Operator.GT)
+						ret = booleanOp.GT(val_2);
+					else if (op == Operator.GTE)
+						ret = booleanOp.GTE(val_2);
+					else if (op == Operator.IN) {
+						if (val_2 instanceof DomainObjectMatch<?>) {
+							//TODO
+						} else if (val_2.getClass().isArray())
+							ret = booleanOp.IN_list(val_2);
+					} else if (op == Operator.IS_NULL)
+						ret = booleanOp.IS_NULL();
+					else if (op == Operator.LIKE)
+						ret = booleanOp.REGEX(val_2.toString());
+					else if (op == Operator.LT)
+						ret = booleanOp.LT(val_2);
+					else if (op == Operator.LTE)
+						ret = booleanOp.LTE(val_2);
+					
+					if (i < cnt - 1)
+						booleanOp = ret.OR().valueOf(val_1);
+				}
+				if (cnt > 1) { // encapsulate by brackets
+					ret = ret.BR_CLOSE();
+				}
 			} else
 				clausesPerType.valid = false;
 			
 			return ret;
 		}
 		
+		@SuppressWarnings("unchecked")
+		private List<Object> buildAllInstances(ValueElement ve) {
+			List<Object> ret = new ArrayList<Object>();
+			ret.add(ve);
+			ValueElement first = ValueAccess.findFirst(ve);
+			if (first instanceof JcNode) {
+				String nodeName = ValueAccess.getName((JcNode)first);
+				Object hint = ValueAccess.getAnyHint(ve);
+				if (hint instanceof List<?>) {
+					List<JcNode> validFor = (List<JcNode>) hint; 
+					for(JcNode n : validFor) {
+						if (!nodeName.equals(ValueAccess.getName(n))) { // need to clone
+							ret.add(cloneVe(ve, first, n));
+						}
+					}
+				}
+			}
+			return ret;
+		}
+
 		/**
 		 * @param ve
 		 * @param clausesPerType
@@ -403,26 +450,33 @@ public class QueryExecutor {
 					testValidForType((JcNode)first, ve, clausesPerType);
 					if (clausesPerType.valid) {
 						if(!(ValueAccess.getName((JcNode)first).equals(ValueAccess.getName(clausesPerType.node)))) {
-							ValueElement prev = ve;
-							ValueElement nextCloned = null;
-							while(prev != first) {
-								ValueElement cloned = ValueAccess.cloneShallow(prev);
-								if (nextCloned != null)
-									ValueAccess.setPredecessor(nextCloned, cloned);
-								else // in the first iteration
-									ret = cloned;
-								nextCloned = cloned;
-								prev = ValueAccess.getPredecessor(prev);
-							}
-							if (nextCloned != null) // there was at least one iteration
-								ValueAccess.setPredecessor(nextCloned, clausesPerType.node);
-							else // the value element must have been the node 
-								ret = clausesPerType.node;
+							ret = cloneVe(ve, first, clausesPerType.node);
 						}
 					} else
 						ret = null;
 				}
 			}
+			return ret;
+		}
+		
+		private ValueElement cloneVe(ValueElement ve, ValueElement first,
+				ValueElement newFirst) {
+			ValueElement ret = ve;
+			ValueElement prev = ve;
+			ValueElement nextCloned = null;
+			while(prev != first) {
+				ValueElement cloned = ValueAccess.cloneShallow(prev);
+				if (nextCloned != null)
+					ValueAccess.setPredecessor(nextCloned, cloned);
+				else // in the first iteration
+					ret = cloned;
+				nextCloned = cloned;
+				prev = ValueAccess.getPredecessor(prev);
+			}
+			if (nextCloned != null) // there was at least one iteration
+				ValueAccess.setPredecessor(nextCloned, newFirst);
+			else 
+				ret = newFirst;
 			return ret;
 		}
 
@@ -445,10 +499,7 @@ public class QueryExecutor {
 					}
 				}
 			}
-			if (Settings.strict)
-				clausesPerType.valid = false;
-			else
-				clausesPerType.testForNextIsOr = true;
+			clausesPerType.testForNextIsOr = true;
 			return;
 		}
 
@@ -583,7 +634,6 @@ public class QueryExecutor {
 		/*************************************/
 		private class ClausesPerType {
 			private DomainObjectMatch<?> domainObjectMatch;
-			private List<IClause> clauses;
 			private JcNode node;
 			private Class<?> domainObjectType;
 			private boolean valid;

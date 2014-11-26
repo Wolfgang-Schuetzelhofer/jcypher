@@ -21,15 +21,15 @@ import java.util.List;
 
 public abstract class Subject {
 	
-	private String id;
+	private String matchString;
 	private List<PointOfContact> pointsOfContact;
 
-	public String getId() {
-		return id;
+	public String getMatchString() {
+		return matchString;
 	}
 
-	public void setId(String id) {
-		this.id = id;
+	public void setMatchString(String id) {
+		this.matchString = id;
 	}
 
 	public List<PointOfContact> getPointsOfContact() {
