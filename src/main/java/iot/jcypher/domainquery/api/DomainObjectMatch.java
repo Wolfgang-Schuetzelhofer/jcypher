@@ -29,7 +29,7 @@ import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.ValueAccess;
 
 
-public class DomainObjectMatch<T> {
+public class DomainObjectMatch<T> implements IPredicateOperand1 {
 
 	private static final String nodePrefix = "n_";
 	private static final String separator = "_";

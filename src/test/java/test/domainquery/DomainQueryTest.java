@@ -159,8 +159,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		q.BR_CLOSE();
 		
 		q.WHERE(matching.atttribute("matchString")).EQUALS(match.atttribute("matchString"));
-		
-		q.parameter("lastName").setValue("Smith");
+		q.WHERE(matching).IN(match);
 		
 		result = q.execute();
 		List<Subject> matchingResult = result.resultOf(matching);

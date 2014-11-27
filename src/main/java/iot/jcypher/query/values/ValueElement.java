@@ -16,9 +16,10 @@
 
 package iot.jcypher.query.values;
 
+import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.query.values.functions.FUNCTION;
 
-public class ValueElement implements IFragment {
+public class ValueElement implements IFragment, IPredicateOperand1 {
 
 	private ValueElement predecessor;
 	private IOperatorOrFunction operatorOrFunction;

@@ -16,16 +16,17 @@
 
 package iot.jcypher.domainquery.ast;
 
+import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.query.values.ValueElement;
 
 public class PredicateExpression implements IASTObject {
 
-	private ValueElement value_1;
+	private IPredicateOperand1 value_1;
 	private Operator operator;
 	private Object value_2;
 	private int negationCount;
 
-	public PredicateExpression(ValueElement value_1) {
+	public PredicateExpression(IPredicateOperand1 value_1) {
 		super();
 		this.value_1 = value_1;
 		this.negationCount = 0;
@@ -39,7 +40,7 @@ public class PredicateExpression implements IASTObject {
 		this.operator = operator;
 	}
 	
-	public ValueElement getValue_1() {
+	public IPredicateOperand1 getValue_1() {
 		return value_1;
 	}
 

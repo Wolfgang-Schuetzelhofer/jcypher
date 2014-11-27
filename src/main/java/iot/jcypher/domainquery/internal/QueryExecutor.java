@@ -23,6 +23,7 @@ import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
@@ -352,16 +353,26 @@ public class QueryExecutor {
 			if (concat_1 == null)
 				concat_1 = concat;
 			
-			ValueElement val_1 = testAndCloneIfNeeded(pred.getValue_1(), clausesPerType);
+			ValueElement val_1 = null;
+			IPredicateOperand1 v_1 = pred.getValue_1();
+			if (v_1 instanceof ValueElement)
+				val_1 = testAndCloneIfNeeded((ValueElement)v_1, clausesPerType);
+			else if (v_1 instanceof DomainObjectMatch<?>) {
+				val_1 = clausesPerType.node.id();
+			}
+			
 			if (val_1 != null) { // if either really null or invalid
 				
 				Object val_2 = pred.getValue_2();
 				if (val_2 instanceof Parameter)
 					val_2 = ((Parameter)val_2).getValue();
 				
+				boolean val_2IsId = false;
 				List<Object> val_2s = null;
-				if (val_2 instanceof ValueElement) {
-					val_2s = buildAllInstances((ValueElement)val_2);
+				if (val_2 instanceof IPredicateOperand1) {
+					if (val_2 instanceof DomainObjectMatch<?>)
+						val_2IsId = true;
+					val_2s = buildAllInstances((IPredicateOperand1)val_2);
 				} else if (val_2 != null) {
 					val_2s = new ArrayList<Object>();
 					val_2s.add(val_2);
@@ -392,8 +403,8 @@ public class QueryExecutor {
 					else if (op == Operator.GTE)
 						ret = booleanOp.GTE(val_2);
 					else if (op == Operator.IN) {
-						if (val_2 instanceof DomainObjectMatch<?>) {
-							//TODO
+						if (val_2IsId) {
+							ret = booleanOp.EQUALS(val_2);
 						} else if (val_2.getClass().isArray())
 							ret = booleanOp.IN_list(val_2);
 					} else if (op == Operator.IS_NULL)
@@ -418,15 +429,28 @@ public class QueryExecutor {
 		}
 		
 		@SuppressWarnings("unchecked")
-		private List<Object> buildAllInstances(ValueElement ve) {
+		private List<Object> buildAllInstances(IPredicateOperand1 val) {
 			List<Object> ret = new ArrayList<Object>();
-			ret.add(ve);
-			ValueElement first = ValueAccess.findFirst(ve);
-			if (first instanceof JcNode) {
-				String nodeName = ValueAccess.getName((JcNode)first);
-				Object hint = ValueAccess.getAnyHint(ve);
-				if (hint instanceof List<?>) {
-					List<JcNode> validFor = (List<JcNode>) hint; 
+			List<JcNode> validFor = null;
+			ValueElement ve = null;
+			if (val instanceof ValueElement)
+				ve = (ValueElement)val;
+			else if (val instanceof DomainObjectMatch<?>) {
+				validFor = APIAccess.getNodes((DomainObjectMatch<?>)val);
+				if (validFor.size() > 0)
+					ve = validFor.get(0).id();
+			}
+			if (ve != null) {
+				ret.add(ve);
+				ValueElement first = ValueAccess.findFirst(ve);
+				if (first instanceof JcNode) {
+					String nodeName = ValueAccess.getName((JcNode)first);
+					if (validFor == null) {
+						Object hint = ValueAccess.getAnyHint(ve);
+						if (hint instanceof List<?>) {
+							validFor = (List<JcNode>) hint; 
+						}
+					}
 					for(JcNode n : validFor) {
 						if (!nodeName.equals(ValueAccess.getName(n))) { // need to clone
 							ret.add(cloneVe(ve, first, n));
@@ -600,6 +624,8 @@ public class QueryExecutor {
 				ValueElement first = ValueAccess.findFirst(ve);
 				if (first instanceof JcNode)
 					return ValueAccess.getName((JcNode)first);
+			} else if (value instanceof DomainObjectMatch<?>) {
+				return APIAccess.getBaseNodeName((DomainObjectMatch<?>)value);
 			}
 			return null;
 		}

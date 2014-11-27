@@ -20,6 +20,7 @@ import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.BooleanOperation;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
@@ -72,7 +73,7 @@ public class DomainQuery {
 	 * @param value the value(expression) to formulate the predicate expression upon.
 	 * @return
 	 */
-	public BooleanOperation WHERE(ValueElement value) {
+	public BooleanOperation WHERE(IPredicateOperand1 value) {
 		PredicateExpression pe = new PredicateExpression(value);
 		this.queryExecutor.getAstObjects().add(pe);
 		BooleanOperation ret = APIAccess.createBooleanOperation(pe);

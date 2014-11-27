@@ -14,9 +14,8 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domainquery.internal;
+package iot.jcypher.domainquery.api;
 
-public class Settings {
+public interface IPredicateOperand1 {
 
-	public static boolean strict = false;
 }
