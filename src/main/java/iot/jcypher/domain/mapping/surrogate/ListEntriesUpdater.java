@@ -24,16 +24,15 @@ import java.util.List;
 
 public class ListEntriesUpdater extends AbstractDeferred implements IEntryUpdater {
 
-	private Collection<?> collection;
+	private Collection<Object> collection;
 	private List<Surrogate2ListEntry> entries;
 	
-	public ListEntriesUpdater(Collection<?> collection) {
+	public ListEntriesUpdater(Collection<Object> collection) {
 		super();
 		this.collection = collection;
 		this.entries = new ArrayList<Surrogate2ListEntry>();
 	}
 
-	@SuppressWarnings("unchecked")
 	@Override
 	public void performUpdate() {
 		Collections.sort(this.entries, new Comparator<Surrogate2ListEntry>() {
@@ -44,10 +43,11 @@ public class ListEntriesUpdater extends AbstractDeferred implements IEntryUpdate
 				return (x < y) ? -1 : ((x == y) ? 0 : 1);
 			}
 		});
-		if (this.collection instanceof List<?>) {
-			List<Object> list = (List<Object>) this.collection;
-			for (Surrogate2ListEntry entry : this.entries) {
-				list.add(entry.getIndex(), entry.getSurrogate().getContent());
+		for (Surrogate2ListEntry entry : this.entries) {
+			if (this.collection instanceof List<?>) {
+				((List<Object>) this.collection).add(entry.getIndex(), entry.getSurrogate().getContent());
+			} else if (this.collection != null) {
+				this.collection.add(entry.getSurrogate().getContent());
 			}
 		}
 		modifyNextUp();

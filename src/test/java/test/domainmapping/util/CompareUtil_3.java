@@ -68,6 +68,12 @@ public class CompareUtil_3 {
 		} else if (!equalsList(m_1.getMultiDimList(),
 				m_2.getMultiDimList(), acs))
 			return ac.setResult(false);
+		if (m_1.getMultiDimArray() == null) {
+			if (m_2.getMultiDimArray() != null)
+				return ac.setResult(false);
+		} else if (!equalsArray(m_1.getMultiDimArray(),
+				m_2.getMultiDimArray(), acs))
+			return ac.setResult(false);
 		return true;
 	}
 	
@@ -168,6 +174,35 @@ public class CompareUtil_3 {
             	return ac.setResult(false);
         }
         return ac.setResult(!(e1.hasNext() || e2.hasNext()));
+	}
+	
+	private static boolean equalsArray(Object[] array_1, Object[] array_2, List<AlreadyCompared> alreadyCompareds) {
+		List<AlreadyCompared> acs = alreadyCompareds;
+		if (acs == null)
+			acs = new ArrayList<AlreadyCompared>();
+		AlreadyCompared ac = AlreadyCompared.alreadyCompared(array_1, array_2, acs);
+		if (ac != null) // avoid infinite loops
+			return ac.getResult();
+		
+		ac = new AlreadyCompared(array_1, array_2);
+		acs.add(ac);
+		
+		ac.setResult(true);
+		
+		 if (array_1 == array_2)
+            return true;
+		 if (array_1==null || array_2==null)
+			 return ac.setResult(false);
+        if (array_1.length != array_2.length)
+        	return ac.setResult(false);
+        for (int i=0; i<array_1.length; i++) {
+            Object o1 = array_1[i];
+            Object o2 = array_2[i];
+            if (!(o1==null ? o2==null : equalsObjects(o1, o2, acs)))
+            	return ac.setResult(false);
+        }
+
+        return true;
 	}
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })

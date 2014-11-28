@@ -9,6 +9,8 @@ public class MultiDimMapsLists {
 	private Map<Object, Object> multiDimMap;
 	
 	private List<Object> multiDimList;
+	
+	private Object[] multiDimArray;
 
 	public Map<Object, Object> getMultiDimMap() {
 		return multiDimMap;
@@ -24,5 +26,13 @@ public class MultiDimMapsLists {
 
 	public void setMultiDimList(List<Object> multiDimList) {
 		this.multiDimList = multiDimList;
+	}
+
+	public Object[] getMultiDimArray() {
+		return multiDimArray;
+	}
+
+	public void setMultiDimArray(Object[] multiDimArray) {
+		this.multiDimArray = multiDimArray;
 	}
 }

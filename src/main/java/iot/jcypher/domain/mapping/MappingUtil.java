@@ -124,6 +124,18 @@ public class MappingUtil {
 					coll.clear();
 					coll.addAll(converted);
 				}
+			} else if (targetType.isArray()) {
+				if (componentType != null) {
+					if (value instanceof Collection<?>) {
+						List<Object> converted = new ArrayList<>();
+						Collection<Object> coll = (Collection<Object>)value;
+						for (Object elem : coll) {
+							converted.add(convertFromProperty(elem, componentType, null, null));
+						}
+						coll.clear();
+						coll.addAll(converted);
+					}
+				}
 			} else if (Map.class.isAssignableFrom(targetType)) { // only possible for empty maps
 				if (concreteFieldType != null) {
 					try {

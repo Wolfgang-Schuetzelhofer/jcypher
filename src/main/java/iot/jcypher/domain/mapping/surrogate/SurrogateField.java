@@ -59,6 +59,8 @@ public class SurrogateField implements IField {
 			return (Class<T>) iot.jcypher.domain.mapping.surrogate.Map.class;
 		else if (obj instanceof Collection<?>)
 			return (Class<T>) iot.jcypher.domain.mapping.surrogate.Collection.class;
+		else if (obj instanceof Object[])
+			return (Class<T>) iot.jcypher.domain.mapping.surrogate.Array.class;
 		return null;
 	}
 
@@ -75,6 +77,8 @@ public class SurrogateField implements IField {
 				return iot.jcypher.domain.mapping.surrogate.Map.class;
 		else if (Collection.class.isAssignableFrom(this.field.getType()))
 				return iot.jcypher.domain.mapping.surrogate.Collection.class;
+		else if (this.field.getType().isArray())
+			return iot.jcypher.domain.mapping.surrogate.Array.class;
 		return null;
 	}
 

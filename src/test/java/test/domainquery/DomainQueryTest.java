@@ -150,6 +150,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		/******************************************/
 		q = da1.createQuery();
+		DomainObjectMatch<Subject> allSubjects = q.createMatch(Subject.class);
 		DomainObjectMatch<Subject> matching = q.createMatch(Subject.class);
 		DomainObjectMatch<Subject> match = q.createMatch(Subject.class);
 		q.BR_OPEN();
@@ -159,11 +160,12 @@ public class DomainQueryTest extends AbstractTestSuite {
 		q.BR_CLOSE();
 		
 		q.WHERE(matching.atttribute("matchString")).EQUALS(match.atttribute("matchString"));
-		q.WHERE(matching).IN(match);
+		q.WHERE(matching).NOT().IN(match);
 		
 		result = q.execute();
 		List<Subject> matchingResult = result.resultOf(matching);
 		List<Subject> matchResult = result.resultOf(match);
+		List<Subject> allSubjectsResult = result.resultOf(allSubjects);
 		
 		return;
 	}

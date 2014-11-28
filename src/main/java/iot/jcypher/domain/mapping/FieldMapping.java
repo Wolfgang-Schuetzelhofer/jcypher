@@ -20,6 +20,7 @@ import iot.jcypher.domain.mapping.CompoundObjectType.CType;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -172,25 +173,42 @@ public class FieldMapping {
 				if (MappingUtil.isSimpleType(value.getClass())) { // value is of primitive or simple type
 					value = null;
 				} else {
-					// check for list (collection) containing primitive or simple types
-					if (Collection.class.isAssignableFrom(this.field.getType())) {
-						Collection coll = (Collection) this.field.getType().cast(value);
-						if (coll.size() > 0) {
-							Object elem = coll.iterator().next();
+					Class<?> fieldType = this.field.getType();
+					// check for list (collection) or arrays containing primitive or simple types
+					Object elem = null;
+					boolean testCollOrArray = false;
+					if (Collection.class.isAssignableFrom(fieldType)) {
+						testCollOrArray = true;
+						Collection coll = (Collection) fieldType.cast(value);
+						if (coll.size() > 0)
+							elem = coll.iterator().next();
+					}
+					if (fieldType.isArray()) {
+						if (fieldType.getComponentType().isPrimitive())
+							value = null;
+						else {
+							testCollOrArray = true;
+							Object[] array = (Object[]) fieldType.cast(value);
+							if (array.length > 0)
+								elem = array[0];
+						}
+					}
+					if (testCollOrArray) {
+						if (elem != null) { // first element of collection or array
 							Class<?> type = elem.getClass();
 							// test the first element,
-							// assuming all elements are of the same type !!!
+							// assuming all elements are either complex or simple !!!
 							if (MappingUtil.isSimpleType(type)) { // elements are of primitive or simple type
 								// to return null
 								value = null;
 							}
-						} else { // empty lists are mapped to a property
+						} else { // empty lists or arrays are mapped to a property
 							value = null;
 						}
 					}
 					
-					if (Map.class.isAssignableFrom(this.field.getType())) {
-						Map map = (Map) this.field.getType().cast(value);
+					if (Map.class.isAssignableFrom(fieldType)) {
+						Map map = (Map)fieldType.cast(value);
 						if (map.isEmpty()) // empty maps are mapped to a property
 							value = null;
 					}
@@ -203,7 +221,7 @@ public class FieldMapping {
 	}
 	
 	/**
-	 * @return true if the field type is Object.class or a map or list, because at runtime this
+	 * @return true if the field type is Object.class or a map or list or array, because at runtime this
 	 * can lead to a simple type (e.g. Integer), or to an empty or simple type array which can be mapped to a property,
 	 * or it can lead to a complex type which requires a relation in the graph.
 	 * It is therefore necessary to look at properties and relations.
@@ -211,7 +229,8 @@ public class FieldMapping {
 	public boolean needsRelationOrProperty() {
 		return this.field.getType().equals(Object.class) ||
 				this.getFieldKind() == FieldKind.MAP ||
-				this.getFieldKind() == FieldKind.COLLECTION;
+				this.getFieldKind() == FieldKind.COLLECTION ||
+				this.getFieldKind() == FieldKind.ARRAY;
 	}
 	
 	/**
@@ -228,12 +247,11 @@ public class FieldMapping {
 			if (cType != null && cType.getCType() == CType.SIMPLE)
 				return false;
 			else {
-				// check for list (collection) containing primitive or simple types
+				// check for list (collection) or array containing primitive or simple types
 							// in DomainInfo
-				if (Collection.class.isAssignableFrom(this.field.getType())) {
+				if (Collection.class.isAssignableFrom(this.field.getType()) || this.field.getType().isArray()) {
 					cType = MappingUtil.internalDomainAccess.get()
 						.getFieldComponentType(classField);
-					// if cType == null, false will be returned
 					if (cType != null) {
 						needRelation = cType.getCType() != CType.SIMPLE;
 					} else
@@ -321,7 +339,8 @@ public class FieldMapping {
 	
 	public static FieldKind getFieldKind(Class<?> typ) {
 		return Collection.class.isAssignableFrom(typ) ? FieldKind.COLLECTION :
-			Map.class.isAssignableFrom(typ) ? FieldKind.MAP : FieldKind.SINGLE;
+			Map.class.isAssignableFrom(typ) ? FieldKind.MAP :
+				typ.isArray() ? FieldKind.ARRAY : FieldKind.SINGLE;
 	}
 	
 	protected String getDOClassFieldName() {
@@ -372,6 +391,6 @@ public class FieldMapping {
 	
 	/***********************************/
 	public static enum FieldKind {
-		SINGLE, COLLECTION, MAP
+		SINGLE, COLLECTION, ARRAY, MAP
 	}
 }

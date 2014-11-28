@@ -39,6 +39,7 @@ import iot.jcypher.domain.mapping.MapTerminator;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domain.mapping.surrogate.AbstractSurrogate;
+import iot.jcypher.domain.mapping.surrogate.Array;
 import iot.jcypher.domain.mapping.surrogate.Deferred2DO;
 import iot.jcypher.domain.mapping.surrogate.IDeferred;
 import iot.jcypher.domain.mapping.surrogate.IEntryUpdater;
@@ -76,6 +77,7 @@ import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
@@ -1371,13 +1373,17 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					Object obj = fm.getObjectNeedingRelation(domainObject);
 					if (obj != null && !prepareToDelete) { // definitly need relation
 						if (obj instanceof Collection<?>) { // collection with non-simple elements,
-																					// we won't reach this spot with empty collections
+																				   // we won't reach this spot with empty collections
 							Collection<?> coll = (Collection<?>)obj;
-							handleListInClosureCalc(coll, domainObject, context, fm);
+							handleListArrayInClosureCalc(coll, null, domainObject, context, fm);
+						} else if (obj.getClass().isArray()) { // array with non-simple elements,
+																				 // we won't reach this spot with empty arrays
+							Object[] array = (Object[]) obj;
+							handleListArrayInClosureCalc(null, array, domainObject, context, fm);
 						} else if (obj instanceof Map<?, ?>) {
 							Map<Object, Object> map = (Map<Object, Object>)obj;
 							handleMapInClosureCalc(map, domainObject, context, fm);
-						}else {
+						} else {
 							handleObjectInClosureCalc(obj, domainObject, context, fm);
 						}
 					} else {
@@ -1388,7 +1394,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						if (fm.needsRelation()) { // in case obj == null because it was not set
 							// no relation --> check if an old relation needs to be removed
 							if (fm.getFieldKind() == FieldKind.COLLECTION ||
-									fm.getFieldKind() == FieldKind.MAP) {
+									fm.getFieldKind() == FieldKind.MAP ||
+									fm.getFieldKind() == FieldKind.ARRAY) {
 								// remove multiple relations if they exist
 								List<IMapEntry> mapEntriesToRemove = handleKeyedRelationsModification(null, context,
 										new SourceFieldKey(domainObject, fm.getFieldName()), false);
@@ -1432,10 +1439,16 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				else if (val instanceof Collection<?>)
 					val = domainAccessHandler.domainState
 					.getSurrogateState().getCreateSurrogateFor(val, iot.jcypher.domain.mapping.surrogate.Collection.class);
+				else if (val.getClass().isArray())
+					val = domainAccessHandler.domainState
+					.getSurrogateState().getCreateSurrogateFor(val, iot.jcypher.domain.mapping.surrogate.Array.class);
 				Object key = entry.getKey();
 				if (key instanceof Collection<?>)
 					key = domainAccessHandler.domainState
 						.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Collection.class);
+				else if (key.getClass().isArray())
+					key = domainAccessHandler.domainState
+					.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Array.class);
 				else if (key instanceof Map<?, ?>)
 					key = domainAccessHandler.domainState
 					.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Map.class);
@@ -1496,24 +1509,36 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			removeObjectsIfNeeded(fm, context, mapEntriesToRemove);
 		}
 		
-		private void handleListInClosureCalc(Collection<?> coll, Object domainObject,
+		private void handleListArrayInClosureCalc(Collection<?> coll, Object[] array, Object domainObject,
 				UpdateContext context, FieldMapping fm) {
+			Collection<?> toIterate;
 			String typ = fm.getPropertyOrRelationName();
 			Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations =
 					new HashMap<SourceField2TargetKey, List<KeyedRelation>>();
 			List<Object> targetObjects = new ArrayList<Object>();
 			// store concrete type in DomainInfo
 			String classField = fm.getClassFieldName();
-			MappingUtil.internalDomainAccess.get()
-				.addConcreteFieldType(classField, coll.getClass());
+			if (coll != null) {
+				MappingUtil.internalDomainAccess.get()
+					.addConcreteFieldType(classField, coll.getClass());
+				toIterate = coll;
+			} else {
+				MappingUtil.internalDomainAccess.get()
+				.addConcreteFieldType(classField, array.getClass());
+				toIterate = Arrays.asList(array);
+			}
 			int idx = 0;
-			Iterator<?> it = coll.iterator();
+			Iterator<?> it = toIterate.iterator();
 			while(it.hasNext()) {
 				Object elem = it.next();
 				if (elem instanceof Collection<?>)
 					elem = domainAccessHandler.domainState
 							.getSurrogateState().getCreateSurrogateFor(elem,
 									iot.jcypher.domain.mapping.surrogate.Collection.class);
+				else if (elem.getClass().isArray())
+					elem = domainAccessHandler.domainState
+							.getSurrogateState().getCreateSurrogateFor(elem,
+									iot.jcypher.domain.mapping.surrogate.Array.class);
 				else if (elem instanceof Map<?, ?>)
 					elem = domainAccessHandler.domainState
 							.getSurrogateState().getCreateSurrogateFor(elem,
@@ -1732,50 +1757,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						resolveDeep = false;
 					
 					FieldKind fieldKind = fm != null ? fm.getFieldKind() : FieldKind.SINGLE;
-					Collection<Object> collection = null;
-					Map<Object, Object> map = null;
-					if (fieldKind == FieldKind.COLLECTION) {
-						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
-							collection = ((iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject).getContent();
-						}
-						if (collection == null) {
-							String classFieldName = fm.getClassFieldName();
-							// select the first concrete type in the CompoundType to instantiate.
-							// Most certainly there will only be one type in the CompoundType,
-							// anyway it must be instantiable as it has earlier been stored to the graph
-							collection = (Collection<Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
-									.getConcreteFieldType(classFieldName).getType());
-							compoundType = MappingUtil.internalDomainAccess.get()
-									.getFieldComponentType(classFieldName);
-							if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
-								((iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject)
-									.setContent(collection);
-								domainAccessHandler.domainState.getSurrogateState()
-									.addOriginal2Surrogate(collection,
-											(iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject);
-							}
-						}
-					} else if (fieldKind == FieldKind.MAP) {
-						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
-							map = ((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject).getContent();
-						}
-						if (map == null) {
-							String classFieldName = fm.getClassFieldName();
-							// select the first concrete type in the CompoundType to instantiate.
-							// Most certainly there will only be one type in the CompoundType,
-							// anyway it must be instantiable as it has earlier been stored to the graph
-							map = (Map<Object, Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
-									.getConcreteFieldType(classFieldName).getType());
-							compoundType = MappingUtil.internalDomainAccess.get()
-									.getFieldComponentType(classFieldName);
-							if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
-								((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject)
-									.setContent(map);
-								domainAccessHandler.domainState.getSurrogateState()
-									.addOriginal2Surrogate(map, (iot.jcypher.domain.mapping.surrogate.Map)context.parentObject);
-							}
-						}
-					}
+					SurrogateContent surrogateContent = checkForSurrogates(context, fm, fieldKind, compoundType);
+					Collection<Object> collection = surrogateContent.collection;
+					Map<Object, Object> map = surrogateContent.map;
+					List<Object> array = surrogateContent.array;
+					if (surrogateContent.compoundType != null)
+						compoundType = surrogateContent.compoundType;
 					
 					// initialize for loop iteration
 					Set<GrRelation> relationList; // make list of relations distinct
@@ -1833,6 +1820,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 										domainObject = new MapTerminator(context.parentObject, fm.getFieldName());
 									else
 										domainObject = domainAccessHandler.createInstance(clazz);
+									if (domainObject instanceof Array)
+										((Array)domainObject).setSurrogateState(domainAccessHandler.domainState.getSurrogateState());
 									domainAccessHandler.domainState.add_Id2Object(domainObject, actNode.getId(),
 											resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
 									performMapping = true;
@@ -1970,13 +1959,22 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						if (!isRoot) {
 							if (fieldKind == FieldKind.COLLECTION) {
 								addCollectionRelations(context, usedRelations, collection,
-										fm.getPropertyOrRelationName());
+										null, fm.getPropertyOrRelationName());
 								if (collection.isEmpty()) {
-									// test for empty collection, which evantually was mapped to a property
+									// test for empty collection, which eventually was mapped to a property
 									fm.mapPropertyToField(context.parentObject, parentNode);
 									domainObject = null;
 								} else
 									domainObject = collection;
+							} else if (fieldKind == FieldKind.ARRAY) {
+								addCollectionRelations(context, usedRelations, null,
+										array, fm.getPropertyOrRelationName());
+								if (array.isEmpty()) {
+									// test for empty array, which eventually was mapped to a property
+									fm.mapPropertyToField(context.parentObject, parentNode);
+									domainObject = null;
+								} else
+									domainObject = array;
 							} else if (fieldKind == FieldKind.MAP) {
 								addMapRelations_FillMap(context, usedRelations,
 										fm.getPropertyOrRelationName(), map);
@@ -2019,9 +2017,73 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				context.clauseRepetitionNumber = prevClauseRepetitionNumber;
 			}
 			
+			@SuppressWarnings("unchecked")
+			private <T> SurrogateContent checkForSurrogates(FillModelContext<T> context, FieldMapping fm,
+					FieldKind fieldKind, CompoundObjectType compoundType) {
+				SurrogateContent ret = new SurrogateContent();
+				if (fieldKind == FieldKind.COLLECTION) {
+					if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
+						ret.collection = ((iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject).getContent();
+					}
+					if (ret.collection == null) {
+						String classFieldName = fm.getClassFieldName();
+						// select the first concrete type in the CompoundType to instantiate.
+						// Most certainly there will only be one type in the CompoundType,
+						// anyway it must be instantiable as it has earlier been stored to the graph
+						ret.collection = (Collection<Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
+								.getConcreteFieldType(classFieldName).getType());
+						ret.compoundType = MappingUtil.internalDomainAccess.get()
+								.getFieldComponentType(classFieldName);
+						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
+							((iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject)
+								.setContent(ret.collection);
+							domainAccessHandler.domainState.getSurrogateState()
+								.addOriginal2Surrogate(ret.collection,
+										(iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject);
+						}
+					}
+				} else if (fieldKind == FieldKind.ARRAY) {
+					if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Array) {
+						ret.array = ((iot.jcypher.domain.mapping.surrogate.Array)context.parentObject).getListContent();
+					}
+					if (ret.array == null) {
+						String classFieldName = fm.getClassFieldName();
+						ret.array = new ArrayList<Object>();
+						ret.compoundType = MappingUtil.internalDomainAccess.get()
+								.getFieldComponentType(classFieldName);
+						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Array) {
+							((iot.jcypher.domain.mapping.surrogate.Array)context.parentObject)
+								.setListContent(ret.array);
+						}
+					}
+				} else if (fieldKind == FieldKind.MAP) {
+					if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
+						ret.map = ((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject).getContent();
+					}
+					if (ret.map == null) {
+						String classFieldName = fm.getClassFieldName();
+						// select the first concrete type in the CompoundType to instantiate.
+						// Most certainly there will only be one type in the CompoundType,
+						// anyway it must be instantiable as it has earlier been stored to the graph
+						ret.map = (Map<Object, Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
+								.getConcreteFieldType(classFieldName).getType());
+						ret.compoundType = MappingUtil.internalDomainAccess.get()
+								.getFieldComponentType(classFieldName);
+						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
+							((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject)
+								.setContent(ret.map);
+							domainAccessHandler.domainState.getSurrogateState()
+								.addOriginal2Surrogate(ret.map, (iot.jcypher.domain.mapping.surrogate.Map)context.parentObject);
+						}
+					}
+				}
+				return ret;
+			}
+			
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			private <T> void addCollectionRelations(FillModelContext<T> context, List<GrRelation> relList, Collection coll,
-					String relType) {
+					List<Object> array, String relType) {
+				boolean isCollection = coll != null;
 				Iterator<GrRelation> rit = relList.iterator();
 				List<KeyedRelation> toResort = new ArrayList<KeyedRelation>();
 				ListEntriesUpdater listUpdater = null;
@@ -2039,7 +2101,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					KeyedRelation irel = new KeyedRelation(relType, idx, context.parentObject, domainObject);
 					domainAccessHandler.domainState.add_Id2Relation(irel, rel.getId());
 					boolean fillList = true;
-					if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.AbstractSurrogate) {
+					if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.AbstractSurrogate && isCollection) {
 						if (listUpdater == null) {
 							listUpdater = new ListEntriesUpdater(coll);
 							context.deferredList.add(listUpdater);
@@ -2051,7 +2113,6 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					}
 					if (fillList) {
 						toResort.add(irel);
-						coll.add(domainObject);
 					}
 				}
 				
@@ -2064,10 +2125,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 									((Integer)o2.getKey()).intValue());
 						}
 					});
-					coll.clear();
-					for (KeyedRelation irel : toResort) {
+				}
+				for (KeyedRelation irel : toResort) {
+					if (isCollection)
 						coll.add(irel.getEnd());
-					}
+					else
+						array.add(irel.getEnd());
 				}
 			}
 			
@@ -2327,6 +2390,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				} else
 					sb.append(0); // root node name
 				return sb.toString();
+			}
+			
+			/***********************************/
+			private class SurrogateContent {
+				private Collection<Object> collection;
+				private Map<Object, Object> map;
+				private List<Object> array;
+				private CompoundObjectType compoundType;
 			}
 		}
 	}

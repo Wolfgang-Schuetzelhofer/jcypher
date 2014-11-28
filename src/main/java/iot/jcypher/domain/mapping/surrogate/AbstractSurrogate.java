@@ -11,6 +11,8 @@ public abstract class AbstractSurrogate {
 			return new iot.jcypher.domain.mapping.surrogate.Map((Map<Object, Object>) original);
 		else if (original instanceof Collection<?>)
 			return new iot.jcypher.domain.mapping.surrogate.Collection((Collection<Object>) original);
+		else if (original instanceof Object[])
+			return new iot.jcypher.domain.mapping.surrogate.Array((Object[]) original);
 		return null;
 	}
 	

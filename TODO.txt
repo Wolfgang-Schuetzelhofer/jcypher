@@ -1,3 +1,7 @@
+lists arrays maps as root objects
+
+remove surrogate objects from result
+
 test inner classes
 
 START.node(n).byId(ids) now works, some queries can be made simpler now
@@ -14,7 +18,7 @@ guarantee uniqueness of node labels
 
 ---done--- don't place objects which have only simple attributes to the set of reload-deep objects (optimization) 
 
-reuse MapEntry objects ?
+reuse MapEntry nodes ?
 
 optimize query building for MapEntry (- classFieldName)
 

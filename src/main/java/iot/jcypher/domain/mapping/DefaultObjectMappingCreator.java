@@ -17,6 +17,7 @@
 package iot.jcypher.domain.mapping;
 
 import iot.jcypher.domain.mapping.FieldMapping.FieldKind;
+import iot.jcypher.domain.mapping.surrogate.Array;
 import iot.jcypher.domain.mapping.surrogate.Collection;
 import iot.jcypher.domain.mapping.surrogate.Map;
 import iot.jcypher.domain.mapping.surrogate.MapEntry;
@@ -55,12 +56,18 @@ public class DefaultObjectMappingCreator {
 					field = new SurrogateField(fields[i]);
 				else if (fieldKind == FieldKind.COLLECTION && !fields[i].getDeclaringClass().equals(Collection.class))
 					field = new SurrogateField(fields[i]);
+				else if (fieldKind == FieldKind.ARRAY && !fields[i].getDeclaringClass().equals(Array.class))
+					field = new SurrogateField(fields[i]);
+				else if (clazz.equals(Array.class))
+					field = new ArraySurrogateField(fields[i]);
 				else
 					field = new DirectField(fields[i]);
 				
 				if (clazz.equals(MapEntry.class) && fields[i].getName().equals(ValueField))
 					fieldMapping = new ValueAndTypeMapping(field);
 				else if (clazz.equals(Collection.class)) // has only one field, don't need to test for field name
+					fieldMapping = new ListFieldMapping(field);
+				else if (clazz.equals(Array.class)) // has only one field, don't need to test for field name
 					fieldMapping = new ListFieldMapping(field);
 				else
 					fieldMapping = new FieldMapping(field);

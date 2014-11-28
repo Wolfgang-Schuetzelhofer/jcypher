@@ -19,6 +19,7 @@ package iot.jcypher.domain.mapping;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 
+import java.util.Arrays;
 import java.util.Collection;
 
 public class ListFieldMapping extends FieldMapping {
@@ -36,8 +37,12 @@ public class ListFieldMapping extends FieldMapping {
 	@SuppressWarnings("rawtypes")
 	@Override
 	protected void storeSimpleListComponentType(Object value, GrNode rNode) {
-		// only called when a collection is mapped to a property
-		Collection coll = (Collection) this.getFieldType().cast(value);
+		// only called when a collection or an array is mapped to a property
+		Collection coll;
+		if (value instanceof Collection<?>)
+			coll = (Collection) this.getFieldType().cast(value);
+		else
+			coll = Arrays.asList((Object[])value);
 		if (coll.size() > 0) {
 			Object elem = coll.iterator().next();
 			Class<?> type = elem.getClass();

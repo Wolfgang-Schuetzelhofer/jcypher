@@ -37,6 +37,7 @@ import iot.jcypher.query.api.predicate.BooleanOperation;
 import iot.jcypher.query.api.predicate.Concat;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
@@ -166,6 +167,10 @@ public class QueryExecutor {
 				if (stateContext.state == State.HAS_XPRESSION) {
 					xpressionsPerDom.add(new ExpressionsPerDOM(dom, stateContext.candidates,
 							stateContext.dependencies));
+				} else if (stateContext.state == State.INIT) {
+					stateContext.candidates.clear();
+					xpressionsPerDom.add(new ExpressionsPerDOM(dom, stateContext.candidates,
+							stateContext.dependencies));
 				}
 			}
 			
@@ -184,6 +189,8 @@ public class QueryExecutor {
 					);
 					if (cpt.concatenator != null)
 						clauses.add(cpt.concatenator);
+					else
+						clauses.add(SEPARATE.nextClause());
 				}
 			}
 			
