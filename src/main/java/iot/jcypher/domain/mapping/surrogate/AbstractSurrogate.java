@@ -17,4 +17,6 @@ public abstract class AbstractSurrogate {
 	}
 	
 	public abstract Object getContent();
+	
+	public abstract Object objectToUpdate();
 }

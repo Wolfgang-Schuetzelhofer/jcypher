@@ -78,9 +78,9 @@ public class FieldMapping {
 				}
 			} else {
 				boolean clearAdditional = false;
-				// a previously empty collection might have been mapped to a property
+				// a previously empty collection or array might have been mapped to a property
 				// we need to remove the property
-				if (Collection.class.isAssignableFrom(getFieldType())) {
+				if (Collection.class.isAssignableFrom(getFieldType()) || getFieldType().isArray()) {
 					GrProperty prop = rNode.getProperty(this.propertyName);
 					if (prop != null)
 						prop.setValue(null);

@@ -58,4 +58,8 @@ public class Array extends AbstractSurrogate {
 		this.surrogateState = surrogateState;
 	}
 
+	@Override
+	public Object objectToUpdate() {
+		return getListContent();
+	}
 }

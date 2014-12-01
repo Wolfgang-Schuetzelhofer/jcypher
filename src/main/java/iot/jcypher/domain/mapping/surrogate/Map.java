@@ -37,4 +37,9 @@ public class Map extends AbstractSurrogate {
 	public void setContent(java.util.Map<Object, Object> content) {
 		this.m_content = content;
 	}
+	
+	@Override
+	public Object objectToUpdate() {
+		return getContent();
+	}
 }

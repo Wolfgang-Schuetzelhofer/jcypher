@@ -871,11 +871,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				} else if (deferred instanceof IEntryUpdater) {
 					for (IDeferred def : deferreds) {
 						if (def instanceof ISurrogate2Entry) {
-							if (((IEntryUpdater) deferred).objectToUpdate() == ((ISurrogate2Entry) def).getSurrogate().getContent()) {
+							if (((IEntryUpdater) deferred).objectToUpdate() == ((ISurrogate2Entry) def).getSurrogate().objectToUpdate()) {
 								deferred.addNextUpInTree(def);
 							}
 						} else if (def instanceof Deferred2DO) {
-							if (((IEntryUpdater) deferred).objectToUpdate() == ((Deferred2DO) def).getDeferred().getContent()) {
+							if (((IEntryUpdater) deferred).objectToUpdate() == ((Deferred2DO) def).getDeferred().objectToUpdate()) {
 								deferred.addNextUpInTree(def);
 							}
 						}
@@ -2083,7 +2083,6 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			@SuppressWarnings({ "unchecked", "rawtypes" })
 			private <T> void addCollectionRelations(FillModelContext<T> context, List<GrRelation> relList, Collection coll,
 					List<Object> array, String relType) {
-				boolean isCollection = coll != null;
 				Iterator<GrRelation> rit = relList.iterator();
 				List<KeyedRelation> toResort = new ArrayList<KeyedRelation>();
 				ListEntriesUpdater listUpdater = null;
@@ -2101,9 +2100,9 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					KeyedRelation irel = new KeyedRelation(relType, idx, context.parentObject, domainObject);
 					domainAccessHandler.domainState.add_Id2Relation(irel, rel.getId());
 					boolean fillList = true;
-					if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.AbstractSurrogate && isCollection) {
+					if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.AbstractSurrogate) {
 						if (listUpdater == null) {
-							listUpdater = new ListEntriesUpdater(coll);
+							listUpdater = new ListEntriesUpdater(coll != null ? coll : array);
 							context.deferredList.add(listUpdater);
 						}
 						IDeferred deferred = new Surrogate2ListEntry(idx, listUpdater,
@@ -2127,7 +2126,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					});
 				}
 				for (KeyedRelation irel : toResort) {
-					if (isCollection)
+					if (coll != null)
 						coll.add(irel.getEnd());
 					else
 						array.add(irel.getEnd());
