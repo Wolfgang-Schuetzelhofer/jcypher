@@ -1,0 +1,52 @@
+<html>
+<head>
+	<title></title>
+</head>
+<body>
+<h1><span style="font-family:arial,helvetica,sans-serif;">Architectural Overview</span></h1>
+
+<p><span style="font-family:arial,helvetica,sans-serif;">The following diagramm provides an overview of JCypher&#39;s core components and how they interact.</span></p>
+
+<p><span style="font-family:arial,helvetica,sans-serif;"><img alt="" src="overview.gif" style="width: 1404px; height: 802px;" /></span></p>
+
+<p><span style="font-family:arial,helvetica,sans-serif;">At the top of the diagram you find the <strong>API layer</strong>. It is the layer which exposes the programming interface. It is&nbsp;divided into a couple of distinct APIs, each one providing access to<br />
+graph databases at a different level of abstraction.<br />
+The components arranged&nbsp;below the API layer expose a model and one or more actions for every distinct API. The models are drawn as green rectangles,<br />
+the actions are drawn as orange ovals. Each API allows to manipulate (create, update, delete) elements of the respective model, and it allows to perform action(s)<br />
+on behalf of the modified model.</span></p>
+
+<p><span style="font-family:arial,helvetica,sans-serif;">The distinct APIs are:</span></p>
+
+<ul>
+	<li><strong><span style="font-family:arial,helvetica,sans-serif;">JCypher-Query-DSL</span></strong><br />
+	<span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);">It allows to intuitively and comfortably formulate queries against graph databases. The DSL (Domain Specific Language) is implemented in form of a fluent Java API.<br />
+	The DSL is based on the Cypher language.</span></li>
+</ul>
+
+<ul>
+	<li><strong><span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);">Generic Graph Model</span></strong><br />
+	<span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);">Provides access to graph databases&nbsp;based on a generic graph model. The model consists of nodes, relations, and paths, together with properties, labels, and types.<br />
+	While simple, the model allows to easily navigate and manipulate graphs.</span></li>
+</ul>
+
+<ul>
+	<li><strong><span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);">Domain Mapping</span></strong><br />
+	<span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);">Arbitrarily complex business domains in form of Java object graphs can be mapped to and retrieved from graph databases in a straight forward way</span><span style="color: rgb(51, 51, 51); font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);">.</span><br />
+	<span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);">You do not need to modify your domain object classes in any way. You even do not add annotations. Moreover JCypher provides a default mapping so you don&#39;t have<br />
+	to write a single line of mapping code or of mapping configuration.</span></li>
+	<li>
+	<p><span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);"><strong>Domain Query</strong><br />
+	Allows to formulate queries on&nbsp;domain objects or their types respectively (instead of formulating queries on nodes and relations of a graph).<br />
+	The true power</span><span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);">&nbsp;comes from the fact that the &#39;graph&#39; of domain objects is backed by a graph database (Neo4J).<br />
+	It allows to execute powerful queries on your business domain&nbsp;</span><span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);">in a performant way, because the queries are actually performed against the graph database.</span></p>
+	</li>
+</ul>
+
+<p><span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);"><span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255)">The components at the middle layer implement the core functionality of JCypher. They interact with each other in order to perform the tasks they are responsible for.</span><br />
+You can follow the gray arrows in the diagram which are rooted at actions (orange ovals) in order to see how actions are performed by invoking functionality<br />
+provided by different components. The call order is given by the numbers at the root of each call (gray arrow).</span></p>
+
+<p><span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);">At the bottom of the diagram you find the <strong>Database Access</strong> component.<br />
+It provides&nbsp;</span><span style="font-family: 'Helvetica Neue', Helvetica, 'Segoe UI', Arial, freesans, sans-serif; font-size: 16px; line-height: 25.6000003814697px; background-color: rgb(255, 255, 255);">access in a uniform way to remote as well as to embedded graph databases (including in-memory databases).</span></p>
+</body>
+</html>
