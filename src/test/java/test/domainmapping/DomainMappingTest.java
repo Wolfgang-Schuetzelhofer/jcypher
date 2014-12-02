@@ -90,7 +90,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 	}
 	
 	@AfterClass
@@ -134,6 +134,53 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		check = dbAccess.isDatabaseEmpty();
 		assertTrue("Test Domain is empty", check);
+		return;
+	}
+	
+	@Test
+	public void testUniqueLabels() {
+		List<JcError> errors;
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		IDomainAccess da1;
+		boolean equals;
+		test.domainmapping.unique_label.Person person, person_1;
+		test.domainmapping.unique_label.other.Person otherPerson, otherPerson_1;
+		
+		person = new test.domainmapping.unique_label.Person();
+		person.setFirstName("John");
+		person.setLastName("Smith");
+		
+		otherPerson = new test.domainmapping.unique_label.other.Person();
+		otherPerson.setName("John Smith");
+		
+		List<Object> domainObjects = new ArrayList<Object>();
+		domainObjects.add(person);
+		domainObjects.add(otherPerson);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(domainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(person);
+		SyncInfo syncInfo_2 = da.getSyncInfo(otherPerson);
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		person_1 = da1.loadById(test.domainmapping.unique_label.Person.class, -1, syncInfo_1.getId());
+		otherPerson_1 = da1.loadById(test.domainmapping.unique_label.other.Person.class, -1, syncInfo_2.getId());
+		
+		equals = person.getFirstName().equals(person_1.getFirstName()) &&
+				person.getLastName().equals(person_1.getLastName()) &&
+				otherPerson.getName().equals(otherPerson_1.getName());
+		assertTrue(equals);
+		
 		return;
 	}
 	

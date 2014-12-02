@@ -2861,6 +2861,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			return domainAccessHandler.domainInfo.getLabelForClass(clazz);
 		}
 		
+		public boolean existsLabel(String label) {
+			domainAccessHandler.updateMappingsIfNeeded();
+			return domainAccessHandler.domainInfo.getClassForLabel(label) != null;
+		}
+		
 		public JcQueryResult execute(JcQuery query) {
 			return domainAccessHandler.dbAccess.execute(query);
 		}

@@ -16,6 +16,7 @@
 
 package iot.jcypher.domain.mapping;
 
+import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.mapping.FieldMapping.FieldKind;
 import iot.jcypher.domain.mapping.surrogate.Array;
 import iot.jcypher.domain.mapping.surrogate.Collection;
@@ -77,7 +78,26 @@ public class DefaultObjectMappingCreator {
 	}
 	
 	public static NodeLabelMapping createLabelMapping(Class<?> toMap) {
-		NodeLabelMapping labelMapping = new NodeLabelMapping(toMap.getSimpleName());
+		InternalDomainAccess dAccess = MappingUtil.internalDomainAccess.get();
+		String label = dAccess.getLabelForClass(toMap);
+		if (label == null) {
+			String fullName = toMap.getName();
+			StringBuilder sb = new StringBuilder();
+			int idx = fullName.length() -1;
+			do {
+				if (sb.length() > 0 && idx >= 0) {
+					sb.insert(0, '_');
+					idx--;
+				}
+				char c;
+				while(idx >= 0 && (c = fullName.charAt(idx)) != '.') {
+					sb.insert(0, c);
+					idx--;
+				}
+				label = sb.toString();
+			} while(dAccess.existsLabel(label));
+		}
+		NodeLabelMapping labelMapping = new NodeLabelMapping(label);
 		return labelMapping;
 	}
 }
