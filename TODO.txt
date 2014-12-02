@@ -4,7 +4,7 @@ remove surrogate objects from result
 
 test inner classes
 
-START.node(n).byId(ids) now works, some queries can be made simpler now
+START.node(n).byId(ids...) now works, some queries can be made simpler now
 
 docu: domain objects must have default constructor
 
@@ -12,7 +12,7 @@ avoid stack overflow on mixed (simple / complex) lists (they are not supported)
 
 optimization: dynamic max query length
 
-mapping of java arrays
+---done--- mapping of java arrays
 
 guarantee uniqueness of node labels
 

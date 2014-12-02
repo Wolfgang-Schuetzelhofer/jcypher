@@ -47,6 +47,7 @@ import iot.jcypher.domain.mapping.surrogate.ISurrogate2Entry;
 import iot.jcypher.domain.mapping.surrogate.ListEntriesUpdater;
 import iot.jcypher.domain.mapping.surrogate.MapEntry;
 import iot.jcypher.domain.mapping.surrogate.MapEntryUpdater;
+import iot.jcypher.domain.mapping.surrogate.ObservableList;
 import iot.jcypher.domain.mapping.surrogate.Surrogate2ListEntry;
 import iot.jcypher.domain.mapping.surrogate.Surrogate2MapEntry;
 import iot.jcypher.domainquery.DomainQuery;
@@ -1967,6 +1968,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 								} else
 									domainObject = collection;
 							} else if (fieldKind == FieldKind.ARRAY) {
+								if (context.parentObject instanceof Array)
+									((Array)context.parentObject).setSize(usedRelations.size());
 								addCollectionRelations(context, usedRelations, null,
 										array, fm.getPropertyOrRelationName());
 								if (array.isEmpty()) {
@@ -2048,7 +2051,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					}
 					if (ret.array == null) {
 						String classFieldName = fm.getClassFieldName();
-						ret.array = new ArrayList<Object>();
+						ret.array = new ObservableList<Object>();
 						ret.compoundType = MappingUtil.internalDomainAccess.get()
 								.getFieldComponentType(classFieldName);
 						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Array) {

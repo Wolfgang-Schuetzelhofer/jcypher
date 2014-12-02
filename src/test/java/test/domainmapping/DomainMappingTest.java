@@ -90,7 +90,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 	}
 	
 	@AfterClass
@@ -138,6 +138,42 @@ public class DomainMappingTest extends AbstractTestSuite{
 	}
 	
 	@Test
+	public void testRecursiveArrays() {
+		List<JcError> errors;
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		IDomainAccess da1;
+		MultiDimMapsLists multiDimMapsLists = new MultiDimMapsLists();
+		MultiDimMapsLists multiDimMapsLists_1;
+		boolean equals;
+
+		Object[] array = new Object[1];
+		array[0] = array;
+		
+		multiDimMapsLists.setMultiDimArray(array);
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(multiDimMapsLists);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(multiDimMapsLists);
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		multiDimMapsLists_1 = da1.loadById(MultiDimMapsLists.class, -1, syncInfo_1.getId());
+		equals = CompareUtil_3.equalsMultiDimMapsLists(multiDimMapsLists, multiDimMapsLists_1);
+		assertTrue(equals);
+		
+		return;
+	}
+	
+	@Test
 	public void testMultiArrays() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -160,7 +196,6 @@ public class DomainMappingTest extends AbstractTestSuite{
 		multiDimMapsLists.setMultiDimList(multiDimList);
 		
 		multiDimMapsLists.setMultiDimArray(array);
-		multiDimMapsLists.setMultiDimList(multiDimList);
 		
 		errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
@@ -198,13 +233,6 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		buildMapTestAny2Any(first, second, third);
 		Object[] array = new Object[] {first, second, third};
-//		Object[] array = new Object[] {};
-//		List<Object> multiDimList = new ArrayList<Object>();
-		
-//		multiDimList.add(first);
-//		multiDimList.add(second);
-//		multiDimList.add(third);
-//		multiDimMapsLists.setMultiDimList(multiDimList);
 		
 		multiDimMapsLists.setMultiDimArray(array);
 		
@@ -258,7 +286,6 @@ public class DomainMappingTest extends AbstractTestSuite{
 		assertTrue(equals);
 		
 		multiDimMapsLists.setMultiDimArray(null);
-//		multiDimMapsLists.setMultiDimList(null);
 		
 		errors = da.store(multiDimMapsLists);
 		if (errors.size() > 0) {

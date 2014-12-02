@@ -272,6 +272,8 @@ public class CompareUtil_3 {
 			return CompareUtil_3.equalsMap((Map)o_1, (Map)o_2, acs);
 		} else if (o_1 instanceof List && o_2 instanceof List) {
 			return CompareUtil_3.equalsList((List)o_1, (List)o_2, acs);
+		} else if (o_1.getClass().isArray() && o_2.getClass().isArray()) {
+			return CompareUtil_3.equalsArray((Object[])o_1, (Object[])o_2, acs);
 		} else if (o_1 instanceof Mark && o_2 instanceof Mark) {
 			return CompareUtil_3.equalsMark((Mark)o_1, (Mark)o_2, acs);
 		} else if (o_1 instanceof Broker && o_2 instanceof Broker) {
