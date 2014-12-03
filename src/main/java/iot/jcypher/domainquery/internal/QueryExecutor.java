@@ -106,17 +106,16 @@ public class QueryExecutor {
 		QueryContext context = new QueryContext();
 		QueryBuilder qb = new QueryBuilder();
 		JcQuery query = qb.buildQuery(context);
-		Util.printQuery(query, "DOM QUERY", Format.PRETTY_1);
+//		Util.printQuery(query, "DOM QUERY", Format.PRETTY_1);
 		JcQueryResult result = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().
 														execute(query);
 		List<JcError> errors = Util.collectErrors(result);
 		if (errors.size() > 0) {
 			throw new JcResultException(errors);
 		}
-		Util.printResult(result, "DOM QUERY", Format.PRETTY_1);
+//		Util.printResult(result, "DOM QUERY", Format.PRETTY_1);
 		qb.extractUniqueIds(result, context.idNumbers);
 		this.result = context;
-		return;
 	}
 	
 	public MappingInfo getMappingInfo() {
@@ -176,8 +175,9 @@ public class QueryExecutor {
 			
 			xpressionsPerDom = orderByDependencies(xpressionsPerDom);
 			
+			List<String> validNodes = new ArrayList<String>();
 			for (ExpressionsPerDOM xpd : xpressionsPerDom) {
-				clausesPerType.addAll(buildClausesFor(xpd.domainObjectMatch, xpd.xPressions));
+				clausesPerType.addAll(buildClausesFor(xpd.domainObjectMatch, xpd.xPressions, validNodes));
 			}
 			
 			List<IClause> clauses = new ArrayList<IClause>();
@@ -275,7 +275,7 @@ public class QueryExecutor {
 		}
 
 		private List<ClausesPerType> buildClausesFor(DomainObjectMatch<?> dom,
-				List<IASTObject> xpressionsForDom) {
+				List<IASTObject> xpressionsForDom, List<String> validNodes) {
 			List<ClausesPerType> clausesPerType = new ArrayList<ClausesPerType>();
 			List<JcNode> nodes = APIAccess.getNodes(dom);
 			List<Class<?>> typeList = APIAccess.getTypeList(dom);
@@ -332,61 +332,84 @@ public class QueryExecutor {
 								concat_1 = clausePerType.concatenator.AND();
 								clausePerType.previousOr = false;
 							}
-							clausePerType.concatenator = buildPredicateExpression(pred, concat_1, clausePerType);
+							clausePerType.concatenator = buildPredicateExpression(pred, concat_1, clausePerType, validNodes);
 						}
 					}
+				}
+			}
+			for (ClausesPerType clausePerType : clausesPerType) {
+				if (clausePerType.valid) {
+					// add node names for which there is (will be) a match clause
+					String nm = ValueAccess.getName(clausePerType.node);
+					validNodes.add(nm);
 				}
 			}
 			return clausesPerType;
 		}
 
+		@SuppressWarnings("unchecked")
 		private iot.jcypher.query.api.predicate.Concatenator buildPredicateExpression(PredicateExpression pred,
-				Concat concat, ClausesPerType clausesPerType) {
+				Concat concat, ClausesPerType clausesPerType, List<String> validNodes) {
 			iot.jcypher.query.api.predicate.Concatenator ret = null;
 			// handle negations
 			int neg = pred.getNegationCount();
 			Concat concat_1 = null;
 			BooleanOperation booleanOp;
-			for (int i = neg; neg > 0; neg--) {
-				if (i == neg) {
-					if (concat == null)
-						concat_1 = (Concat)WHERE.NOT();
-					else
-						concat_1 = (Concat)concat.NOT();
-				} else
-					concat_1 = (Concat)concat_1.NOT();
-			}
-			
-			if (concat_1 == null)
-				concat_1 = concat;
-			
+			Operator op = pred.getOperator();
 			ValueElement val_1 = null;
 			IPredicateOperand1 v_1 = pred.getValue_1();
 			if (v_1 instanceof ValueElement)
 				val_1 = testAndCloneIfNeeded((ValueElement)v_1, clausesPerType);
 			else if (v_1 instanceof DomainObjectMatch<?>) {
-				val_1 = clausesPerType.node.id();
+				if (op == Operator.IN)
+					val_1 = clausesPerType.node;
+				else
+					val_1 = clausesPerType.node.id();
 			}
 			
 			if (val_1 != null) { // if either really null or invalid
-				
 				Object val_2 = pred.getValue_2();
 				if (val_2 instanceof Parameter)
 					val_2 = ((Parameter)val_2).getValue();
 				
-				boolean val_2IsId = false;
+				boolean val_2IsDom = false;
+				boolean val_2InDom = false;
 				List<Object> val_2s = null;
 				if (val_2 instanceof IPredicateOperand1) {
 					if (val_2 instanceof DomainObjectMatch<?>)
-						val_2IsId = true;
-					val_2s = buildAllInstances((IPredicateOperand1)val_2);
+						val_2IsDom = true;
+					if (val_2 instanceof DomainObjectMatch<?> && op == Operator.IN) {
+						val_2InDom = true;
+						val_2s = new ArrayList<Object>();
+						val_2s.add(collectNodes((DomainObjectMatch<?>)val_2, validNodes));
+					} else
+						val_2s = buildAllInstances((IPredicateOperand1)val_2, val_2IsDom ? validNodes : null);
 				} else if (val_2 != null) {
 					val_2s = new ArrayList<Object>();
 					val_2s.add(val_2);
 				}
 				int cnt = val_2s != null ? val_2s.size() : 1;
 				
-				if (cnt > 1) { // encapsulate by brackets
+				boolean negate = false;
+				if (val_2InDom) {
+					if (neg > 0) {
+						neg--;
+						negate = true;
+					}
+				}
+				for (int i = neg; neg > 0; neg--) {
+					if (i == neg) {
+						if (concat == null)
+							concat_1 = (Concat)WHERE.NOT();
+						else
+							concat_1 = (Concat)concat.NOT();
+					} else
+						concat_1 = (Concat)concat_1.NOT();
+				}
+				if (concat_1 == null)
+					concat_1 = concat;
+				
+				if (cnt > 1 || val_2InDom) { // encapsulate by brackets
 					if (concat_1 != null)
 						concat_1 = concat_1.BR_OPEN();
 					else { // no negation(s)
@@ -394,15 +417,17 @@ public class QueryExecutor {
 					}
 				}
 				
-				if (concat_1 == null)
-					booleanOp = WHERE.valueOf(val_1);
-				else
-					booleanOp = concat_1.valueOf(val_1);
+				if (!val_2InDom) {
+					if (concat_1 == null)
+						booleanOp = WHERE.valueOf(val_1);
+					else
+						booleanOp = concat_1.valueOf(val_1);
+				} else
+					booleanOp = null;
 				
 				for (int i = 0; i < cnt; i++) {
 					if (val_2s != null)
 						val_2 = val_2s.get(i);
-					Operator op = pred.getOperator();
 					if (op == Operator.EQUALS)
 						ret = booleanOp.EQUALS(val_2);
 					else if (op == Operator.GT)
@@ -410,10 +435,10 @@ public class QueryExecutor {
 					else if (op == Operator.GTE)
 						ret = booleanOp.GTE(val_2);
 					else if (op == Operator.IN) {
-						if (val_2IsId) {
-							ret = booleanOp.EQUALS(val_2);
-						} else if (val_2.getClass().isArray())
+						if (val_2.getClass().isArray())
 							ret = booleanOp.IN_list(val_2);
+						else if (val_2IsDom)
+							ret = createWhereIn(concat_1, val_1, (List<JcNode>) val_2, negate);
 					} else if (op == Operator.IS_NULL)
 						ret = booleanOp.IS_NULL();
 					else if (op == Operator.LIKE)
@@ -435,8 +460,45 @@ public class QueryExecutor {
 			return ret;
 		}
 		
+		private iot.jcypher.query.api.predicate.Concatenator createWhereIn(
+				Concat concat, ValueElement val_1, List<JcNode> val_2, boolean not) {
+			iot.jcypher.query.api.predicate.Concatenator booleanOp = null;
+			int idx = 0;
+			for (JcNode n : val_2) {
+				if (not) {
+					if (idx == 0)
+						booleanOp = concat.valueOf(n).IS_NULL().OR().NOT().valueOf(val_1).IN_list(n).BR_CLOSE();
+					else
+						booleanOp = booleanOp.AND().BR_OPEN().valueOf(n).IS_NULL().OR().NOT().valueOf(val_1).IN_list(n).BR_CLOSE();
+				} else {
+					if (idx == 0)
+						booleanOp = concat.NOT().valueOf(n).IS_NULL().AND().valueOf(val_1).IN_list(n).BR_CLOSE();
+					else
+						booleanOp.OR().BR_OPEN().NOT().valueOf(n).IS_NULL().AND().valueOf(val_1).IN_list(n).BR_CLOSE();
+				}
+				idx++;
+			}
+			return booleanOp;
+		}
+
+		private List<JcNode> collectNodes(DomainObjectMatch<?> dom, List<String> validNodes) {
+			List<JcNode> ret = new ArrayList<JcNode>();
+			List<JcNode> nodes = APIAccess.getNodes((DomainObjectMatch<?>)dom);
+			for(JcNode n : nodes) {
+				String nnm = ValueAccess.getName(n);
+				if (validNodes.contains(nnm))
+					ret.add(n);
+			}
+			return ret;
+		}
+		
+		/**
+		 * @param val
+		 * @param validNodes if != null, use list to filter nodes
+		 * @return
+		 */
 		@SuppressWarnings("unchecked")
-		private List<Object> buildAllInstances(IPredicateOperand1 val) {
+		private List<Object> buildAllInstances(IPredicateOperand1 val, List<String> validNodes) {
 			List<Object> ret = new ArrayList<Object>();
 			List<JcNode> validFor = null;
 			ValueElement ve = null;
@@ -448,10 +510,11 @@ public class QueryExecutor {
 					ve = validFor.get(0).id();
 			}
 			if (ve != null) {
-				ret.add(ve);
 				ValueElement first = ValueAccess.findFirst(ve);
 				if (first instanceof JcNode) {
 					String nodeName = ValueAccess.getName((JcNode)first);
+					if (validNodes == null || validNodes.contains(nodeName))
+						ret.add(ve);
 					if (validFor == null) {
 						Object hint = ValueAccess.getAnyHint(ve);
 						if (hint instanceof List<?>) {
@@ -459,11 +522,14 @@ public class QueryExecutor {
 						}
 					}
 					for(JcNode n : validFor) {
-						if (!nodeName.equals(ValueAccess.getName(n))) { // need to clone
-							ret.add(cloneVe(ve, first, n));
+						String nnm = ValueAccess.getName(n);
+						if (!nodeName.equals(nnm)) { // need to clone
+							if (validNodes == null || validNodes.contains(nnm))
+								ret.add(cloneVe(ve, first, n));
 						}
 					}
-				}
+				} else
+					ret.add(ve);
 			}
 			return ret;
 		}
@@ -561,9 +627,14 @@ public class QueryExecutor {
 					else if (concat == Concatenator.BR_CLOSE) {
 						// close follows immediately after open
 						if (candidatesIndices.size() > 0) {
-							toRemove.add(i);
 							Integer idx = candidatesIndices.remove(candidatesIndices.size() - 1);
-							toRemove.add(0, idx);
+							// test and remove encapsulated pairs
+							for (int j = toRemove.size() - 1; j >= 0; j--) {
+								if (idx.intValue() < toRemove.get(j).intValue())
+									toRemove.remove(j);
+							}
+							toRemove.add(idx); // start
+							toRemove.add(i); // end
 						}
 					}
 				} else { // not an empty block, contains at least one valid predicate expression

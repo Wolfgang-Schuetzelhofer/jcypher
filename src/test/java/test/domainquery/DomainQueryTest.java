@@ -16,6 +16,7 @@
 
 package test.domainquery;
 
+import static org.junit.Assert.assertTrue;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -38,6 +39,7 @@ import org.junit.Test;
 import test.AbstractTestSuite;
 import test.domainquery.model.Person;
 import test.domainquery.model.Subject;
+import test.domainquery.util.CompareUtil;
 
 public class DomainQueryTest extends AbstractTestSuite {
 
@@ -68,14 +70,16 @@ public class DomainQueryTest extends AbstractTestSuite {
 	@Test
 	public void testDomainQuery_01() {
 		List<JcError> errors;
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		IDomainAccess da1;
-		DomainQueryResult result;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
 		
-//		Population domainPopulator = new Population();
-//		
-//		List<Object> domainObjects = domainPopulator.createPopulation();
-//		
+		Population population = new Population();
+		
+		List<Object> domainObjects = population.createPopulation();
+		
 //		errors = dbAccess.clearDatabase();
 //		if (errors.size() > 0) {
 //			printErrors(errors);
@@ -91,67 +95,83 @@ public class DomainQueryTest extends AbstractTestSuite {
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
 		/******************************************/
-//		DomainQuery q = da1.createQuery();
-//		DomainObjectMatch<Subject> smith = q.createMatch(Subject.class);
-//		DomainObjectMatch<Subject> bergHammer = q.createMatch(Subject.class);
-//		DomainObjectMatch<Subject> watson = q.createMatch(Subject.class);
-//		q.BR_OPEN();
-//			q.WHERE(smith.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
-//			q.WHERE(smith.stringAtttribute("id")).EQUALS("smith");
-//			q.BR_OPEN();
-//				q.WHERE(smith.stringAtttribute("firstName")).EQUALS("Angelina");
-//				q.OR();
-//				q.WHERE(smith.stringAtttribute("firstName")).EQUALS("Jeremy");
-//			q.BR_CLOSE();
-//			q.BR_OPEN();
-//				q.WHERE(bergHammer.stringAtttribute("lastName")).EQUALS("Berghammer");
-//				q.OR();
-//				q.WHERE(bergHammer.stringAtttribute("id")).EQUALS("berghammer");
-//			q.BR_CLOSE();
-//		q.BR_CLOSE();
-//		
-//		q.parameter("lastName").setValue("Smith");
-//		
-//		DomainQueryResult result = null;
-//		try {
-//			result = q.execute();
-//		} catch (Throwable e) {
-//			e.printStackTrace();
-//		}
-//		List<Subject> smithResult = result.resultOf(smith);
-//		List<Subject> bergHammerResult = result.resultOf(bergHammer);
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> smith_false = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> bergHammer = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> smith_true = q.createMatch(Subject.class);
+		q.BR_OPEN();
+			q.WHERE(smith_false.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
+			q.WHERE(smith_false.stringAtttribute("matchString")).EQUALS("smith_family");
+			q.BR_OPEN();
+				q.WHERE(smith_false.stringAtttribute("firstName")).EQUALS("Angelina");
+				q.OR();
+				q.WHERE(smith_false.stringAtttribute("firstName")).EQUALS("Jeremy");
+			q.BR_CLOSE();
+			q.BR_OPEN();
+				q.WHERE(bergHammer.stringAtttribute("lastName")).EQUALS("Berghammer");
+				q.OR();
+				q.WHERE(bergHammer.stringAtttribute("matchString")).EQUALS("berghammer_family");
+			q.BR_CLOSE();
+		q.BR_CLOSE();
+		
+		q.WHERE(smith_true.stringAtttribute("firstName")).EQUALS("Angelina");
+		q.WHERE(smith_true.stringAtttribute("matchString")).EQUALS("smith");
+		
+		q.parameter("lastName").setValue("Smith");
+		
+		result = q.execute();
+
+		List<Subject> smith_falseResult = result.resultOf(smith_false);
+		List<Subject> bergHammerResult = result.resultOf(bergHammer);
+		List<Subject> smith_trueResult = result.resultOf(smith_true);
+		
+		assertTrue(smith_falseResult.isEmpty());
+		equals = CompareUtil.equalsUnorderedList(population.getBerghammers(), bergHammerResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(population.getAngelina_smith(), smith_trueResult);
+		assertTrue(equals);
 		
 		/******************************************/
-		DomainQuery q;
-//		q = da1.createQuery();
-//		DomainObjectMatch<Subject> smith_1 = q.createMatch(Subject.class);
-//		q.WHERE(smith_1.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
-//		q.WHERE(smith_1.stringAtttribute("firstName")).NOT().EQUALS("Caroline");
-//		q.WHERE(smith_1.stringAtttribute("firstName")).NOT().EQUALS("Angelina");
-//		
-//		q.parameter("lastName").setValue("Smith");
-//		
-//		DomainQueryResult result = q.execute();
-//		
-//		List<Subject> smith_1Result = result.resultOf(smith_1);
-//		
-//		/******************************************/
-//		q = da1.createQuery();
-//		DomainObjectMatch<Subject> has_clark_firstName = q.createMatch(Subject.class);
-//		DomainObjectMatch<Subject> clark = q.createMatch(Subject.class);
-//		q.WHERE(clark.atttribute("lastName")).EQUALS("Clark");
-//		q.WHERE(has_clark_firstName.atttribute("firstName")).EQUALS(clark.atttribute("firstName"));
-//		
-//		q.parameter("lastName").setValue("Smith");
-//		
-//		result = q.execute();
-//		List<Subject> clarkResult = result.resultOf(clark);
-//		List<Subject> has_clark_firstNameResult = result.resultOf(has_clark_firstName);
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> smith_1 = q.createMatch(Subject.class);
+		q.WHERE(smith_1.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
+		q.WHERE(smith_1.stringAtttribute("firstName")).NOT().EQUALS("Caroline");
+		q.WHERE(smith_1.stringAtttribute("firstName")).NOT().EQUALS("Angelina");
+		
+		q.parameter("lastName").setValue("Smith");
+		
+		result = q.execute();
+		
+		List<Subject> smith_1Result = result.resultOf(smith_1);
+		equals = CompareUtil.equalsUnorderedList(population.getJohn_jery_smith(), smith_1Result);
+		assertTrue(equals);
+		
+		/******************************************/
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> has_clark_firstName = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> has_clark_firstName_2 = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> clark = q.createMatch(Subject.class);
+		q.WHERE(clark.atttribute("lastName")).EQUALS("Clark");
+		q.WHERE(has_clark_firstName.atttribute("firstName")).EQUALS(clark.atttribute("firstName"));
+		q.WHERE(has_clark_firstName_2.atttribute("firstName")).EQUALS(clark.atttribute("firstName"));
+		q.WHERE(has_clark_firstName_2).NOT().IN(clark);
+		
+		result = q.execute();
+		List<Subject> clarkResult = result.resultOf(clark);
+		List<Subject> has_clark_firstNameResult = result.resultOf(has_clark_firstName);
+		List<Subject> has_clark_firstName_2Result = result.resultOf(has_clark_firstName_2);
+		equals = CompareUtil.equalsUnorderedList(population.getAngie_clark(), clarkResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(population.getAngies(), has_clark_firstNameResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(population.getAngelina_smith(), has_clark_firstName_2Result);
+		assertTrue(equals);
 		
 		/******************************************/
 		q = da1.createQuery();
 		DomainObjectMatch<Subject> allSubjects = q.createMatch(Subject.class);
-		DomainObjectMatch<Subject> matching = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> matchingExclude = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> matchingInclude = q.createMatch(Subject.class);
 		DomainObjectMatch<Subject> match = q.createMatch(Subject.class);
 		q.BR_OPEN();
 			q.WHERE(match.atttribute("lastName")).EQUALS("Watson");
@@ -159,13 +179,24 @@ public class DomainQueryTest extends AbstractTestSuite {
 			q.WHERE(match.atttribute("name")).EQUALS("Global Company");
 		q.BR_CLOSE();
 		
-		q.WHERE(matching.atttribute("matchString")).EQUALS(match.atttribute("matchString"));
-		q.WHERE(matching).NOT().IN(match);
+		q.WHERE(matchingExclude.atttribute("matchString")).EQUALS(match.atttribute("matchString"));
+		q.WHERE(matchingExclude).NOT().IN(match);
+		q.WHERE(matchingInclude.atttribute("matchString")).EQUALS(match.atttribute("matchString"));
+		q.WHERE(matchingInclude).IN(match);
 		
 		result = q.execute();
-		List<Subject> matchingResult = result.resultOf(matching);
+		List<Subject> matchingExcludeResult = result.resultOf(matchingExclude);
+		List<Subject> matchingIncludeResult = result.resultOf(matchingInclude);
 		List<Subject> matchResult = result.resultOf(match);
 		List<Subject> allSubjectsResult = result.resultOf(allSubjects);
+		equals = CompareUtil.equalsUnorderedList(population.getWatson_company(), matchResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(population.getMaier_clark(), matchingExcludeResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(domainObjects, allSubjectsResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(population.getWatson_company(), matchingIncludeResult);
+		assertTrue(equals);
 		
 		return;
 	}

@@ -1046,10 +1046,26 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private ObjectMapping getObjectMappingFor(Class<?> clazz) {
 			ObjectMapping objectMapping = this.mappings.get(clazz);
 			if (objectMapping == null) {
-				objectMapping = DefaultObjectMappingCreator.createObjectMapping(clazz);
+				objectMapping = createObjectMappingFor(clazz);
 				addObjectMappingForClass(clazz, objectMapping);
 			}
 			return objectMapping;
+		}
+		
+		private ObjectMapping createObjectMappingFor(Class<?> clazz) {
+			ObjectMapping ret;
+			InternalDomainAccess internalAccess = null;
+			try {
+				internalAccess = MappingUtil.internalDomainAccess.get();
+				MappingUtil.internalDomainAccess.set(getInternalDomainAccess());
+				ret = DefaultObjectMappingCreator.createObjectMapping(clazz);
+			} finally {
+				if (internalAccess != null)
+					MappingUtil.internalDomainAccess.set(internalAccess);
+				else
+					MappingUtil.internalDomainAccess.remove();
+			}
+			return ret;
 		}
 		
 		private FieldMapping modifyFieldMapping(FieldMapping fm, FieldMapping parentField) {
@@ -1091,7 +1107,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					Class<?> clazz = it.next();
 					ObjectMapping objectMapping = this.mappings.get(clazz);
 					if (objectMapping == null) {
-						objectMapping = DefaultObjectMappingCreator.createObjectMapping(clazz);
+						objectMapping = createObjectMappingFor(clazz);
 						this.mappings.put(clazz, objectMapping);
 						this.updateCompoundTypeMapWith(clazz);
 					}

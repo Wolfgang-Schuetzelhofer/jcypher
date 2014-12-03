@@ -125,13 +125,16 @@ public class BooleanOperation extends APIObject implements ICollection<Concatena
 		return this.operateOn(null);
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
-	public <E> Concatenator IN_list(E... value) {
+	public Concatenator IN_list(Object... value) {
 		getBooleanOp().setOperator(Operator.IN);
-		ArrayList<E> il = new ArrayList<E>();
-		for (int i = 0; i < value.length; i++)
-			il.add(value[i]);
+		ArrayList<Object> il = new ArrayList<Object>();
+		Object[] val = value;
+		if (value.length == 1 && value[0].getClass().isArray())
+			val = (Object[]) value[0];
+
+		for (int i = 0; i < val.length; i++)
+			il.add(val[i]);
 		return this.operateOn(new CollectionSpec(il));
 	}
 	

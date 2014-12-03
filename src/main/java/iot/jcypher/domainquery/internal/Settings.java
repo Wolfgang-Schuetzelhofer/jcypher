@@ -18,5 +18,5 @@ package iot.jcypher.domainquery.internal;
 
 public class Settings {
 
-	public static boolean strict = false;
+	public static boolean strict = true;
 }

@@ -49,12 +49,15 @@ public class InCollection<T extends APIObject> extends APIObject implements ICol
 		return this.in(cs);
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Override
-	public <E> T IN_list(E... value) {
-		List<E> list = new ArrayList<E>();
-		for (int i = 0; i < value.length;i++)
-			list.add(value[i]);
+	public T IN_list(Object... value) {
+		ArrayList<Object> list = new ArrayList<Object>();
+		Object[] val = value;
+		if (value.length == 1 && value[0].getClass().isArray())
+			val = (Object[]) value[0];
+
+		for (int i = 0; i < val.length; i++)
+			list.add(val[i]);
 		CollectionSpec cs = new CollectionSpec(list);
 		return this.in(cs);
 	}

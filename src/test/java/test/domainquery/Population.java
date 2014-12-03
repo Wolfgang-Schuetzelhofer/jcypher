@@ -25,6 +25,7 @@ import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
 import test.domainquery.model.Gender;
 import test.domainquery.model.Person;
+import test.domainquery.model.Subject;
 
 public class Population {
 
@@ -41,6 +42,14 @@ public class Population {
 	private Area austria;
 	private Area vienna;
 	private Area vienna_17;
+	
+	private List<Object> berghammers;
+	private List<Object> angelina_smith;
+	private List<Object> john_jery_smith;
+	private List<Object> angie_clark;
+	private List<Object> angies;
+	private List<Object> watson_company;
+	private List<Object> maier_clark;
 	
 	public Population() {
 		super();
@@ -62,6 +71,34 @@ public class Population {
 		return domainObjects;
 	}
 	
+	public List<Object> getBerghammers() {
+		return berghammers;
+	}
+
+	public List<Object> getAngelina_smith() {
+		return angelina_smith;
+	}
+
+	public List<Object> getJohn_jery_smith() {
+		return john_jery_smith;
+	}
+
+	public List<Object> getAngie_clark() {
+		return angie_clark;
+	}
+
+	public List<Object> getAngies() {
+		return angies;
+	}
+
+	public List<Object> getWatson_company() {
+		return watson_company;
+	}
+
+	public List<Object> getMaier_clark() {
+		return maier_clark;
+	}
+
 	private void createPlaces() {
 		earth = new Area(null, "Earth", AreaType.PLANET);
 		northAmerica = new Area(null, "North America", AreaType.CONTINENT);
@@ -111,6 +148,14 @@ public class Population {
 		jery_smith.setMother(caroline_smith);
 		jery_smith.setFather(john_smith);
 		
+		this.angelina_smith = new ArrayList<Object>();
+		this.angelina_smith.add(angie_smith);
+		this.john_jery_smith = new ArrayList<Object>();
+		this.john_jery_smith.add(john_smith);
+		this.john_jery_smith.add(jery_smith);
+		this.angies = new ArrayList<Object>();
+		this.angies.add(angie_smith);
+		
 		domainObjects.add(john_smith);
 		domainObjects.add(caroline_smith);
 		domainObjects.add(angie_smith);
@@ -132,6 +177,11 @@ public class Population {
 		christa_berhammer.getPointsOfContact().add(berghammer_address);
 		christa_berhammer.setMother(gerda_berhammer);
 		christa_berhammer.setFather(hans_berghammer);
+		
+		this.berghammers = new ArrayList<Object>();
+		this.berghammers.add(hans_berghammer);
+		this.berghammers.add(gerda_berhammer);
+		this.berghammers.add(christa_berhammer);
 		
 		domainObjects.add(hans_berghammer);
 		domainObjects.add(gerda_berhammer);
@@ -160,6 +210,16 @@ public class Population {
 		sarah_maier.setMatchString("match_2");
 		sarah_maier.getPointsOfContact().add(maier_address);
 		
+		this.angie_clark = new ArrayList<Object>();
+		this.angie_clark.add(angie_clark);
+		this.angies.add(angie_clark);
+		this.watson_company = new ArrayList<Object>();
+		this.watson_company.add(jim_watson);
+		this.maier_clark = new ArrayList<Object>();
+		this.maier_clark.add(sarah_maier);
+		this.maier_clark.add(herbert_maier);
+		this.maier_clark.add(angie_clark);
+		
 		domainObjects.add(jim_watson);
 		domainObjects.add(angie_clark);
 		domainObjects.add(herbert_maier);
@@ -174,6 +234,8 @@ public class Population {
 		globCom.setMatchString("match_1");
 		globCom.setName("Global Company");
 		globCom.getPointsOfContact().add(globCom_address);
+		
+		this.watson_company.add(globCom);
 		
 		domainObjects.add(globCom);
 	}

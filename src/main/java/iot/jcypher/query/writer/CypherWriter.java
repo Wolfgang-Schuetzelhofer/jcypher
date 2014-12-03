@@ -1018,6 +1018,8 @@ public class CypherWriter {
 					PrimitiveCypherWriter.writePrimitiveValue(list.get(i), context);
 				}
 				context.buffer.append(']');
+			} else if (val instanceof JcValue) {
+				context.buffer.append(ValueAccess.getName((JcValue)val));
 			} else {
 				context.buffer.append('\'');
 				context.buffer.append(val.toString());
