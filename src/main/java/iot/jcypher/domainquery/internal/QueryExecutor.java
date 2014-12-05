@@ -50,6 +50,7 @@ import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -106,7 +107,7 @@ public class QueryExecutor {
 		QueryContext context = new QueryContext();
 		QueryBuilder qb = new QueryBuilder();
 		JcQuery query = qb.buildQuery(context);
-//		Util.printQuery(query, "DOM QUERY", Format.PRETTY_1);
+		Util.printQuery(query, "DOM QUERY", Format.PRETTY_1);
 		JcQueryResult result = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().
 														execute(query);
 		List<JcError> errors = Util.collectErrors(result);
@@ -358,32 +359,28 @@ public class QueryExecutor {
 			Operator op = pred.getOperator();
 			ValueElement val_1 = null;
 			IPredicateOperand1 v_1 = pred.getValue_1();
+			
+			testValidInOperation(v_1, op, 1); // throws an exception if not valid
 			if (v_1 instanceof ValueElement)
 				val_1 = testAndCloneIfNeeded((ValueElement)v_1, clausesPerType);
-			else if (v_1 instanceof DomainObjectMatch<?>) {
-				if (op == Operator.IN)
-					val_1 = clausesPerType.node;
-				else
-					val_1 = clausesPerType.node.id();
-			}
+			else if (v_1 instanceof DomainObjectMatch<?>)
+				val_1 = clausesPerType.node;
 			
 			if (val_1 != null) { // if either really null or invalid
 				Object val_2 = pred.getValue_2();
 				if (val_2 instanceof Parameter)
 					val_2 = ((Parameter)val_2).getValue();
+				testValidInOperation(val_2, op, 2); // throws an exception if not valid
 				
-				boolean val_2IsDom = false;
-				boolean val_2InDom = false;
+				boolean val2IsDom = false;
 				List<Object> val_2s = null;
-				if (val_2 instanceof IPredicateOperand1) {
-					if (val_2 instanceof DomainObjectMatch<?>)
-						val_2IsDom = true;
-					if (val_2 instanceof DomainObjectMatch<?> && op == Operator.IN) {
-						val_2InDom = true;
+				if (val_2 instanceof IPredicateOperand1) { // ValueElement or DomainObjectMatch
+					if (val_2 instanceof DomainObjectMatch<?>) { // after test op must be IN or EQUALS
+						val2IsDom = true;
 						val_2s = new ArrayList<Object>();
 						val_2s.add(collectNodes((DomainObjectMatch<?>)val_2, validNodes));
 					} else
-						val_2s = buildAllInstances((IPredicateOperand1)val_2, val_2IsDom ? validNodes : null);
+						val_2s = buildAllInstances((ValueElement)val_2, validNodes);
 				} else if (val_2 != null) {
 					val_2s = new ArrayList<Object>();
 					val_2s.add(val_2);
@@ -391,14 +388,14 @@ public class QueryExecutor {
 				int cnt = val_2s != null ? val_2s.size() : 1;
 				
 				boolean negate = false;
-				if (val_2InDom) {
+				if (val2IsDom) { // after test op must be IN or EQUALS
 					if (neg > 0) {
 						neg--;
 						negate = true;
 					}
 				}
 				for (int i = neg; neg > 0; neg--) {
-					if (i == neg) {
+					if (i == neg) { // the first negation
 						if (concat == null)
 							concat_1 = (Concat)WHERE.NOT();
 						else
@@ -409,7 +406,7 @@ public class QueryExecutor {
 				if (concat_1 == null)
 					concat_1 = concat;
 				
-				if (cnt > 1 || val_2InDom) { // encapsulate by brackets
+				if (cnt > 1 || val2IsDom) { // encapsulate by brackets
 					if (concat_1 != null)
 						concat_1 = concat_1.BR_OPEN();
 					else { // no negation(s)
@@ -417,7 +414,7 @@ public class QueryExecutor {
 					}
 				}
 				
-				if (!val_2InDom) {
+				if (!val2IsDom) {
 					if (concat_1 == null)
 						booleanOp = WHERE.valueOf(val_1);
 					else
@@ -428,17 +425,20 @@ public class QueryExecutor {
 				for (int i = 0; i < cnt; i++) {
 					if (val_2s != null)
 						val_2 = val_2s.get(i);
-					if (op == Operator.EQUALS)
-						ret = booleanOp.EQUALS(val_2);
-					else if (op == Operator.GT)
+					if (op == Operator.EQUALS) {
+						if (val2IsDom)
+							ret = createWhereEquals(concat_1, val_1, (List<JcNode>) val_2, negate);
+						else
+							ret = booleanOp.EQUALS(val_2);
+					} else if (op == Operator.GT)
 						ret = booleanOp.GT(val_2);
 					else if (op == Operator.GTE)
 						ret = booleanOp.GTE(val_2);
 					else if (op == Operator.IN) {
-						if (val_2.getClass().isArray())
-							ret = booleanOp.IN_list(val_2);
-						else if (val_2IsDom)
+						if (val2IsDom)
 							ret = createWhereIn(concat_1, val_1, (List<JcNode>) val_2, negate);
+						else
+							ret = booleanOp.IN_list(val_2);
 					} else if (op == Operator.IS_NULL)
 						ret = booleanOp.IS_NULL();
 					else if (op == Operator.LIKE)
@@ -460,7 +460,53 @@ public class QueryExecutor {
 			return ret;
 		}
 		
+		/**
+		 * @param value
+		 * @param op
+		 * @param paramPosition 1 or 2
+		 */
+		private void testValidInOperation(Object value, Operator op,
+				int paramPosition) {
+			if (paramPosition == 1) {
+				if (value instanceof DomainObjectMatch<?>) {
+					if (!(op == Operator.EQUALS || op == Operator.IN || op == Operator.IS_NULL))
+						throw new RuntimeException("invalid parameter 1 in WHERE clause [" + op.name() + "]");
+				}
+			} else if (paramPosition == 2) {
+				if (value instanceof DomainObjectMatch<?>) {
+					if (!(op == Operator.EQUALS || op == Operator.IN))
+						throw new RuntimeException("invalid parameter 2 in WHERE clause [" + op.name() + "]");
+				}
+			}
+		}
+
 		private iot.jcypher.query.api.predicate.Concatenator createWhereIn(
+				Concat concat, ValueElement val_1, List<JcNode> val_2, boolean not) {
+			iot.jcypher.query.api.predicate.Concatenator booleanOp = null;
+			Concat concat_1 = concat;
+			int idx = 0;
+			for (JcNode n : val_2) {
+				if (idx == 0 && val_2.size() > 1) // encapsulate with brackets
+					concat_1 = concat_1.BR_OPEN();
+				if (not) {
+					if (idx == 0)
+						booleanOp = concat_1.valueOf(n).IS_NULL().OR().NOT().valueOf(val_1).IN_list(n).BR_CLOSE();
+					else
+						booleanOp = booleanOp.AND().BR_OPEN().valueOf(n).IS_NULL().OR().NOT().valueOf(val_1).IN_list(n).BR_CLOSE();
+				} else {
+					if (idx == 0)
+						booleanOp = concat_1.NOT().valueOf(n).IS_NULL().AND().valueOf(val_1).IN_list(n).BR_CLOSE();
+					else
+						booleanOp.OR().BR_OPEN().NOT().valueOf(n).IS_NULL().AND().valueOf(val_1).IN_list(n).BR_CLOSE();
+				}
+				if ((idx == val_2.size() - 1) && val_2.size() > 1) // encapsulate with brackets
+					booleanOp = booleanOp.BR_CLOSE();
+				idx++;
+			}
+			return booleanOp;
+		}
+		
+		private iot.jcypher.query.api.predicate.Concatenator createWhereEquals(
 				Concat concat, ValueElement val_1, List<JcNode> val_2, boolean not) {
 			iot.jcypher.query.api.predicate.Concatenator booleanOp = null;
 			int idx = 0;
@@ -498,22 +544,14 @@ public class QueryExecutor {
 		 * @return
 		 */
 		@SuppressWarnings("unchecked")
-		private List<Object> buildAllInstances(IPredicateOperand1 val, List<String> validNodes) {
+		private List<Object> buildAllInstances(ValueElement ve, List<String> validNodes) {
 			List<Object> ret = new ArrayList<Object>();
 			List<JcNode> validFor = null;
-			ValueElement ve = null;
-			if (val instanceof ValueElement)
-				ve = (ValueElement)val;
-			else if (val instanceof DomainObjectMatch<?>) {
-				validFor = APIAccess.getNodes((DomainObjectMatch<?>)val);
-				if (validFor.size() > 0)
-					ve = validFor.get(0).id();
-			}
 			if (ve != null) {
 				ValueElement first = ValueAccess.findFirst(ve);
 				if (first instanceof JcNode) {
 					String nodeName = ValueAccess.getName((JcNode)first);
-					if (validNodes == null || validNodes.contains(nodeName))
+					if (validNodes.contains(nodeName))
 						ret.add(ve);
 					if (validFor == null) {
 						Object hint = ValueAccess.getAnyHint(ve);
@@ -524,7 +562,7 @@ public class QueryExecutor {
 					for(JcNode n : validFor) {
 						String nnm = ValueAccess.getName(n);
 						if (!nodeName.equals(nnm)) { // need to clone
-							if (validNodes == null || validNodes.contains(nnm))
+							if (validNodes.contains(nnm))
 								ret.add(cloneVe(ve, first, n));
 						}
 					}
@@ -617,17 +655,33 @@ public class QueryExecutor {
 
 		private void removeEmptyBlocks(List<IASTObject> candidates) {
 			List<Integer> toRemove = new ArrayList<Integer>();
+			List<Integer> orsToRemove = new ArrayList<Integer>();
 			List<Integer> candidatesIndices = new ArrayList<Integer>();
+			// key: openBracket index, value: or index
+			Map<Integer, Integer> bracketToOr = new HashMap<Integer, Integer>();
+			int orIndexToTest = -1;
+			boolean orMaybeValid = false; // or must not be at begin
 			for (int i = 0; i < candidates.size(); i++) {
 				IASTObject astObj = candidates.get(i);
 				if (astObj instanceof ConcatenateExpression) {
 					Concatenator concat = ((ConcatenateExpression)astObj).getConcatenator();
-					if (concat == Concatenator.BR_OPEN)
+					if (concat == Concatenator.BR_OPEN) {
+						if (orIndexToTest != -1) // or may be before open bracket
+							bracketToOr.put(i, orIndexToTest);
+						orIndexToTest = -1;
 						candidatesIndices.add(i);
-					else if (concat == Concatenator.BR_CLOSE) {
-						// close follows immediately after open
-						if (candidatesIndices.size() > 0) {
+						orMaybeValid = false; // or must not follow immediately after an open bracket
+					} else if (concat == Concatenator.BR_CLOSE) {
+						if (candidatesIndices.size() > 0) { // close follows immediately after open
+																				// empty block will be removed
+							// idx is the matching open bracket index
 							Integer idx = candidatesIndices.remove(candidatesIndices.size() - 1);
+							Integer orIdx = bracketToOr.get(idx);
+							if (orIdx != null)
+								orIndexToTest = orIdx.intValue(); // must be tested if valid
+							else
+								orIndexToTest = -1; // if != -1was within the block that will be removed
+																 // it will be removed with the block so we can forget it
 							// test and remove encapsulated pairs
 							for (int j = toRemove.size() - 1; j >= 0; j--) {
 								if (idx.intValue() < toRemove.get(j).intValue())
@@ -635,12 +689,27 @@ public class QueryExecutor {
 							}
 							toRemove.add(idx); // start
 							toRemove.add(i); // end
+						} else {
+							orMaybeValid = true; // or can follow a closing bracket
+							if (orIndexToTest != -1)
+								orsToRemove.add(orIndexToTest);  // or must not be immediately before a close bracket
+							orIndexToTest = -1;
+						}
+					} else if (concat == Concatenator.OR) {
+						if (!orMaybeValid)
+							orsToRemove.add(i);
+						else {
+							orIndexToTest = i;
+							orMaybeValid = false; // no consecutive ors allowed
 						}
 					}
 				} else { // not an empty block, contains at least one valid predicate expression
 					candidatesIndices.clear();
+					orMaybeValid = true; // or can follow a predicate expression
 				}
 			}
+			if (orIndexToTest != -1)
+				orsToRemove.add(orIndexToTest);  // or must not be at the end
 			
 			// now remove the found empty blocks
 			// indices are always pairwise for close and open brackets
@@ -656,9 +725,25 @@ public class QueryExecutor {
 						// and the actual open index (inclusive)
 						candidates.remove(j);
 					}
+					int adjust = prevCloseIndex - idx + 1; // this range is removed
+					// remove and adjust or indices
+					for (int j = orsToRemove.size() - 1; j >= 0; j--) {
+						int oidx = orsToRemove.get(j).intValue();
+						if (oidx > idx && oidx < prevCloseIndex) // remove
+							orsToRemove.remove(j);
+						else if (oidx > prevCloseIndex)
+							orsToRemove.set(j, oidx - adjust);
+					}
 				}
 				// toggle between close and open index (they are always pairwise)
 				prevCloseIndex = prevCloseIndex == -1 ? idx : -1;
+			}
+			
+			// remove invalid ors
+			Collections.sort(orsToRemove);
+			for (int i = orsToRemove.size() - 1; i >= 0; i--) {
+				int idx = orsToRemove.get(i).intValue();
+				candidates.remove(idx);
 			}
 		}
 
@@ -668,11 +753,13 @@ public class QueryExecutor {
 				PredicateExpression pred = (PredicateExpression)astObj;
 				boolean isXpr = false;
 				String nodeName_1 = getNodeName(pred.getValue_1());
+				int orRemoveState = 0;
 				if (nodeName_1 != null) {
 					if (nodeName_1.indexOf(baseNodeName) == 0) {
 						context.candidates.add(astObj);
 						isXpr = true;
 						context.state = State.HAS_XPRESSION;
+						orRemoveState = -1;
 					}
 				}
 				if (isXpr) {
@@ -683,7 +770,9 @@ public class QueryExecutor {
 						}
 					}
 				}
+				context.orRemoveState = orRemoveState;
 			} else if (astObj instanceof ConcatenateExpression) {
+				int orRemoveState = -1;
 				ConcatenateExpression conc = (ConcatenateExpression)astObj;
 				if (conc.getConcatenator() == Concatenator.BR_OPEN) {
 					context.blockCount++;
@@ -691,8 +780,12 @@ public class QueryExecutor {
 					if (context.blockCount <= 0)
 						throw new RuntimeException("bracket close mismatch");
 					context.blockCount--;
+				} else if (conc.getConcatenator() == Concatenator.OR) {
+					orRemoveState = context.orRemoveState;
 				}
-				context.candidates.add(astObj);
+				if (orRemoveState != 0)
+					context.candidates.add(astObj);
+				context.orRemoveState = orRemoveState;
 			}
 		}
 
@@ -715,11 +808,16 @@ public class QueryExecutor {
 			private List<IASTObject> candidates;
 			private List<String> dependencies;
 			
+			// -1 .. init,
+			// 0 .. foreign predicate expression,
+			private int orRemoveState;
+			
 			private StateContext() {
 				super();
 				this.state = State.INIT;
 				this.blockCount = 0;
 				this.candidates = new ArrayList<IASTObject>();
+				this.orRemoveState = -1;
 			}
 			
 			private void addDependency(String nodeName) {

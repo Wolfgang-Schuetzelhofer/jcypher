@@ -29,6 +29,11 @@ public class ConcatenateExpression implements IASTObject {
 		return concatenator;
 	}
 
+	@Override
+	public String toString() {
+		return "[" + concatenator + "]";
+	}
+
 	/*****************************************************************/
 	public enum Concatenator {
 		OR, BR_OPEN, BR_CLOSE

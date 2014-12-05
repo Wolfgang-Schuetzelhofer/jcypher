@@ -60,6 +60,11 @@ public class PredicateExpression implements IASTObject {
 		return negationCount;
 	}
 
+	@Override
+	public String toString() {
+		return "[" + operator + "]";
+	}
+
 	/*****************************************************************/
 	public enum Operator {
 		EQUALS, NOT, LT, GT, LTE, GTE, LIKE, IN, IS_NULL
