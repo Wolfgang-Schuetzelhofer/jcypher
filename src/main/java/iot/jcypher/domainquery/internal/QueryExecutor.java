@@ -621,7 +621,7 @@ public class QueryExecutor {
 			if (ve == first) {
 				return;
 			}
-			if (clausesPerType.previousOr && !Settings.strict) { // build the clause even if the expression will return no result
+			if (clausesPerType.previousOr || !Settings.strict) { // build the clause even if the expression will return no result
 				return;									     // because it is concatenated by OR
 			}
 			Object hint = ValueAccess.getAnyHint(ve);
@@ -699,13 +699,14 @@ public class QueryExecutor {
 						if (!orMaybeValid)
 							orsToRemove.add(i);
 						else {
-							orIndexToTest = i;
+							orIndexToTest = i; // for test with next expression
 							orMaybeValid = false; // no consecutive ors allowed
 						}
 					}
 				} else { // not an empty block, contains at least one valid predicate expression
 					candidatesIndices.clear();
 					orMaybeValid = true; // or can follow a predicate expression
+					orIndexToTest = -1;
 				}
 			}
 			if (orIndexToTest != -1)
@@ -756,6 +757,8 @@ public class QueryExecutor {
 				int orRemoveState = 0;
 				if (nodeName_1 != null) {
 					if (nodeName_1.indexOf(baseNodeName) == 0) {
+						if (context.orToAdd != null) // add pending or
+							context.candidates.add(context.orToAdd);
 						context.candidates.add(astObj);
 						isXpr = true;
 						context.state = State.HAS_XPRESSION;
@@ -771,20 +774,30 @@ public class QueryExecutor {
 					}
 				}
 				context.orRemoveState = orRemoveState;
+				context.orToAdd = null; // clear or, it has either been added already or it is invalid
 			} else if (astObj instanceof ConcatenateExpression) {
+				boolean isOr = false;
 				int orRemoveState = -1;
 				ConcatenateExpression conc = (ConcatenateExpression)astObj;
 				if (conc.getConcatenator() == Concatenator.BR_OPEN) {
 					context.blockCount++;
+					if (context.orToAdd != null) // add pending or
+						context.candidates.add(context.orToAdd);
 				} else if (conc.getConcatenator() == Concatenator.BR_CLOSE) {
 					if (context.blockCount <= 0)
 						throw new RuntimeException("bracket close mismatch");
 					context.blockCount--;
 				} else if (conc.getConcatenator() == Concatenator.OR) {
 					orRemoveState = context.orRemoveState;
+					isOr = true;
 				}
-				if (orRemoveState != 0)
-					context.candidates.add(astObj);
+				context.orToAdd = null; // clear or, it has either been added already or it is invalid
+				if (orRemoveState != 0) { // prevoius was not foreign predicate expression
+					if (isOr)
+						context.orToAdd = astObj; // to test if next is foreign predicate expression
+					else
+						context.candidates.add(astObj);
+				}
 				context.orRemoveState = orRemoveState;
 			}
 		}
@@ -811,6 +824,7 @@ public class QueryExecutor {
 			// -1 .. init,
 			// 0 .. foreign predicate expression,
 			private int orRemoveState;
+			private IASTObject orToAdd;
 			
 			private StateContext() {
 				super();
@@ -884,7 +898,6 @@ public class QueryExecutor {
 	/************************************/
 	private class QueryContext {
 		private List<IdsPerType> idNumbers;
-		private List<Long> ids;
 		private Map<DomainObjectMatch<?>, List<IdsPerType>> idsMap;
 
 		private QueryContext() {

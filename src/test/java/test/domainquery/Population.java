@@ -50,6 +50,9 @@ public class Population {
 	private List<Object> angies;
 	private List<Object> watson_company;
 	private List<Object> maier_clark;
+	private List<Object> smiths_christa_berghammer_globcom;
+	private List<Object> berghammers_globcom;
+	private List<Object> christa_berghammer_globcom;
 	
 	public Population() {
 		super();
@@ -97,6 +100,18 @@ public class Population {
 
 	public List<Object> getMaier_clark() {
 		return maier_clark;
+	}
+
+	public List<Object> getSmiths_christa_berghammer_globcom() {
+		return smiths_christa_berghammer_globcom;
+	}
+
+	public List<Object> getBerghammers_globcom() {
+		return berghammers_globcom;
+	}
+
+	public List<Object> getChrista_berghammer_globcom() {
+		return christa_berghammer_globcom;
 	}
 
 	private void createPlaces() {
@@ -155,6 +170,11 @@ public class Population {
 		this.john_jery_smith.add(jery_smith);
 		this.angies = new ArrayList<Object>();
 		this.angies.add(angie_smith);
+		this.smiths_christa_berghammer_globcom = new ArrayList<Object>();
+		this.smiths_christa_berghammer_globcom.add(john_smith);
+		this.smiths_christa_berghammer_globcom.add(caroline_smith);
+		this.smiths_christa_berghammer_globcom.add(angie_smith);
+		this.smiths_christa_berghammer_globcom.add(jery_smith);
 		
 		domainObjects.add(john_smith);
 		domainObjects.add(caroline_smith);
@@ -182,6 +202,13 @@ public class Population {
 		this.berghammers.add(hans_berghammer);
 		this.berghammers.add(gerda_berhammer);
 		this.berghammers.add(christa_berhammer);
+		this.smiths_christa_berghammer_globcom.add(christa_berhammer);
+		this.berghammers_globcom = new ArrayList<Object>();
+		this.berghammers_globcom.add(hans_berghammer);
+		this.berghammers_globcom.add(gerda_berhammer);
+		this.berghammers_globcom.add(christa_berhammer);
+		this.christa_berghammer_globcom = new ArrayList<Object>();
+		this.christa_berghammer_globcom.add(christa_berhammer);
 		
 		domainObjects.add(hans_berghammer);
 		domainObjects.add(gerda_berhammer);
@@ -236,6 +263,9 @@ public class Population {
 		globCom.getPointsOfContact().add(globCom_address);
 		
 		this.watson_company.add(globCom);
+		this.smiths_christa_berghammer_globcom.add(globCom);
+		this.berghammers_globcom.add(globCom);
+		this.christa_berghammer_globcom.add(globCom);
 		
 		domainObjects.add(globCom);
 	}
