@@ -99,6 +99,7 @@ public class CypherWriter {
 			CypherWriter.toCypherExpression(clause, idx, context);
 			idx++;
 		}
+		addFilterExpressionsIfNeeded(context, true);
 	}
 	
 	public static void toCypherExpression(IClause clause, int index, WriterContext context) {
@@ -109,11 +110,12 @@ public class CypherWriter {
 		boolean hasStart = index > 0;
 		ClauseType clauseType = astNode.getClauseType();
 		context.currentClause = clauseType;
+		addFilterExpressionsIfNeeded(context, false);
 		
 		/*** CYPHER NATIVE CLAUSE **************************************/
 		if (clauseType == ClauseType.CYPHER_NATIVE) {
 			if (hasStart)
-				Pretty.writePreClauseSeparator(context);
+				Pretty.writePreClauseSeparator(context, context.buffer);
 			NativeCypherWriter.toCypherExpression((NativeCypherExpression)astNode, context);
 		}
 		
@@ -121,12 +123,12 @@ public class CypherWriter {
 		if (clauseType == ClauseType.START) {
 			if (context.previousClause != ClauseType.START) { // otherwise concat multiple starts
 				if (hasStart)
-					Pretty.writePreClauseSeparator(context);
+					Pretty.writePreClauseSeparator(context, context.buffer);
 				context.buffer.append("START");
-				Pretty.writePostClauseSeparator(context);
+				Pretty.writePostClauseSeparator(context, context.buffer);
 			} else {
 				context.buffer.append(',');
-				Pretty.writeStatementSeparator(context);
+				Pretty.writeStatementSeparator(context, context.buffer);
 			}
 			StartCypherWriter.toCypherExpression((StartExpression)astNode, context);
 		}
@@ -134,25 +136,25 @@ public class CypherWriter {
 		/*** UNION CLAUSE, UNION ALL CLAUSE **************************************/
 		if (clauseType == ClauseType.UNION || clauseType == ClauseType.UNION_ALL) {
 			if (hasStart)
-				Pretty.writePreClauseSeparator(context);
+				Pretty.writePreClauseSeparator(context, context.buffer);
 			UnionExpression ux = (UnionExpression)astNode;
 			if (ux.isDistinct())
 				context.buffer.append("UNION");
 			else
 				context.buffer.append("UNION ALL");
-			Pretty.writePostClauseSeparator(context);
+			Pretty.writePostClauseSeparator(context, context.buffer);
 		}
 		
 		/*** WITH CLAUSE **************************************/
 		if (clauseType == ClauseType.WITH) {
 			if (context.previousClause != ClauseType.WITH) { // otherwise concat multiple withs
 				if (hasStart)
-					Pretty.writePreClauseSeparator(context);
+					Pretty.writePreClauseSeparator(context, context.buffer);
 				context.buffer.append("WITH");
-				Pretty.writePostClauseSeparator(context);
+				Pretty.writePostClauseSeparator(context, context.buffer);
 			} else {
 				context.buffer.append(',');
-				Pretty.writeStatementSeparator(context);
+				Pretty.writeStatementSeparator(context, context.buffer);
 			}
 			ReturnCypherWriter.toCypherExpression((ReturnExpression)astNode, context);
 		}
@@ -161,12 +163,12 @@ public class CypherWriter {
 		if (clauseType == ClauseType.MATCH) {
 			if (context.previousClause != ClauseType.MATCH) { // otherwise concat multiple matches
 				if (hasStart)
-					Pretty.writePreClauseSeparator(context);
+					Pretty.writePreClauseSeparator(context, context.buffer);
 				context.buffer.append("MATCH");
-				Pretty.writePostClauseSeparator(context);
+				Pretty.writePostClauseSeparator(context, context.buffer);
 			} else {
 				context.buffer.append(',');
-				Pretty.writeStatementSeparator(context);
+				Pretty.writeStatementSeparator(context, context.buffer);
 			}
 			PatternCypherWriter.toCypherExpression((PatternExpression)astNode, context);
 		}
@@ -175,12 +177,12 @@ public class CypherWriter {
 		if (clauseType == ClauseType.OPTIONAL_MATCH) {
 			if (context.previousClause != ClauseType.OPTIONAL_MATCH) { // otherwise concat multiple matches
 				if (hasStart)
-					Pretty.writePreClauseSeparator(context);
+					Pretty.writePreClauseSeparator(context, context.buffer);
 				context.buffer.append("OPTIONAL MATCH");
-				Pretty.writePostClauseSeparator(context);
+				Pretty.writePostClauseSeparator(context, context.buffer);
 			} else {
 				context.buffer.append(',');
-				Pretty.writeStatementSeparator(context);
+				Pretty.writeStatementSeparator(context, context.buffer);
 			}
 			PatternCypherWriter.toCypherExpression((PatternExpression)astNode, context);
 		}
@@ -188,27 +190,27 @@ public class CypherWriter {
 		/*** USING INDEX CLAUSE **************************************/
 		if (clauseType == ClauseType.USING_INDEX) {
 			if (hasStart)
-				Pretty.writePreClauseSeparator(context);
+				Pretty.writePreClauseSeparator(context, context.buffer);
 			context.buffer.append("USING INDEX");
-			Pretty.writePostClauseSeparator(context);
+			Pretty.writePostClauseSeparator(context, context.buffer);
 			UCypherWriter.toCypherExpression((UsingExpression)astNode, context);
 		}
 		
 		/*** USING SCAN CLAUSE **************************************/
 		if (clauseType == ClauseType.USING_SCAN) {
 			if (hasStart)
-				Pretty.writePreClauseSeparator(context);
+				Pretty.writePreClauseSeparator(context, context.buffer);
 			context.buffer.append("USING SCAN");
-			Pretty.writePostClauseSeparator(context);
+			Pretty.writePostClauseSeparator(context, context.buffer);
 			UCypherWriter.toCypherExpression((UsingExpression)astNode, context);
 		}
 		
 		/*** WHERE CLAUSE **************************************/
 		if (clauseType == ClauseType.WHERE) {
 			if (hasStart)
-				Pretty.writePreClauseSeparator(context);
+				Pretty.writePreClauseSeparator(context, context.buffer);
 			context.buffer.append("WHERE");
-			Pretty.writePostClauseSeparator(context);
+			Pretty.writePostClauseSeparator(context, context.buffer);
 			PredicateCypherWriter.toCypherExpression((PredicateExpression)astNode, context);
 		}
 		
@@ -216,12 +218,12 @@ public class CypherWriter {
 		if (clauseType == ClauseType.CREATE) {
 			if (context.previousClause != ClauseType.CREATE) { // otherwise concat multiple creates
 				if (hasStart)
-					Pretty.writePreClauseSeparator(context);
+					Pretty.writePreClauseSeparator(context, context.buffer);
 				context.buffer.append("CREATE");
-				Pretty.writePostClauseSeparator(context);
+				Pretty.writePostClauseSeparator(context, context.buffer);
 			} else {
 				context.buffer.append(',');
-				Pretty.writeStatementSeparator(context);
+				Pretty.writeStatementSeparator(context, context.buffer);
 			}
 			PatternCypherWriter.toCypherExpression((PatternExpression)astNode, context);
 		}
@@ -230,12 +232,12 @@ public class CypherWriter {
 		if (clauseType == ClauseType.CREATE_UNIQUE) {
 			if (context.previousClause != ClauseType.CREATE_UNIQUE) { // otherwise concat multiple creates
 				if (hasStart)
-					Pretty.writePreClauseSeparator(context);
+					Pretty.writePreClauseSeparator(context, context.buffer);
 				context.buffer.append("CREATE UNIQUE");
-				Pretty.writePostClauseSeparator(context);
+				Pretty.writePostClauseSeparator(context, context.buffer);
 			} else {
 				context.buffer.append(',');
-				Pretty.writeStatementSeparator(context);
+				Pretty.writeStatementSeparator(context, context.buffer);
 			}
 			PatternCypherWriter.toCypherExpression((PatternExpression)astNode, context);
 		}
@@ -244,12 +246,12 @@ public class CypherWriter {
 		if (clauseType == ClauseType.RETURN) {
 			if (context.previousClause != ClauseType.RETURN) { // otherwise concat multiple returns
 				if (hasStart)
-					Pretty.writePreClauseSeparator(context);
+					Pretty.writePreClauseSeparator(context, context.buffer);
 				context.buffer.append("RETURN");
-				Pretty.writePostClauseSeparator(context);
+				Pretty.writePostClauseSeparator(context, context.buffer);
 			} else {
 				context.buffer.append(',');
-				Pretty.writeStatementSeparator(context);
+				Pretty.writeStatementSeparator(context, context.buffer);
 			}
 			ReturnCypherWriter.toCypherExpression((ReturnExpression)astNode, context);
 		}
@@ -257,9 +259,9 @@ public class CypherWriter {
 		/*** SET CLAUSE **************************************/
 		if (clauseType == ClauseType.SET) {
 			if (hasStart)
-				Pretty.writePreClauseSeparator(context);
+				Pretty.writePreClauseSeparator(context, context.buffer);
 			context.buffer.append("SET");
-			Pretty.writePostClauseSeparator(context);
+			Pretty.writePostClauseSeparator(context, context.buffer);
 			STCypherWriter.toCypherExpression((ModifyExpression)astNode, context);
 		}
 		
@@ -267,12 +269,12 @@ public class CypherWriter {
 		if (clauseType == ClauseType.DELETE) {
 			if (context.previousClause != ClauseType.DELETE) { // otherwise concat multiple deletes
 				if (hasStart)
-					Pretty.writePreClauseSeparator(context);
+					Pretty.writePreClauseSeparator(context, context.buffer);
 				context.buffer.append("DELETE");
-				Pretty.writePostClauseSeparator(context);
+				Pretty.writePostClauseSeparator(context, context.buffer);
 			} else {
 				context.buffer.append(',');
-				Pretty.writeStatementSeparator(context);
+				Pretty.writeStatementSeparator(context, context.buffer);
 			}
 			STCypherWriter.toCypherExpression((ModifyExpression)astNode, context);
 		}
@@ -281,12 +283,12 @@ public class CypherWriter {
 		if (clauseType == ClauseType.REMOVE) {
 			if (context.previousClause != ClauseType.REMOVE) { // otherwise concat multiple removes
 				if (hasStart)
-					Pretty.writePreClauseSeparator(context);
+					Pretty.writePreClauseSeparator(context, context.buffer);
 				context.buffer.append("REMOVE");
-				Pretty.writePostClauseSeparator(context);
+				Pretty.writePostClauseSeparator(context, context.buffer);
 			} else {
 				context.buffer.append(',');
-				Pretty.writeStatementSeparator(context);
+				Pretty.writeStatementSeparator(context, context.buffer);
 			}
 			STCypherWriter.toCypherExpression((ModifyExpression)astNode, context);
 		}
@@ -294,38 +296,49 @@ public class CypherWriter {
 		/*** FOREACH CLAUSE **************************************/
 		if (clauseType == ClauseType.FOREACH) {
 			if (hasStart)
-				Pretty.writePreClauseSeparator(context);
+				Pretty.writePreClauseSeparator(context, context.buffer);
 			context.buffer.append("FOREACH");
-			Pretty.writePostClauseSeparator(context);
+			Pretty.writePostClauseSeparator(context, context.buffer);
 			CollectionCypherWriter.toCypherSubExpression((CollectExpression)astNode, context);
 		}
 		
 		/*** CREATE INDEX CLAUSE **************************************/
 		if (clauseType == ClauseType.CREATE_INDEX) {
 			if (hasStart)
-				Pretty.writePreClauseSeparator(context);
+				Pretty.writePreClauseSeparator(context, context.buffer);
 			context.buffer.append("CREATE INDEX ON");
-			Pretty.writePostClauseSeparator(context);
+			Pretty.writePostClauseSeparator(context, context.buffer);
 			IndexCypherWriter.toCypherExpression((IndexExpression)astNode, context);
 		}
 		
 		/*** DROP INDEX CLAUSE **************************************/
 		if (clauseType == ClauseType.DROP_INDEX) {
 			if (hasStart)
-				Pretty.writePreClauseSeparator(context);
+				Pretty.writePreClauseSeparator(context, context.buffer);
 			context.buffer.append("DROP INDEX ON");
-			Pretty.writePostClauseSeparator(context);
+			Pretty.writePostClauseSeparator(context, context.buffer);
 			IndexCypherWriter.toCypherExpression((IndexExpression)astNode, context);
 		}
 		
 		context.previousClause = context.currentClause;
 	}
 	
+	private static void addFilterExpressionsIfNeeded(WriterContext context, boolean end) {
+		if (context.filterBuffer != null) {
+			if ((context.currentClause != ClauseType.WITH && context.previousClause == ClauseType.WITH) ||
+					(context.currentClause != ClauseType.RETURN && context.previousClause == ClauseType.RETURN) ||
+					end) {
+				context.buffer.append(context.filterBuffer);
+				context.filterBuffer = null;
+			}
+		}
+	}
+	
 	/*****************************************************/
 	private static class CollectionCypherWriter {
 
 		private static void toCypherExpression(CollectExpression collectExpression, WriterContext context) {
-			//Pretty.writeStatementSeparator(context);
+			//Pretty.writeStatementSeparator(context, context.buffer);
 			toCypherExpressionRecursive(collectExpression, context);
 		}
 		
@@ -359,14 +372,14 @@ public class CypherWriter {
 				if (collSpec.getCollection() != null) {
 					toCypherExpressionRecursive(collSpec.getCollection(), context);
 				} else if (collSpec.getJcCollection() != null) {
-					ValueWriter.toValueExpression(collSpec.getJcCollection(), context);
+					ValueWriter.toValueExpression(collSpec.getJcCollection(), context, context.buffer);
 				} else if (collSpec.getCollectionValues() != null) {
 					context.buffer.append('[');
 					int idx = 0;
 					for (Object val : collSpec.getCollectionValues()) {
 						if (idx > 0)
 							context.buffer.append(", ");
-						PrimitiveCypherWriter.writePrimitiveValue(val, context);
+						PrimitiveCypherWriter.writePrimitiveValue(val, context, context.buffer);
 						idx++;
 					}
 					context.buffer.append(']');
@@ -400,7 +413,7 @@ public class CypherWriter {
 						true, context);
 			
 			if (collectExpression.getIterationVariable() != null) {
-				ValueWriter.toValueExpression(collectExpression.getIterationVariable(), context);
+				ValueWriter.toValueExpression(collectExpression.getIterationVariable(), context, context.buffer);
 				context.buffer.append(" IN ");
 			}
 			
@@ -429,7 +442,7 @@ public class CypherWriter {
 			if (evalExpression instanceof PropertyEvalExpresssion && !preCollectionSpec) {
 				PropertyEvalExpresssion propEval = (PropertyEvalExpresssion)evalExpression;
 				if (jcValue != null)
-					ValueWriter.toValueExpression(jcValue, context);
+					ValueWriter.toValueExpression(jcValue, context, context.buffer);
 				context.buffer.append('.');
 				context.buffer.append(propEval.getPropertyName());
 			} else if (evalExpression instanceof PredicateEvalExpression && !preCollectionSpec) {
@@ -440,16 +453,16 @@ public class CypherWriter {
 				toCypherExpression(doEval, context);
 			} else if (evalExpression instanceof ReduceEvalExpression && preCollectionSpec) {
 				ReduceEvalExpression reduceEval = (ReduceEvalExpression)evalExpression;
-				ValueWriter.toValueExpression(reduceEval.getResultVariable(), context);
+				ValueWriter.toValueExpression(reduceEval.getResultVariable(), context, context.buffer);
 				context.buffer.append(" = ");
 				PredicateCypherWriter.toCypherExpression(reduceEval.getInitialValue(), context);
 				context.buffer.append(", ");
 			} else if (evalExpression instanceof ReduceEvalExpression && !preCollectionSpec) {
 				ReduceEvalExpression reduceEval = (ReduceEvalExpression)evalExpression;
-				ValueWriter.toValueExpression(reduceEval.getReduceExpression(), context);
+				ValueWriter.toValueExpression(reduceEval.getReduceExpression(), context, context.buffer);
 			} else if (evalExpression instanceof ExtractEvalExpression && !preCollectionSpec) {
 				ExtractEvalExpression extractEval = (ExtractEvalExpression)evalExpression;
-				ValueWriter.toValueExpression(extractEval.getExpression(), context);
+				ValueWriter.toValueExpression(extractEval.getExpression(), context, context.buffer);
 			}
 		}
 		
@@ -514,7 +527,7 @@ public class CypherWriter {
 				context.buffer.append("HAS(");
 			
 			if (boolOp.getOperand1() != null) {
-				ValueWriter.toValueExpression(boolOp.getOperand1(), context);
+				ValueWriter.toValueExpression(boolOp.getOperand1(), context, context.buffer);
 			}
 			
 			if (!hasLabel && !hasProperty) {
@@ -558,14 +571,14 @@ public class CypherWriter {
 		
 		private static void toCypherExpression(Object valueElement_Or_PrimitiveValue, WriterContext context) {
 			if (valueElement_Or_PrimitiveValue instanceof ValueElement)
-				ValueWriter.toValueExpression((ValueElement)valueElement_Or_PrimitiveValue, context);
+				ValueWriter.toValueExpression((ValueElement)valueElement_Or_PrimitiveValue, context, context.buffer);
 			else if (valueElement_Or_PrimitiveValue != null) {
 				if (QueryParam.isExtractParams(context)) {
 					QueryParam qp = QueryParam.createAddParam(null,
 							valueElement_Or_PrimitiveValue, context);
-					PrimitiveCypherWriter.writeParameter(qp, context);
+					PrimitiveCypherWriter.writeParameter(qp, context.buffer);
 				} else
-					PrimitiveCypherWriter.writePrimitiveValue(valueElement_Or_PrimitiveValue, context);
+					PrimitiveCypherWriter.writePrimitiveValue(valueElement_Or_PrimitiveValue, context, context.buffer);
 			}
 		}
 	}
@@ -588,7 +601,7 @@ public class CypherWriter {
 					context.buffer.append("*");
 				else {
 					JcValue jcVal = ((ReturnElement)re).getElement();
-					ValueWriter.toValueExpression(jcVal, context);
+					ValueWriter.toValueExpression(jcVal, context, context.buffer);
 				}
 			} else if (re instanceof ReturnBoolean) {
 				PredicateCypherWriter.toCypherExpression(((ReturnBoolean)re).getPredicateExpression(), context);
@@ -607,7 +620,7 @@ public class CypherWriter {
 			
 			if (rx.getAlias() != null) {
 				context.buffer.append(" AS ");
-				ValueWriter.toValueExpression(rx.getAlias(), context);
+				ValueWriter.toValueExpression(rx.getAlias(), context, context.buffer);
 			}
 			writeFilterExpressions(rx, context);
 		}
@@ -634,7 +647,7 @@ public class CypherWriter {
 			
 			if (ra.isDistinct())
 				context.buffer.append("DISTINCT ");
-			ValueWriter.toValueExpression(ra.getArgument(), context);
+			ValueWriter.toValueExpression(ra.getArgument(), context, context.buffer);
 			
 			if (type == AggregateFunctionType.PERCENTILE_DISC) {
 				context.buffer.append(", ");
@@ -649,48 +662,56 @@ public class CypherWriter {
 
 		private static void writeFilterExpressions(ReturnExpression rx, WriterContext context) {
 			if (hasOrderExpressions(rx)) {
-				Pretty.writePreClauseSeparator(context);
-				context.buffer.append("ORDER BY");
-				Pretty.writePostClauseSeparator(context);
 				int idx = 0;
+				if (context.filterBuffer == null) {
+					context.filterBuffer = new StringBuilder();
+					Pretty.writePreClauseSeparator(context, context.filterBuffer);
+					context.filterBuffer.append("ORDER BY");
+					Pretty.writePostClauseSeparator(context, context.filterBuffer);
+				} else
+					idx++;
 				for (Order order : rx.getOrders()) {
 					if (idx > 0) {
-						context.buffer.append(',');
-						Pretty.writeStatementSeparator(context);
+						context.filterBuffer.append(',');
+						Pretty.writeStatementSeparator(context, context.filterBuffer);
 					}
 					JcValue elem = ((ReturnElement)rx.getReturnValue()).getElement();
 					ValueWriter.toValueExpression(
-							ValueAccess.findFirst(elem), context);
-					context.buffer.append('.');
-					context.buffer.append(order.getPropertyName());
+							ValueAccess.findFirst(elem), context, context.filterBuffer);
+					context.filterBuffer.append('.');
+					context.filterBuffer.append(order.getPropertyName());
 					if (order.isDescending())
-						context.buffer.append(" DESC");
+						context.filterBuffer.append(" DESC");
 					idx++;
 				}
 			}
 			
 			int limit = rx.getLimit();
 			if (limit != -1) {
-				Pretty.writePreClauseSeparator(context);
-				context.buffer.append("LIMIT ");
+				if (context.filterBuffer == null)
+					context.filterBuffer = new StringBuilder();
+				Pretty.writePreClauseSeparator(context, context.filterBuffer);
+				context.filterBuffer.append("LIMIT ");
 				if (QueryParam.isExtractParams(context)) {
 					QueryParam qp = QueryParam.createAddParam(null,
 							limit, context);
-					PrimitiveCypherWriter.writeParameter(qp, context);
+					PrimitiveCypherWriter.writeParameter(qp, context.filterBuffer);
 				} else
-					context.buffer.append(limit);
+					context.filterBuffer.append(limit);
 			}
 			
 			int skip = rx.getSkip();
 			if (skip != -1) {
-				Pretty.writePreClauseSeparator(context);
-				context.buffer.append("SKIP ");
+				if (context.filterBuffer == null)
+					context.filterBuffer = new StringBuilder();
+				Pretty.writePreClauseSeparator(context, context.filterBuffer);
+				context.filterBuffer.append("SKIP ");
 				if (QueryParam.isExtractParams(context)) {
 					QueryParam qp = QueryParam.createAddParam(null,
 							skip, context);
-					PrimitiveCypherWriter.writeParameter(qp, context);
+					PrimitiveCypherWriter.writeParameter(qp, context.filterBuffer);
 				} else
-					context.buffer.append(skip);
+					context.filterBuffer.append(skip);
 			}
 		}
 
@@ -718,7 +739,7 @@ public class CypherWriter {
 			if (mx.getModifyAction() == ModifyAction.SET ||
 					mx.getModifyAction() == ModifyAction.REMOVE) {
 				if (mx.getToModify() != null) {
-					ValueWriter.toValueExpression(mx.getToModify(), context);
+					ValueWriter.toValueExpression(mx.getToModify(), context, context.buffer);
 					if (mx.getModifyAction() == ModifyAction.SET)
 						context.buffer.append(" = ");
 					if (mx.getValue() != null) { // only in case of SET
@@ -726,27 +747,27 @@ public class CypherWriter {
 								!(mx.getValue() instanceof List<?>))) {
 							QueryParam qp = QueryParam.createAddParam(null,
 									mx.getValue(), context);
-							PrimitiveCypherWriter.writeParameter(qp, context);
+							PrimitiveCypherWriter.writeParameter(qp, context.buffer);
 						} else
-							PrimitiveCypherWriter.writePrimitiveValue(mx.getValue(), context);
+							PrimitiveCypherWriter.writePrimitiveValue(mx.getValue(), context, context.buffer);
 					} else if (mx.getValueExpression() != null)
-						ValueWriter.toValueExpression(mx.getValueExpression(), context);
+						ValueWriter.toValueExpression(mx.getValueExpression(), context, context.buffer);
 					else if (mx.isToNull())
 						context.buffer.append("NULL");
 				} else if (mx.getPropertiesCopy() != null) {
 					PropertiesCopy pc = mx.getPropertiesCopy();
-					ValueWriter.toValueExpression(pc.getTarget(), context);
+					ValueWriter.toValueExpression(pc.getTarget(), context, context.buffer);
 					context.buffer.append(" = ");
-					ValueWriter.toValueExpression(pc.getSource(), context);
+					ValueWriter.toValueExpression(pc.getSource(), context, context.buffer);
 				} else if (mx.getModifyLabels() != null) {
-					ValueWriter.toValueExpression(mx.getModifyLabels().getTargetNode(), context);
+					ValueWriter.toValueExpression(mx.getModifyLabels().getTargetNode(), context, context.buffer);
 					for (String label : mx.getModifyLabels().getLabels()) {
 						context.buffer.append(':');
 						context.buffer.append(label);
 					}
 				}
 			} else if (mx.getModifyAction() == ModifyAction.DELETE) {
-				ValueWriter.toValueExpression(mx.getElementToDelete(), context);
+				ValueWriter.toValueExpression(mx.getElementToDelete(), context, context.buffer);
 			}
 		}
 	}
@@ -789,7 +810,7 @@ public class CypherWriter {
 		 */
 		private static boolean toCypherExpression(PatternPath path, WriterContext context) {
 			boolean bracketClose = true;
-			ValueWriter.toValueExpression(path.getJcPath(), context);
+			ValueWriter.toValueExpression(path.getJcPath(), context, context.buffer);
 			context.buffer.append(" = ");
 			if (path.getPathFunction() == PathFunction.PATH) {
 				bracketClose = false;
@@ -808,7 +829,7 @@ public class CypherWriter {
 			if (property.getValue() instanceof ValueElement) {
 				QueryParamSet.disableUseSet(context);
 				context.buffer.append(' ');
-				ValueWriter.toValueExpression((ValueElement)property.getValue(), context);
+				ValueWriter.toValueExpression((ValueElement)property.getValue(), context, context.buffer);
 			} else if (property.getValue() != null) {
 				// TODO remove later (test with future versions of Neo4J)
 				// workaround for bug: using lists with query parameters
@@ -821,9 +842,9 @@ public class CypherWriter {
 						!(property.getValue() instanceof List<?>))) {
 					QueryParam qp = QueryParam.createParam(property.getName(), property.getValue(), context);
 					QueryParamSet.addQueryParam(qp, context);
-					PrimitiveCypherWriter.writeParameter(qp, context);
+					PrimitiveCypherWriter.writeParameter(qp, context.buffer);
  				} else
-					PrimitiveCypherWriter.writePrimitiveValue(property.getValue(), context);
+					PrimitiveCypherWriter.writePrimitiveValue(property.getValue(), context, context.buffer);
 			}
 		}
 		
@@ -832,7 +853,7 @@ public class CypherWriter {
 				PatternNode n = (PatternNode)element;
 				context.buffer.append('(');
 				if (n.getJcElement() != null)
-					ValueWriter.toValueExpression(n.getJcElement(), context);
+					ValueWriter.toValueExpression(n.getJcElement(), context, context.buffer);
 				for (String label : n.getLabels()) {
 					context.buffer.append(':');
 					context.buffer.append(label);
@@ -851,7 +872,7 @@ public class CypherWriter {
 					context.buffer.append('[');
 				
 				if (r.getJcElement() != null)
-					ValueWriter.toValueExpression(r.getJcElement(), context);
+					ValueWriter.toValueExpression(r.getJcElement(), context, context.buffer);
 				int idx = 0;
 				for (String type : r.getTypes()) {
 					if (idx > 0)
@@ -923,7 +944,7 @@ public class CypherWriter {
 
 		private static void toCypherExpression(StartExpression sx, WriterContext context) {
 			JcElement jcElem = sx.getJcElement();
-			ValueWriter.toValueExpression(jcElem, context);
+			ValueWriter.toValueExpression(jcElem, context, context.buffer);
 			context.buffer.append(" = ");
 			if (jcElem instanceof JcNode)
 				context.buffer.append("node");
@@ -940,7 +961,7 @@ public class CypherWriter {
 					if (QueryParam.isExtractParams(context)) {
 						QueryParam qp = QueryParam.createAddParam(null,
 								poq.getLuceneQuery(), context);
-						PrimitiveCypherWriter.writeParameter(qp, context);
+						PrimitiveCypherWriter.writeParameter(qp, context.buffer);
 					} else {
 						context.buffer.append('"');
 						context.buffer.append(poq.getLuceneQuery());
@@ -952,9 +973,9 @@ public class CypherWriter {
 					if (QueryParam.isExtractParams(context)) {
 						QueryParam qp = QueryParam.createAddParam(null,
 								poq.getPropertyValue(), context);
-						PrimitiveCypherWriter.writeParameter(qp, context);
+						PrimitiveCypherWriter.writeParameter(qp, context.buffer);
 					} else
-						PrimitiveCypherWriter.writePrimitiveValue(poq.getPropertyValue(), context);
+						PrimitiveCypherWriter.writePrimitiveValue(poq.getPropertyValue(), context, context.buffer);
 				}
 				context.buffer.append(')');
 			} else if (sx.getIndexOrId().getIds() != null) {
@@ -967,7 +988,7 @@ public class CypherWriter {
 						val = sx.getIndexOrId().getIds();
 					QueryParam qp = QueryParam.createAddParam(null,
 							val, context);
-					PrimitiveCypherWriter.writeParameter(qp, context);
+					PrimitiveCypherWriter.writeParameter(qp, context.buffer);
 				} else {
 					boolean first = true;
 					for (Long id : sx.getIndexOrId().getIds()) {
@@ -1004,33 +1025,33 @@ public class CypherWriter {
 	/*****************************************************/
 	public static class PrimitiveCypherWriter {
 
-		public static void writePrimitiveValue(Object val, WriterContext context) {
+		public static void writePrimitiveValue(Object val, WriterContext context, StringBuilder sb) {
 			if (val instanceof Number) {
-				context.buffer.append(val.toString());
+				sb.append(val.toString());
 			} else if (val instanceof Boolean) {
-				context.buffer.append(val.toString());
+				sb.append(val.toString());
 			} else if (val instanceof List<?>) {
-				context.buffer.append('[');
+				sb.append('[');
 				List<?> list = (List<?>)val;
 				for (int i = 0; i < list.size(); i++) {
 					if (i > 0)
-						context.buffer.append(", ");
-					PrimitiveCypherWriter.writePrimitiveValue(list.get(i), context);
+						sb.append(", ");
+					PrimitiveCypherWriter.writePrimitiveValue(list.get(i), context, sb);
 				}
-				context.buffer.append(']');
+				sb.append(']');
 			} else if (val instanceof JcValue) {
-				context.buffer.append(ValueAccess.getName((JcValue)val));
+				sb.append(ValueAccess.getName((JcValue)val));
 			} else {
-				context.buffer.append('\'');
-				context.buffer.append(val.toString());
-				context.buffer.append('\'');
+				sb.append('\'');
+				sb.append(val.toString());
+				sb.append('\'');
 			}
 		}
 		
-		private static void writeParameter(QueryParam param, WriterContext context) {
-			context.buffer.append('{');
-			context.buffer.append(param.getKey());
-			context.buffer.append('}');
+		private static void writeParameter(QueryParam param, StringBuilder sb) {
+			sb.append('{');
+			sb.append(param.getKey());
+			sb.append('}');
 		}
 		
 		private static void writeParameterSet(QueryParamSet paramSet, WriterContext context) {

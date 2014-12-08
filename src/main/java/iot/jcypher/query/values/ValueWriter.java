@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class ValueWriter {
-	public static void toValueExpression(ValueElement valueElem, WriterContext context) {
+	public static void toValueExpression(ValueElement valueElem, WriterContext context, StringBuilder sb) {
 		List<IFragment> elementList = new ArrayList<IFragment>();
 		int insertIndex = 0;
 		ValueElement ve = valueElem;
@@ -70,18 +70,18 @@ public class ValueWriter {
 		
 		int idx = 0;
 		for (IFragment ifrag : elementList) {
-			toValueExpression(ifrag, idx, context);
+			toValueExpression(ifrag, idx, context, sb);
 			idx++;
 		}
 	}
 	
-	private static void toValueExpression(IFragment ifragment, int index, WriterContext context) {
+	private static void toValueExpression(IFragment ifragment, int index, WriterContext context, StringBuilder sb) {
 		if (ifragment instanceof ValueElement) {
 			boolean writeAsValue = true;
 			ValueElement valueElem = (ValueElement)ifragment;
 			IOperatorOrFunction opf = valueElem.getOperatorOrFunction();
 			if (opf instanceof Operator) {
-				context.buffer.append(((Operator)opf).getPrettySymbol());
+				sb.append(((Operator)opf).getPrettySymbol());
 				// the value represents a property name
 				if (((Operator)opf).getType() == OPTYPE.PropertyContainer.PROPERTY_ACCESS)
 					writeAsValue = false;
@@ -96,7 +96,7 @@ public class ValueWriter {
 					// exception for JcString and JcNumber having name and value set
 					if (!((valueElem instanceof JcString || valueElem instanceof JcNumber) &&
 							((JcPrimitive)valueElem).getValue() != null)) {
-						context.buffer.append(((JcValue)valueElem).getName());
+						sb.append(((JcValue)valueElem).getName());
 						nameWritten = true;
 					}
 				}
@@ -105,21 +105,21 @@ public class ValueWriter {
 			if (valueElem instanceof JcPrimitive && !nameWritten) {
 				Object val = ((JcPrimitive)valueElem).getValue();
 				if (val instanceof ValueElement) {
-					toValueExpression((ValueElement)val, context);
+					toValueExpression((ValueElement)val, context, sb);
 				} else if (val != null) {
 					if (writeAsValue)
-						PrimitiveCypherWriter.writePrimitiveValue(val, context);
+						PrimitiveCypherWriter.writePrimitiveValue(val, context, sb);
 					else
-						context.buffer.append(val.toString());
+						sb.append(val.toString());
 				}
 			}
 		} else if (ifragment instanceof FunctionCapsule) {
 			if (ifragment instanceof FunctionStart) {
 				Operator op = ((FunctionStart)ifragment).getOperator();
 				if (op != null)
-					context.buffer.append(op.getPrettySymbol());
+					sb.append(op.getPrettySymbol());
 			}
-			context.buffer.append(((FunctionCapsule)ifragment).getToken());
+			sb.append(((FunctionCapsule)ifragment).getToken());
 		}
 	}
 	

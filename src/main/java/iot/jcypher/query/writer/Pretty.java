@@ -25,40 +25,40 @@ public class Pretty {
 		
 	}
 	
-	public static void writeStatementSeparator(WriterContext context) {
+	public static void writeStatementSeparator(WriterContext context, StringBuilder sb) {
 		if (context.cypherFormat == Format.PRETTY_3) {
-			context.buffer.append('\n');
-			context.buffer.append(context.getLevelIndent());
-			context.buffer.append(INDENT);
+			sb.append('\n');
+			sb.append(context.getLevelIndent());
+			sb.append(INDENT);
 		} else
-			context.buffer.append(' ');
+			sb.append(' ');
 	}
 	
-	public static void writePostClauseSeparator(WriterContext context) {
+	public static void writePostClauseSeparator(WriterContext context, StringBuilder sb) {
 		if (context.inFunction)
-			context.buffer.append(' ');
+			sb.append(' ');
 		else {
 			if (context.cypherFormat == Format.PRETTY_2 ||
 					context.cypherFormat == Format.PRETTY_3) {
-				context.buffer.append('\n');
-				context.buffer.append(context.getLevelIndent());
-				context.buffer.append(INDENT);
+				sb.append('\n');
+				sb.append(context.getLevelIndent());
+				sb.append(INDENT);
 			} else
-				context.buffer.append(' ');
+				sb.append(' ');
 		}
 	}
 	
-	public static void writePreClauseSeparator(WriterContext context) {
+	public static void writePreClauseSeparator(WriterContext context, StringBuilder sb) {
 		if (context.inFunction)
-			context.buffer.append(' ');
+			sb.append(' ');
 		else {
 			if (context.cypherFormat == Format.PRETTY_1 ||
 					context.cypherFormat == Format.PRETTY_2 ||
 					context.cypherFormat == Format.PRETTY_3) {
-				context.buffer.append('\n');
-				context.buffer.append(context.getLevelIndent());
+				sb.append('\n');
+				sb.append(context.getLevelIndent());
 			} else
-				context.buffer.append(' ');
+				sb.append(' ');
 		}
 	}
 	

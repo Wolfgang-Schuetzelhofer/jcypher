@@ -18,23 +18,21 @@ package iot.jcypher.domainquery;
 
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 
-import java.util.List;
-
-public class DomainQueryResult {
+public class CountQueryResult {
 	
 	private DomainQuery domainQuery;
 
-	DomainQueryResult(DomainQuery domainQuery) {
+	CountQueryResult(DomainQuery domainQuery) {
 		super();
 		this.domainQuery = domainQuery;
 	}
 
 	/**
-	 * Answer the matching domain objects
+	 * Answer the number of domain objects
 	 * @param match
-	 * @return a list of matching domain objects
+	 * @return the number of domain objects
 	 */
-	public <T> List<T> resultOf(DomainObjectMatch<T> match) {
-		return this.domainQuery.getQueryExecutor().loadResult(match);
+	public long countOf(DomainObjectMatch<?> match) {
+		return this.domainQuery.getQueryExecutor().getCountResult(match);
 	}
 }

@@ -25,7 +25,6 @@ import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
 import test.domainquery.model.Gender;
 import test.domainquery.model.Person;
-import test.domainquery.model.Subject;
 
 public class Population {
 
@@ -36,7 +35,7 @@ public class Population {
 	private Area sanFrancisco;
 	private Area europe;
 	private Area germany;
-	private Area munic;
+	private Area munich;
 	private Area newYork;
 	private Area newYorkCity;
 	private Area austria;
@@ -128,8 +127,8 @@ public class Population {
 		europe.setPartOf(earth);
 		germany = new Area("2", "Germany", AreaType.COUNTRY);
 		germany.setPartOf(europe);
-		munic = new Area(null, "Munic", AreaType.CITY);
-		munic.setPartOf(germany);
+		munich = new Area(null, "munich", AreaType.CITY);
+		munich.setPartOf(germany);
 		newYork = new Area(null, "New York", AreaType.STATE);
 		newYork.setPartOf(usa);
 		newYorkCity = new Area(null, "New York City", AreaType.CITY);
@@ -184,7 +183,7 @@ public class Population {
 
 	private void createBerghammers(List<Object> domainObjects) {
 		Address berghammer_address = new Address("Hochstrasse", 4);
-		berghammer_address.setArea(munic);
+		berghammer_address.setArea(munich);
 		
 		Person hans_berghammer = new Person("Hans", "Berghammer", Gender.MALE);
 		hans_berghammer.setMatchString("berghammer");
@@ -262,11 +261,20 @@ public class Population {
 		globCom.setName("Global Company");
 		globCom.getPointsOfContact().add(globCom_address);
 		
+		Address smallCom_address = new Address("Schiller Strasse", 15);
+		smallCom_address.setArea(munich);
+		
+		Company smallCom = new Company();
+		smallCom.setMatchString("match_5");
+		smallCom.setName("Small Company");
+		smallCom.getPointsOfContact().add(smallCom_address);
+		
 		this.watson_company.add(globCom);
 		this.smiths_christa_berghammer_globcom.add(globCom);
 		this.berghammers_globcom.add(globCom);
 		this.christa_berghammer_globcom.add(globCom);
 		
 		domainObjects.add(globCom);
+		domainObjects.add(smallCom);
 	}
 }

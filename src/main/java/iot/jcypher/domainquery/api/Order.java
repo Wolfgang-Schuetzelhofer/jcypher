@@ -14,27 +14,28 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domainquery;
+package iot.jcypher.domainquery.api;
 
-import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.domainquery.ast.OrderExpression;
+import iot.jcypher.domainquery.ast.OrderExpression.OrderBy;
 
-import java.util.List;
+public class Order extends APIObject {
 
-public class DomainQueryResult {
-	
-	private DomainQuery domainQuery;
+	private OrderExpression orderExpression;
 
-	DomainQueryResult(DomainQuery domainQuery) {
+	Order(OrderExpression orderExpression) {
 		super();
-		this.domainQuery = domainQuery;
+		this.orderExpression = orderExpression;
 	}
-
+	
 	/**
-	 * Answer the matching domain objects
-	 * @param match
-	 * @return a list of matching domain objects
+	 * Specify the attribute to be used for sorting
+	 * @param attributeName
+	 * @return
 	 */
-	public <T> List<T> resultOf(DomainObjectMatch<T> match) {
-		return this.domainQuery.getQueryExecutor().loadResult(match);
+	public OrderDirection BY(String attributeName) {
+		OrderBy ob = this.orderExpression.getCreateOrderCriteriaFor(attributeName);
+		OrderDirection ret = new OrderDirection(ob);
+		return ret;
 	}
 }

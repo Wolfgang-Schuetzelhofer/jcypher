@@ -18,12 +18,17 @@ package iot.jcypher.domainquery.api;
 
 import java.util.List;
 
+import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
 import iot.jcypher.query.values.JcNode;
 
 public class APIAccess {
 
+	public static Order createOrder(OrderExpression orderExpression) {
+		return new Order(orderExpression);
+	}
+	
 	public static BooleanOperation createBooleanOperation(PredicateExpression pe) {
 		return new BooleanOperation(pe);
 	}

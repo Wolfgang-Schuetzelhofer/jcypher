@@ -24,6 +24,7 @@ import iot.jcypher.query.ast.ClauseType;
 public class WriterContext {
 
 	public StringBuilder buffer = new StringBuilder();
+	public StringBuilder filterBuffer;
 	public Format cypherFormat = Format.NONE;
 	public boolean inFunction = false;
 	public ClauseType currentClause;

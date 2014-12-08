@@ -27,6 +27,8 @@ import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
+import iot.jcypher.domainquery.ast.OrderExpression;
+import iot.jcypher.domainquery.ast.OrderExpression.OrderBy;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.ast.PredicateExpression.Operator;
@@ -35,17 +37,18 @@ import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.predicate.BooleanOperation;
 import iot.jcypher.query.api.predicate.Concat;
+import iot.jcypher.query.api.returns.RSortable;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.factories.clause.WHERE;
+import iot.jcypher.query.factories.clause.WITH;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
-import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
@@ -60,10 +63,12 @@ import java.util.Set;
 public class QueryExecutor {
 
 	private static final String idPrefix = "id_";
+	private static final String countPrefix = "cnt_";
 	private static final char separator = '_';
 	
 	private IDomainAccess domainAccess;
 	private List<IASTObject> astObjects;
+	private List<OrderExpression> orders;
 	private List<DomainObjectMatch<?>> domainObjectMatches;
 	private Map<String, Parameter> parameters;
 	private MappingInfo mappingInfo;
@@ -79,6 +84,23 @@ public class QueryExecutor {
 
 	public List<IASTObject> getAstObjects() {
 		return astObjects;
+	}
+	
+	public OrderExpression getOrderFor(DomainObjectMatch<?> dom) {
+		if (this.orders == null)
+			this.orders = new ArrayList<OrderExpression>();
+		OrderExpression ret = null;
+		for (OrderExpression oe : this.orders) {
+			if (oe.getObjectMatch().equals(dom)) {
+				ret = oe;
+				break;
+			}
+		}
+		if (ret == null) {
+			ret = new OrderExpression(dom);
+			this.orders.add(ret);
+		}
+		return ret;
 	}
 
 	public List<DomainObjectMatch<?>> getDomainObjectMatches() {
@@ -101,13 +123,23 @@ public class QueryExecutor {
 	
 	/**
 	 * Execute the domain query
-	 * @return a DomainQueryResult
 	 */
 	public void execute() {
-		QueryContext context = new QueryContext();
+		executeInternal(false);
+	}
+	
+	/**
+	 * Execute the count query
+	 */
+	public void executeCount() {
+		executeInternal(true);
+	}
+	
+	private void executeInternal(boolean execCount) {
+		QueryContext context = new QueryContext(execCount);
 		QueryBuilder qb = new QueryBuilder();
 		JcQuery query = qb.buildQuery(context);
-		Util.printQuery(query, "DOM QUERY", Format.PRETTY_1);
+//		Util.printQuery(query, "DOM QUERY", Format.PRETTY_1);
 		JcQueryResult result = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().
 														execute(query);
 		List<JcError> errors = Util.collectErrors(result);
@@ -115,7 +147,10 @@ public class QueryExecutor {
 			throw new JcResultException(errors);
 		}
 //		Util.printResult(result, "DOM QUERY", Format.PRETTY_1);
-		qb.extractUniqueIds(result, context.idNumbers);
+		if (context.execCount)
+			qb.extractCounts(result, context.resultsPerType);
+		else
+			qb.extractUniqueIds(result, context.resultsPerType);
 		this.result = context;
 	}
 	
@@ -128,24 +163,24 @@ public class QueryExecutor {
 	public <T> List<T> loadResult(DomainObjectMatch<T> match) {
 		if (this.result == null)
 			throw new RuntimeException("query was not executed");
-		List<QueryContext.IdsPerType> idsPerTypeList = this.result.idsMap.get(match);
-		if (idsPerTypeList == null)
+		List<QueryContext.ResultsPerType> resPerTypeList = this.result.resultsMap.get(match);
+		if (resPerTypeList == null)
 			throw new RuntimeException("DomainObjectMatch was not defined in this query");
 		Map<Class<?>, List<Long>> type2IdsMap = new HashMap<Class<?>, List<Long>>();
 		List<Long> allIds = new ArrayList<Long>();
-		for (QueryContext.IdsPerType idsPerType : idsPerTypeList) {
-			List<Long> ids = type2IdsMap.get(idsPerType.type);
+		for (QueryContext.ResultsPerType resPerType : resPerTypeList) {
+			List<Long> ids = type2IdsMap.get(resPerType.type);
 			boolean addList = false;
 			if (ids == null) {
 				ids = new ArrayList<Long>();
 				addList = true;
 			}
-			ids.addAll(idsPerType.ids);
-			allIds.addAll(idsPerType.ids);
+			ids.addAll(resPerType.ids);
+			allIds.addAll(resPerType.ids);
 			if (ids.isEmpty())
 				addList = false;
 			if (addList)
-				type2IdsMap.put(idsPerType.type, ids);
+				type2IdsMap.put(resPerType.type, ids);
 		}
 		long[] idsArray = new long[allIds.size()];
 		for (int i = 0; i < allIds.size(); i++) {
@@ -154,6 +189,19 @@ public class QueryExecutor {
 		List<T> ret = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().
 			loadByIds(APIAccess.getDomainObjectType(match), type2IdsMap, -1, idsArray);
 		return ret;
+	}
+	
+	public long getCountResult(DomainObjectMatch<?> match) {
+		long res = 0;
+		if (this.result == null)
+			throw new RuntimeException("query was not executed");
+		List<QueryContext.ResultsPerType> resPerTypeList = this.result.resultsMap.get(match);
+		if (resPerTypeList == null)
+			throw new RuntimeException("DomainObjectMatch was not defined in this query");
+		for (QueryContext.ResultsPerType resPerType : resPerTypeList) {
+			res = res + resPerType.count;
+		}
+		return res;
 	}
 	
 	/************************************/
@@ -195,23 +243,53 @@ public class QueryExecutor {
 				}
 			}
 			
+			List<IClause> returnClauses = new ArrayList<IClause>();
+			List<IClause> withClauses = null;
+			boolean needWith = false;
 			int idx = 0;
 			for (ClausesPerType cpt : clausesPerType) {
 				if (cpt.valid) {
-					JcNumber num = new JcNumber(idPrefix.concat(String.valueOf(idx)));
-					QueryContext.IdsPerType idsPerType = context.addFor(cpt.domainObjectMatch, cpt.domainObjectType, num);
-					context.idNumbers.add(idsPerType);
-					if (idx == 0)
-						clauses.add(
-								RETURN.DISTINCT().value(cpt.node.id()).AS(num)
-						);
+					JcNumber num;
+					if (context.execCount)
+						num = new JcNumber(countPrefix.concat(String.valueOf(idx)));
 					else
-						clauses.add(
-								RETURN.value(cpt.node.id()).AS(num)
-						);
+						num = new JcNumber(idPrefix.concat(String.valueOf(idx)));
+					QueryContext.ResultsPerType idsPerType = context.addFor(cpt.domainObjectMatch, cpt.domainObjectType, num);
+					context.resultsPerType.add(idsPerType);
+					if (idx == 0) {
+						if (context.execCount) // execute count query
+							returnClauses.add(RETURN.count().DISTINCT().value(cpt.node).AS(num));
+						else // execute full query (not count query)
+							returnClauses.add(RETURN.DISTINCT().value(cpt.node.id()).AS(num));
+					} else {
+						if (context.execCount) // execute count query
+							returnClauses.add(RETURN.count().DISTINCT().value(cpt.node).AS(num));
+						else // execute full query (not count query)
+							returnClauses.add(RETURN.value(cpt.node.id()).AS(num));
+					}
+					if (!context.execCount) { // execute full query (not count query)
+						if (withClauses == null)
+							withClauses = new ArrayList<IClause>();
+						RSortable withClause = WITH.value(cpt.node);
+						List<OrderBy> ocs = getOrderExpressionsFor(cpt);
+						if (ocs != null) { // if != null it contains at least one criteria
+							needWith = true;
+							for (OrderBy ob : ocs) {
+								if (ob.getDirection() == 0)
+									withClause.ORDER_BY(ob.getAttributeName());
+								else
+									withClause.ORDER_BY_DESC(ob.getAttributeName());
+							}
+						}
+						withClauses.add(withClause);
+					}
 					idx++;
 				}
 			}
+			
+			if (needWith)
+				clauses.addAll(withClauses);
+			clauses.addAll(returnClauses);
 			
 			IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
 			JcQuery query = new JcQuery();
@@ -220,20 +298,50 @@ public class QueryExecutor {
 			return query;
 		}
 		
-		void extractUniqueIds(JcQueryResult result, List<QueryContext.IdsPerType> idsPerTypeList) {
+		void extractUniqueIds(JcQueryResult result, List<QueryContext.ResultsPerType> resultsPerTypeList) {
 			Set<Long> uniqueIds = new LinkedHashSet<Long>();
-			for (QueryContext.IdsPerType idsPerType : idsPerTypeList) {
+			for (QueryContext.ResultsPerType resPerType : resultsPerTypeList) {
 				uniqueIds.clear();
-				List<BigDecimal> idList = result.resultOf(idsPerType.jcNumber);
+				List<BigDecimal> idList = result.resultOf(resPerType.jcNumber);
 				for (BigDecimal bd : idList) {
 					if (bd != null) {
 						uniqueIds.add(bd.longValue());
 					}
 				}
-				idsPerType.ids = new ArrayList<Long>();
-				idsPerType.ids.addAll(uniqueIds);
+				resPerType.ids = new ArrayList<Long>();
+				resPerType.ids.addAll(uniqueIds);
 			}
 			return;
+		}
+		
+		void extractCounts(JcQueryResult result, List<QueryContext.ResultsPerType> resultsPerTypeList) {
+			for (QueryContext.ResultsPerType resPerType : resultsPerTypeList) {
+				List<BigDecimal> count = result.resultOf(resPerType.jcNumber);
+				resPerType.count = count.get(0).longValue();
+			}
+		}
+		
+		/**
+		 * may return null
+		 * @param cpt
+		 * @return
+		 */
+		private List<OrderBy> getOrderExpressionsFor(ClausesPerType cpt) {
+			List<OrderBy> ret = null;
+			OrderExpression oe = getOrderFor(cpt.domainObjectMatch);
+			if (oe != null) {
+				List<OrderBy> ocs = oe.getOrderCriterias();
+				for (OrderBy ob : ocs) {
+					String attribName = ob.getAttributeName();
+					FieldMapping fm = getMappingInfo().getFieldMapping(attribName, cpt.domainObjectType);
+					if (fm != null) { // field exists for type, so we can sort
+						if (ret == null)
+							ret = new ArrayList<OrderBy>();
+						ret.add(ob);
+					}
+				}
+			}
+			return ret;
 		}
 
 		private List<ExpressionsPerDOM> orderByDependencies(
@@ -897,47 +1005,51 @@ public class QueryExecutor {
 	
 	/************************************/
 	private class QueryContext {
-		private List<IdsPerType> idNumbers;
-		private Map<DomainObjectMatch<?>, List<IdsPerType>> idsMap;
+		private List<ResultsPerType> resultsPerType;
+		private Map<DomainObjectMatch<?>, List<ResultsPerType>> resultsMap;
+		private boolean execCount;
 
-		private QueryContext() {
+		private QueryContext(boolean execCount) {
 			super();
-			this.idNumbers = new ArrayList<IdsPerType>();
-			this.idsMap = new HashMap<DomainObjectMatch<?>, List<IdsPerType>>();
+			this.resultsPerType = new ArrayList<ResultsPerType>();
+			this.resultsMap = new HashMap<DomainObjectMatch<?>, List<ResultsPerType>>();
+			this.execCount = execCount;
 		}
 		
-		private IdsPerType addFor(DomainObjectMatch<?> dom, Class<?> type, JcNumber num) {
-			List<IdsPerType> idsPerTypeList = this.idsMap.get(dom);
+		private ResultsPerType addFor(DomainObjectMatch<?> dom, Class<?> type, JcNumber num) {
+			List<ResultsPerType> idsPerTypeList = this.resultsMap.get(dom);
 			if (idsPerTypeList == null) {
-				idsPerTypeList = new ArrayList<IdsPerType>();
-				this.idsMap.put(dom, idsPerTypeList);
+				idsPerTypeList = new ArrayList<ResultsPerType>();
+				this.resultsMap.put(dom, idsPerTypeList);
 			}
-			IdsPerType idsPerType = null;
-			for (IdsPerType idp : idsPerTypeList) {
+			ResultsPerType idsPerType = null;
+			for (ResultsPerType idp : idsPerTypeList) {
 				if (idp.type.equals(type)) {
 					idsPerType = idp;
 					break;
 				}
 			}
 			if (idsPerType == null) {
-				idsPerType = new IdsPerType(dom, type, num);
+				idsPerType = new ResultsPerType(dom, type, num);
 				idsPerTypeList.add(idsPerType);
 			}
 			return idsPerType;
 		}
 		
 		/************************************/
-		private class IdsPerType {
+		private class ResultsPerType {
 			private DomainObjectMatch<?> domainObjectMatch;
 			private Class<?> type;
 			private JcNumber jcNumber;
 			private List<Long> ids;
+			private long count;
 			
-			private IdsPerType(DomainObjectMatch<?> dom, Class<?> type, JcNumber num) {
+			private ResultsPerType(DomainObjectMatch<?> dom, Class<?> type, JcNumber num) {
 				super();
 				this.domainObjectMatch = dom;
 				this.type = type;
 				this.jcNumber = num;
+				this.count = 0;
 			}
 		}
 	}

@@ -53,7 +53,6 @@ import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueWriter;
-import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.util.Util;
 
@@ -474,7 +473,7 @@ public class ResultHandler {
 		String colKey;
 		if (jcValue instanceof JcProperty) {
 			WriterContext ctxt = new WriterContext();
-			ValueWriter.toValueExpression(jcValue, ctxt);
+			ValueWriter.toValueExpression(jcValue, ctxt, ctxt.buffer);
 			colKey = ctxt.buffer.toString();
 		} else
 			colKey =  ValueAccess.getName(jcValue);

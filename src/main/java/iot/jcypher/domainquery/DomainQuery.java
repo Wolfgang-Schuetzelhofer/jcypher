@@ -21,9 +21,11 @@ import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.BooleanOperation;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
+import iot.jcypher.domainquery.api.Order;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
+import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.internal.QueryExecutor;
@@ -102,12 +104,36 @@ public class DomainQuery {
 	}
 	
 	/**
+	 * Define an order on a set of domain objects which are specified by
+	 * a DomainObjectMatch in the context of the domain query.
+	 * @param toOrder the DomainObjectMatch
+	 * specifying the set of domain objects which should be ordered
+	 * @return
+	 */
+	public Order ORDER(DomainObjectMatch<?> toOrder) {
+		OrderExpression oe = this.queryExecutor.getOrderFor(toOrder);
+		Order ret = APIAccess.createOrder(oe);
+		return ret;
+	}
+	
+	/**
 	 * Execute the domain query
 	 * @return a DomainQueryResult
 	 */
 	public DomainQueryResult execute() {
 		DomainQueryResult ret = new DomainQueryResult(this);
 		this.queryExecutor.execute();
+		return ret;
+	}
+	
+	/**
+	 * Retrieve the count for every DomainObjectMatch of the query
+	 * in order to support pagination
+	 * @return a CountQueryResult
+	 */
+	public CountQueryResult executeCount() {
+		CountQueryResult ret = new CountQueryResult(this);
+		this.queryExecutor.executeCount();
 		return ret;
 	}
 	

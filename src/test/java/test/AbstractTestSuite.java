@@ -75,7 +75,7 @@ public class AbstractTestSuite {
 	protected String print(ValueElement valueElem, Format pretty) {
 		WriterContext context = new WriterContext();
 		context.cypherFormat = pretty;
-		ValueWriter.toValueExpression(valueElem, context);
+		ValueWriter.toValueExpression(valueElem, context, context.buffer);
 		if (this.print) {
 			System.out.println("");
 			System.out.println(context.buffer.toString());
