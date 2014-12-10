@@ -21,6 +21,7 @@ import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.ResolutionDepth;
 import iot.jcypher.domain.SyncInfo;
+import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
 import iot.jcypher.domain.mapping.CompoundObjectMapping;
 import iot.jcypher.domain.mapping.CompoundObjectType;
 import iot.jcypher.domain.mapping.DefaultObjectMappingCreator;
@@ -297,8 +298,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			int numTypes = typeList.size();
 			JcNode n = new JcNode("n");
 			JcNumber num = new JcNumber("num");
-			List<Integer> offsets = new ArrayList<Integer>(numTypes);
-			List<Integer> lens = new ArrayList<Integer>(numTypes);
+			List<Integer> offsets;
+			List<Integer> lens;
 			if (numTypes > 1 && (offset > 0 || count >= 0)) {
 				List<JcQuery> queries = new ArrayList<JcQuery>(numTypes);
 				for (Class<?> rawType : typeList) {
@@ -325,36 +326,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					counts.add(res.intValue());
 				}
 				
-				int nextOffset = offset;
-				int remainLen = count;
-				for (int nums : counts) {
-					int reduceLen;
-					// calc offset
-					if (nextOffset > 0) {
-							nextOffset = nextOffset - nums;
-						if (nextOffset <= 0) {
-							offsets.add(nums + nextOffset);
-							reduceLen = -nextOffset;
-						} else {
-							offsets.add(nums); // skip elements of this type
-							reduceLen = 0;
-						}
-					} else {
-						offsets.add(0);
-						reduceLen = nums;
-					}
-					
-					// calc count
-					if (count >= 0) { // number of objects to read is limited 
-						if (remainLen > 0) {
-							remainLen = remainLen - reduceLen;
-							lens.add(reduceLen + (remainLen < 0 ? remainLen : 0));
-						} else
-							lens.add(0); // we are past the maximum number to read
-					} else
-						lens.add(reduceLen);
-				}
+				SkipsLimits slc = SkipLimitCalc.calcSkipsLimits(counts, offset, count);
+				offsets = slc.getOffsets();
+				lens = slc.getLengths();
 			} else {
+				offsets = new ArrayList<Integer>(numTypes);
+				lens = new ArrayList<Integer>(numTypes);
 				if (numTypes == 1) {
 					offsets.add(offset);
 					lens.add(count);

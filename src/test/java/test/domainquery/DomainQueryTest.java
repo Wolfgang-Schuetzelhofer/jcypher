@@ -278,18 +278,30 @@ public class DomainQueryTest extends AbstractTestSuite {
 //		equals = CompareUtil.equalsUnorderedList(population.getChrista_berghammer_globcom(), intersectionResult);
 //		assertTrue(equals);
 		
+//		/******************************************/
+//		q = da1.createQuery();
+//		DomainObjectMatch<Subject> subjects = q.createMatch(Subject.class);
+//		q.ORDER(subjects).BY("lastName");
+//		q.ORDER(subjects).BY("firstName").DESCENDING();
+//		q.ORDER(subjects).BY("name").DESCENDING();
+//		
+//		CountQueryResult countResult = q.executeCount();
+//		long count = countResult.countOf(subjects);
+//		
+//		result = q.execute();
+//		List<Subject> subjectsResult = result.resultOf(subjects);
+		
 		/******************************************/
 		q = da1.createQuery();
-		DomainObjectMatch<Subject> subjects = q.createMatch(Subject.class);
-		q.ORDER(subjects).BY("lastName");
-		q.ORDER(subjects).BY("firstName").DESCENDING();
-		q.ORDER(subjects).BY("name").DESCENDING();
+		DomainObjectMatch<Subject> subjectsPage = q.createMatch(Subject.class);
 		
-		CountQueryResult countResult = q.executeCount();
-		long count = countResult.countOf(subjects);
+//		CountQueryResult countRes = q.executeCount();
+//		long numSubjects = countRes.countOf(subjectsPage);
+		
+		subjectsPage.setPage(4, 5);
 		
 		result = q.execute();
-		List<Subject> personsResult = result.resultOf(subjects);
+		List<Subject> subjectsPageResult = result.resultOf(subjectsPage);
 		
 		return;
 	}

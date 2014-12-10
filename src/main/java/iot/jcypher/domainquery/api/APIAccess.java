@@ -57,4 +57,20 @@ public class APIAccess {
 	public static <T> Class<T> getDomainObjectType(DomainObjectMatch<T> dom) {
 		return dom.getDomainObjectType();
 	}
+	
+	public static boolean isPageChanged(DomainObjectMatch<?> dom) {
+		return dom.isPageChanged();
+	}
+
+	public static void setPageChanged(DomainObjectMatch<?> dom, boolean pageChanged) {
+		dom.setPageChanged(pageChanged);
+	}
+
+	public static int getPageOffset(DomainObjectMatch<?> dom) {
+		return dom.getPageOffset();
+	}
+
+	public static int getPageLength(DomainObjectMatch<?> dom) {
+		return dom.getPageLength();
+	}
 }

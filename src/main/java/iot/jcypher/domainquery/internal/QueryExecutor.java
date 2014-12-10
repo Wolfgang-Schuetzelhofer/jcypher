@@ -18,7 +18,9 @@ package iot.jcypher.domainquery.internal;
 
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
+import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
 import iot.jcypher.domain.internal.IIntDomainAccess;
+import iot.jcypher.domain.internal.SkipLimitCalc;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domainquery.api.APIAccess;
@@ -72,7 +74,8 @@ public class QueryExecutor {
 	private List<DomainObjectMatch<?>> domainObjectMatches;
 	private Map<String, Parameter> parameters;
 	private MappingInfo mappingInfo;
-	private QueryContext result;
+	private QueryContext queryResult;
+	private QueryContext countResult;
 	
 	public QueryExecutor(IDomainAccess domainAccess) {
 		super();
@@ -147,11 +150,13 @@ public class QueryExecutor {
 			throw new JcResultException(errors);
 		}
 //		Util.printResult(result, "DOM QUERY", Format.PRETTY_1);
-		if (context.execCount)
+		if (context.execCount) {
 			qb.extractCounts(result, context.resultsPerType);
-		else
+			this.countResult = context;
+		} else {
 			qb.extractUniqueIds(result, context.resultsPerType);
-		this.result = context;
+			this.queryResult = context;
+		}
 	}
 	
 	public MappingInfo getMappingInfo() {
@@ -161,9 +166,9 @@ public class QueryExecutor {
 	}
 	
 	public <T> List<T> loadResult(DomainObjectMatch<T> match) {
-		if (this.result == null)
-			throw new RuntimeException("query was not executed");
-		List<QueryContext.ResultsPerType> resPerTypeList = this.result.resultsMap.get(match);
+		if (this.queryResult == null)
+			throw new RuntimeException("query was not executed, call execute() on DomainQuery");
+		List<QueryContext.ResultsPerType> resPerTypeList = this.queryResult.resultsMap.get(match);
 		if (resPerTypeList == null)
 			throw new RuntimeException("DomainObjectMatch was not defined in this query");
 		Map<Class<?>, List<Long>> type2IdsMap = new HashMap<Class<?>, List<Long>>();
@@ -193,15 +198,22 @@ public class QueryExecutor {
 	
 	public long getCountResult(DomainObjectMatch<?> match) {
 		long res = 0;
-		if (this.result == null)
-			throw new RuntimeException("query was not executed");
-		List<QueryContext.ResultsPerType> resPerTypeList = this.result.resultsMap.get(match);
+		if (this.countResult == null)
+			throw new RuntimeException("query was not executed, call executeCount() on DomainQuery");
+		List<QueryContext.ResultsPerType> resPerTypeList = this.countResult.resultsMap.get(match);
 		if (resPerTypeList == null)
 			throw new RuntimeException("DomainObjectMatch was not defined in this query");
 		for (QueryContext.ResultsPerType resPerType : resPerTypeList) {
 			res = res + resPerType.count;
 		}
 		return res;
+	}
+	
+	private QueryContext loadCountResultIfNeeded() {
+		if (this.countResult == null) {
+			executeCount();
+		}
+		return this.countResult;
 	}
 	
 	/************************************/
@@ -224,9 +236,14 @@ public class QueryExecutor {
 			
 			xpressionsPerDom = orderByDependencies(xpressionsPerDom);
 			
+			boolean needSkipLimit = false;
 			List<String> validNodes = new ArrayList<String>();
 			for (ExpressionsPerDOM xpd : xpressionsPerDom) {
-				clausesPerType.addAll(buildClausesFor(xpd.domainObjectMatch, xpd.xPressions, validNodes));
+				NeedSkipLimit nsl = buildClausesFor(xpd.domainObjectMatch, xpd.xPressions,
+						validNodes, context.execCount);
+				clausesPerType.addAll(nsl.clausesPerTypes);
+				if (nsl.needSkipLimit)
+					needSkipLimit = true;
 			}
 			
 			List<IClause> clauses = new ArrayList<IClause>();
@@ -383,14 +400,46 @@ public class QueryExecutor {
 			return null;
 		}
 
-		private List<ClausesPerType> buildClausesFor(DomainObjectMatch<?> dom,
-				List<IASTObject> xpressionsForDom, List<String> validNodes) {
+		private NeedSkipLimit buildClausesFor(DomainObjectMatch<?> dom,
+				List<IASTObject> xpressionsForDom, List<String> validNodes,
+				boolean calcCounts) {
+			NeedSkipLimit needSkipLimit = new NeedSkipLimit();
 			List<ClausesPerType> clausesPerType = new ArrayList<ClausesPerType>();
+			needSkipLimit.clausesPerTypes = clausesPerType;
 			List<JcNode> nodes = APIAccess.getNodes(dom);
 			List<Class<?>> typeList = APIAccess.getTypeList(dom);
+			int numTypes = typeList.size();
+			List<Integer> offsets;
+			List<Integer> lens;
+			int offset = calcCounts ? 0 : APIAccess.getPageOffset(dom);
+			int len = calcCounts ? -1 : APIAccess.getPageLength(dom);
+			if (numTypes > 1 &&	(offset > 0 || len >= 0) &&
+					APIAccess.isPageChanged(dom)) {
+				SkipsLimits slc = calcSkipsLimits(dom, offset, len);
+				offsets = slc.getOffsets();
+				lens = slc.getLengths();
+			} else {
+				offsets = new ArrayList<Integer>(numTypes);
+				lens = new ArrayList<Integer>(numTypes);
+				if (numTypes == 1) {
+					offsets.add(offset);
+					lens.add(len);
+				} else {
+					for (int i = 0; i < numTypes; i++) {
+						offsets.add(0);
+						lens.add(-1);
+					}
+				}
+			}
 			int idx = 0;
 			for (JcNode n : nodes) {
-				clausesPerType.add(new ClausesPerType(n, dom, typeList.get(idx)));
+				ClausesPerType cpt = new ClausesPerType(n, dom, typeList.get(idx));
+				cpt.pageOffset = offsets.get(idx);
+				cpt.pageLength = lens.get(idx);
+				if (!needSkipLimit.needSkipLimit) {
+					needSkipLimit.needSkipLimit = cpt.pageOffset > 0 || cpt.pageLength >= 0;
+				}
+				clausesPerType.add(cpt);
 				idx++;
 			}
 			
@@ -453,7 +502,18 @@ public class QueryExecutor {
 					validNodes.add(nm);
 				}
 			}
-			return clausesPerType;
+			return needSkipLimit;
+		}
+
+		private SkipsLimits calcSkipsLimits(DomainObjectMatch<?> dom, int offset, int len) {
+			QueryContext cRes = loadCountResultIfNeeded();
+			List<QueryContext.ResultsPerType> rpts = cRes.resultsMap.get(dom);
+			List<Integer> counts = new ArrayList<Integer>(rpts.size());
+			for (QueryContext.ResultsPerType rpt : rpts) {
+				counts.add((int)rpt.count);
+			}
+			SkipsLimits slc = SkipLimitCalc.calcSkipsLimits(counts, offset, len);
+			return slc;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -963,6 +1023,8 @@ public class QueryExecutor {
 			private boolean valid;
 			private boolean previousOr;
 			private boolean testForNextIsOr;
+			private int pageOffset;
+			private int pageLength;
 			Concat concat = null;
 			iot.jcypher.query.api.predicate.Concatenator concatenator = null;
 			
@@ -974,6 +1036,16 @@ public class QueryExecutor {
 				this.valid = true;
 				this.previousOr = false;
 				this.testForNextIsOr = false;
+			}
+		}
+		
+		/*************************************/
+		private class NeedSkipLimit {
+			private List<ClausesPerType> clausesPerTypes;
+			private boolean needSkipLimit;
+			private NeedSkipLimit() {
+				super();
+				this.needSkipLimit = false;
 			}
 		}
 		

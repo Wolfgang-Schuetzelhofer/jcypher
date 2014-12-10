@@ -41,12 +41,18 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	private List<JcNode> nodes;
 	private List<Class<?>> typeList;
 	private MappingInfo mappingInfo;
+	private int pageOffset;
+	private int pageLength;
+	private boolean pageChanged;
 	
 	DomainObjectMatch(Class<T> targetType, int num,
 			MappingInfo mappingInfo) {
 		super();
 		this.domainObjectType = targetType;
 		this.mappingInfo = mappingInfo;
+		this.pageLength = -1;
+		this.pageOffset = 0;
+		this.pageChanged = false;
 		init(num);
 	}
 	
@@ -114,6 +120,21 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 							"in domain object type: [" + domainObjectType.getName() + "]");
 		return ret;
 	}
+	
+	/**
+	 * For pagination purposes, set offset (start) and length of the set of matching objects to be
+	 * returned with respect to the total number of matching objects.
+	 * @param offset
+	 * @param length
+	 */
+	public void setPage(int offset, int length) {
+		boolean changed = this.pageOffset != offset || this.pageLength != length;
+		if (changed) {
+			this.pageOffset = offset;
+			this.pageLength = length;
+			this.pageChanged = true;
+		}
+	}
 
 	Class<T> getDomainObjectType() {
 		return domainObjectType;
@@ -135,6 +156,22 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		return baseNodeName;
 	}
 	
+	boolean isPageChanged() {
+		return pageChanged;
+	}
+
+	void setPageChanged(boolean pageChanged) {
+		this.pageChanged = pageChanged;
+	}
+
+	int getPageOffset() {
+		return pageOffset;
+	}
+
+	int getPageLength() {
+		return pageLength;
+	}
+
 	/**
 	 * may return null
 	 * @param attribName
