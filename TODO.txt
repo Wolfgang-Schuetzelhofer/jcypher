@@ -1,3 +1,7 @@
+---done--- optimize domain query pagination, remove match clauses if no dependencies exits
+
+optimize pagination query for Domain Mapping (see Domain Queries)
+
 lists arrays maps as root objects
 
 remove surrogate objects from result

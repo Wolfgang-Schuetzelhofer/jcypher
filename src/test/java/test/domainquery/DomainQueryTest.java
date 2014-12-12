@@ -17,6 +17,7 @@
 package test.domainquery;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -30,6 +31,9 @@ import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
 
@@ -38,6 +42,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
+import test.domainquery.model.Company;
 import test.domainquery.model.Person;
 import test.domainquery.model.Subject;
 import test.domainquery.util.CompareUtil;
@@ -277,7 +282,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 //		assertTrue(equals);
 //		equals = CompareUtil.equalsUnorderedList(population.getChrista_berghammer_globcom(), intersectionResult);
 //		assertTrue(equals);
-		
+//		
 //		/******************************************/
 //		q = da1.createQuery();
 //		DomainObjectMatch<Subject> subjects = q.createMatch(Subject.class);
@@ -288,21 +293,80 @@ public class DomainQueryTest extends AbstractTestSuite {
 //		CountQueryResult countResult = q.executeCount();
 //		long count = countResult.countOf(subjects);
 //		
+//		assertEquals(13, count);
+//		
 //		result = q.execute();
 //		List<Subject> subjectsResult = result.resultOf(subjects);
+//		List<Subject> sortedSubjects = new ArrayList<Subject>();
+//		for (Object obj : domainObjects) {
+//			sortedSubjects.add((Subject) obj);
+//		}
+//		Collections.sort(sortedSubjects, new SubjectComparator());
+//		equals = CompareUtil.equalsList(sortedSubjects, subjectsResult);
+//		assertTrue(equals);
 		
 		/******************************************/
 		q = da1.createQuery();
-		DomainObjectMatch<Subject> subjectsPage = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> set_00 = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> set_01 = q.createMatch(Subject.class);
+		set_01.setPage(5, 5);
+		DomainObjectMatch<Subject> set_02 = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> intersectionPage = q.createMatch(Subject.class);
+		intersectionPage.setPage(1, 5);
+		
+		q.WHERE(set_01).IN(set_00);
+		q.WHERE(set_02).IN(set_00);
+		q.WHERE(intersectionPage).IN(set_01);
+		q.WHERE(intersectionPage).IN(set_02);
 		
 //		CountQueryResult countRes = q.executeCount();
 //		long numSubjects = countRes.countOf(subjectsPage);
 		
-		subjectsPage.setPage(4, 5);
-		
 		result = q.execute();
-		List<Subject> subjectsPageResult = result.resultOf(subjectsPage);
+		List<Subject> set_00Result = result.resultOf(set_00);
+		List<Subject> set_01Result = result.resultOf(set_01);
+		List<Subject> set_02Result = result.resultOf(set_02);
+		List<Subject> intersectionPageResult = result.resultOf(intersectionPage);
+		
+		equals = CompareUtil.equalsUnorderedList(domainObjects, set_00Result);
+		assertTrue(equals);
+		List<Subject> set_01Comp = set_00Result.subList(5, 10);
+		equals = CompareUtil.equalsList(set_01Comp, set_01Result);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(set_00Result, set_02Result);
+		assertTrue(equals);
+		List<Subject> intersectionPageComp = set_00Result.subList(1, 6);
+		equals = CompareUtil.equalsList(intersectionPageComp, intersectionPageResult);
+		assertTrue(equals);
+		
+		intersectionPage.setPage(4, 5); // change page
+		intersectionPageResult = result.resultOf(intersectionPage);
+		
+		intersectionPageComp = set_00Result.subList(4, 9);
+		equals = CompareUtil.equalsList(intersectionPageComp, intersectionPageResult);
+		assertTrue(equals);
 		
 		return;
+	}
+	
+	/***************************************/
+	public static class SubjectComparator implements Comparator<Subject> {
+
+		@Override
+		public int compare(Subject o1, Subject o2) {
+			if (o1.getClass() != o2.getClass())
+				return o1.getClass().getName().compareTo(o2.getClass().getName());
+			if (o1.getClass().equals(Company.class))
+				return ((Company)o2).getName().compareTo(((Company)o1).getName());
+			if (o1.getClass().equals(Person.class)) {
+				Person p1 = (Person)o1;
+				Person p2 = (Person)o2;
+				if (!p1.getLastName().equals(p2.getLastName()))
+					return p1.getLastName().compareTo(p2.getLastName());
+				return p2.getFirstName().compareTo(p1.getFirstName());
+			}
+			return 0;
+		}
+		
 	}
 }

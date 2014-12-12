@@ -2859,8 +2859,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			return domainAccessHandler.domainInfo.getClassForLabel(label) != null;
 		}
 		
-		public JcQueryResult execute(JcQuery query) {
-			return domainAccessHandler.dbAccess.execute(query);
+		public List<JcQueryResult> execute(List<JcQuery> queries) {
+			return domainAccessHandler.dbAccess.execute(queries);
 		}
 		
 		public <T> List<T> loadByIds(Class<T> domainObjectClass,

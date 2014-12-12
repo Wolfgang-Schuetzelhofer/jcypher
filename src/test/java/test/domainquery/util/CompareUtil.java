@@ -56,6 +56,12 @@ public class CompareUtil {
         return true;
 	}
 	
+	@SuppressWarnings("rawtypes")
+	public static boolean equalsList(List list_1, List list_2) {
+		ArrayList<AlreadyCompared> acs = new ArrayList<AlreadyCompared>();
+		return equalsList(list_1, list_2, acs);
+	}
+	
 	private static boolean equalsObjects(Object o_1, Object o_2, List<AlreadyCompared> alreadyCompareds) {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)

@@ -686,20 +686,6 @@ public class CypherWriter {
 				}
 			}
 			
-			int limit = rx.getLimit();
-			if (limit != -1) {
-				if (context.filterBuffer == null)
-					context.filterBuffer = new StringBuilder();
-				Pretty.writePreClauseSeparator(context, context.filterBuffer);
-				context.filterBuffer.append("LIMIT ");
-				if (QueryParam.isExtractParams(context)) {
-					QueryParam qp = QueryParam.createAddParam(null,
-							limit, context);
-					PrimitiveCypherWriter.writeParameter(qp, context.filterBuffer);
-				} else
-					context.filterBuffer.append(limit);
-			}
-			
 			int skip = rx.getSkip();
 			if (skip != -1) {
 				if (context.filterBuffer == null)
@@ -712,6 +698,20 @@ public class CypherWriter {
 					PrimitiveCypherWriter.writeParameter(qp, context.filterBuffer);
 				} else
 					context.filterBuffer.append(skip);
+			}
+			
+			int limit = rx.getLimit();
+			if (limit != -1) {
+				if (context.filterBuffer == null)
+					context.filterBuffer = new StringBuilder();
+				Pretty.writePreClauseSeparator(context, context.filterBuffer);
+				context.filterBuffer.append("LIMIT ");
+				if (QueryParam.isExtractParams(context)) {
+					QueryParam qp = QueryParam.createAddParam(null,
+							limit, context);
+					PrimitiveCypherWriter.writeParameter(qp, context.filterBuffer);
+				} else
+					context.filterBuffer.append(limit);
 			}
 		}
 
