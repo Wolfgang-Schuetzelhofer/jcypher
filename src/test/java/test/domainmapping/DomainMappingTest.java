@@ -67,7 +67,10 @@ import test.domainmapping.ambiguous.JPerson;
 import test.domainmapping.ambiguous.MultiBroker;
 import test.domainmapping.ambiguous.NPerson;
 import test.domainmapping.inner.MyClass;
+import test.domainmapping.inner.MyClass.MyInnerClass.MyInnerInnerClass;
+import test.domainmapping.inner.MyInterface;
 import test.domainmapping.inner.MyClass.MyInnerClass;
+import test.domainmapping.inner.MyClass.MyStaticInnerClass;
 import test.domainmapping.maps.MapContainer;
 import test.domainmapping.maps.Mark;
 import test.domainmapping.maps.MultiDimMapsLists;
@@ -139,7 +142,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		return;
 	}
 	
-	//@Test
+	@Test
 	public void testInnerClass() {
 		List<JcError> errors;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
@@ -149,6 +152,19 @@ public class DomainMappingTest extends AbstractTestSuite{
 		MyInnerClass myInnerClass = myClass.createInnerClass();
 		myInnerClass.setName("My inner Class");
 		myClass.setMyInnerClass(myInnerClass);
+		MyInnerInnerClass myInnerInnerClass = myInnerClass.createInnerInnerClass();
+		myInnerInnerClass.setName("My inner inner Class");
+		myInnerClass.setMyInnerInnerClass(myInnerInnerClass);
+		MyStaticInnerClass myStaticInnerClass = new MyStaticInnerClass();
+		myStaticInnerClass.setName("My static inner Class");
+		myClass.setMyStaticInnerClass(myStaticInnerClass);
+//		myClass.setMyInterface(new MyInterface() {
+//			
+//			@Override
+//			public int getNumber() {
+//				return 0;
+//			}
+//		});
 		MyClass myClass_1;
 		
 		errors = dbAccess.clearDatabase();
@@ -167,6 +183,12 @@ public class DomainMappingTest extends AbstractTestSuite{
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		myClass_1 = da1.loadById(MyClass.class, -1, syncInfo_1.getId());
+		
+		equals = myClass.getMyInnerClass().getName().equals(myClass_1.getMyInnerClass().getName()) &&
+				myClass.getMyInnerClass().getMyInnerInnerClass().getName().equals(
+						myClass_1.getMyInnerClass().getMyInnerInnerClass().getName()) &&
+				myClass.getMyStaticInnerClass().getName().equals(myClass_1.getMyStaticInnerClass().getName());
+		assertTrue(equals);
 		
 		return;
 	}

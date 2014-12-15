@@ -169,6 +169,9 @@ public class FieldMapping {
 		try {
 			prepare(domainObject);
 			value = this.field.get(domainObject);
+			if (value != null && value.getClass().isAnonymousClass())
+				value = null; // TODO currently anonymous classes are not mapped
+									  // because for reinstantiation we would need dynamic proxies
 			if (value != null) {
 				if (MappingUtil.isSimpleType(value.getClass())) { // value is of primitive or simple type
 					value = null;

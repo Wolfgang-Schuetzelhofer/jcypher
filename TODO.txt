@@ -6,7 +6,7 @@ lists arrays maps as root objects
 
 remove surrogate objects from result
 
-test inner classes
+---done--- support inner classes
 
 START.node(n).byId(ids...) now works, some queries can be made simpler now
 

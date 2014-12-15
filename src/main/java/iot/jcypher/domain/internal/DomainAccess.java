@@ -77,6 +77,7 @@ import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.util.Util;
 
+import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -932,7 +933,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					throw new RuntimeException("node with label(s): " + rNode.getLabels() + " cannot be mapped to domain object class: " +
 							domainObjectClass.getName());
 				}
-				domainObject = (T) createInstance(concreteClass);
+				domainObject = (T) createInstance(concreteClass, null);
 			}
 			ObjectMapping objectMapping = getObjectMappingFor(domainObject);
 			objectMapping.mapPropertiesToObject(domainObject, rNode);
@@ -1131,10 +1132,27 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 		}
 		
-		private Object createInstance(Class<?> clazz) {
-			Object ret;
+		private Object createInstance(Class<?> clazz, Object parentObject) {
+			Object ret = null;
+			
 			try {
-				ret = clazz.newInstance();
+				if (clazz.isMemberClass()) {
+					Class<?> eClass = clazz.getEnclosingClass();
+					Constructor<?> constr = null;
+					Constructor<?>[] constrs = clazz.getDeclaredConstructors();
+					for (Constructor<?> c : constrs) {
+						Class<?>[] pTypes = c.getParameterTypes();
+						if (pTypes.length == 1 && pTypes[0].equals(eClass)) {
+							constr = c;
+							break;
+						}
+					}
+					if (constr != null) // inner class, non static
+						ret = constr.newInstance(parentObject);
+				}
+			
+				if (ret == null)
+					ret = clazz.newInstance();
 			} catch(Throwable e) {
 				throw new RuntimeException(e);
 			}
@@ -1813,7 +1831,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 									if (clazz.equals(MapTerminator.class))
 										domainObject = new MapTerminator(context.parentObject, fm.getFieldName());
 									else
-										domainObject = domainAccessHandler.createInstance(clazz);
+										domainObject = domainAccessHandler.createInstance(clazz, context.parentObject);
 									if (domainObject instanceof Array)
 										((Array)domainObject).setSurrogateState(domainAccessHandler.domainState.getSurrogateState());
 									domainAccessHandler.domainState.add_Id2Object(domainObject, actNode.getId(),
@@ -2027,7 +2045,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						// Most certainly there will only be one type in the CompoundType,
 						// anyway it must be instantiable as it has earlier been stored to the graph
 						ret.collection = (Collection<Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
-								.getConcreteFieldType(classFieldName).getType());
+								.getConcreteFieldType(classFieldName).getType(), null);
 						ret.compoundType = MappingUtil.internalDomainAccess.get()
 								.getFieldComponentType(classFieldName);
 						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
@@ -2062,7 +2080,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						// Most certainly there will only be one type in the CompoundType,
 						// anyway it must be instantiable as it has earlier been stored to the graph
 						ret.map = (Map<Object, Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
-								.getConcreteFieldType(classFieldName).getType());
+								.getConcreteFieldType(classFieldName).getType(), null);
 						ret.compoundType = MappingUtil.internalDomainAccess.get()
 								.getFieldComponentType(classFieldName);
 						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
