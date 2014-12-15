@@ -119,10 +119,10 @@
 ----EXTRACT_11:
 
 {
-    "query":"RETURN n LIMIT {param_0} SKIP {param_1}",
+    "query":"RETURN n SKIP {param_0} LIMIT {param_1}",
     "params":{
-        "param_0":3,
-        "param_1":1
+        "param_0":1,
+        "param_1":3
     }
 }
 ------------------------------------------------------------

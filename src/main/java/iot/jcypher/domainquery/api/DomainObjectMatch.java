@@ -23,10 +23,14 @@ import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
+import iot.jcypher.query.values.JcBoolean;
+import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcProperty;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.ValueAccess;
+import iot.jcypher.query.values.ValueElement;
 
 
 public class DomainObjectMatch<T> implements IPredicateOperand1 {
@@ -66,31 +70,12 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	}
 	
 	/**
-	 * Access an attribute
+	 * Access an attribute, don't rely on a specific attribute type
 	 * @param name the attribute name
 	 * @return
 	 */
 	public JcProperty atttribute(String name) {
-		JcProperty ret = null;
-		List<JcNode> validFor = new ArrayList<JcNode>();
-		for (int i = 0; i < this.typeList.size(); i++) {
-			FieldMapping fm = this.mappingInfo.getFieldMapping(name, typeList.get(i));
-			String propName = this.getPropertyOrRelationName(fm);
-			if (propName != null) {
-				if (needsRelation(fm))
-					throw new RuntimeException(msg_1 + name + "] " +
-							"in domain object type: [" + domainObjectType.getName() + "]");
-				validFor.add(this.nodes.get(i));
-				if (ret == null) {
-					ret = this.nodes.get(i).property(propName);
-					ValueAccess.setHint(ret, validFor);
-				}
-			}
-		}
-		if (ret == null)
-			throw new RuntimeException("attribute: [" + name + "] does not exist " +
-							"in domain object type: [" + domainObjectType.getName() + "]");
-		return ret;
+		return checkField_getJcVal(name, JcProperty.class);
 	}
 	
 	/**
@@ -99,30 +84,38 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	 * @return a JcString
 	 */
 	public JcString stringAtttribute(String name) {
-		JcString ret = null;
-		List<JcNode> validFor = new ArrayList<JcNode>();
-		for (int i = 0; i < this.typeList.size(); i++) {
-			FieldMapping fm = this.mappingInfo.getFieldMapping(name, typeList.get(i));
-			String propName = this.getPropertyOrRelationName(fm);
-			if (propName != null) {
-				if (needsRelation(fm))
-					throw new RuntimeException(msg_1 + name + "] " +
-							"in domain object type: [" + domainObjectType.getName() + "]");
-				validFor.add(this.nodes.get(i));
-				if (ret == null) {
-					ret = this.nodes.get(i).stringProperty(propName);
-					ValueAccess.setHint(ret, validFor);
-				}
-			}
-		}
-		if (ret == null)
-			throw new RuntimeException("attribute: [" + name + "] does not exist " +
-							"in domain object type: [" + domainObjectType.getName() + "]");
-		return ret;
+		return checkField_getJcVal(name, JcString.class);
 	}
 	
 	/**
-	 * For pagination purposes, set offset (start) and length of the set of matching objects to be
+	 * Access a number attribute
+	 * @param name the attribute name
+	 * @return a JcNumber
+	 */
+	public JcNumber numberAtttribute(String name) {
+		return checkField_getJcVal(name, JcNumber.class);
+	}
+	
+	/**
+	 * Access a boolean attribute
+	 * @param name the attribute name
+	 * @return a JcBoolean
+	 */
+	public JcBoolean booleanAtttribute(String name) {
+		return checkField_getJcVal(name, JcBoolean.class);
+	}
+	
+	/**
+	 * Access a collection attribute
+	 * @param name the attribute name
+	 * @return a JcCollection
+	 */
+	public JcCollection collectionAtttribute(String name) {
+		return checkField_getJcVal(name, JcCollection.class);
+	}
+	
+	/**
+	 * For pagination support, set offset (start) and length of the set of matching objects to be
 	 * returned with respect to the total number of matching objects.
 	 * @param offset
 	 * @param length
@@ -197,6 +190,34 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 			else
 				MappingUtil.internalDomainAccess.remove();
 		}
+		return ret;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <E> E checkField_getJcVal(String name, Class<E> attributeType) {
+		E ret = null;
+		List<JcNode> validFor = new ArrayList<JcNode>();
+		for (int i = 0; i < this.typeList.size(); i++) {
+			FieldMapping fm = this.mappingInfo.getFieldMapping(name, typeList.get(i));
+			if (fm != null) {
+				if (needsRelation(fm))
+					throw new RuntimeException(msg_1 + name + "] " +
+							"in domain object type: [" + domainObjectType.getName() + "]");
+				validFor.add(this.nodes.get(i));
+				if (ret == null) {
+					String propName = this.getPropertyOrRelationName(fm);
+					JcNode n = this.nodes.get(i);
+					if (attributeType.equals(JcProperty.class))
+						ret = (E) n.property(propName);
+					else if (attributeType.equals(JcString.class))
+						ret = (E) n.stringProperty(propName);
+					ValueAccess.setHint((ValueElement)ret, validFor);
+				}
+			}
+		}
+		if (ret == null)
+			throw new RuntimeException("attribute: [" + name + "] does not exist " +
+							"in domain object type: [" + domainObjectType.getName() + "]");
 		return ret;
 	}
 }

@@ -11,6 +11,6 @@ WITH
      n.name AS personName, n AS thePerson
 ORDER BY
      n.age, n.name DESC
-LIMIT 3
 SKIP 1
+LIMIT 3
 ------------------------------------------------------------

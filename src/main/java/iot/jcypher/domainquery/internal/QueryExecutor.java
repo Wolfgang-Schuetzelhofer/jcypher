@@ -635,12 +635,9 @@ public class QueryExecutor {
 				for (int i = 0; i < cnt; i++) {
 					if (val_2s != null)
 						val_2 = val_2s.get(i);
-					if (op == Operator.EQUALS) {
-						if (val2IsDom)
-							ret = createWhereEquals(concat_1, val_1, (List<JcNode>) val_2, negate);
-						else
-							ret = booleanOp.EQUALS(val_2);
-					} else if (op == Operator.GT)
+					if (op == Operator.EQUALS)
+						ret = booleanOp.EQUALS(val_2);
+					else if (op == Operator.GT)
 						ret = booleanOp.GT(val_2);
 					else if (op == Operator.GTE)
 						ret = booleanOp.GTE(val_2);
@@ -679,12 +676,12 @@ public class QueryExecutor {
 				int paramPosition) {
 			if (paramPosition == 1) {
 				if (value instanceof DomainObjectMatch<?>) {
-					if (!(op == Operator.EQUALS || op == Operator.IN || op == Operator.IS_NULL))
+					if (!(op == Operator.IN || op == Operator.IS_NULL))
 						throw new RuntimeException("invalid parameter 1 in WHERE clause [" + op.name() + "]");
 				}
 			} else if (paramPosition == 2) {
 				if (value instanceof DomainObjectMatch<?>) {
-					if (!(op == Operator.EQUALS || op == Operator.IN))
+					if (op != Operator.IN)
 						throw new RuntimeException("invalid parameter 2 in WHERE clause [" + op.name() + "]");
 				}
 			}
@@ -716,27 +713,6 @@ public class QueryExecutor {
 			return booleanOp;
 		}
 		
-		private iot.jcypher.query.api.predicate.Concatenator createWhereEquals(
-				Concat concat, ValueElement val_1, List<JcNode> val_2, boolean not) {
-			iot.jcypher.query.api.predicate.Concatenator booleanOp = null;
-			int idx = 0;
-			for (JcNode n : val_2) {
-				if (not) {
-					if (idx == 0)
-						booleanOp = concat.valueOf(n).IS_NULL().OR().NOT().valueOf(val_1).IN_list(n).BR_CLOSE();
-					else
-						booleanOp = booleanOp.AND().BR_OPEN().valueOf(n).IS_NULL().OR().NOT().valueOf(val_1).IN_list(n).BR_CLOSE();
-				} else {
-					if (idx == 0)
-						booleanOp = concat.NOT().valueOf(n).IS_NULL().AND().valueOf(val_1).IN_list(n).BR_CLOSE();
-					else
-						booleanOp.OR().BR_OPEN().NOT().valueOf(n).IS_NULL().AND().valueOf(val_1).IN_list(n).BR_CLOSE();
-				}
-				idx++;
-			}
-			return booleanOp;
-		}
-
 		private List<JcNode> collectNodes(DomainObjectMatch<?> dom, List<String> validNodes) {
 			List<JcNode> ret = new ArrayList<JcNode>();
 			List<JcNode> nodes = APIAccess.getNodes((DomainObjectMatch<?>)dom);

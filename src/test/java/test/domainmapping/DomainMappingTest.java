@@ -66,6 +66,8 @@ import test.domainmapping.ambiguous.IPerson;
 import test.domainmapping.ambiguous.JPerson;
 import test.domainmapping.ambiguous.MultiBroker;
 import test.domainmapping.ambiguous.NPerson;
+import test.domainmapping.inner.MyClass;
+import test.domainmapping.inner.MyClass.MyInnerClass;
 import test.domainmapping.maps.MapContainer;
 import test.domainmapping.maps.Mark;
 import test.domainmapping.maps.MultiDimMapsLists;
@@ -90,7 +92,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 	}
 	
 	@AfterClass
@@ -134,6 +136,38 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		check = dbAccess.isDatabaseEmpty();
 		assertTrue("Test Domain is empty", check);
+		return;
+	}
+	
+	//@Test
+	public void testInnerClass() {
+		List<JcError> errors;
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		IDomainAccess da1;
+		boolean equals;
+		MyClass myClass = new MyClass();
+		MyInnerClass myInnerClass = myClass.createInnerClass();
+		myInnerClass.setName("My inner Class");
+		myClass.setMyInnerClass(myInnerClass);
+		MyClass myClass_1;
+		
+		errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		errors = da.store(myClass);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		SyncInfo syncInfo_1 = da.getSyncInfo(myClass);
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		myClass_1 = da1.loadById(MyClass.class, -1, syncInfo_1.getId());
+		
 		return;
 	}
 	

@@ -62,6 +62,24 @@ public class CompareUtil {
 		return equalsList(list_1, list_2, acs);
 	}
 	
+	@SuppressWarnings("rawtypes")
+	public static boolean listHasIdentContent(List list_1, List list_2) {
+		 if (list_1 == list_2)
+            return true;
+        if (list_1.size() != list_2.size())
+        	return false;
+
+        ListIterator<?> e1 = list_1.listIterator();
+        ListIterator<?> e2 = list_2.listIterator();
+        while (e1.hasNext() && e2.hasNext()) {
+            Object o1 = e1.next();
+            Object o2 = e2.next();
+            if (o1 != o2)
+            	return false;
+        }
+        return true;
+	}
+	
 	private static boolean equalsObjects(Object o_1, Object o_2, List<AlreadyCompared> alreadyCompareds) {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
