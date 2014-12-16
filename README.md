@@ -38,6 +38,8 @@ You may add JCypher as a Maven dependency:
    <version>2.1.0</version>
 </dependency>
 ```
+## Jcypher on Maven Central
+<a href="http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22net.iot-solutions.graphdb%22%20AND%20a%3A%22jcypher%22">Can be found here</a>
 
 ## License & Copyright
 
