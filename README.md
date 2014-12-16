@@ -39,8 +39,9 @@ You may add JCypher as a Maven dependency:
 </dependency>
 ```
 ## Jcypher on Maven Central
-<a href="http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22net.iot-solutions.graphdb%22%20AND%20a%3A%22jcypher%22">Can be found here</a>
-## <a href="https://github.com/Wolfgang-Schuetzelhofer/jcypher/blob/master/release_notes.md">Release Notes (since 2.1.0)</a>
+<a href="http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22net.iot-solutions.graphdb%22%20AND%20a%3A%22jcypher%22">Can be found here.</a>
+## Release Notes (since 2.1.0)
+<a href="https://github.com/Wolfgang-Schuetzelhofer/jcypher/blob/master/release_notes.md">Please look here.</a>
 
 ## License & Copyright
 
