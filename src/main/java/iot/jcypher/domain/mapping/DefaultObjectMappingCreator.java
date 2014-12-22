@@ -30,7 +30,6 @@ import java.lang.reflect.Modifier;
 public class DefaultObjectMappingCreator {
 
 	private static final String ValueField = "value";
-	private static final String InnerRefField = "this$";
 	
 	public static ObjectMapping createObjectMapping(Class<?> toMap) {
 		SimpleObjectMapping objectMapping = new SimpleObjectMapping();
@@ -50,7 +49,7 @@ public class DefaultObjectMappingCreator {
 	private static void addFieldMappings(SimpleObjectMapping objectMapping, Class<?> clazz) {
 		Field[] fields = clazz.getDeclaredFields();
 		for (int i = 0;i < fields.length; i++) {
-			if (!Modifier.isTransient(fields[i].getModifiers()) && !fields[i].getName().startsWith(InnerRefField)) {
+			if (!Modifier.isTransient(fields[i].getModifiers())) {
 				FieldMapping fieldMapping;
 				IField field;
 				FieldKind fieldKind = FieldMapping.getFieldKind(fields[i].getType());

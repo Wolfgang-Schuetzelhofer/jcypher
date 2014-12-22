@@ -45,6 +45,7 @@ import iot.jcypher.domain.mapping.surrogate.Deferred2DO;
 import iot.jcypher.domain.mapping.surrogate.IDeferred;
 import iot.jcypher.domain.mapping.surrogate.IEntryUpdater;
 import iot.jcypher.domain.mapping.surrogate.ISurrogate2Entry;
+import iot.jcypher.domain.mapping.surrogate.InnerClassSurrogate;
 import iot.jcypher.domain.mapping.surrogate.ListEntriesUpdater;
 import iot.jcypher.domain.mapping.surrogate.MapEntry;
 import iot.jcypher.domain.mapping.surrogate.MapEntryUpdater;
@@ -933,7 +934,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					throw new RuntimeException("node with label(s): " + rNode.getLabels() + " cannot be mapped to domain object class: " +
 							domainObjectClass.getName());
 				}
-				domainObject = (T) createInstance(concreteClass, null);
+				domainObject = (T) createInstance(concreteClass);
 			}
 			ObjectMapping objectMapping = getObjectMappingFor(domainObject);
 			objectMapping.mapPropertiesToObject(domainObject, rNode);
@@ -1012,7 +1013,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 		}
 		
-		private ObjectMapping getCompoundObjectMappingFor(CompoundObjectType cType, Class<?> filter) {
+		private ObjectMapping getCompoundObjectMappingFor(CompoundObjectType cType, Object filter) {
 			return new CompoundObjectMapping(cType, this.mappings, filter);
 		}
 		
@@ -1132,7 +1133,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 		}
 		
-		private Object createInstance(Class<?> clazz, Object parentObject) {
+		private Object createInstance(Class<?> clazz) {
 			Object ret = null;
 			
 			try {
@@ -1148,7 +1149,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						}
 					}
 					if (constr != null) // inner class, non static
-						ret = constr.newInstance(parentObject);
+						ret = new InnerClassSurrogate(constr);
 				}
 			
 				if (ret == null)
@@ -1736,6 +1737,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			@SuppressWarnings("unchecked")
 			private <T> void fillModel(FillModelContext<T> context, FieldMapping fm,
 					String nodeName, String relationName, GrNode parentNode) {
+				boolean resetInnerClassResolution = false;
 				int prevClauseRepetitionNumber = context.clauseRepetitionNumber;
 				boolean isRoot = fm == null;
 				String nnm;
@@ -1831,15 +1833,28 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 									if (clazz.equals(MapTerminator.class))
 										domainObject = new MapTerminator(context.parentObject, fm.getFieldName());
 									else
-										domainObject = domainAccessHandler.createInstance(clazz, context.parentObject);
+										domainObject = domainAccessHandler.createInstance(clazz);
 									if (domainObject instanceof Array)
 										((Array)domainObject).setSurrogateState(domainAccessHandler.domainState.getSurrogateState());
 									domainAccessHandler.domainState.add_Id2Object(domainObject, actNode.getId(),
 											resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
+									if (domainObject instanceof InnerClassSurrogate) {
+										((InnerClassSurrogate)domainObject).setId2ObjectMapper(getInternalDomainAccess());
+										((InnerClassSurrogate)domainObject).setNodeId(actNode.getId());
+									}
 									performMapping = true;
 									// recursion exit
 									if (!resolveDeep && !maxDepthReached) {
-										context.addRecursionExitObject(domainObject, context.currentDepth);
+										if (!(domainObject instanceof InnerClassSurrogate))
+											context.addRecursionExitObject(domainObject, context.currentDepth);
+										else {
+											if (!context.resolveInnerClasses) {
+												((InnerClassSurrogate)domainObject).setRecursionExit(context);
+												((InnerClassSurrogate)domainObject).setActResolutionDepth(context.currentDepth);
+												context.resolveInnerClasses = true;
+												resetInnerClassResolution = true;
+											}
+										}
 									}
 								} else {
 									// domainObject has at least been shallowly mapped
@@ -1858,8 +1873,18 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 											if (!removed)
 												context.removeRecursionExitObject(domainObject);
 										} else { // recursion exit
-											if (!maxDepthReached)
-												context.addRecursionExitObject(domainObject, context.currentDepth);
+											if (!maxDepthReached) {
+												if (!(domainObject instanceof InnerClassSurrogate))
+													context.addRecursionExitObject(domainObject, context.currentDepth);
+												else {
+													if (!context.resolveInnerClasses) {
+														((InnerClassSurrogate)domainObject).setRecursionExit(context);
+														((InnerClassSurrogate)domainObject).setActResolutionDepth(context.currentDepth);
+														context.resolveInnerClasses = true;
+														resetInnerClassResolution = true;
+													}
+												}
+											}
 										}
 									}
 								}
@@ -1872,7 +1897,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 									// need to reset if we iterate through a list
 									context.maxClauseRepetitionNumber = initialMaxClauseRepetitionNumber;
 									ObjectMapping objectMapping = domainAccessHandler
-											.getCompoundObjectMappingFor(compoundType, domainObject.getClass());
+											.getCompoundObjectMappingFor(compoundType, domainObject);
 									Iterator<FieldMapping> it = objectMapping.fieldMappingsIterator();
 									boolean hasComplexFields = false;
 									int idx = 0;
@@ -1891,7 +1916,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 										}
 										if (fMap.needsRelation()) {
 											hasComplexFields = true;
-											if (resolveDeep) {
+											if (resolveDeep || fMap.isInnerClassRefField()) {
 												if (!mapped) {
 													PathElement pe = context.getLastPathElement();
 													pe.fieldIndex = idx;
@@ -2029,6 +2054,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					context.path.remove(context.path.size() - 1); // remove the last one
 				}
 				context.clauseRepetitionNumber = prevClauseRepetitionNumber;
+				if (resetInnerClassResolution)
+					context.resolveInnerClasses = false;
 			}
 			
 			@SuppressWarnings("unchecked")
@@ -2045,7 +2072,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						// Most certainly there will only be one type in the CompoundType,
 						// anyway it must be instantiable as it has earlier been stored to the graph
 						ret.collection = (Collection<Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
-								.getConcreteFieldType(classFieldName).getType(), null);
+								.getConcreteFieldType(classFieldName).getType());
 						ret.compoundType = MappingUtil.internalDomainAccess.get()
 								.getFieldComponentType(classFieldName);
 						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
@@ -2080,7 +2107,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						// Most certainly there will only be one type in the CompoundType,
 						// anyway it must be instantiable as it has earlier been stored to the graph
 						ret.map = (Map<Object, Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
-								.getConcreteFieldType(classFieldName).getType(), null);
+								.getConcreteFieldType(classFieldName).getType());
 						ret.compoundType = MappingUtil.internalDomainAccess.get()
 								.getFieldComponentType(classFieldName);
 						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
@@ -2280,9 +2307,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			private boolean calculateQuery(FieldMapping fm, ClosureQueryContext context) {
 				boolean ret = true;
 				CompoundObjectType compoundType;
-				if (fm == null) // root type
-					compoundType = domainAccessHandler.getCompoundTypeFor(context.domainObjectClass);
-				else {
+				if (fm == null) { // root type
+					Class<?> domClass = context.domainObjectClass;
+					compoundType = domainAccessHandler.getCompoundTypeFor(domClass);
+				} else {
 					String classFieldName = fm.getClassFieldName();
 					compoundType = MappingUtil.internalDomainAccess.get()
 							.getConcreteFieldType(classFieldName);
@@ -2329,7 +2357,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 								walkedToIndex = true;
 						}
 						
-						if (fMap.needsRelation() && resolveDeep) {
+						if (fMap.needsRelation() && (resolveDeep || fMap.isInnerClassRefField())) {
 							boolean needToComeBack = false;
 							if (!subPathWalked) {
 								terminatesClause = false;
@@ -2416,7 +2444,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	}
 	
 	/***********************************/
-	private class FillModelContext<T> {
+	private class FillModelContext<T> implements IRecursionExit {
 		private JcQueryResult qResult;
 		private Class<T> domainObjectClass;
 		private T domainObject;
@@ -2433,6 +2461,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private SurrogateChangeLog surrogateChangeLog;
 		private int maxResolutionDepth;
 		private int currentDepth;
+		private boolean resolveInnerClasses;
 		
 		private FillModelContext(Class<T> domainObjectClass, JcQueryResult qResult,
 				List<String> queryEndNds, List<String> recursionExitNds,
@@ -2453,6 +2482,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.surrogateChangeLog = surrogateChangeLog;
 			this.maxResolutionDepth = maxResolutionDepth;
 			this.currentDepth = startDepth;
+			this.resolveInnerClasses = false;
 		}
 		
 		private PathElement getLastPathElement() {
@@ -2472,7 +2502,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 		}
 		
-		private void addRecursionExitObject(Object obj, int resolvedDepth) {
+		@Override
+		public void addRecursionExitObject(Object obj, int resolvedDepth) {
 			if (!this.contains(this.recursionExitObjects, obj))
 				this.recursionExitObjects.add(new ResolvedDepth(obj, resolvedDepth));
 		}
@@ -2827,6 +2858,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		}
 	}
 	
+	/************************************/
+	public interface IRecursionExit {
+		public void addRecursionExitObject(Object obj, int resolvedDepth);
+	}
+	
 	/***********************************/
 	public class InternalDomainAccess {
 
@@ -2884,6 +2920,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		public <T> List<T> loadByIds(Class<T> domainObjectClass,
 				Map<Class<?>, List<Long>> type2IdsMap, int resolutionDepth, long... ids) {
 			return domainAccessHandler.loadByIds(domainObjectClass, type2IdsMap, resolutionDepth, ids);
+		}
+		
+		public void replace_Id2Object(InnerClassSurrogate surrogate, Object domainObject,
+				long nodeId) {
+			domainAccessHandler.domainState.replace_Id2Object(surrogate, domainObject, nodeId);
 		}
 	}
 }

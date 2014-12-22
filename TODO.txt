@@ -1,3 +1,5 @@
+add domain name as node label
+
 ---done--- optimize domain query pagination, remove match clauses if no dependencies exits
 
 optimize pagination query for Domain Mapping (see Domain Queries)

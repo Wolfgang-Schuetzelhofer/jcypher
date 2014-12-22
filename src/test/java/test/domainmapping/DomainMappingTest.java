@@ -71,6 +71,7 @@ import test.domainmapping.inner.MyClass.MyInnerClass.MyInnerInnerClass;
 import test.domainmapping.inner.MyInterface;
 import test.domainmapping.inner.MyClass.MyInnerClass;
 import test.domainmapping.inner.MyClass.MyStaticInnerClass;
+import test.domainmapping.inner.MyOtherClass;
 import test.domainmapping.maps.MapContainer;
 import test.domainmapping.maps.Mark;
 import test.domainmapping.maps.MultiDimMapsLists;
@@ -151,13 +152,23 @@ public class DomainMappingTest extends AbstractTestSuite{
 		MyClass myClass = new MyClass();
 		MyInnerClass myInnerClass = myClass.createInnerClass();
 		myInnerClass.setName("My inner Class");
-		myClass.setMyInnerClass(myInnerClass);
+		MyInnerClass myInnerClass_2 = myClass.createInnerClass();
+		myInnerClass_2.setName("My inner Class 2");
+//		myClass.setMyInnerClass(myInnerClass);
 		MyInnerInnerClass myInnerInnerClass = myInnerClass.createInnerInnerClass();
 		myInnerInnerClass.setName("My inner inner Class");
+		MyInnerInnerClass myInnerInnerClass_2 = myInnerClass_2.createInnerInnerClass();
+		myInnerInnerClass_2.setName("My inner inner Class 2");
 		myInnerClass.setMyInnerInnerClass(myInnerInnerClass);
 		MyStaticInnerClass myStaticInnerClass = new MyStaticInnerClass();
 		myStaticInnerClass.setName("My static inner Class");
-		myClass.setMyStaticInnerClass(myStaticInnerClass);
+//		myClass.setMyStaticInnerClass(myStaticInnerClass);
+		
+		MyOtherClass myOtherClass = new MyOtherClass();
+		myOtherClass.setMyInnerClass(myInnerClass);
+		myOtherClass.setMyInnerInnerClass(myInnerInnerClass_2);
+		myOtherClass.setMyStaticInnerClass(myStaticInnerClass);
+		
 //		myClass.setMyInterface(new MyInterface() {
 //			
 //			@Override
@@ -166,6 +177,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 //			}
 //		});
 		MyClass myClass_1;
+		MyOtherClass myOtherClass_1;
 		
 		errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
@@ -173,22 +185,29 @@ public class DomainMappingTest extends AbstractTestSuite{
 			throw new JcResultException(errors);
 		}
 		
-		errors = da.store(myClass);
+		errors = da.store(myOtherClass);
 		if (errors.size() > 0) {
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
 		
-		SyncInfo syncInfo_1 = da.getSyncInfo(myClass);
+		SyncInfo syncInfo_1 = da.getSyncInfo(myOtherClass);
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		myClass_1 = da1.loadById(MyClass.class, -1, syncInfo_1.getId());
+		myOtherClass_1 = da1.loadById(MyOtherClass.class, -1, syncInfo_1.getId());
 		
-		equals = myClass.getMyInnerClass().getName().equals(myClass_1.getMyInnerClass().getName()) &&
-				myClass.getMyInnerClass().getMyInnerInnerClass().getName().equals(
-						myClass_1.getMyInnerClass().getMyInnerInnerClass().getName()) &&
-				myClass.getMyStaticInnerClass().getName().equals(myClass_1.getMyStaticInnerClass().getName());
+		equals = myOtherClass.getMyInnerClass().getName().equals(myOtherClass_1.getMyInnerClass().getName()) &&
+				myOtherClass.getMyInnerClass().getMyInnerInnerClass().getName().equals(
+						myOtherClass_1.getMyInnerClass().getMyInnerInnerClass().getName()) &&
+				myOtherClass.getMyInnerInnerClass().getName().equals(myOtherClass_1.getMyInnerInnerClass().getName()) &&
+				myOtherClass.getMyStaticInnerClass().getName().equals(myOtherClass_1.getMyStaticInnerClass().getName());
 		assertTrue(equals);
+		
+//		equals = myClass.getMyInnerClass().getName().equals(myClass_1.getMyInnerClass().getName()) &&
+//				myClass.getMyInnerClass().getMyInnerInnerClass().getName().equals(
+//						myClass_1.getMyInnerClass().getMyInnerInnerClass().getName()) &&
+//				myClass.getMyStaticInnerClass().getName().equals(myClass_1.getMyStaticInnerClass().getName());
+//		assertTrue(equals);
 		
 		return;
 	}

@@ -1,5 +1,7 @@
 package iot.jcypher.domain.mapping;
 
+import iot.jcypher.domain.mapping.surrogate.InnerClassSurrogate;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
@@ -11,13 +13,16 @@ public class CompoundObjectMapping extends ObjectMapping {
 	private HashSet<FieldMapping> fieldsToAccept;
 	
 	public CompoundObjectMapping(CompoundObjectType compoundObjectType,
-			Map<Class<?>, ObjectMapping> typeMappings, Class<?> toAccept) {
+			Map<Class<?>, ObjectMapping> typeMappings, Object toAccept) {
 		super();
 		this.compoundObjectType = compoundObjectType;
 		this.typeMappings = typeMappings;
 		if (toAccept != null) {
+			Class<?> toAcc = toAccept.getClass();
+			if (toAccept instanceof InnerClassSurrogate)
+				toAcc = ((InnerClassSurrogate)toAccept).getRealClass();
 			this.fieldsToAccept = new HashSet<FieldMapping>();
-			Iterator<FieldMapping> it = typeMappings.get(toAccept).fieldMappingsIterator();
+			Iterator<FieldMapping> it = typeMappings.get(toAcc).fieldMappingsIterator();
 			while(it.hasNext()) {
 				this.fieldsToAccept.add(it.next());
 			}

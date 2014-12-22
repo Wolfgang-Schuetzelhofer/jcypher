@@ -140,6 +140,12 @@ public class DomainState {
 		this.addTo_Object2IdMap(obj, id, resolutionDepth);
 	}
 	
+	public void replace_Id2Object(Object old, Object obj, Long id) {
+		this.addTo_Id2ObjectMap(obj, id);
+		LoadInfo li = this.object2IdMap.remove(old);
+		this.addTo_Object2IdMap(obj, id, li.resolutionDepth);
+	}
+	
 	public boolean existsRelation(IRelation relat) {
 		List<IRelation> rels = this.object2RelationsMap.get(relat.getStart());
 		if (rels != null) {

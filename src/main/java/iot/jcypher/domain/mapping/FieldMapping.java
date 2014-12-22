@@ -17,6 +17,7 @@
 package iot.jcypher.domain.mapping;
 
 import iot.jcypher.domain.mapping.CompoundObjectType.CType;
+import iot.jcypher.domain.mapping.surrogate.InnerClassSurrogate;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 
@@ -26,6 +27,8 @@ import java.util.Map;
 
 public class FieldMapping {
 
+	private static transient final String InnerRefField = "this$";
+	
 	private IField field;
 	private String fieldName;
 	protected String propertyName;
@@ -40,6 +43,10 @@ public class FieldMapping {
 		this.field = field;
 		this.field.setAccessible(true);
 		this.propertyName = propertyName;
+	}
+	
+	public boolean isInnerClassRefField() {
+		return this.getFieldName().startsWith(InnerRefField);
 	}
 	
 	public void mapPropertyFromField(Object domainObject, GrNode rNode) {
@@ -116,36 +123,46 @@ public class FieldMapping {
 	 * @return true if the property exists in the node
 	 */
 	public boolean mapPropertyToField(Object domainObject, GrNode rNode) {
-		try {
-			prepare(domainObject);
-			
-			Object value = this.field.get(domainObject);
-			GrProperty prop = rNode.getProperty(this.propertyName);
-			boolean hasProperty = false;
-			if (prop != null) {
-				hasProperty = true;
-				Object propValue = prop.getValue();
-				if (propValue != null) { // allow null values in properties
-					Class<?> typ = getFieldTypeInt(rNode);
-					propValue = MappingUtil.convertFromProperty(propValue, typ,
-							getComponentType(rNode), getConcreteFieldType());
-					if (!propValue.equals(value)) {
-						this.field.set(domainObject, propValue);
+		boolean hasProperty = false;
+		if (domainObject instanceof InnerClassSurrogate) {
+			hasProperty = ((InnerClassSurrogate)domainObject).addPropertyChild(this, domainObject, rNode);
+		} else {
+			try {
+				prepare(domainObject);
+				
+				Object value = this.field.get(domainObject);
+				GrProperty prop = rNode.getProperty(this.propertyName);
+				if (prop != null) {
+					hasProperty = true;
+					Object propValue = prop.getValue();
+					if (propValue != null) { // allow null values in properties
+						Class<?> typ = getFieldTypeInt(rNode);
+						propValue = MappingUtil.convertFromProperty(propValue, typ,
+								getComponentType(rNode), getConcreteFieldType());
+						if (!propValue.equals(value)) {
+							this.field.set(domainObject, propValue);
+						}
 					}
 				}
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
 			}
-			return hasProperty;
-		} catch (Throwable e) {
-			throw new RuntimeException(e);
 		}
+		return hasProperty;
 	}
 	
 	public void setFieldValue(Object domainObject, Object value) {
-		try {
-			prepare(domainObject);
-			this.field.set(domainObject, value);
-		} catch (Throwable e) {
-			throw new RuntimeException(e);
+		if (domainObject instanceof InnerClassSurrogate) {
+			((InnerClassSurrogate)domainObject).addChild(this, value);
+		} else if (value instanceof InnerClassSurrogate) {
+			((InnerClassSurrogate)value).addParent(this, domainObject);
+		} else {
+			try {
+				prepare(domainObject);
+				this.field.set(domainObject, value);
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 	
