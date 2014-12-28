@@ -1,3 +1,5 @@
+---done--- inner class surrogates - handle relations
+
 add domain name as node label
 
 ---done--- optimize domain query pagination, remove match clauses if no dependencies exits

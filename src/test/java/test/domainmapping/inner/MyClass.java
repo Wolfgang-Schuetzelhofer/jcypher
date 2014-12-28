@@ -2,10 +2,19 @@ package test.domainmapping.inner;
 
 public class MyClass {
 
+	private String name;
 	private MyInnerClass myInnerClass;
 	private MyStaticInnerClass myStaticInnerClass;
 	private MyInterface myInterface;
 	
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
 	public MyInnerClass getMyInnerClass() {
 		return myInnerClass;
 	}

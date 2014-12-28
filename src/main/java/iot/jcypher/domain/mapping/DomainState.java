@@ -17,6 +17,7 @@
 package iot.jcypher.domain.mapping;
 
 import iot.jcypher.domain.ResolutionDepth;
+import iot.jcypher.domain.mapping.surrogate.InnerClassSurrogate;
 import iot.jcypher.domain.mapping.surrogate.SurrogateState;
 
 import java.util.ArrayList;
@@ -73,52 +74,57 @@ public class DomainState {
 	}
 	
 	public void add_Id2Relation(IRelation relat, Long value) {
-		IRelation toPut = relat; 
-		if (relat instanceof KeyedRelationToChange) {
-			KeyedRelation oldOne = ((KeyedRelationToChange)relat).existingOne;
-			this.relation2IdMap.remove(oldOne);
-			SourceField2TargetKey key = new SourceField2TargetKey(oldOne.getStart(),
-					oldOne.getType(), oldOne.getEnd());
-			List<KeyedRelation> rels = this.objectField2KeyedRelationsMap.get(key);
-			if (rels != null) {
-				rels.remove(oldOne);
+		if (!relat.isDeferred()) {
+			IRelation toPut = relat; 
+			if (relat instanceof KeyedRelationToChange) {
+				KeyedRelation oldOne = ((KeyedRelationToChange)relat).existingOne;
+				this.relation2IdMap.remove(oldOne);
+				SourceField2TargetKey key = new SourceField2TargetKey(oldOne.getStart(),
+						oldOne.getType(), oldOne.getEnd());
+				List<KeyedRelation> rels = this.objectField2KeyedRelationsMap.get(key);
+				if (rels != null) {
+					rels.remove(oldOne);
+				}
+				SourceFieldKey fieldKey = key.getSourceFieldKey();
+				rels = this.multiRelationsMap.get(fieldKey);
+				if (rels != null) {
+					rels.remove(oldOne);
+				}
+				KeyedRelation newOne = ((KeyedRelationToChange)relat).getNewOne();
+				toPut = newOne;
 			}
-			SourceFieldKey fieldKey = key.getSourceFieldKey();
-			rels = this.multiRelationsMap.get(fieldKey);
-			if (rels != null) {
-				rels.remove(oldOne);
+			this.relation2IdMap.put(toPut, value);
+			
+			if (toPut instanceof KeyedRelation) {
+				SourceField2TargetKey key = new SourceField2TargetKey(toPut.getStart(),
+						toPut.getType(), toPut.getEnd());
+				List<KeyedRelation> rels = this.objectField2KeyedRelationsMap.get(key);
+				if (rels == null) {
+					rels = new ArrayList<KeyedRelation>();
+					this.objectField2KeyedRelationsMap.put(key, rels);
+				}
+				if (!rels.contains(toPut))
+					rels.add((KeyedRelation) toPut);
+				SourceFieldKey fieldKey = key.getSourceFieldKey();
+				rels = this.multiRelationsMap.get(fieldKey);
+				if (rels == null) {
+					rels = new ArrayList<KeyedRelation>();
+					this.multiRelationsMap.put(fieldKey, rels);
+				}
+				if (!rels.contains(toPut))
+					rels.add((KeyedRelation) toPut);
+			} else {
+				List<IRelation> rels = this.object2RelationsMap.get(toPut.getStart());
+				if (rels == null) {
+					rels = new ArrayList<IRelation>();
+					this.object2RelationsMap.put(toPut.getStart(), rels);
+				}
+				if (!rels.contains(toPut))
+					rels.add(toPut);
 			}
-			KeyedRelation newOne = ((KeyedRelationToChange)relat).getNewOne();
-			toPut = newOne;
-		}
-		this.relation2IdMap.put(toPut, value);
-		
-		if (toPut instanceof KeyedRelation) {
-			SourceField2TargetKey key = new SourceField2TargetKey(toPut.getStart(),
-					toPut.getType(), toPut.getEnd());
-			List<KeyedRelation> rels = this.objectField2KeyedRelationsMap.get(key);
-			if (rels == null) {
-				rels = new ArrayList<KeyedRelation>();
-				this.objectField2KeyedRelationsMap.put(key, rels);
-			}
-			if (!rels.contains(toPut))
-				rels.add((KeyedRelation) toPut);
-			SourceFieldKey fieldKey = key.getSourceFieldKey();
-			rels = this.multiRelationsMap.get(fieldKey);
-			if (rels == null) {
-				rels = new ArrayList<KeyedRelation>();
-				this.multiRelationsMap.put(fieldKey, rels);
-			}
-			if (!rels.contains(toPut))
-				rels.add((KeyedRelation) toPut);
 		} else {
-			List<IRelation> rels = this.object2RelationsMap.get(toPut.getStart());
-			if (rels == null) {
-				rels = new ArrayList<IRelation>();
-				this.object2RelationsMap.put(toPut.getStart(), rels);
-			}
-			if (!rels.contains(toPut))
-				rels.add(toPut);
+			relat.setDomainState(this);
+			relat.setId(value.longValue());
 		}
 	}
 	
@@ -211,6 +217,13 @@ public class DomainState {
 		public String getType();
 		public Object getStart();
 		public Object getEnd();
+		public void setDomainState(DomainState domainState);
+		public void setId(long id);
+		
+		/**
+		 * @return true if start and / or end is an InnerClassSurrogate
+		 */
+		public boolean isDeferred();
 	}
 
 	/***********************************/
@@ -218,12 +231,30 @@ public class DomainState {
 		private String type;
 		private Object start;
 		private Object end;
+		private DomainState domainState;
+		private long id;
 		
 		public Relation(String type, Object start, Object end) {
 			super();
 			this.type = type;
-			this.start = start;
-			this.end = end;
+			Object strt = start;
+			if (start instanceof InnerClassSurrogate) {
+				Object ro = ((InnerClassSurrogate)start).getRealObject();
+				if (ro == null)
+					((InnerClassSurrogate)start).addRelationUpdate(new RelationUpdate(true));
+				else
+					strt = ro;
+			}
+			this.start = strt;
+			Object nd = end;
+			if (end instanceof InnerClassSurrogate) {
+				Object ro = ((InnerClassSurrogate)end).getRealObject();
+				if (ro == null)
+					((InnerClassSurrogate)end).addRelationUpdate(new RelationUpdate(false));
+				else
+					nd = ro;
+			}
+			this.end = nd;
 		}
 
 		@Override
@@ -239,6 +270,22 @@ public class DomainState {
 		@Override
 		public Object getEnd() {
 			return end;
+		}
+
+		@Override
+		public boolean isDeferred() {
+			return this.start instanceof InnerClassSurrogate ||
+					this.end instanceof InnerClassSurrogate;
+		}
+
+		@Override
+		public void setDomainState(DomainState domainState) {
+			this.domainState = domainState;
+		}
+
+		@Override
+		public void setId(long id) {
+			this.id = id;
 		}
 
 		@Override
@@ -281,6 +328,26 @@ public class DomainState {
 		public String toString() {
 			return "Relation [type=" + type + ", start=" + start + ", end="
 					+ end + "]";
+		}
+		
+		/**********************************/
+		public class RelationUpdate {
+			
+			private boolean start;
+			
+			private RelationUpdate(boolean start) {
+				super();
+				this.start = start;
+			}
+
+			public void updateWith(Object startOrEnd) {
+				if (this.start)
+					Relation.this.start = startOrEnd;
+				else
+					Relation.this.end = startOrEnd;
+				Relation.this.domainState.add_Id2Relation(Relation.this,
+						Relation.this.id);
+			}
 		}
 	}
 	
@@ -374,6 +441,27 @@ public class DomainState {
 			return this.existingOne.getEnd();
 		}
 
+		@Override
+		public boolean isDeferred() {
+			return this.newOne.isDeferred() || this.existingOne.isDeferred();
+		}
+
+		@Override
+		public void setDomainState(DomainState domainState) {
+			if (this.newOne.isDeferred())
+				this.newOne.setDomainState(domainState);
+			if (this.existingOne.isDeferred())
+				this.existingOne.setDomainState(domainState);
+		}
+
+		@Override
+		public void setId(long id) {
+			if (this.newOne.isDeferred())
+				this.newOne.setId(id);
+			if (this.existingOne.isDeferred())
+				this.existingOne.setId(id);
+		}
+		
 		public KeyedRelation getNewOne() {
 			return this.newOne;
 		}

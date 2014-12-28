@@ -24,6 +24,7 @@ import java.util.List;
 import iot.jcypher.domain.internal.DomainAccess.IRecursionExit;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.mapping.FieldMapping;
+import iot.jcypher.domain.mapping.DomainState.Relation.RelationUpdate;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 
@@ -39,6 +40,7 @@ public class InnerClassSurrogate {
 	private transient int actResolutionDepth;
 	private transient InternalDomainAccess id2ObjectMapper;
 	private transient long nodeId;
+	private transient List<RelationUpdate> relationUpdates;
 	
 	public InnerClassSurrogate(Constructor<?> constructor) {
 		super();
@@ -106,6 +108,11 @@ public class InnerClassSurrogate {
 				ics.constructAndFill(this.realObject);
 			}
 		}
+		if (this.relationUpdates != null) {
+			for (RelationUpdate ru : this.relationUpdates) {
+				ru.updateWith(this.realObject);
+			}
+		}
 	}
 	
 	/**
@@ -143,6 +150,10 @@ public class InnerClassSurrogate {
 		return this.constructor.getDeclaringClass();
 	}
 	
+	public Object getRealObject() {
+		return realObject;
+	}
+
 	public void setRecursionExit(IRecursionExit recursionExit) {
 		this.recursionExit = recursionExit;
 	}
@@ -157,6 +168,15 @@ public class InnerClassSurrogate {
 
 	public void setNodeId(long nodeId) {
 		this.nodeId = nodeId;
+	}
+
+	public void addRelationUpdate(RelationUpdate relationUpdate) {
+		if (this.realObject == null) {
+			if (this.relationUpdates == null)
+				this.relationUpdates = new ArrayList<RelationUpdate>();
+			this.relationUpdates.add(relationUpdate);
+		} else
+			relationUpdate.updateWith(this.realObject);
 	}
 
 	/*****************************/
