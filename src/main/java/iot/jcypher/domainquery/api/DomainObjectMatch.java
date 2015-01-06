@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -35,7 +35,7 @@ import iot.jcypher.query.values.ValueElement;
 
 public class DomainObjectMatch<T> implements IPredicateOperand1 {
 
-	private static final String nodePrefix = "n_";
+	public static final String nodePrefix = "n_";
 	private static final String separator = "_";
 	private static final String msg_1 = "attributes used in WHERE clauses must be of simple type." +
 									" Not true for attribute [";
@@ -163,6 +163,19 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 
 	int getPageLength() {
 		return pageLength;
+	}
+	
+	Class<?> getTypeForNodeName(String nodeName) {
+		int idx = -1;
+		for (int i = 0; i < this.nodes.size(); i++) {
+			if (ValueAccess.getName(this.nodes.get(i)).equals(nodeName)) {
+				idx = i;
+				break;
+			}
+		}
+		if (idx != -1)
+			return this.typeList.get(idx);
+		return null;
 	}
 
 	/**

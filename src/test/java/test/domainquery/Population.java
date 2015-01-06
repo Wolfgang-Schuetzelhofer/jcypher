@@ -23,6 +23,8 @@ import test.domainquery.model.Address;
 import test.domainquery.model.Area;
 import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
+import test.domainquery.model.EContact;
+import test.domainquery.model.EContact.EContactType;
 import test.domainquery.model.Gender;
 import test.domainquery.model.Person;
 
@@ -41,6 +43,7 @@ public class Population {
 	private Area austria;
 	private Area vienna;
 	private Area vienna_17;
+	private Area vienna_01;
 	
 	private List<Object> berghammers;
 	private List<Object> angelina_smith;
@@ -139,15 +142,22 @@ public class Population {
 		vienna.setPartOf(austria);
 		vienna_17 = new Area("1170", "Hernals", AreaType.URBAN_DISTRICT);
 		vienna_17.setPartOf(vienna);
+		vienna_01 = new Area("1010", "Innere Stadt", AreaType.URBAN_DISTRICT);
+		vienna_01.setPartOf(vienna);
 	}
 	
 	private void createSmithFamily(List<Object> domainObjects) {
 		Address smith_address = new Address("Market Street", 20);
 		smith_address.setArea(sanFrancisco);
+		Address smith_address_2 = new Address("Schweden Platz", 32);
+		smith_address_2.setArea(vienna_01);
+		EContact jsmith_eContact = new EContact(EContactType.EMAIL, "j.smith@email.smith");
 		
 		Person john_smith = new Person("John", "Smith", Gender.MALE);
 		john_smith.setMatchString("smith");
 		john_smith.getPointsOfContact().add(smith_address);
+		john_smith.getPointsOfContact().add(smith_address_2);
+		john_smith.getPointsOfContact().add(jsmith_eContact);
 		Person caroline_smith = new Person("Caroline", "Smith", Gender.FEMALE);
 		caroline_smith.setMatchString("smith");
 		caroline_smith.getPointsOfContact().add(smith_address);

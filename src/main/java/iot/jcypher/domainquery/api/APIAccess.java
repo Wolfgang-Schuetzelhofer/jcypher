@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import java.util.List;
 
 import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.PredicateExpression;
+import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
 import iot.jcypher.query.values.JcNode;
 
@@ -36,6 +37,10 @@ public class APIAccess {
 	public static <T> DomainObjectMatch<T> createDomainObjectMatch(Class<T> domainObjectType,
 			int num, MappingInfo mappingInfo) {
 		return new DomainObjectMatch<T>(domainObjectType, num, mappingInfo);
+	}
+	
+	public static Traverse createTraverse(TraversalExpression te) {
+		return new Traverse(te);
 	}
 	
 	public static List<JcNode> getNodes(DomainObjectMatch<?> dom) {
@@ -56,6 +61,10 @@ public class APIAccess {
 	
 	public static <T> Class<T> getDomainObjectType(DomainObjectMatch<T> dom) {
 		return dom.getDomainObjectType();
+	}
+	
+	public static Class<?> getTypeForNodeName(DomainObjectMatch<?> dom, String nodeName) {
+		return dom.getTypeForNodeName(nodeName);
 	}
 	
 	public static boolean isPageChanged(DomainObjectMatch<?> dom) {

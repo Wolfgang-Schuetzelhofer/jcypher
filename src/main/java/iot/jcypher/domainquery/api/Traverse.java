@@ -14,33 +14,36 @@
  * limitations under the License.
  ************************************************************************/
 
-package test.domainquery.model;
+package iot.jcypher.domainquery.api;
 
-public class EContact implements PointOfContact {
+import iot.jcypher.domainquery.ast.TraversalExpression;
 
-	private EContactType type;
-	private String eAddress;
+public class Traverse extends APIObject {
+
+	Traverse(TraversalExpression te) {
+		this.astObject = te;
+	}
 	
-	public EContact() {
-		super();
+	/**
+	 * Traverse forward via an attribute
+	 * @param attributeName
+	 * @return
+	 */
+	public TraversalStep FORTH(String attributeName) {
+		TraversalExpression te = (TraversalExpression)this.astObject;
+		te.step(attributeName, 0);
+		return new TraversalStep(te);
+	}
+	
+	/**
+	 * Traverse backward via an attribute
+	 * @param attributeName
+	 * @return
+	 */
+	public TraversalStep BACK(String attributeName) {
+		TraversalExpression te = (TraversalExpression)this.astObject;
+		te.step(attributeName, 1);
+		return new TraversalStep(te);
 	}
 
-	public EContact(EContactType type, String eAddress) {
-		super();
-		this.type = type;
-		this.eAddress = eAddress;
-	}
-
-	public EContactType getType() {
-		return type;
-	}
-
-	public String geteAddress() {
-		return eAddress;
-	}
-
-	/*******************************/
-	public enum EContactType {
-		EMAIL, TELEPHONE
-	}
 }

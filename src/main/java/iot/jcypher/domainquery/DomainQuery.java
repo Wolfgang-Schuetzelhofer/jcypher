@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,19 +22,14 @@ import iot.jcypher.domainquery.api.BooleanOperation;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.api.Order;
+import iot.jcypher.domainquery.api.Traverse;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
-import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.ast.PredicateExpression;
+import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.internal.QueryExecutor;
-import iot.jcypher.query.values.ValueElement;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
 
 public class DomainQuery {
 
@@ -113,6 +108,18 @@ public class DomainQuery {
 	public Order ORDER(DomainObjectMatch<?> toOrder) {
 		OrderExpression oe = this.queryExecutor.getOrderFor(toOrder);
 		Order ret = APIAccess.createOrder(oe);
+		return ret;
+	}
+	
+	/**
+	 * Start traversing the graph of domain objects.
+	 * @param start a DomainObjectMatch form where to start the traversal.
+	 * @return
+	 */
+	public Traverse TRAVERSE_FROM(DomainObjectMatch<?> start) {
+		TraversalExpression te = new TraversalExpression(start, this.queryExecutor);
+		this.queryExecutor.getAstObjects().add(te);
+		Traverse ret = APIAccess.createTraverse(te);
 		return ret;
 	}
 	

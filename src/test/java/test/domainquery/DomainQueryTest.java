@@ -16,8 +16,8 @@
 
 package test.domainquery;
 
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -28,8 +28,6 @@ import iot.jcypher.domainquery.CountQueryResult;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
-import iot.jcypher.query.result.JcError;
-import iot.jcypher.query.result.JcResultException;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -42,6 +40,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
+import test.domainquery.model.Address;
 import test.domainquery.model.Company;
 import test.domainquery.model.Person;
 import test.domainquery.model.Subject;
@@ -51,6 +50,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
 	public static String domainName;
+	private static List<Object> storedDomainObjects;
 	
 	@BeforeClass
 	public static void before() {
@@ -62,7 +62,25 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		
+		// init db
+		Population population = new Population();
+		
+		storedDomainObjects = population.createPopulation();
+		
+//		List<JcError> errors = dbAccess.clearDatabase();
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		
+//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+//		errors = da.store(storedDomainObjects);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
 	}
 	
 	@AfterClass
@@ -74,9 +92,51 @@ public class DomainQueryTest extends AbstractTestSuite {
 	}
 	
 	@Test
+	public void testDomainQuery_Traversals() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/******************************************/
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> subs = q.createMatch(Subject.class);
+
+		q.WHERE(subs.atttribute("name")).EQUALS("Global Company");
+		q.OR();
+		q.BR_OPEN();
+			q.WHERE(subs.atttribute("lastName")).EQUALS("Smith");
+			q.WHERE(subs.atttribute("firstName")).EQUALS("John");
+		q.BR_CLOSE();
+		
+		DomainObjectMatch<Address> subs_Addresses =
+				q.TRAVERSE_FROM(subs).FORTH("pointsOfContact").TO(Address.class);
+		
+		result = q.execute();
+		
+		List<Subject> subsResult = result.resultOf(subs);
+		List<Address> subs_AddressesResult = result.resultOf(subs_Addresses);
+		
+		/******************************************/
+		q = da1.createQuery();
+		DomainObjectMatch<Person> j_smith = q.createMatch(Person.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Address> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Address.class);
+		
+		result = q.execute();
+		
+		List<Address> j_smith_AddressesResult = result.resultOf(j_smith_Addresses);
+		
+		return;
+	}
+	
+	@Test
 	public void testDomainQuery_01() {
-		List<JcError> errors;
-		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		IDomainAccess da1;
 		DomainQuery q;
 		DomainQueryResult result = null;
@@ -84,19 +144,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		Population population = new Population();
 		
-		List<Object> domainObjects = population.createPopulation();
-		
-		errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		
-		errors = da.store(domainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
+		List<Object> domainObjects = storedDomainObjects;
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		

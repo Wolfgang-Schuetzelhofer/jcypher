@@ -131,7 +131,7 @@ public class AbstractTestSuite {
 	 * print errors to System.out
 	 * @param result
 	 */
-	protected void printErrors(List<JcError> errors) {
+	protected static void printErrors(List<JcError> errors) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("---------------Errors:");
 		appendErrorList(errors, sb);
@@ -141,7 +141,7 @@ public class AbstractTestSuite {
 		System.out.println(str);
 	}
 	
-	private void appendErrorList(List<JcError> errors, StringBuilder sb) {
+	private static void appendErrorList(List<JcError> errors, StringBuilder sb) {
 		int num = errors.size();
 		for (int i = 0; i < num; i++) {
 			JcError err = errors.get(i);

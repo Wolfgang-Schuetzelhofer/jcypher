@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,8 +21,10 @@ import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.domain.internal.SkipLimitCalc;
 import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
+import iot.jcypher.domain.mapping.CompoundObjectType;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.ObjectMapping;
+import iot.jcypher.domain.mapping.surrogate.Collection;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
@@ -34,15 +36,20 @@ import iot.jcypher.domainquery.ast.OrderExpression.OrderBy;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.ast.PredicateExpression.Operator;
+import iot.jcypher.domainquery.ast.TraversalExpression;
+import iot.jcypher.domainquery.ast.TraversalExpression.Step;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.api.pattern.Node;
+import iot.jcypher.query.api.pattern.Relation;
 import iot.jcypher.query.api.predicate.BooleanOperation;
 import iot.jcypher.query.api.predicate.Concat;
 import iot.jcypher.query.api.returns.RSortable;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
+import iot.jcypher.query.factories.clause.UNION;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.factories.clause.WITH;
 import iot.jcypher.query.result.JcError;
@@ -51,6 +58,7 @@ import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
+import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
@@ -144,7 +152,7 @@ public class QueryExecutor {
 		QueryContext context = new QueryContext(execCount);
 		QueryBuilder qb = new QueryBuilder();
 		List<JcQuery> queries = qb.buildQuery(context);
-//		Util.printQueries(queries, execCount ? "COUNT QUERY" : "DOM QUERY", Format.PRETTY_1);
+		Util.printQueries(queries, execCount ? "COUNT QUERY" : "DOM QUERY", Format.PRETTY_1);
 		List<JcQueryResult> results = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().
 														execute(queries);
 		List<JcError> errors = Util.collectErrors(results);
@@ -247,7 +255,11 @@ public class QueryExecutor {
 			}
 			
 			List<JcQuery> queries = new ArrayList<JcQuery>();
-			int queryIndex = -1;
+			// build traversal queries first
+			buildTraversalQueries(clausesPerTypeList, queries, context);
+			int queryIndex = -1 + queries.size();
+			// if split into multiple queries, due to use of LIMIT,
+			// which must be attached to a RETURN clause
 			int startIdx = 0;
 			while(startIdx < clausesPerTypeList.size()) {
 				boolean needAddDependencies = startIdx > 0;
@@ -260,13 +272,13 @@ public class QueryExecutor {
 				int i;
 				for (i = startIdx; i < clausesPerTypeList.size(); i++) {
 					ClausesPerType cpt = clausesPerTypeList.get(i);
-					if (cpt.valid) {
+					if (cpt.valid && cpt.traversalExpression == null) {
 						boolean startNewQueryAfter = false;
 						JcNumber num;
 						if (context.execCount)
-							num = new JcNumber(countPrefix.concat(String.valueOf(i)));
+							num = cpt.getJcNumber(countPrefix);
 						else
-							num = new JcNumber(idPrefix.concat(String.valueOf(i)));
+							num = cpt.getJcNumber(idPrefix);
 						
 						RSortable returnClause;
 						if (i == startIdx) {
@@ -284,6 +296,7 @@ public class QueryExecutor {
 						if (!context.execCount) { // execute full query (not count query)
 							if (withClauses == null)
 								withClauses = new ArrayList<IClause>();
+							// add to the WITH clause to be used in the next query part
 							RSortable withClause = WITH.value(cpt.node);
 							iot.jcypher.query.api.predicate.Concatenator whereClause = null;
 							List<OrderBy> ocs = getOrderExpressionsFor(cpt);
@@ -291,12 +304,14 @@ public class QueryExecutor {
 								needWith = true;
 								for (OrderBy ob : ocs) {
 									if (ob.getDirection() == 0)
-										withClause = withClause.ORDER_BY(ob.getAttributeName());
+										withClause = withClause.ORDER_BY(ob.getAttributeName()); // TODO use property name
 									else
 										withClause = withClause.ORDER_BY_DESC(ob.getAttributeName());
 								}
 							}
-							if (cpt.needSkipsLimits()) { // need to add it to the RETUN clause
+							
+							// we need to split up in multiple queries
+							if (cpt.needSkipsLimits()) { // need to add it to the RETURN clause
 																		// does not work at the WITH clause
 								if (i > startIdx) { // start a new query beginning with this one
 									startIdx = i;
@@ -376,6 +391,27 @@ public class QueryExecutor {
 			}
 		}
 		
+		private void buildTraversalQueries(
+				List<ClausesPerType> clausesPerTypeList, List<JcQuery> queries, QueryContext context) {
+			int idx = 0;
+			for (ClausesPerType cpt : clausesPerTypeList) {
+				JcNumber num = null;
+				if (cpt.traversalExpression != null) { // may need a query with UNION clause
+					List<IClause> clauses = new ArrayList<IClause>();
+					num = cpt.addWithUnionClauses(clauses, context);
+					JcQuery query = new JcQuery();
+					IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+					query.setClauses(clausesArray);
+					queries.add(query);
+					QueryContext.ResultsPerType resPerType = context.addFor(cpt.domainObjectMatch, cpt.domainObjectType, num);
+					context.resultsPerType.add(resPerType);
+					resPerType.queryIndex = idx;
+					idx++;
+				}
+			}
+			
+		}
+
 		/**
 		 * may return null
 		 * @param cpt
@@ -532,6 +568,9 @@ public class QueryExecutor {
 								clausePerType.previousOr = false;
 							}
 							clausePerType.concatenator = buildPredicateExpression(pred, concat_1, clausePerType, validNodes);
+						} else if (astObj instanceof TraversalExpression) {
+							clausePerType.traversalExpression = (TraversalExpression) astObj;
+							clausePerType.traversalExpression.setValidNodes(validNodes);
 						}
 					}
 				}
@@ -985,6 +1024,15 @@ public class QueryExecutor {
 						context.candidates.add(astObj);
 				}
 				context.orRemoveState = orRemoveState;
+			} else if (astObj instanceof TraversalExpression) {
+				TraversalExpression te = (TraversalExpression)astObj;
+				String bName = APIAccess.getBaseNodeName(te.getEnd());
+				if (baseNodeName.equals(bName)) {
+					context.candidates.add(astObj);
+					context.state = State.HAS_XPRESSION;
+					bName = APIAccess.getBaseNodeName(te.getStart());
+					context.addDependency(bName);
+				}
 			}
 		}
 
@@ -1045,8 +1093,10 @@ public class QueryExecutor {
 			private int pageLength;
 			private List<IClause> matchClauses;
 			private ExpressionsPerDOM expressionsPerDOM;
-			Concat concat = null;
-			iot.jcypher.query.api.predicate.Concatenator concatenator = null;
+			private Concat concat = null;
+			private iot.jcypher.query.api.predicate.Concatenator concatenator = null;
+			private TraversalExpression traversalExpression;
+			private List<JcNode> traversalStartNodes;
 			
 			private ClausesPerType(JcNode node, DomainObjectMatch<?> dom, Class<?> type) {
 				super();
@@ -1062,6 +1112,13 @@ public class QueryExecutor {
 				return this.pageOffset > 0 || this.pageLength >= 0;
 			}
 			
+			private JcNumber getJcNumber(String prefix) {
+				String nm = ValueAccess.getName(this.node);
+				nm = nm.substring(DomainObjectMatch.nodePrefix.length());
+				nm = prefix.concat(nm);
+				return new JcNumber(nm);
+			}
+			
 			/**
 			 * may return null in case it is not valid
 			 * @return
@@ -1071,16 +1128,98 @@ public class QueryExecutor {
 					if (this.valid) {
 						this.matchClauses = new ArrayList<IClause>();
 						String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
-						this.matchClauses.add(
-							OPTIONAL_MATCH.node(this.node).label(nodeLabel)
-						);
-						if (this.concatenator != null)
-							this.matchClauses.add(this.concatenator);
-						else
-							this.matchClauses.add(SEPARATE.nextClause());
+						if (this.traversalExpression != null) {
+							this.matchClauses.addAll(
+									this.buildMatchClauses(nodeLabel)
+							);
+						} else {
+							this.matchClauses.add(
+								OPTIONAL_MATCH.node(this.node).label(nodeLabel)
+							);
+							if (this.concatenator != null)
+								this.matchClauses.add(this.concatenator);
+							else
+								this.matchClauses.add(SEPARATE.nextClause());
+						}
 					}
 				}
 				return this.matchClauses;
+			}
+			
+			private List<IClause> buildMatchClauses(String nodeLabel) {
+				List<IClause> ret = new ArrayList<IClause>();
+				String startBName = APIAccess.getBaseNodeName(this.traversalExpression.getStart());
+				for (String validNodeName : this.traversalExpression.getValidNodes()) {
+					Node matchNode = null;
+					if (validNodeName.indexOf(startBName) == 0) {
+						JcNode strt = new JcNode(validNodeName);
+						if (this.traversalStartNodes == null)
+							this.traversalStartNodes = new ArrayList<JcNode>();
+						this.traversalStartNodes.add(strt);
+						matchNode = OPTIONAL_MATCH.node(strt);
+						Class<?> typ = APIAccess.getTypeForNodeName(this.traversalExpression.getStart(), validNodeName);
+						List<Class<?>> types = new ArrayList<Class<?>>();
+						types.add(typ);
+						for (int i = 0; i < this.traversalExpression.getSteps().size(); i++) {
+							Step step = this.traversalExpression.getSteps().get(i);
+							step.setCollection(typ.equals(Collection.class));
+							StepClause stepClause = buildStepClause(step, types,
+									i == this.traversalExpression.getSteps().size() - 1 ? this.node : null, matchNode,
+											nodeLabel);
+							matchNode = stepClause.matchNode;
+							types = stepClause.resultTypes;
+						}
+					}
+					if (matchNode != null) {
+						ret.add(matchNode);
+					}
+				}
+				return ret;
+			}
+			
+			private StepClause buildStepClause(Step step, List<Class<?>> types, JcNode nd,
+					Node matchNode, String nodeLabel) {
+				StepClause ret = new StepClause();
+				ret.matchNode = matchNode;
+				FieldMapping fm = null;
+				for (Class<?> t : types) {
+					fm = getMappingInfo().getFieldMapping(step.getAttributeName(),
+							t);
+					if (fm != null)
+						break;
+				}
+				if (fm != null) {
+					Relation matchRel = matchNode.relation().type(fm.getPropertyOrRelationName());
+					if (step.getDirection() == 0)
+						matchRel = matchRel.out();
+					else if (step.getDirection() == 1)
+						matchRel = matchRel.in();
+					
+					CompoundObjectType cType;
+					if (step.isCollection()) {
+						cType = getMappingInfo().getInternalDomainAccess()
+								.getFieldComponentType(fm.getClassFieldName());
+					} else {
+						cType = getMappingInfo().getInternalDomainAccess()
+								.getConcreteFieldType(fm.getClassFieldName());
+					}
+					Class<?> typ = cType.getType();
+					boolean isCollection = typ.equals(Collection.class); // TODO alternative check for surrogate
+					if (nd != null && !isCollection) { // we have reached the end
+						ret.matchNode = matchRel.node(nd).label(nodeLabel);
+					} else
+						ret.matchNode = matchRel.node();
+					if (isCollection) { // need to advance one step
+						Step insert = step.createStep(step.getDirection(), "c_content"); //TODO don' hardcode fieldname
+						insert.setCollection(true);
+						List<Class<?>> tps = new ArrayList<Class<?>>();
+						tps.add(typ);
+						ret = buildStepClause(insert, tps, nd, ret.matchNode, nodeLabel);
+					} else {
+						ret.resultTypes = cType.getTypes(true);
+					}
+				}
+				return ret;
 			}
 			
 			private void addMatchClauses(List<IClause> clauses) {
@@ -1090,13 +1229,49 @@ public class QueryExecutor {
 			}
 			
 			private void addDependencyClauses(List<IClause> clauses) {
+				this.addDependencyClauses(clauses, null);
+			}
+			
+			private void addDependencyClauses(List<IClause> clauses, JcNode forNode) {
 				if (this.expressionsPerDOM.flattenedDependencies != null) {
 					for (ExpressionsPerDOM xpd : this.expressionsPerDOM.flattenedDependencies) {
 						for (ClausesPerType cpt : xpd.clausesPerTypes) {
-							cpt.addMatchClauses(clauses);
+							if (forNode == null || this.nodesEqual(forNode, cpt.node))
+								cpt.addMatchClauses(clauses);
 						}
 					}
 				}
+			}
+			
+			private boolean nodesEqual(JcNode n1, JcNode n2) {
+				return ValueAccess.getName(n1).equals(ValueAccess.getName(n2));
+			}
+			
+			private JcNumber addWithUnionClauses(List<IClause> clauses, QueryContext context) {
+				List<IClause> myClauses = new ArrayList<IClause>();
+				this.addMatchClauses(myClauses);
+				JcNumber num = context.execCount ? this.getJcNumber(countPrefix) : this.getJcNumber(idPrefix);
+				for (int i = 0; i < myClauses.size(); i++) {
+					if (i > 0) {
+						clauses.add(RETURN.value(this.node));
+						clauses.add(UNION.distinct());
+					}
+					this.addDependencyClauses(clauses, this.traversalStartNodes.get(i));
+					clauses.add(myClauses.get(i));
+					if (i == myClauses.size() - 1) { // the last one
+						if (context.execCount)
+							clauses.add(RETURN.count().value(this.node).AS(num));
+						else
+							clauses.add(RETURN.value(this.node.id()).AS(num));
+					}
+				}
+				return num;
+			}
+			
+			/***************************/
+			private class StepClause {
+				private Node matchNode;
+				private List<Class<?>> resultTypes;
 			}
 		}
 		
@@ -1168,9 +1343,9 @@ public class QueryExecutor {
 				this.resultsMap.put(dom, resPerTypeList);
 			}
 			ResultsPerType resPerType = null;
-			for (ResultsPerType idp : resPerTypeList) {
-				if (idp.type.equals(type)) {
-					resPerType = idp;
+			for (ResultsPerType rpt : resPerTypeList) {
+				if (rpt.type.equals(type)) {
+					resPerType = rpt;
 					break;
 				}
 			}
