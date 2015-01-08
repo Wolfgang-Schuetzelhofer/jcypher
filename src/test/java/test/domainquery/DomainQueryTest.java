@@ -43,6 +43,7 @@ import test.AbstractTestSuite;
 import test.domainquery.model.Address;
 import test.domainquery.model.Company;
 import test.domainquery.model.Person;
+import test.domainquery.model.PointOfContact;
 import test.domainquery.model.Subject;
 import test.domainquery.util.CompareUtil;
 
@@ -110,13 +111,13 @@ public class DomainQueryTest extends AbstractTestSuite {
 			q.WHERE(subs.atttribute("firstName")).EQUALS("John");
 		q.BR_CLOSE();
 		
-		DomainObjectMatch<Address> subs_Addresses =
-				q.TRAVERSE_FROM(subs).FORTH("pointsOfContact").TO(Address.class);
+		DomainObjectMatch<PointOfContact> subs_Addresses =
+				q.TRAVERSE_FROM(subs).FORTH("pointsOfContact").TO(PointOfContact.class);
 		
 		result = q.execute();
 		
 		List<Subject> subsResult = result.resultOf(subs);
-		List<Address> subs_AddressesResult = result.resultOf(subs_Addresses);
+		List<PointOfContact> subs_AddressesResult = result.resultOf(subs_Addresses);
 		
 		/******************************************/
 		q = da1.createQuery();

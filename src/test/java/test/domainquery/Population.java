@@ -265,11 +265,13 @@ public class Population {
 	private void createCompanies(List<Object> domainObjects) {
 		Address globCom_address = new Address("Kearny Street", 29);
 		globCom_address.setArea(sanFrancisco);
+		EContact globCom_phone = new EContact(EContactType.TELEPHONE, "12345");
 		
 		Company globCom = new Company();
 		globCom.setMatchString("match_1");
 		globCom.setName("Global Company");
 		globCom.getPointsOfContact().add(globCom_address);
+		globCom.getPointsOfContact().add(globCom_phone);
 		
 		Address smallCom_address = new Address("Schiller Strasse", 15);
 		smallCom_address.setArea(munich);

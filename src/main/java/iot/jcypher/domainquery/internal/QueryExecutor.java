@@ -255,11 +255,16 @@ public class QueryExecutor {
 			}
 			
 			List<JcQuery> queries = new ArrayList<JcQuery>();
-			// build traversal queries first
-			buildTraversalQueries(clausesPerTypeList, queries, context);
-			int queryIndex = -1 + queries.size();
+			// traversal clauses must be build first
+			// in order to guarantee building traversal clauses only in
+			// traversal pivots
+			// traversal pivots are determined here !!!
+			List<ClausesPerType> traversalClausesPerType = getTraversalClausesPerType(clausesPerTypeList,
+					context.execCount);
+			int queryIndex = -1;
 			// if split into multiple queries, due to use of LIMIT,
 			// which must be attached to a RETURN clause
+			String pref = context.execCount ? countPrefix : idPrefix;
 			int startIdx = 0;
 			while(startIdx < clausesPerTypeList.size()) {
 				boolean needAddDependencies = startIdx > 0;
@@ -274,11 +279,7 @@ public class QueryExecutor {
 					ClausesPerType cpt = clausesPerTypeList.get(i);
 					if (cpt.valid && cpt.traversalExpression == null) {
 						boolean startNewQueryAfter = false;
-						JcNumber num;
-						if (context.execCount)
-							num = cpt.getJcNumber(countPrefix);
-						else
-							num = cpt.getJcNumber(idPrefix);
+						JcNumber num = cpt.getJcNumber(pref);
 						
 						RSortable returnClause;
 						if (i == startIdx) {
@@ -363,6 +364,26 @@ public class QueryExecutor {
 				queries.add(query);
 			}
 			
+			// TODO handle traversal clauses, this is to be changed (clauses may be added earlier) !!
+			for (ClausesPerType cpt : traversalClausesPerType) {
+				if (cpt.traversalPivot == null) { // a traversal pivot (because it does not refer to a pivot)
+							// the traversal pivot will always be the first of the ClausesPerType
+							// which belong to the same DomainObjectMatch
+					queryIndex++;
+					List<IClause> clauses = new ArrayList<IClause>();
+					clauses.addAll(cpt.getTraversalClauses(context.execCount));
+					clauses.addAll(cpt.getTraversalReturnClauses(context.execCount));
+					IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+					JcQuery query = new JcQuery();
+					query.setClauses(clausesArray);
+					queries.add(query);
+				}
+				QueryContext.ResultsPerType resPerType = context.addFor(cpt.domainObjectMatch, cpt.domainObjectType,
+						cpt.getJcNumber(pref));
+				context.resultsPerType.add(resPerType);
+				resPerType.queryIndex = queryIndex;
+			}
+			
 			return queries;
 		}
 		
@@ -391,25 +412,31 @@ public class QueryExecutor {
 			}
 		}
 		
-		private void buildTraversalQueries(
-				List<ClausesPerType> clausesPerTypeList, List<JcQuery> queries, QueryContext context) {
-			int idx = 0;
+		private List<ClausesPerType> getTraversalClausesPerType(List<ClausesPerType> clausesPerTypeList,
+				boolean isCountQuery) {
+			List<ClausesPerType> ret = new ArrayList<ClausesPerType>();
+			ClausesPerType traversalPivot = null;
 			for (ClausesPerType cpt : clausesPerTypeList) {
-				JcNumber num = null;
-				if (cpt.traversalExpression != null) { // may need a query with UNION clause
-					List<IClause> clauses = new ArrayList<IClause>();
-					num = cpt.addWithUnionClauses(clauses, context);
-					JcQuery query = new JcQuery();
-					IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
-					query.setClauses(clausesArray);
-					queries.add(query);
-					QueryContext.ResultsPerType resPerType = context.addFor(cpt.domainObjectMatch, cpt.domainObjectType, num);
-					context.resultsPerType.add(resPerType);
-					resPerType.queryIndex = idx;
-					idx++;
+				if (cpt.traversalExpression != null) { // has traversal expressions,
+																		   //may need a query with UNION clause
+					ret.add(cpt);
+					if (traversalPivot != null) {
+						// another traversal expression
+						if (traversalPivot.traversalExpression != cpt.traversalExpression) 
+							traversalPivot = null;
+						else
+							cpt.traversalPivot = traversalPivot; // set the pivot which holds the
+																					 // traversal expressions
+					}
+					if (traversalPivot == null) { // build a traversal expression for all concrete types
+																 // in the DomainObjectMatch, i.e. for all ClausesPerType
+																 // for the DomainObjectMatch
+						cpt.getTraversalClauses(isCountQuery);
+						traversalPivot = cpt;
+					}
 				}
 			}
-			
+			return ret;
 		}
 
 		/**
@@ -1096,7 +1123,8 @@ public class QueryExecutor {
 			private Concat concat = null;
 			private iot.jcypher.query.api.predicate.Concatenator concatenator = null;
 			private TraversalExpression traversalExpression;
-			private List<JcNode> traversalStartNodes;
+			private List<IClause> traversalClauses;
+			private ClausesPerType traversalPivot;
 			
 			private ClausesPerType(JcNode node, DomainObjectMatch<?> dom, Class<?> type) {
 				super();
@@ -1113,7 +1141,11 @@ public class QueryExecutor {
 			}
 			
 			private JcNumber getJcNumber(String prefix) {
-				String nm = ValueAccess.getName(this.node);
+				return this.getJcNumber(prefix, this.node);
+			}
+			
+			private JcNumber getJcNumber(String prefix, JcNode n) {
+				String nm = ValueAccess.getName(n);
 				nm = nm.substring(DomainObjectMatch.nodePrefix.length());
 				nm = prefix.concat(nm);
 				return new JcNumber(nm);
@@ -1127,12 +1159,8 @@ public class QueryExecutor {
 				if (this.matchClauses == null) {
 					if (this.valid) {
 						this.matchClauses = new ArrayList<IClause>();
-						String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
-						if (this.traversalExpression != null) {
-							this.matchClauses.addAll(
-									this.buildMatchClauses(nodeLabel)
-							);
-						} else {
+						if (this.traversalExpression == null) { // traversal clauses are handled differently
+							String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
 							this.matchClauses.add(
 								OPTIONAL_MATCH.node(this.node).label(nodeLabel)
 							);
@@ -1146,32 +1174,50 @@ public class QueryExecutor {
 				return this.matchClauses;
 			}
 			
-			private List<IClause> buildMatchClauses(String nodeLabel) {
+			private List<IClause> createTraversalClauses(boolean isCountQuery) {
 				List<IClause> ret = new ArrayList<IClause>();
 				String startBName = APIAccess.getBaseNodeName(this.traversalExpression.getStart());
+				List<JcNode> nds = APIAccess.getNodes(this.domainObjectMatch);
+				int idx = -1;
 				for (String validNodeName : this.traversalExpression.getValidNodes()) {
-					Node matchNode = null;
 					if (validNodeName.indexOf(startBName) == 0) {
-						JcNode strt = new JcNode(validNodeName);
-						if (this.traversalStartNodes == null)
-							this.traversalStartNodes = new ArrayList<JcNode>();
-						this.traversalStartNodes.add(strt);
-						matchNode = OPTIONAL_MATCH.node(strt);
-						Class<?> typ = APIAccess.getTypeForNodeName(this.traversalExpression.getStart(), validNodeName);
-						List<Class<?>> types = new ArrayList<Class<?>>();
-						types.add(typ);
-						for (int i = 0; i < this.traversalExpression.getSteps().size(); i++) {
-							Step step = this.traversalExpression.getSteps().get(i);
-							step.setCollection(typ.equals(Collection.class));
-							StepClause stepClause = buildStepClause(step, types,
-									i == this.traversalExpression.getSteps().size() - 1 ? this.node : null, matchNode,
-											nodeLabel);
-							matchNode = stepClause.matchNode;
-							types = stepClause.resultTypes;
+						idx++;
+						if (idx > 0) {
+							for (JcNode n : nds) {
+								if (isCountQuery)
+									ret.add(RETURN.count().DISTINCT().value(n).AS(this.getJcNumber(countPrefix, n)));
+								else
+									ret.add(RETURN.value(n.id()).AS(this.getJcNumber(idPrefix, n)));
+							}
+							ret.add(UNION.distinct());
 						}
-					}
-					if (matchNode != null) {
-						ret.add(matchNode);
+						JcNode strt = new JcNode(validNodeName);
+						// add required dependencies to this query part
+						this.addDependencyClauses(ret, strt);
+						Class<?> typ = APIAccess.getTypeForNodeName(this.traversalExpression.getStart(), validNodeName);
+						int idx2 = 0;
+						for (JcNode n : nds) { // for all concrete types in my DomainObjectMatch
+							List<Class<?>> types = new ArrayList<Class<?>>();
+							types.add(typ);
+							Node matchNode;
+							if (idx2 > 0)
+								ret.add(SEPARATE.nextClause());
+							matchNode = OPTIONAL_MATCH.node(strt);
+							String nodeLabel = getMappingInfo().getLabelForClass(
+									APIAccess.getTypeForNodeName(this.domainObjectMatch, ValueAccess.getName(n)));
+							for (int i = 0; i < this.traversalExpression.getSteps().size(); i++) {
+								Step step = this.traversalExpression.getSteps().get(i);
+								step.setCollection(typ.equals(Collection.class));
+								StepClause stepClause = buildStepClause(step, types,
+										i == this.traversalExpression.getSteps().size() - 1 ? n : null, matchNode,
+												nodeLabel);
+								matchNode = stepClause.matchNode;
+								types = stepClause.resultTypes;
+							}
+							// matchNode is never null
+							ret.add(matchNode);
+							idx2++;
+						}
 					}
 				}
 				return ret;
@@ -1247,25 +1293,27 @@ public class QueryExecutor {
 				return ValueAccess.getName(n1).equals(ValueAccess.getName(n2));
 			}
 			
-			private JcNumber addWithUnionClauses(List<IClause> clauses, QueryContext context) {
-				List<IClause> myClauses = new ArrayList<IClause>();
-				this.addMatchClauses(myClauses);
-				JcNumber num = context.execCount ? this.getJcNumber(countPrefix) : this.getJcNumber(idPrefix);
-				for (int i = 0; i < myClauses.size(); i++) {
-					if (i > 0) {
-						clauses.add(RETURN.value(this.node));
-						clauses.add(UNION.distinct());
-					}
-					this.addDependencyClauses(clauses, this.traversalStartNodes.get(i));
-					clauses.add(myClauses.get(i));
-					if (i == myClauses.size() - 1) { // the last one
-						if (context.execCount)
-							clauses.add(RETURN.count().value(this.node).AS(num));
-						else
-							clauses.add(RETURN.value(this.node.id()).AS(num));
+			private List<IClause> getTraversalClauses(boolean isCountQuery) {
+				if (this.traversalPivot == null) { // I am the traversal pivot
+					// I will hold the entire traversal expression for all
+					// concrete types of my DomainObjectMatch
+					if (this.traversalClauses == null) {
+						this.traversalClauses = this.createTraversalClauses(isCountQuery);
 					}
 				}
-				return num;
+				return this.traversalClauses;
+			}
+			
+			private List<IClause> getTraversalReturnClauses(boolean isCountQuery) {
+				List<IClause> ret = new ArrayList<IClause>();
+				List<JcNode> nds = APIAccess.getNodes(this.domainObjectMatch);
+				for (JcNode n : nds) {
+					if (isCountQuery)
+						ret.add(RETURN.count().DISTINCT().value(n).AS(this.getJcNumber(countPrefix, n)));
+					else
+						ret.add(RETURN.value(n.id()).AS(this.getJcNumber(idPrefix, n)));
+				}
+				return ret;
 			}
 			
 			/***************************/
