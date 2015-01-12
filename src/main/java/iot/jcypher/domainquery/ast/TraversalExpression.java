@@ -28,7 +28,6 @@ public class TraversalExpression implements IASTObject {
 	private DomainObjectMatch<?> start;
 	private DomainObjectMatch<?> end;
 	private List<Step> steps;
-	private List<String> validNodes;
 
 	public TraversalExpression(DomainObjectMatch<?> start, QueryExecutor queryExecutor) {
 		super();
@@ -65,25 +64,21 @@ public class TraversalExpression implements IASTObject {
 		return queryExecutor;
 	}
 	
-	public void setValidNodes(List<String> validNodes) {
-		this.validNodes = validNodes;
-	}
-	
-	public List<String> getValidNodes() {
-		return validNodes;
-	}
-
 	/***************************/
 	public class Step {
 		// 0 .. forward, 1 .. backward
 		private int direction;
 		private String attributeName;
 		private boolean isCollection = false;
+		private int minDistance;
+		private int maxDistance;
 		
 		private Step(int direction, String attributeName) {
 			super();
 			this.direction = direction;
 			this.attributeName = attributeName;
+			this.minDistance = 1;
+			this.maxDistance = 1;
 		}
 		
 		public Step createStep(int direction, String attributeName) {
@@ -104,6 +99,22 @@ public class TraversalExpression implements IASTObject {
 
 		public String getAttributeName() {
 			return attributeName;
+		}
+
+		public int getMinDistance() {
+			return minDistance;
+		}
+
+		public void setMinDistance(int minDistance) {
+			this.minDistance = minDistance;
+		}
+
+		public int getMaxDistance() {
+			return maxDistance;
+		}
+
+		public void setMaxDistance(int maxDistance) {
+			this.maxDistance = maxDistance;
 		}
 		
 	}

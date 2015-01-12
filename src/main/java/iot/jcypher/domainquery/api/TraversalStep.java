@@ -17,6 +17,7 @@
 package iot.jcypher.domainquery.api;
 
 import iot.jcypher.domainquery.ast.TraversalExpression;
+import iot.jcypher.domainquery.ast.TraversalExpression.Step;
 
 public class TraversalStep extends APIObject {
 
@@ -44,6 +45,22 @@ public class TraversalStep extends APIObject {
 		TraversalExpression te = (TraversalExpression)this.astObject;
 		te.step(attributeName, 1);
 		return new TraversalStep(te);
+	}
+	
+	/**
+	 * Define the distance in terms of how many hops to take when navigating the domain graph along a given attribute.
+	 * The default is one hop (minDistance = maxDistance = 1),
+	 * maxDistance -1 means hop as far as you will get (either to a leaf in the graph or to a detected loop).
+	 * @param minDistance the minimum number of hops to navigate
+	 * @param maxDistance the maximum number of hops to navigate
+	 * @return
+	 */
+	public TraversalStep DISTANCE(int minDistance, int maxDistance) {
+		TraversalExpression te = (TraversalExpression)this.astObject;
+		Step step = te.getSteps().get(te.getSteps().size() - 1);
+		step.setMinDistance(minDistance);
+		step.setMaxDistance(maxDistance);
+		return this;
 	}
 	
 	/**

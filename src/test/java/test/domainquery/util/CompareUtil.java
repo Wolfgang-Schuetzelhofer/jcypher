@@ -24,6 +24,7 @@ import test.domainmapping.util.AlreadyCompared;
 import test.domainquery.model.Address;
 import test.domainquery.model.Area;
 import test.domainquery.model.Company;
+import test.domainquery.model.EContact;
 import test.domainquery.model.Person;
 import test.domainquery.model.Subject;
 
@@ -99,6 +100,8 @@ public class CompareUtil {
 			return CompareUtil.equalsCompany((Company)o_1, (Company)o_2, acs);
 		else if (o_1 instanceof Address)
 			return CompareUtil.equalsAddress((Address)o_1, (Address)o_2, acs);
+		else if (o_1 instanceof EContact)
+			return CompareUtil.equalsEContact((EContact)o_1, (EContact)o_2, acs);
 		else if (o_1 instanceof Area)
 			return CompareUtil.equalsArea((Area)o_1, (Area)o_2, acs);
 		else if (o_1 instanceof List<?>)
@@ -269,6 +272,37 @@ public class CompareUtil {
 			if (o_2.getStreet() != null)
 				return ac.setResult(false);
 		} else if (!o_1.getStreet().equals(o_2.getStreet()))
+			return ac.setResult(false);
+		return true;
+	}
+	
+	private static boolean equalsEContact(EContact o_1, EContact o_2, List<AlreadyCompared> alreadyCompareds) {
+		List<AlreadyCompared> acs = alreadyCompareds;
+		if (acs == null)
+			acs = new ArrayList<AlreadyCompared>();
+		AlreadyCompared ac = AlreadyCompared.alreadyCompared(o_1, o_2, acs);
+		if (ac != null) // avoid infinite loops
+			return ac.getResult();
+		
+		ac = new AlreadyCompared(o_1, o_2);
+		acs.add(ac);
+		
+		ac.setResult(true);
+		
+		if (o_1 == o_2)
+			return true;
+		if (o_1 == null) {
+			if (o_2 != null)
+				return ac.setResult(false);
+		}
+		if (o_1.getClass() != o_2.getClass())
+			return ac.setResult(false);
+		if (o_1.geteAddress() == null) {
+			if (o_2.geteAddress() != null)
+				return ac.setResult(false);
+		} else if (!o_1.geteAddress().equals(o_2.geteAddress()))
+			return ac.setResult(false);
+		if (o_1.getType() != o_2.getType())
 			return ac.setResult(false);
 		return true;
 	}

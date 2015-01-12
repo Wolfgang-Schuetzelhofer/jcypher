@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,6 +85,10 @@ public class ValueAccess {
 	
 	public static String getName(JcValue jcValue) {
 		return jcValue.getName();
+	}
+	
+	public static void setName(String name, JcValue jcValue) {
+		jcValue.setName(name);
 	}
 	
 	public static Object getValue(JcPrimitive jcPrimitive) {
