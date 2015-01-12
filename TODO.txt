@@ -1,3 +1,5 @@
+optimization: reduce return statements
+
 ---done--- inner class surrogates - handle relations
 
 add domain name as node label
