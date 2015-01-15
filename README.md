@@ -16,17 +16,17 @@ To start top-down:
    while being formulated on **domain objects** or on types of domain objects respectively.
    The true power of Domain Queries comes from the fact, that the graph of domain objects is backed by a graph database.
 
-- At the next lower level of abstraction, access to graph databases is provided based on a generic graph model.
+- At the next lower level of abstraction, access to graph databases is provided based on a **generic graph model**.
   The model consists of nodes, relations, and paths, together with properties, labels, and types.
   While simple, the model allows to easily navigate and manipulate graphs.
 
-- At the bottom level of abstraction, a 'Native Java DSL' in form of a fluent Java API allows to intuitively
+- At the bottom level of abstraction, a **'Native Java DSL'** in form of a fluent Java API allows to intuitively
   and comfortably formulate queries against graph databases.
   The DSL (Domain Specific Language) is based on the CYPHER language. Hence the name JCypher.
   (The Cypher Language is developed as part of the Neo4J Graph Database by 'Neo Technology').
   The DSL provides all the power and expressiveness of the Cypher language.
 
-- Additionally, JCypher provides database access in a uniform way to remote as well as to embedded databases (including in-memory databases).
+- Additionally, JCypher provides **database access in a uniform way** to remote as well as to embedded databases (including in-memory databases).
 
 ## Documentation
 
