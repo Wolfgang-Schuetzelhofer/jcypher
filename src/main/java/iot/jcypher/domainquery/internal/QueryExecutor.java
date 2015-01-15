@@ -832,7 +832,10 @@ public class QueryExecutor {
 								if (conc.getConcatenator() == Concatenator.BR_OPEN) {
 									if (clausePerType.concatenator == null) {
 										if (clausePerType.concat == null) {
-											clausePerType.concat = WHERE.BR_OPEN();
+											if (clausePerType.traversalClauses != null)
+												initTraversalConcat(clausePerType);
+											else
+												clausePerType.concat = WHERE.BR_OPEN();
 											clausePerType.previousOr = false;
 										} else
 											clausePerType.concat = clausePerType.concat.BR_OPEN();
@@ -866,6 +869,10 @@ public class QueryExecutor {
 									continue;
 								}
 								PredicateExpression pred = (PredicateExpression)astObj;
+								if (clausePerType.traversalClauses != null) {
+									if (clausePerType.concat == null)
+										initTraversalConcat(clausePerType);
+								}
 								Concat concat_1 = clausePerType.concat;
 								if (clausePerType.concatenator != null) {
 									concat_1 = clausePerType.concatenator.AND();
@@ -873,7 +880,7 @@ public class QueryExecutor {
 								}
 								clausePerType.concatenator = buildPredicateExpression(pred, concat_1, clausePerType, validNodes);
 							} else if (astObj instanceof TraversalExpression) {
-								clausePerType.clauses = createTraversalClauses(clausePerType,
+								clausePerType.traversalClauses = createTraversalClauses(clausePerType,
 										(TraversalExpression) astObj, validNodes);
 							}
 						}
@@ -888,6 +895,16 @@ public class QueryExecutor {
 				}
 				xpd.clausesPerTypes = clausesPerTypeList;
 				return clausesPerTypeList;
+			}
+			
+			private void initTraversalConcat(ClausesPerType cpt) {
+				IClause cl = cpt.traversalClauses.get(
+						cpt.traversalClauses.size() - 1);
+				if (cl instanceof iot.jcypher.query.api.predicate.Concatenator) {
+					cpt.concat = ((iot.jcypher.query.api.predicate.Concatenator)cl)
+							.AND().BR_OPEN();
+					cpt.closeBracket = true;
+				}
 			}
 			
 			@SuppressWarnings("unchecked")
@@ -1056,6 +1073,8 @@ public class QueryExecutor {
 				List<JcNode> tempNodes = new ArrayList<JcNode>();
 				String nm = ValueAccess.getName(cpt.node);
 				String nodeLabel = getMappingInfo().getLabelForClass(cpt.domainObjectType);
+				String invalidAttrib = null;
+				List<Class<?>> types = new ArrayList<Class<?>>();
 				int idx = -1;
 				for (String validNodeName : validNodes) {
 					if (validNodeName.indexOf(startBName) == 0) {
@@ -1065,7 +1084,6 @@ public class QueryExecutor {
 						tempNodes.add(tmp);
 						
 						Class<?> typ = APIAccess.getTypeForNodeName(travEx.getStart(), validNodeName);
-						List<Class<?>> types = new ArrayList<Class<?>>();
 						types.add(typ);
 						Node matchNode;
 						matchNode = OPTIONAL_MATCH.node(strt);
@@ -1076,15 +1094,16 @@ public class QueryExecutor {
 									i == travEx.getSteps().size() - 1 ? tmp : null, matchNode,
 											nodeLabel);
 							matchNode = stepClause.matchNode;
-							if (matchNode == null) // match has no valid result
+							if (matchNode == null) { // match has no valid result
+								invalidAttrib = step.getAttributeName();
 								break;
+							}
 							types = stepClause.resultTypes;
 						}
 						
 						// add only if valid
 						if (matchNode != null) {
-							if (idx > 0)
-								ret.add(SEPARATE.nextClause());
+							ret.add(SEPARATE.nextClause());
 							ret.add(matchNode);
 						} else
 							tempNodes.remove(tempNodes.size() - 1);
@@ -1098,6 +1117,10 @@ public class QueryExecutor {
 					ret.add(OPTIONAL_MATCH.node(cpt.node).label(nodeLabel));
 					Concat concat = WHERE.BR_OPEN();
 					ret.add(createWhereIn(concat, cpt.node, tempNodes, false));
+				} else {
+					cpt.valid = false;
+					throw new RuntimeException("attribute: [" + invalidAttrib + "] does not exist " +
+							"in domain object type(s): " + types);
 				}
 				return ret;
 			}
@@ -1209,6 +1232,8 @@ public class QueryExecutor {
 			private ExpressionsPerDOM expressionsPerDOM;
 			private Concat concat = null;
 			private iot.jcypher.query.api.predicate.Concatenator concatenator = null;
+			private List<IClause> traversalClauses;
+			private boolean closeBracket;
 			
 			private ClausesPerType(JcNode node, DomainObjectMatch<?> dom, Class<?> type) {
 				super();
@@ -1218,6 +1243,7 @@ public class QueryExecutor {
 				this.valid = true;
 				this.previousOr = false;
 				this.testForNextIsOr = false;
+				this.closeBracket = false;
 			}
 			
 			private boolean needSkipsLimits() {
@@ -1236,12 +1262,24 @@ public class QueryExecutor {
 				if (this.clauses == null) {
 					if (this.valid) {
 						this.clauses = new ArrayList<IClause>();
-						String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
-						this.clauses.add(
-							OPTIONAL_MATCH.node(this.node).label(nodeLabel)
-						);
+						if (this.traversalClauses != null) {
+							if (this.concatenator != null) {
+								IClause cl = this.traversalClauses.get(
+										this.traversalClauses.size() - 1);
+								if (cl instanceof iot.jcypher.query.api.predicate.Concatenator)
+									this.traversalClauses.remove(this.traversalClauses.size() - 1);
+							}
+							this.clauses.addAll(this.traversalClauses);
+							this.traversalClauses = null;
+						} else {
+							String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
+							this.clauses.add(
+								OPTIONAL_MATCH.node(this.node).label(nodeLabel)
+							);
+						}
 						if (this.concatenator != null)
-							this.clauses.add(this.concatenator);
+							this.clauses.add(this.closeBracket ? this.concatenator.BR_CLOSE() :
+								this.concatenator);
 						else
 							this.clauses.add(SEPARATE.nextClause());
 					}

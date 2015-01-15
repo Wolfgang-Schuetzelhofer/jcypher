@@ -44,6 +44,7 @@ import org.junit.Test;
 import test.AbstractTestSuite;
 import test.domainquery.model.Address;
 import test.domainquery.model.Area;
+import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
 import test.domainquery.model.Person;
 import test.domainquery.model.PointOfContact;
@@ -93,6 +94,17 @@ public class DomainQueryTest extends AbstractTestSuite {
 			dbAccess.close();
 			dbAccess = null;
 		}
+	}
+	
+	@Test
+	public void testDomainQuery_Traversals_02() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		return;
 	}
 	
 	@Test
@@ -163,24 +175,130 @@ public class DomainQueryTest extends AbstractTestSuite {
 //		List<Area> areas_1Result = result.resultOf(areas_1);
 		
 		/******************************************/
-		q = da1.createQuery();
-		DomainObjectMatch<Person> j_smith_1 = q.createMatch(Person.class);
-
-		q.WHERE(j_smith_1.atttribute("lastName")).EQUALS("Smith");
-		q.WHERE(j_smith_1.atttribute("firstName")).EQUALS("John");
+//		q = da1.createQuery();
+//		DomainObjectMatch<Person> j_smith_1 = q.createMatch(Person.class);
+//
+//		q.WHERE(j_smith_1.atttribute("lastName")).EQUALS("Smith");
+//		q.WHERE(j_smith_1.atttribute("firstName")).EQUALS("John");
 		
 //		DomainObjectMatch<Area> j_smith_1_Areas =
 //				q.TRAVERSE_FROM(j_smith_1).FORTH("pointsOfContact")
 //					.FORTH("area").TO(Area.class);
 		
-		DomainObjectMatch<Area> j_smith_1_Areas2 =
-				q.TRAVERSE_FROM(j_smith_1).FORTH("pointsOfContact")
-					.FORTH("area").FORTH("partOf").DISTANCE(1, -1).TO(Area.class);
+		//DomainObjectMatch<Area> j_smith_1_Areas2 =
+			//	q.TRAVERSE_FROM(j_smith_1).FORTH("pointsOfContact")
+				//	.FORTH("area").FORTH("partOf").DISTANCE(1, -1).TO(Area.class);
+		
+//		result = q.execute();
+		
+//		List<Area> j_smith_1_AreasResult = result.resultOf(j_smith_1_Areas);
+//		List<Area> j_smith_1_Areas2Result = result.resultOf(j_smith_1_Areas2);
+		
+		/*************** try test validNode***************************/
+		DomainObjectMatch<Subject> jer_smith_comp;
+		DomainObjectMatch<PointOfContact> pocs;
+		List<PointOfContact> pocsResult;
+		
+//		q = da1.createQuery();
+//		jer_smith_comp = q.createMatch(Subject.class);
+//
+//		q.WHERE(jer_smith_comp.atttribute("lastName")).EQUALS("Smith");
+//		q.WHERE(jer_smith_comp.atttribute("firstName")).EQUALS("John");
+//		
+//		pocs = q.TRAVERSE_FROM(jer_smith_comp)
+//				.FORTH("pointsOfContact").TO(PointOfContact.class);
+//		
+//		result = q.execute();
+//		
+//		pocsResult = result.resultOf(pocs);
+//		
+//		/*************** try test validNode***************************/
+//		q = da1.createQuery();
+//		jer_smith_comp = q.createMatch(Subject.class);
+//
+//		q.WHERE(jer_smith_comp.atttribute("lastName")).EQUALS("Smith");
+//		q.WHERE(jer_smith_comp.atttribute("firstName")).EQUALS("John");
+//		
+//		pocs = q.TRAVERSE_FROM(jer_smith_comp)
+//				.FORTH("pointsOfContact").TO(PointOfContact.class);
+//		q.WHERE(pocs.atttribute("street")).EQUALS("Market Street");
+//		
+//		result = q.execute();
+//		
+//		pocsResult = result.resultOf(pocs);
+//		
+//		/*************** try test validNode***************************/
+//		q = da1.createQuery();
+//		jer_smith_comp = q.createMatch(Subject.class);
+//
+//		q.WHERE(jer_smith_comp.atttribute("name")).EQUALS("Global Company");
+//		q.OR();
+//		q.BR_OPEN();
+//			q.WHERE(jer_smith_comp.atttribute("lastName")).EQUALS("Smith");
+//			q.WHERE(jer_smith_comp.atttribute("firstName")).EQUALS("John");
+//		q.BR_CLOSE();
+//		
+//		pocs = q.TRAVERSE_FROM(jer_smith_comp)
+//				.FORTH("pointsOfContact").TO(PointOfContact.class);
+//		
+//		result = q.execute();
+//		
+//		pocsResult = result.resultOf(pocs);
+//		
+//		/*************** try test validNode***************************/
+//		q = da1.createQuery();
+//		jer_smith_comp = q.createMatch(Subject.class);
+//
+//		q.WHERE(jer_smith_comp.atttribute("name")).EQUALS("Global Company");
+//		q.OR();
+//		q.BR_OPEN();
+//			q.WHERE(jer_smith_comp.atttribute("lastName")).EQUALS("Smith");
+//			q.WHERE(jer_smith_comp.atttribute("firstName")).EQUALS("John");
+//		q.BR_CLOSE();
+//		
+//		pocs = q.TRAVERSE_FROM(jer_smith_comp)
+//				.FORTH("pointsOfContact").TO(PointOfContact.class);
+//		q.WHERE(pocs.atttribute("street")).EQUALS("Market Street");
+//		q.OR();
+//		q.WHERE(pocs.atttribute("number")).EQUALS(20);
+//		
+//		result = q.execute();
+//		
+//		pocsResult = result.resultOf(pocs);
+		
+		/*************** try test validNode***************************/
+		q = da1.createQuery();
+		jer_smith_comp = q.createMatch(Subject.class);
+		DomainObjectMatch<Area> areas = q.createMatch(Area.class);
+
+		q.WHERE(jer_smith_comp.atttribute("name")).EQUALS("Global Company");
+		q.OR();
+		q.BR_OPEN();
+			q.WHERE(jer_smith_comp.atttribute("lastName")).EQUALS("Smith");
+			q.WHERE(jer_smith_comp.atttribute("firstName")).EQUALS("John");
+		q.BR_CLOSE();
+		
+		DomainObjectMatch<Area> areas_1 = q.TRAVERSE_FROM(jer_smith_comp)
+				.FORTH("pointsOfContact")
+				.FORTH("area")
+				.TO(Area.class);
+		DomainObjectMatch<Area> areas_2 = q.TRAVERSE_FROM(areas_1)
+				.FORTH("partOf").DISTANCE(1, -1)
+				.TO(Area.class);
+		
+		// build union of areas
+		q.BR_OPEN();
+			q.WHERE(areas).IN(areas_1);
+			q.OR();
+			q.WHERE(areas).IN(areas_2);
+		q.BR_CLOSE();
+		q.WHERE(areas.atttribute("areaType")).EQUALS(AreaType.CITY);
 		
 		result = q.execute();
 		
-//		List<Area> j_smith_1_AreasResult = result.resultOf(j_smith_1_Areas);
-		List<Area> j_smith_1_Areas2Result = result.resultOf(j_smith_1_Areas2);
+		List<Area> areas_1Result = result.resultOf(areas_1);
+		List<Area> areas_2Result = result.resultOf(areas_2);
+		List<Area> areasResult = result.resultOf(areas);
 		
 		return;
 	}
