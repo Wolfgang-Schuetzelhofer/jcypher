@@ -3,20 +3,29 @@ jcypher
 
 ## Introduction
 
-**JCypher** provides seamlessly integrated Java access to graph databases (Neo4J) at different levels of abstraction.
+**JCypher** provides seamlessly integrated Java access to graph databases (Neo4J) at different levels of abstraction. 
+To start top-down:
 
-- At the bottom level a 'Native Java DSL' in form of a fluent Java API allows to intuitively and comfortably formulate queries against graph databases.
-   The DSL (Domain Specific Language) is based on the CYPHER language. Hence the name JCypher.
-   (The Cypher Language is developed as part of the Neo4J Graph Database by 'Neo Technology').
-   The DSL provides all the power and expressiveness of the Cypher language.
+- At the topmost level of abstraction, JCypher allows to map **complex business domains** to graph databases.
+   You can take an arbitrarily complex graph of domain objects (pojos (plain old java objects)) and store it
+   in a straight forward way into a graph database for later retrieval.
+   You do not need to modify your domain object classes in any way. You even do not add annotations.
+   Moreover JCypher provides a default mapping so you don't have to write a single line of mapping code or of mapping configuration.
 
-- At the next level of abstraction, access to graph databases is provided based on a generic graph model.
-   The model consists of nodes, relations, and paths, together with properties, labels, and types. While simple, the model allows to easily navigate and manipulate graphs.
+- At this level **'Domain Queries'** provide the power and expressiveness of queries on a graph database,
+   while being formulated on **domain objects** or on types of domain objects respectively.
+   The true power of Domain Queries comes from the fact, that the graph of domain objects is backed by a graph database.
 
-- At the top level, arbitrarily complex business domains can be mapped to graph databases in a completely non-invasive way (not even annotations invading the business model).
+- At the next lower level of abstraction, access to graph databases is provided based on a generic graph model.
+  The model consists of nodes, relations, and paths, together with properties, labels, and types.
+  While simple, the model allows to easily navigate and manipulate graphs.
 
-- At this level **'Domain Queries'** provide the power and expressiveness of queries on a graph database, while being formulated on domain objects or on types of domain objects respectively.
-   
+- At the bottom level of abstraction, a 'Native Java DSL' in form of a fluent Java API allows to intuitively
+  and comfortably formulate queries against graph databases.
+  The DSL (Domain Specific Language) is based on the CYPHER language. Hence the name JCypher.
+  (The Cypher Language is developed as part of the Neo4J Graph Database by 'Neo Technology').
+  The DSL provides all the power and expressiveness of the Cypher language.
+
 - Additionally, JCypher provides database access in a uniform way to remote as well as to embedded databases (including in-memory databases).
 
 ## Documentation
