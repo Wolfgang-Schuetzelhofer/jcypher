@@ -1,4 +1,4 @@
-jcypher
+JCypher
 =======
 
 ## Introduction
@@ -47,14 +47,14 @@ You may add JCypher as a Maven dependency:
    <version>2.1.0</version>
 </dependency>
 ```
-## Jcypher on Maven Central
+## JCypher on Maven Central
 <a href="http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22net.iot-solutions.graphdb%22%20AND%20a%3A%22jcypher%22">Can be found here.</a>
 ## Release Notes (since 2.1.0)
 <a href="https://github.com/Wolfgang-Schuetzelhofer/jcypher/blob/master/release_notes.md">Please look here.</a>
 
 ## License & Copyright
 
-Copyright (c) 2014 IoT-Solutions e.U.
+Copyright (c) 2014-2015 IoT-Solutions e.U.
 
 License:
 								Apache License
