@@ -16,6 +16,7 @@
 
 package util;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -90,5 +91,27 @@ public class TestDataReader {
 
 	public String getTestData(String testId) {
 		return this.testData.get(testId);
+	}
+	
+	public static String trimComments(String toTrim) {
+		try {
+			String line;
+			StringBuilder sb = null;
+			ByteArrayInputStream inStream = new ByteArrayInputStream(toTrim.getBytes());
+			InputStreamReader in = new InputStreamReader(inStream);
+			LineNumberReader lineNumberReader = new LineNumberReader(in);
+			while ((line = lineNumberReader.readLine()) != null) {
+				if (line.trim().startsWith(COMMENT))
+					continue;
+				if (sb == null)
+					sb = new StringBuilder();
+				else
+					sb.append("\n");
+				sb.append(line);
+			}
+			return sb.toString();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 }

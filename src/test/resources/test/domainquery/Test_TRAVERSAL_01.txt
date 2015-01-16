@@ -1,0 +1,143 @@
+----TRAVERSAL_01:
+OPTIONAL MATCH (n_0_0:Person)
+WHERE n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John'
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_1_0:Address)
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0
+------------------------------------------------------------
+
+----TRAVERSAL_02:
+OPTIONAL MATCH (n_0_0:Company)
+WHERE n_0_0.name = 'Global Company' OR (n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John')
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.name = 'Global Company' OR (n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John')
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_1_0_t0:Address)
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_0_t1:Address)
+OPTIONAL MATCH (n_1_0:Address)
+WHERE ((NOT n_1_0_t0 IS NULL AND n_1_0 IN[n_1_0_t0]) OR (NOT n_1_0_t1 IS NULL AND n_1_0 IN[n_1_0_t1]))
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_1_1_t0:EContact)
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_1_t1:EContact)
+OPTIONAL MATCH (n_1_1:EContact)
+WHERE ((NOT n_1_1_t0 IS NULL AND n_1_1 IN[n_1_1_t0]) OR (NOT n_1_1_t1 IS NULL AND n_1_1 IN[n_1_1_t1]))
+OPTIONAL MATCH (n_1_0)-[:area]->(n_2_0:Area)
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1, id(n_1_0) AS id_1_0, id(n_1_1) AS id_1_1, id(n_2_0) AS id_2_0
+------------------------------------------------------------
+
+----TRAVERSAL_03:
+OPTIONAL MATCH (n_0_0:Company)
+WHERE n_0_0.name = 'Global Company' OR (n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John')
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.name = 'Global Company' OR (n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John')
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_1_0_t0:Address)
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_0_t1:Address)
+OPTIONAL MATCH (n_1_0:Address)
+WHERE ((NOT n_1_0_t0 IS NULL AND n_1_0 IN[n_1_0_t0]) OR (NOT n_1_0_t1 IS NULL AND n_1_0 IN[n_1_0_t1]))
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_1_1_t0:EContact)
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_1_t1:EContact)
+OPTIONAL MATCH (n_1_1:EContact)
+WHERE ((NOT n_1_1_t0 IS NULL AND n_1_1 IN[n_1_1_t0]) OR (NOT n_1_1_t1 IS NULL AND n_1_1 IN[n_1_1_t1]))
+OPTIONAL MATCH (n_1_0)-[:area]->(n_2_0:Area)
+RETURN count(DISTINCT n_0_0) AS cnt_0_0, count(DISTINCT n_0_1) AS cnt_0_1, count(DISTINCT n_1_0) AS cnt_1_0, count(DISTINCT n_1_1) AS cnt_1_1, count(DISTINCT n_2_0) AS cnt_2_0
+
+OPTIONAL MATCH (n_0_0:Company)
+WHERE n_0_0.name = 'Global Company' OR (n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John')
+WITH n_0_0
+WHERE NOT n_0_0 IS NULL
+RETURN DISTINCT id(n_0_0) AS id_0_0
+SKIP 1
+LIMIT 0
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.name = 'Global Company' OR (n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John')
+WITH n_0_1
+WHERE NOT n_0_1 IS NULL
+RETURN DISTINCT id(n_0_1) AS id_0_1
+LIMIT 1
+OPTIONAL MATCH (n_0_0:Company)
+WHERE n_0_0.name = 'Global Company' OR (n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John')
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.name = 'Global Company' OR (n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John')
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_1_0_t0:Address)
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_0_t1:Address)
+OPTIONAL MATCH (n_1_0:Address)
+WHERE ((NOT n_1_0_t0 IS NULL AND n_1_0 IN[n_1_0_t0]) OR (NOT n_1_0_t1 IS NULL AND n_1_0 IN[n_1_0_t1]))
+WITH n_1_0
+ORDER BY n_1_0.street
+WHERE NOT n_1_0 IS NULL
+RETURN DISTINCT id(n_1_0) AS id_1_0
+SKIP 2
+LIMIT 1
+OPTIONAL MATCH (n_0_0:Company)
+WHERE n_0_0.name = 'Global Company' OR (n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John')
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.name = 'Global Company' OR (n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John')
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_1_1_t0:EContact)
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_1_t1:EContact)
+OPTIONAL MATCH (n_1_1:EContact)
+WHERE ((NOT n_1_1_t0 IS NULL AND n_1_1 IN[n_1_1_t0]) OR (NOT n_1_1_t1 IS NULL AND n_1_1 IN[n_1_1_t1]))
+WITH n_1_1
+WHERE NOT n_1_1 IS NULL
+RETURN DISTINCT id(n_1_1) AS id_1_1
+LIMIT 1
+OPTIONAL MATCH (n_0_0:Company)
+WHERE n_0_0.name = 'Global Company' OR (n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John')
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.name = 'Global Company' OR (n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John')
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_1_0_t0:Address)
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_0_t1:Address)
+OPTIONAL MATCH (n_1_0:Address)
+WHERE ((NOT n_1_0_t0 IS NULL AND n_1_0 IN[n_1_0_t0]) OR (NOT n_1_0_t1 IS NULL AND n_1_0 IN[n_1_0_t1]))
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_1_1_t0:EContact)
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_1_t1:EContact)
+OPTIONAL MATCH (n_1_1:EContact)
+WHERE ((NOT n_1_1_t0 IS NULL AND n_1_1 IN[n_1_1_t0]) OR (NOT n_1_1_t1 IS NULL AND n_1_1 IN[n_1_1_t1]))
+OPTIONAL MATCH (n_1_0)-[:area]->(n_2_0:Area)
+WITH n_2_0
+ORDER BY n_2_0.name DESC
+WHERE NOT n_2_0 IS NULL
+RETURN DISTINCT id(n_2_0) AS id_2_0
+LIMIT 1
+------------------------------------------------------------
+
+----TRAVERSAL_04:
+OPTIONAL MATCH (n_0_0:Person)
+WHERE n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John'
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*1..]->(n_1_0:Area)
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0
+------------------------------------------------------------
+
+----TRAVERSAL_05:
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John'
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_0:Address)
+WHERE n_1_0.street =~ 'Mark.*'
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_1:EContact)
+WHERE n_1_1.street =~ 'Mark.*'
+RETURN DISTINCT id(n_0_1) AS id_0_1, id(n_1_0) AS id_1_0, id(n_1_1) AS id_1_1
+------------------------------------------------------------
+
+----TRAVERSAL_06:
+OPTIONAL MATCH (n_0_0:Company)
+WHERE n_0_0.name = 'Global Company' OR (n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John')
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.name = 'Global Company' OR (n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John')
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->(n_2_0_t0:Area)
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->()-[:area]->(n_2_0_t1:Area)
+OPTIONAL MATCH (n_2_0:Area)
+WHERE ((NOT n_2_0_t0 IS NULL AND n_2_0 IN[n_2_0_t0]) OR (NOT n_2_0_t1 IS NULL AND n_2_0 IN[n_2_0_t1]))
+OPTIONAL MATCH (n_2_0)-[:partOf*1..]->(n_3_0:Area)
+OPTIONAL MATCH (n_1_0:Area)
+WHERE ((NOT n_2_0 IS NULL AND n_1_0 IN[n_2_0]) OR (NOT n_3_0 IS NULL AND n_1_0 IN[n_3_0])) AND n_1_0.areaType = 'CITY'
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1, id(n_2_0) AS id_2_0, id(n_3_0) AS id_3_0, id(n_1_0) AS id_1_0
+
+OPTIONAL MATCH (n_0_0:Company)
+WHERE n_0_0.name = 'Global Company' OR (n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John')
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.name = 'Global Company' OR (n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John')
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->(n_2_0_t0:Area)
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->()-[:area]->(n_2_0_t1:Area)
+OPTIONAL MATCH (n_2_0:Area)
+WHERE ((NOT n_2_0_t0 IS NULL AND n_2_0 IN[n_2_0_t0]) OR (NOT n_2_0_t1 IS NULL AND n_2_0 IN[n_2_0_t1]))
+OPTIONAL MATCH (n_2_0)-[:partOf*1..]->(n_3_0:Area)
+OPTIONAL MATCH (n_1_0:Area)
+WHERE ((NOT n_2_0 IS NULL AND n_1_0 IN[n_2_0]) OR (NOT n_3_0 IS NULL AND n_1_0 IN[n_3_0])) AND n_1_0.areaType = 'CITY'
+RETURN count(DISTINCT n_0_0) AS cnt_0_0, count(DISTINCT n_0_1) AS cnt_0_1, count(DISTINCT n_2_0) AS cnt_2_0, count(DISTINCT n_3_0) AS cnt_3_0, count(DISTINCT n_1_0) AS cnt_1_0
+------------------------------------------------------------

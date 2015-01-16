@@ -28,9 +28,11 @@ import iot.jcypher.domainquery.CountQueryResult;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
-import iot.jcypher.query.result.JcError;
-import iot.jcypher.query.result.JcResultException;
+import iot.jcypher.util.QueriesPrintObserver;
+import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -50,12 +52,14 @@ import test.domainquery.model.Person;
 import test.domainquery.model.PointOfContact;
 import test.domainquery.model.Subject;
 import test.domainquery.util.CompareUtil;
+import util.TestDataReader;
 
 public class DomainQueryTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	private static ByteArrayOutputStream queriesStream;
 	
 	@BeforeClass
 	public static void before() {
@@ -73,6 +77,13 @@ public class DomainQueryTest extends AbstractTestSuite {
 		Population population = new Population();
 		
 		storedDomainObjects = population.createPopulation();
+		
+		QueriesPrintObserver.addOutputStream(System.out);
+		queriesStream = new ByteArrayOutputStream();
+		QueriesPrintObserver.addOutputStream(queriesStream);
+		
+		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
+		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
 //		List<JcError> errors = dbAccess.clearDatabase();
 //		if (errors.size() > 0) {
@@ -94,9 +105,16 @@ public class DomainQueryTest extends AbstractTestSuite {
 			dbAccess.close();
 			dbAccess = null;
 		}
+		storedDomainObjects = null;
+		try {
+			queriesStream.close();
+		} catch (IOException e) {}
+		queriesStream = null;
+		QueriesPrintObserver.removeAllEnabledQueries();
+		QueriesPrintObserver.removeAllOutputStreams();
 	}
 	
-	@Test
+	//@Test
 	public void testDomainQuery_Traversals_02() {
 		IDomainAccess da1;
 		DomainQuery q;
@@ -108,168 +126,172 @@ public class DomainQueryTest extends AbstractTestSuite {
 	}
 	
 	@Test
-	public void testDomainQuery_Traversals() {
+	public void testDomainQuery_Traversals_01() {
 		IDomainAccess da1;
 		DomainQuery q;
 		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_01.txt");
+		
+		Population population = new Population();
+		population.createPopulation();
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
-//		/******************************************/
-//		q = da1.createQuery();
-//		DomainObjectMatch<Person> j_smith = q.createMatch(Person.class);
-//
-//		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
-//		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
-//		
-//		DomainObjectMatch<Address> j_smith_Addresses =
-//				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Address.class);
-//		
-//		result = q.execute();
-//		
-//		List<Address> j_smith_AddressesResult = result.resultOf(j_smith_Addresses);
-//		
-//		/******************************************/
-//		q = da1.createQuery();
-//		DomainObjectMatch<Subject> subs = q.createMatch(Subject.class);
-//
-//		q.WHERE(subs.atttribute("name")).EQUALS("Global Company");
-//		q.OR();
-//		q.BR_OPEN();
-//			q.WHERE(subs.atttribute("lastName")).EQUALS("Smith");
-//			q.WHERE(subs.atttribute("firstName")).EQUALS("John");
-//		q.BR_CLOSE();
-//		
-//		DomainObjectMatch<PointOfContact> subs_Addresses =
-//				q.TRAVERSE_FROM(subs).FORTH("pointsOfContact").TO(PointOfContact.class);
-//		DomainObjectMatch<Area> areas = q.TRAVERSE_FROM(subs_Addresses).FORTH("area").TO(Area.class);
-//		
-//		result = q.execute();
-//		
-//		List<Subject> subsResult = result.resultOf(subs);
-//		List<PointOfContact> subs_AddressesResult = result.resultOf(subs_Addresses);
-//		List<Area> areasResult = result.resultOf(areas);
-//		
-//		/**************** with pagination ********************/
-//		q = da1.createQuery();
-//		DomainObjectMatch<Subject> subs_1 = q.createMatch(Subject.class);
-//
-//		q.WHERE(subs_1.atttribute("name")).EQUALS("Global Company");
-//		q.OR();
-//		q.BR_OPEN();
-//			q.WHERE(subs_1.atttribute("lastName")).EQUALS("Smith");
-//			q.WHERE(subs_1.atttribute("firstName")).EQUALS("John");
-//		q.BR_CLOSE();
-//		subs_1.setPage(1, 1);
-//		
-//		DomainObjectMatch<PointOfContact> subs_1_Addresses =
-//				q.TRAVERSE_FROM(subs_1).FORTH("pointsOfContact").TO(PointOfContact.class);
-//		subs_1_Addresses.setPage(2, 2);
-//		DomainObjectMatch<Area> areas_1 = q.TRAVERSE_FROM(subs_1_Addresses).FORTH("area").TO(Area.class);
-//		areas_1.setPage(0, 1);
-//		
-//		result = q.execute();
-//		
-//		List<Subject> subs_1Result = result.resultOf(subs_1);
-//		List<PointOfContact> subs_1_AddressesResult = result.resultOf(subs_1_Addresses);
-//		List<Area> areas_1Result = result.resultOf(areas_1);
+		/** 01 ****************************************/
+		testId = "TRAVERSAL_01";
+		queriesStream.reset();
 		
-		/******************************************/
-//		q = da1.createQuery();
-//		DomainObjectMatch<Person> j_smith_1 = q.createMatch(Person.class);
-//
-//		q.WHERE(j_smith_1.atttribute("lastName")).EQUALS("Smith");
-//		q.WHERE(j_smith_1.atttribute("firstName")).EQUALS("John");
-		
-//		DomainObjectMatch<Area> j_smith_1_Areas =
-//				q.TRAVERSE_FROM(j_smith_1).FORTH("pointsOfContact")
-//					.FORTH("area").TO(Area.class);
-		
-		//DomainObjectMatch<Area> j_smith_1_Areas2 =
-			//	q.TRAVERSE_FROM(j_smith_1).FORTH("pointsOfContact")
-				//	.FORTH("area").FORTH("partOf").DISTANCE(1, -1).TO(Area.class);
-		
-//		result = q.execute();
-		
-//		List<Area> j_smith_1_AreasResult = result.resultOf(j_smith_1_Areas);
-//		List<Area> j_smith_1_Areas2Result = result.resultOf(j_smith_1_Areas2);
-		
-		/*************** try test validNode***************************/
-		DomainObjectMatch<Subject> jer_smith_comp;
-		DomainObjectMatch<PointOfContact> pocs;
-		List<PointOfContact> pocsResult;
-		
-//		q = da1.createQuery();
-//		jer_smith_comp = q.createMatch(Subject.class);
-//
-//		q.WHERE(jer_smith_comp.atttribute("lastName")).EQUALS("Smith");
-//		q.WHERE(jer_smith_comp.atttribute("firstName")).EQUALS("John");
-//		
-//		pocs = q.TRAVERSE_FROM(jer_smith_comp)
-//				.FORTH("pointsOfContact").TO(PointOfContact.class);
-//		
-//		result = q.execute();
-//		
-//		pocsResult = result.resultOf(pocs);
-//		
-//		/*************** try test validNode***************************/
-//		q = da1.createQuery();
-//		jer_smith_comp = q.createMatch(Subject.class);
-//
-//		q.WHERE(jer_smith_comp.atttribute("lastName")).EQUALS("Smith");
-//		q.WHERE(jer_smith_comp.atttribute("firstName")).EQUALS("John");
-//		
-//		pocs = q.TRAVERSE_FROM(jer_smith_comp)
-//				.FORTH("pointsOfContact").TO(PointOfContact.class);
-//		q.WHERE(pocs.atttribute("street")).EQUALS("Market Street");
-//		
-//		result = q.execute();
-//		
-//		pocsResult = result.resultOf(pocs);
-//		
-//		/*************** try test validNode***************************/
-//		q = da1.createQuery();
-//		jer_smith_comp = q.createMatch(Subject.class);
-//
-//		q.WHERE(jer_smith_comp.atttribute("name")).EQUALS("Global Company");
-//		q.OR();
-//		q.BR_OPEN();
-//			q.WHERE(jer_smith_comp.atttribute("lastName")).EQUALS("Smith");
-//			q.WHERE(jer_smith_comp.atttribute("firstName")).EQUALS("John");
-//		q.BR_CLOSE();
-//		
-//		pocs = q.TRAVERSE_FROM(jer_smith_comp)
-//				.FORTH("pointsOfContact").TO(PointOfContact.class);
-//		
-//		result = q.execute();
-//		
-//		pocsResult = result.resultOf(pocs);
-//		
-//		/*************** try test validNode***************************/
-//		q = da1.createQuery();
-//		jer_smith_comp = q.createMatch(Subject.class);
-//
-//		q.WHERE(jer_smith_comp.atttribute("name")).EQUALS("Global Company");
-//		q.OR();
-//		q.BR_OPEN();
-//			q.WHERE(jer_smith_comp.atttribute("lastName")).EQUALS("Smith");
-//			q.WHERE(jer_smith_comp.atttribute("firstName")).EQUALS("John");
-//		q.BR_CLOSE();
-//		
-//		pocs = q.TRAVERSE_FROM(jer_smith_comp)
-//				.FORTH("pointsOfContact").TO(PointOfContact.class);
-//		q.WHERE(pocs.atttribute("street")).EQUALS("Market Street");
-//		q.OR();
-//		q.WHERE(pocs.atttribute("number")).EQUALS(20);
-//		
-//		result = q.execute();
-//		
-//		pocsResult = result.resultOf(pocs);
-		
-		/*************** try test validNode***************************/
 		q = da1.createQuery();
-		jer_smith_comp = q.createMatch(Subject.class);
-		DomainObjectMatch<Area> areas = q.createMatch(Area.class);
+		DomainObjectMatch<Person> j_smith = q.createMatch(Person.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Address> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Address.class);
+		
+		result = q.execute();
+		
+		List<Address> j_smith_AddressesResult = result.resultOf(j_smith_Addresses);
+		
+		equals = CompareUtil.equalsUnorderedList(population.getJohn_smith_addresses(), j_smith_AddressesResult);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 02 ****************************************/
+		testId = "TRAVERSAL_02";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> subs = q.createMatch(Subject.class);
+
+		q.WHERE(subs.atttribute("name")).EQUALS("Global Company");
+		q.OR();
+		q.BR_OPEN();
+			q.WHERE(subs.atttribute("lastName")).EQUALS("Smith");
+			q.WHERE(subs.atttribute("firstName")).EQUALS("John");
+		q.BR_CLOSE();
+		
+		DomainObjectMatch<PointOfContact> subs_Contacts =
+				q.TRAVERSE_FROM(subs).FORTH("pointsOfContact").TO(PointOfContact.class);
+		DomainObjectMatch<Area> areas = q.TRAVERSE_FROM(subs_Contacts).FORTH("area").TO(Area.class);
+		
+		result = q.execute();
+		
+		List<Subject> subsResult = result.resultOf(subs);
+		List<PointOfContact> subs_ContactsResult = result.resultOf(subs_Contacts);
+		List<Area> areasResult = result.resultOf(areas);
+		
+		equals = CompareUtil.equalsUnorderedList(population.getJohn_smith_globcom(), subsResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(population.getJohn_smith_globcom_contacts(), subs_ContactsResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(population.getAreas_sf_vienna_01(), areasResult);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 03 ************** with pagination ********************/
+		testId = "TRAVERSAL_03";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> subs_1 = q.createMatch(Subject.class);
+
+		q.WHERE(subs_1.atttribute("name")).EQUALS("Global Company");
+		q.OR();
+		q.BR_OPEN();
+			q.WHERE(subs_1.atttribute("lastName")).EQUALS("Smith");
+			q.WHERE(subs_1.atttribute("firstName")).EQUALS("John");
+		q.BR_CLOSE();
+		subs_1.setPage(1, 1);
+		
+		DomainObjectMatch<PointOfContact> subs_1_Contacts =
+				q.TRAVERSE_FROM(subs_1).FORTH("pointsOfContact").TO(PointOfContact.class);
+		subs_1_Contacts.setPage(2, 2);
+		q.ORDER(subs_1_Contacts).BY("street");
+		DomainObjectMatch<Area> areas_1 = q.TRAVERSE_FROM(subs_1_Contacts).FORTH("area").TO(Area.class);
+		areas_1.setPage(0, 1);
+		q.ORDER(areas_1).BY("name").DESCENDING();
+		
+		result = q.execute();
+		
+		List<Subject> subs_1Result = result.resultOf(subs_1);
+		List<PointOfContact> subs_1_ContactsResult = result.resultOf(subs_1_Contacts);
+		List<Area> areas_1Result = result.resultOf(areas_1);
+		
+		List<Object> subs_1Comp = population.getJohn_smith_globcom().subList(1, 2);
+		equals = CompareUtil.equalsList(subs_1Comp, subs_1Result);
+		assertTrue(equals);
+		List<Object> contactsComp = population.getJohn_smith_globcom_contacts().subList(2, 4);
+//		System.out.println(contactsComp);
+//		System.out.println(subs_1_ContactsResult);
+		equals = CompareUtil.equalsList(contactsComp, subs_1_ContactsResult);
+		assertTrue(equals);
+		List<Object> areas_1Comp = population.getAreas_sf_vienna_01().subList(0, 1);
+//		System.out.println(areas_1Comp);
+//		System.out.println(areas_1Result);
+		equals = CompareUtil.equalsList(areas_1Comp, areas_1Result);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 04 ****************************************/
+		testId = "TRAVERSAL_04";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Person> j_smith_1 = q.createMatch(Person.class);
+
+		q.WHERE(j_smith_1.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith_1.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Area> j_smith_1_Areas2 =
+				q.TRAVERSE_FROM(j_smith_1).FORTH("pointsOfContact")
+					.FORTH("area").FORTH("partOf").DISTANCE(1, -1).TO(Area.class);
+		
+		result = q.execute();
+		
+		List<Area> j_smith_1_Areas2Result = result.resultOf(j_smith_1_Areas2);
+		equals = CompareUtil.equalsUnorderedList(population.getAreas_calif_vienna_up(), j_smith_1_Areas2Result);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 05 ****************************************/
+		testId = "TRAVERSAL_05";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> j_smith_comp = q.createMatch(Subject.class);
+
+		q.WHERE(j_smith_comp.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith_comp.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<PointOfContact> pocs = q.TRAVERSE_FROM(j_smith_comp)
+				.FORTH("pointsOfContact").TO(PointOfContact.class);
+		q.WHERE(pocs.atttribute("street")).LIKE("Mark.*");
+		
+		result = q.execute();
+		
+		List<PointOfContact> pocsResult = result.resultOf(pocs);
+		equals = CompareUtil.equalsObjects(population.getMarketStreet_20(), pocsResult.get(0));
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 06 ****************************************/
+		testId = "TRAVERSAL_06";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> jer_smith_comp = q.createMatch(Subject.class);
+		areas = q.createMatch(Area.class);
 
 		q.WHERE(jer_smith_comp.atttribute("name")).EQUALS("Global Company");
 		q.OR();
@@ -278,7 +300,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 			q.WHERE(jer_smith_comp.atttribute("firstName")).EQUALS("John");
 		q.BR_CLOSE();
 		
-		DomainObjectMatch<Area> areas_1 = q.TRAVERSE_FROM(jer_smith_comp)
+		areas_1 = q.TRAVERSE_FROM(jer_smith_comp)
 				.FORTH("pointsOfContact")
 				.FORTH("area")
 				.TO(Area.class);
@@ -295,10 +317,18 @@ public class DomainQueryTest extends AbstractTestSuite {
 		q.WHERE(areas.atttribute("areaType")).EQUALS(AreaType.CITY);
 		
 		result = q.execute();
+		CountQueryResult cResult = q.executeCount();
 		
-		List<Area> areas_1Result = result.resultOf(areas_1);
-		List<Area> areas_2Result = result.resultOf(areas_2);
-		List<Area> areasResult = result.resultOf(areas);
+//		areas_1Result = result.resultOf(areas_1);
+//		List<Area> areas_2Result = result.resultOf(areas_2);
+		areasResult = result.resultOf(areas);
+		equals = CompareUtil.equalsUnorderedList(population.getAreas_sf_vienna(), areasResult);
+		assertTrue(equals);
+		
+		long areasCount = cResult.countOf(areas);
+		assertEquals(2, areasCount);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
 		return;
 	}

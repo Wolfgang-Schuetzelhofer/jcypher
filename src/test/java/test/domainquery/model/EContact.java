@@ -39,6 +39,11 @@ public class EContact implements PointOfContact {
 		return eAddress;
 	}
 
+	@Override
+	public String toString() {
+		return "EContact [type=" + type + ", eAddress=" + eAddress + "]";
+	}
+
 	/*******************************/
 	public enum EContactType {
 		EMAIL, TELEPHONE

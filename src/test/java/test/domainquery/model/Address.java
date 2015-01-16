@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,6 +41,11 @@ public class Address implements PointOfContact {
 	}
 	public void setArea(Area area) {
 		this.area = area;
+	}
+	@Override
+	public String toString() {
+		return "Address [street=" + street + ", number=" + number + ", area="
+				+ area + "]";
 	}
 	
 }

@@ -23,6 +23,7 @@ import iot.jcypher.query.writer.CypherWriter;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.JSONWriter;
 import iot.jcypher.query.writer.WriterContext;
+import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -66,45 +67,62 @@ public class Util {
 	 * @param format
 	 */
 	public static void printQuery(JcQuery query, String title, Format format) {
-		System.out.println("QUERY: " + title + " --------------------");
-		// map to Cypher
-		System.out.println("CYPHER --------------------");
-		String cypher = iot.jcypher.util.Util.toCypher(query, format);
-		System.out.println("--------------------");
-		System.out.println(cypher);
-		
-		// map to JSON
-		String json = iot.jcypher.util.Util.toJSON(query, format);
-		System.out.println("");
-		System.out.println("JSON   --------------------");
-		System.out.println(json);
-		
-		System.out.println("");
+		boolean titlePrinted = false;
+		ContentToObserve tob = QueriesPrintObserver.contentToObserve(title);
+		if (tob == ContentToObserve.CYPHER || tob == ContentToObserve.CYPHER_JSON) {
+			titlePrinted = true;
+			QueriesPrintObserver.printStream.println("#QUERY: " + title + " --------------------");
+			// map to Cypher
+			QueriesPrintObserver.printStream.println("#CYPHER --------------------");
+			String cypher = iot.jcypher.util.Util.toCypher(query, format);
+			QueriesPrintObserver.printStream.println("#--------------------");
+			QueriesPrintObserver.printStream.println(cypher);
+			QueriesPrintObserver.printStream.println("");
+		}
+		if (tob == ContentToObserve.JSON || tob == ContentToObserve.CYPHER_JSON) {
+			// map to JSON
+			if (!titlePrinted)
+				QueriesPrintObserver.printStream.println("#QUERY: " + title + " --------------------");
+			String json = iot.jcypher.util.Util.toJSON(query, format);
+			QueriesPrintObserver.printStream.println("#JSON   --------------------");
+			QueriesPrintObserver.printStream.println(json);
+			
+			QueriesPrintObserver.printStream.println("");
+		}
 	}
 	
 	/**
-	 * map to CYPHER statements and map to JSON, print the mapping results to System.out
+	 * map to CYPHER statements and map to JSON, print the mapping results
+	 * to the output streams configured in QueriesPrintObserver
 	 * @param queries
 	 * @param title
 	 * @param format
 	 */
 	public static void printQueries(List<JcQuery> queries, String title, Format format) {
-		System.out.println("QUERIES: " + title + " --------------------");
-		// map to Cypher
-		System.out.println("CYPHER --------------------");
-		for(int i = 0; i < queries.size(); i++) {
-			String cypher = iot.jcypher.util.Util.toCypher(queries.get(i), format);
-			System.out.println("--------------------");
-			System.out.println(cypher);
+		boolean titlePrinted = false;
+		ContentToObserve tob = QueriesPrintObserver.contentToObserve(title);
+		if (tob == ContentToObserve.CYPHER || tob == ContentToObserve.CYPHER_JSON) {
+			titlePrinted = true;
+			QueriesPrintObserver.printStream.println("#QUERIES: " + title + " --------------------");
+			// map to Cypher
+			QueriesPrintObserver.printStream.println("#CYPHER --------------------");
+			for(int i = 0; i < queries.size(); i++) {
+				String cypher = iot.jcypher.util.Util.toCypher(queries.get(i), format);
+				QueriesPrintObserver.printStream.println("#--------------------");
+				QueriesPrintObserver.printStream.println(cypher);
+			}
+			QueriesPrintObserver.printStream.println("");
 		}
-		
-		// map to JSON
-		String json = iot.jcypher.util.Util.toJSON(queries, format);
-		System.out.println("");
-		System.out.println("JSON   --------------------");
-		System.out.println(json);
-		
-		System.out.println("");
+		if (tob == ContentToObserve.JSON || tob == ContentToObserve.CYPHER_JSON) {
+			// map to JSON
+			if (!titlePrinted)
+				QueriesPrintObserver.printStream.println("#QUERIES: " + title + " --------------------");
+			String json = iot.jcypher.util.Util.toJSON(queries, format);
+			QueriesPrintObserver.printStream.println("#JSON   --------------------");
+			QueriesPrintObserver.printStream.println(json);
+			
+			QueriesPrintObserver.printStream.println("");
+		}
 	}
 	
 	public static void printResult(JcQueryResult result, String title, Format format) {

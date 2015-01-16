@@ -16,7 +16,7 @@ remove surrogate objects from result
 
 START.node(n).byId(ids...) now works, some queries can be made simpler now
 
-docu: domain objects must have default constructor
+---done--- docu: domain objects must have default constructor
 
 avoid stack overflow on mixed (simple / complex) lists (they are not supported)
 
