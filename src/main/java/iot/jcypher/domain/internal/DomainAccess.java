@@ -180,6 +180,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 	/**********************************************************************/
 	private class DomainAccessHandler {
+		private String regexClassfieldSep = "\\".concat(FieldMapping.ClassFieldSeparator);
 		private static final String NodePrefix = "n_";
 		private static final String RelationPrefix = "r_";
 		private static final String DomainInfoNodeLabel = "DomainInfo";
@@ -2643,6 +2644,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private Map<Class<?>, String> class2labelMap;
 		private Map<String, CompoundObjectType> fieldComponentTypeMap;
 		private Map<String, CompoundObjectType> concreteFieldTypeMap;
+		private Map<Class<?>, List<BackwardField>> componentTypeBackward;
+		private Map<Class<?>, List<BackwardField>> fieldTypeBackward;
 		private DomainInfo(long nid) {
 			super();
 			this.changed = false;
@@ -2651,6 +2654,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.class2labelMap = new HashMap<Class<?>, String>();
 			this.fieldComponentTypeMap = new HashMap<String, CompoundObjectType>();
 			this.concreteFieldTypeMap = new HashMap<String, CompoundObjectType>();
+			this.componentTypeBackward = new HashMap<Class<?>, List<BackwardField>>();
+			this.fieldTypeBackward = new HashMap<Class<?>, List<BackwardField>>();
 		}
 
 		@SuppressWarnings("unchecked")
@@ -2759,10 +2764,27 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				boolean added = cType.addType(clazz);
 				this.changed = this.changed || added;
 			}
+			// add for backward navigation
+			BackwardField bwf = new BackwardField(classField);
+			List<BackwardField> bwfs = this.componentTypeBackward.get(clazz);
+			if (bwfs == null) {
+				bwfs = new ArrayList<BackwardField>();
+				this.componentTypeBackward.put(clazz, bwfs);
+			}
+			if (!bwfs.contains(bwf))
+				bwfs.add(bwf);
 		}
 		
 		private CompoundObjectType getFieldComponentType(String classField) {
 			return this.fieldComponentTypeMap.get(classField);
+		}
+		
+		private List<BackwardField> getBackwardFields(Class<?> clazz) {
+			return this.fieldTypeBackward.get(clazz);
+		}
+		
+		private List<BackwardField> getBackwardComponentFields(Class<?> clazz) {
+			return this.componentTypeBackward.get(clazz);
 		}
 		
 		private void addConcreteFieldType(String classField, Class<?> clazz) {
@@ -2775,6 +2797,15 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				boolean added = cType.addType(clazz);
 				this.changed = this.changed || added;
 			}
+			// add for backward navigation
+			BackwardField bwf = new BackwardField(classField);
+			List<BackwardField> bwfs = this.fieldTypeBackward.get(clazz);
+			if (bwfs == null) {
+				bwfs = new ArrayList<BackwardField>();
+				this.fieldTypeBackward.put(clazz, bwfs);
+			}
+			if (!bwfs.contains(bwf))
+				bwfs.add(bwf);
 		}
 		
 		private CompoundObjectType getConcreteFieldType(String classField) {
@@ -2837,6 +2868,59 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			Collections.sort(ret);
 			return ret;
 		}
+		
+		/********************************/
+		private class BackwardField {
+			private Class<?> sourceClass;
+			private String sourceFieldName;
+			
+			private BackwardField(String classField) {
+				super();
+				String[] clField = classField.split(domainAccessHandler.regexClassfieldSep);
+				try {
+					this.sourceClass = Class.forName(clField[0]);
+				} catch (ClassNotFoundException e) {
+					throw new RuntimeException(e);
+				}
+				this.sourceFieldName = clField[1];
+			}
+
+			@Override
+			public int hashCode() {
+				final int prime = 31;
+				int result = 1;
+				result = prime * result
+						+ ((sourceClass == null) ? 0 : sourceClass.hashCode());
+				result = prime
+						* result
+						+ ((sourceFieldName == null) ? 0 : sourceFieldName
+								.hashCode());
+				return result;
+			}
+
+			@Override
+			public boolean equals(Object obj) {
+				if (this == obj)
+					return true;
+				if (obj == null)
+					return false;
+				if (getClass() != obj.getClass())
+					return false;
+				BackwardField other = (BackwardField) obj;
+				if (sourceClass == null) {
+					if (other.sourceClass != null)
+						return false;
+				} else if (!sourceClass.equals(other.sourceClass))
+					return false;
+				if (sourceFieldName == null) {
+					if (other.sourceFieldName != null)
+						return false;
+				} else if (!sourceFieldName.equals(other.sourceFieldName))
+					return false;
+				return true;
+			}
+			
+		}
 	}
 	
 	/********************************/
@@ -2897,6 +2981,61 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		public ObjectMapping getObjectMappingFor(Class<?> domainObjectType) {
 			domainAccessHandler.updateMappingsIfNeeded();
 			return domainAccessHandler.getObjectMappingFor(domainObjectType);
+		}
+		
+		public List<FieldMapping> getBackwardFieldMappings(String attribName, Class<?> domainObjectType) {
+			List<FieldMapping> ret = new ArrayList<FieldMapping>();
+			List<DomainInfo.BackwardField> bwfs = domainAccessHandler.domainInfo.getBackwardFields(domainObjectType);
+			if (bwfs != null) {
+				for (DomainInfo.BackwardField bwf : bwfs) {
+					if (bwf.sourceFieldName.equals(attribName)) {
+						FieldMapping fm = this.getObjectMappingFor(bwf.sourceClass).getFieldMappingForField(attribName);
+						if (fm != null)
+							ret.add(fm);
+					}
+				}
+			}
+			
+			// add if navigated via a surrogate (e.g. Collection)
+			bwfs = domainAccessHandler.domainInfo.getBackwardComponentFields(domainObjectType);
+			if (bwfs != null) {
+				for (DomainInfo.BackwardField bwf : bwfs) {
+					if (this.isBackwardViaSurrogate(attribName, bwf)) {
+						FieldMapping fm = this.getObjectMappingFor(bwf.sourceClass)
+								.getFieldMappingForField(bwf.sourceFieldName);
+						if (fm != null)
+							ret.add(fm);
+					}
+				}
+			}
+			return ret;
+		}
+		
+		private boolean isBackwardViaSurrogate(String attribName,
+				DomainInfo.BackwardField backwardField) {
+			List<DomainInfo.BackwardField> bwfs = domainAccessHandler.domainInfo.getBackwardFields(backwardField.sourceClass);
+			if (bwfs != null) {
+				for (DomainInfo.BackwardField bwf : bwfs) {
+					if (bwf.sourceFieldName.equals(attribName)) {
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+		
+		private void addBackwardFieldMappings(String attribName, Class<?> domainObjectType,
+				List<FieldMapping> fms) {
+			List<DomainInfo.BackwardField> bwfs = domainAccessHandler.domainInfo.getBackwardFields(domainObjectType);
+			if (bwfs != null) {
+				for (DomainInfo.BackwardField bwf : bwfs) {
+					if (bwf.sourceFieldName.equals(attribName)) {
+						FieldMapping fm = this.getObjectMappingFor(bwf.sourceClass).getFieldMappingForField(attribName);
+						if (fm != null)
+							fms.add(fm);
+					}
+				}
+			}
 		}
 		
 		public List<Class<?>> getCompoundTypesFor(Class<?> domainObjectType) {

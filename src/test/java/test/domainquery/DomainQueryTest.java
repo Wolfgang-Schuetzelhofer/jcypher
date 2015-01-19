@@ -28,6 +28,8 @@ import iot.jcypher.domainquery.CountQueryResult;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 
@@ -114,13 +116,32 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.removeAllOutputStreams();
 	}
 	
-	//@Test
+	@Test
 	public void testDomainQuery_Traversals_02() {
 		IDomainAccess da1;
 		DomainQuery q;
 		DomainQueryResult result = null;
+		String testId;
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 07 ****************************************/
+		testId = "TRAVERSAL_07";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Address> j_smith_Address = q.createMatch(Address.class);
+
+		q.WHERE(j_smith_Address.atttribute("street")).EQUALS("Market Street");
+		q.WHERE(j_smith_Address.atttribute("number")).EQUALS(20);
+		
+		DomainObjectMatch<Object> j_smith =
+				q.TRAVERSE_FROM(j_smith_Address).BACK("pointsOfContact").TO(Object.class);
+		
+		result = q.execute();
+		
+		List<Address> j_smith_AddressResult = result.resultOf(j_smith_Address);
+		List<Object> j_smith_Result = result.resultOf(j_smith);
 		
 		return;
 	}

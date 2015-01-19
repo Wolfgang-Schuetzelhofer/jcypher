@@ -27,6 +27,8 @@ import java.util.Map;
 
 public class FieldMapping {
 
+	public static final String ClassFieldSeparator = "|";
+	
 	private static transient final String InnerRefField = "this$";
 	
 	private IField field;
@@ -347,7 +349,7 @@ public class FieldMapping {
 	private String createClassFieldName() {
 		StringBuilder sb = new StringBuilder();
 		sb.append(this.field.getDeclaringClass().getName());
-		sb.append('_');
+		sb.append(ClassFieldSeparator);
 		sb.append(this.getFieldName());
 		return sb.toString();
 	}

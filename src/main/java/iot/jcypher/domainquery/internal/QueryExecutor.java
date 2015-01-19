@@ -23,7 +23,9 @@ import iot.jcypher.domain.internal.SkipLimitCalc;
 import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
 import iot.jcypher.domain.mapping.CompoundObjectType;
 import iot.jcypher.domain.mapping.FieldMapping;
+import iot.jcypher.domain.mapping.ListFieldMapping;
 import iot.jcypher.domain.mapping.ObjectMapping;
+import iot.jcypher.domain.mapping.ValueAndTypeMapping;
 import iot.jcypher.domain.mapping.surrogate.Collection;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -1070,15 +1072,66 @@ public class QueryExecutor {
 			private List<IClause> createTraversalClauses(ClausesPerType cpt, TraversalExpression travEx, List<String> validNodes) {
 				List<IClause> ret = new ArrayList<IClause>();
 				String startBName = APIAccess.getBaseNodeName(travEx.getStart());
-				List<JcNode> tempNodes = new ArrayList<JcNode>();
 				String nm = ValueAccess.getName(cpt.node);
-				String nodeLabel = getMappingInfo().getLabelForClass(cpt.domainObjectType);
+				String endNodeLabel = getMappingInfo().getLabelForClass(cpt.domainObjectType);
 				String invalidAttrib = null;
 				List<Class<?>> types = new ArrayList<Class<?>>();
 				int idx = -1;
+				
+				List<StepClause> stepClauses = new ArrayList<StepClause>();
+				
 				for (String validNodeName : validNodes) {
 					if (validNodeName.indexOf(startBName) == 0) {
 						idx++;
+						stepClauses.addAll(buildStepClauses(travEx, idx, validNodeName, endNodeLabel, nm));
+					}
+				}
+				
+				List<JcNode> tempNodes = new ArrayList<JcNode>();
+				for (StepClause sc : stepClauses) {
+					Node mn = sc.getTotalMatchNode();
+					if (mn != null) {
+						tempNodes.add(sc.getEndNode());
+						ret.add(SEPARATE.nextClause());
+						ret.add(sc.getTotalMatchNode());
+					} else
+						invalidAttrib = sc.steps.get(sc.stepIndex).getAttributeName();
+				}
+				
+				if (tempNodes.size() == 1) { // don't need to build union of multiple sets
+					ValueAccess.setName(ValueAccess.getName(cpt.node),
+							tempNodes.get(0));
+				} else if (tempNodes.size() > 1) {
+					ret.add(SEPARATE.nextClause());
+					ret.add(OPTIONAL_MATCH.node(cpt.node).label(endNodeLabel));
+					Concat concat = WHERE.BR_OPEN();
+					ret.add(createWhereIn(concat, cpt.node, tempNodes, false));
+				} else {
+					cpt.valid = false;
+					throw new RuntimeException("attribute: [" + invalidAttrib + "] does not exist " +
+							"in domain object type(s): " + types);
+				}
+				return ret;
+			}
+			
+			@Deprecated
+			private List<IClause> createTraversalClauses_old(ClausesPerType cpt, TraversalExpression travEx, List<String> validNodes) {
+				List<IClause> ret = new ArrayList<IClause>();
+				String startBName = APIAccess.getBaseNodeName(travEx.getStart());
+				List<JcNode> tempNodes = new ArrayList<JcNode>();
+				String nm = ValueAccess.getName(cpt.node);
+				String endNodeLabel = getMappingInfo().getLabelForClass(cpt.domainObjectType);
+				String invalidAttrib = null;
+				List<Class<?>> types = new ArrayList<Class<?>>();
+				int idx = -1;
+				
+				List<StepClause> stepClauses = new ArrayList<StepClause>();
+				
+				for (String validNodeName : validNodes) {
+					if (validNodeName.indexOf(startBName) == 0) {
+						idx++;
+						//stepClauses.addAll(buildStepClauses(travEx, idx, validNodeName, endNodeLabel, nm));
+						
 						JcNode strt = new JcNode(validNodeName);
 						JcNode tmp = new JcNode(nm.concat(tmpNode).concat(String.valueOf(idx)));
 						tempNodes.add(tmp);
@@ -1090,9 +1143,9 @@ public class QueryExecutor {
 						for (int i = 0; i < travEx.getSteps().size(); i++) {
 							Step step = travEx.getSteps().get(i);
 							step.setCollection(typ.equals(Collection.class));
-							StepClause stepClause = buildStepClause(step, types,
+							StepClause stepClause = buildStepClause_old(step, types,
 									i == travEx.getSteps().size() - 1 ? tmp : null, matchNode,
-											nodeLabel);
+											endNodeLabel, idx, strt);
 							matchNode = stepClause.matchNode;
 							if (matchNode == null) { // match has no valid result
 								invalidAttrib = step.getAttributeName();
@@ -1114,7 +1167,7 @@ public class QueryExecutor {
 							tempNodes.get(0));
 				} else if (tempNodes.size() > 1) {
 					ret.add(SEPARATE.nextClause());
-					ret.add(OPTIONAL_MATCH.node(cpt.node).label(nodeLabel));
+					ret.add(OPTIONAL_MATCH.node(cpt.node).label(endNodeLabel));
 					Concat concat = WHERE.BR_OPEN();
 					ret.add(createWhereIn(concat, cpt.node, tempNodes, false));
 				} else {
@@ -1125,22 +1178,226 @@ public class QueryExecutor {
 				return ret;
 			}
 			
-			private StepClause buildStepClause(Step step, List<Class<?>> types, JcNode nd,
-					Node matchNode, String nodeLabel) {
+			private List<StepClause> buildStepClauses(TraversalExpression travEx, int startIdx, String startNodeName,
+					String endNodeLabel, String origEndNodeName) {
+				StepClause stepClause = new StepClause();
+				stepClause.buildAll(travEx, startIdx, startNodeName, endNodeLabel, origEndNodeName);
+				
+				return stepClause.stepClauses;
+			}
+			
+			@Deprecated
+			private StepClause buildStepClause_old(Step step, List<Class<?>> types, JcNode nd,
+					Node matchNode, String nodeLabel, int tmpIdx, JcNode strt) {
 				StepClause ret = new StepClause();
 				FieldMapping fm = null;
+				List<FieldMapping> fms = new ArrayList<FieldMapping>();
 				for (Class<?> t : types) {
-					fm = getMappingInfo().getFieldMapping(step.getAttributeName(),
-							t);
-					if (fm != null)
-						break;
+					if (step.getDirection() == 0) { // forward
+						fm = getMappingInfo().getFieldMapping(step.getAttributeName(),
+								t);
+						if (fm != null)
+							break;
+					} else { // backward
+						List<FieldMapping> fms_t = getMappingInfo().getBackwardFieldMappings(step.getAttributeName(),
+								t);
+						for (FieldMapping f : fms_t) {
+							if (!fms.contains(f))
+								fms.add(f);
+						}
+					}
 				}
 				if (fm != null) {
-					Relation matchRel = matchNode.relation().type(fm.getPropertyOrRelationName());
-					if (step.getDirection() == 0)
-						matchRel = matchRel.out();
-					else if (step.getDirection() == 1)
-						matchRel = matchRel.in();
+					ret = this.buildForwardStep(fm, step, ret, matchNode, nd, nodeLabel, tmpIdx, strt);
+				} else if (!fms.isEmpty()) {
+					ret = this.buildBackwardStep(fms, step, ret, matchNode, nd, nodeLabel, tmpIdx, strt);
+				}
+				return ret;
+			}
+			
+			@Deprecated
+			private StepClause buildBackwardStep(List<FieldMapping> fms, Step step, StepClause stepClause,
+					Node matchNode, JcNode nd, String nodeLabel, int tmpIdx, JcNode strt) {
+				StepClause ret = stepClause;
+				List<Class<?>> types = new ArrayList<Class<?>>();
+				Relation matchRel = matchNode.relation().in();
+				
+				// surrogate navigations (e.g. via Collection) are always at the end of the list.
+				boolean hasSurrogate = false;
+				String step2RelationName = null;
+				for (int i = 0; i < fms.size(); i++) {
+					if (i > 0) {
+						matchRel = OPTIONAL_MATCH.node(strt).relation().in();
+					}
+					FieldMapping fm = fms.get(i);
+					boolean surrogate = fm instanceof ListFieldMapping || fm instanceof ValueAndTypeMapping;
+					if (surrogate)
+						hasSurrogate = true;
+					matchRel = matchRel.type(fm.getPropertyOrRelationName());
+					types.add(fm.getFieldType());
+				}
+				
+				if (step.getMinDistance() != 1)
+					matchRel = matchRel.minHops(step.getMinDistance());
+				if (step.getMaxDistance() != 1) {
+					if (step.getMaxDistance() == -1)
+						matchRel = matchRel.maxHopsUnbound();
+					else
+						matchRel = matchRel.maxHops(step.getMaxDistance());
+				}
+				
+				if (step2RelationName != null) {
+					// we have surrogate navigation plus direct navigation
+					matchRel = matchRel.node().relation().in().type(step2RelationName)
+							.minHops(step.getMinDistance());
+					if (step.getMaxDistance() != 1) {
+						if (step.getMaxDistance() == -1)
+							matchRel = matchRel.maxHopsUnbound();
+						else
+							matchRel = matchRel.maxHops(step.getMaxDistance());
+					}
+				}
+				
+				if (nd != null) { // we have reached the end
+					ret.matchNode = matchRel.node(nd).label(nodeLabel);
+				} else
+					ret.matchNode = matchRel.node();
+				ret.resultTypes = types;
+				
+				return ret;
+			}
+			
+			@Deprecated
+			private StepClause buildForwardStep(FieldMapping fm, Step step, StepClause stepClause,
+					Node matchNode, JcNode nd, String nodeLabel, int tmpIdx, JcNode strt) {
+				StepClause ret = stepClause;
+				Relation matchRel = matchNode.relation().type(fm.getPropertyOrRelationName());
+				matchRel = matchRel.out();
+				
+				if (step.getMinDistance() != 1)
+					matchRel = matchRel.minHops(step.getMinDistance());
+				if (step.getMaxDistance() != 1) {
+					if (step.getMaxDistance() == -1)
+						matchRel = matchRel.maxHopsUnbound();
+					else
+						matchRel = matchRel.maxHops(step.getMaxDistance());
+				}
+				
+				CompoundObjectType cType;
+				if (step.isCollection()) {
+					cType = getMappingInfo().getInternalDomainAccess()
+							.getFieldComponentType(fm.getClassFieldName());
+				} else {
+					cType = getMappingInfo().getInternalDomainAccess()
+							.getConcreteFieldType(fm.getClassFieldName());
+				}
+				Class<?> typ = cType.getType();
+				boolean isCollection = typ.equals(Collection.class); // TODO alternative check for surrogate
+				if (nd != null && !isCollection) { // we have reached the end
+					ret.matchNode = matchRel.node(nd).label(nodeLabel);
+				} else
+					ret.matchNode = matchRel.node();
+				if (isCollection) { // need to advance one step
+					Step insert = step.createStep(step.getDirection(), "c_content"); //TODO don' hardcode fieldname
+					insert.setCollection(true);
+					List<Class<?>> tps = new ArrayList<Class<?>>();
+					tps.add(typ);
+					ret = buildStepClause_old(insert, tps, nd, ret.matchNode, nodeLabel, tmpIdx, strt);
+				} else {
+					ret.resultTypes = cType.getTypes(true);
+				}
+				return ret;
+			}
+			
+			/***************************/
+			private class StepClause {
+				private Node matchNode;
+				private StepClause next;
+				private StepClause previous;
+				private FieldMapping fieldMapping;
+				private List<Step> steps;
+				private int stepIndex;
+				private String originalEndNodeName;
+				private String endNodeLabel;
+				private JcNode endNode;
+				private boolean isCollection;
+				private List<Class<?>> resultTypes;
+				private List<StepClause> stepClauses;
+				
+				private void buildAll(TraversalExpression travEx, int startIdx, String startNodeName, String endNodeLabel,
+						String origEndNodeName) {
+					this.stepClauses = new ArrayList<StepClause>();
+					this.originalEndNodeName = origEndNodeName;
+					this.endNodeLabel = endNodeLabel;
+					this.buildFirst(travEx, startIdx, startNodeName);
+				}
+				
+				private void buildFirst(TraversalExpression travEx, int startIdx, String startNodeName) {
+					this.stepClauses.add(this);
+					JcNode strt = new JcNode(startNodeName);
+					this.matchNode = OPTIONAL_MATCH.node(strt);
+					Class<?> typ = APIAccess.getTypeForNodeName(travEx.getStart(), startNodeName);
+					this.isCollection = typ.equals(Collection.class); // TODO what about other surrogates
+					this.steps = new ArrayList<Step>();
+					this.steps.addAll(travEx.getSteps());
+					this.stepIndex = 0;
+					List<Class<?>> types = new ArrayList<Class<?>>();
+					types.add(typ);
+					this.build(startIdx, types);
+				}
+				
+				private void buildNext(int startIdx, List<Class<?>> types, boolean isCollection2) {
+					StepClause stpc = new StepClause();
+					this.next = stpc;
+					stpc.previous = this;
+
+					stpc.matchNode = this.matchNode;
+					stpc.endNodeLabel = this.endNodeLabel;
+					stpc.originalEndNodeName = this.originalEndNodeName;
+					stpc.steps = this.steps;
+					stpc.stepClauses = this.stepClauses;
+					stpc.stepIndex = this.stepIndex + 1;
+					stpc.isCollection = isCollection2;
+					stpc.build(startIdx, types);
+				}
+				
+				private void build(int startIdx, List<Class<?>> types) {
+					FieldMapping fm = null;
+					List<FieldMapping> fms = null;
+					Step step = this.steps.get(this.stepIndex);
+					for (Class<?> t : types) {
+						if (step.getDirection() == 0) { // forward
+							fm = getMappingInfo().getFieldMapping(step.getAttributeName(),
+									t);
+							if (fm != null) {
+								this.buildForwardStep(startIdx, fm);
+								break;
+							}
+						} else { // backward
+							if (fms == null)
+								fms = new ArrayList<FieldMapping>();
+							List<FieldMapping> fms_t = getMappingInfo().getBackwardFieldMappings(step.getAttributeName(),
+									t);
+							for (FieldMapping f : fms_t) {
+								if (!fms.contains(f))
+									fms.add(f);
+							}
+						}
+						if (!fms.isEmpty()) {
+							this.buildBackwardStep(startIdx, fms);
+						} else {
+							if (fm == null) { // navigation has no result
+								this.matchNode = null;
+							}
+						}
+					}
+				}
+				
+				private void buildForwardStep(int startIdx, FieldMapping fm) {
+					this.fieldMapping = fm;
+					Relation matchRel = matchNode.relation().type(this.fieldMapping.getPropertyOrRelationName());
+					matchRel = matchRel.out();
+					Step step = this.steps.get(this.stepIndex);
 					
 					if (step.getMinDistance() != 1)
 						matchRel = matchRel.minHops(step.getMinDistance());
@@ -1152,36 +1409,60 @@ public class QueryExecutor {
 					}
 					
 					CompoundObjectType cType;
-					if (step.isCollection()) {
+					if (this.isCollection) {
 						cType = getMappingInfo().getInternalDomainAccess()
-								.getFieldComponentType(fm.getClassFieldName());
+								.getFieldComponentType(this.fieldMapping.getClassFieldName());
 					} else {
 						cType = getMappingInfo().getInternalDomainAccess()
-								.getConcreteFieldType(fm.getClassFieldName());
+								.getConcreteFieldType(this.fieldMapping.getClassFieldName());
 					}
+					List<Class<?>> types;
 					Class<?> typ = cType.getType();
 					boolean isCollection = typ.equals(Collection.class); // TODO alternative check for surrogate
-					if (nd != null && !isCollection) { // we have reached the end
-						ret.matchNode = matchRel.node(nd).label(nodeLabel);
-					} else
-						ret.matchNode = matchRel.node();
 					if (isCollection) { // need to advance one step
 						Step insert = step.createStep(step.getDirection(), "c_content"); //TODO don' hardcode fieldname
-						insert.setCollection(true);
-						List<Class<?>> tps = new ArrayList<Class<?>>();
-						tps.add(typ);
-						ret = buildStepClause(insert, tps, nd, ret.matchNode, nodeLabel);
+						if (this.steps.size() > this.stepIndex + 1)
+							this.steps.add(this.stepIndex + 1, insert);
+						else
+							this.steps.add(insert);
+						types = new ArrayList<Class<?>>();
+						types.add(typ);
 					} else {
-						ret.resultTypes = cType.getTypes(true);
+						types = cType.getTypes(true);
+					}
+					
+					if (this.stepIndex >= this.steps.size() - 1) { // we have reached the end
+						this.endNode = new JcNode(this.originalEndNodeName.concat(tmpNode)
+								.concat(String.valueOf(startIdx)));
+						this.matchNode = matchRel.node(this.endNode).label(this.endNodeLabel);
+					} else {
+						this.matchNode = matchRel.node();
+						this.buildNext(startIdx, types, isCollection);
 					}
 				}
-				return ret;
-			}
-			
-			/***************************/
-			private class StepClause {
-				private Node matchNode;
-				private List<Class<?>> resultTypes;
+				
+				private void buildBackwardStep(int startIdx, List<FieldMapping> fms) {
+					for (int i = 0; i < fms.size(); i++) {
+						
+					}
+					return;
+				}
+				
+				private JcNode getEndNode() {
+					StepClause last = this;
+					while(last.next != null) {
+						last = last.next;
+					}
+					return last.endNode;
+				}
+				
+				private Node getTotalMatchNode() {
+					StepClause last = this;
+					while(last.next != null) {
+						last = last.next;
+					}
+					return last.matchNode;
+				}
 			}
 		}
 		
@@ -1441,6 +1722,11 @@ public class QueryExecutor {
 		 */
 		public FieldMapping getFieldMapping(String attribName, Class<?> domainObjectType) {
 			return getObjectMappingFor(domainObjectType).getFieldMappingForField(attribName);
+		}
+		
+		public List<FieldMapping> getBackwardFieldMappings(String attribName, Class<?> domainObjectType) {
+			return ((IIntDomainAccess)domainAccess).getInternalDomainAccess()
+					.getBackwardFieldMappings(attribName, domainObjectType);
 		}
 		
 		public List<Class<?>> getCompoundTypesFor(Class<?> domainObjectType) {

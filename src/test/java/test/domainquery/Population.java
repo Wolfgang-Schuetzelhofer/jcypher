@@ -20,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import test.domainquery.model.Address;
+import test.domainquery.model.Addressee;
 import test.domainquery.model.Area;
 import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
@@ -80,6 +81,7 @@ public class Population {
 		createBerghammers(domainObjects);
 		createMore(domainObjects);
 		createCompanies(domainObjects);
+		createAddressees(domainObjects);
 		
 		return domainObjects;
 	}
@@ -354,5 +356,13 @@ public class Population {
 		
 		domainObjects.add(globCom);
 		domainObjects.add(smallCom);
+	}
+	
+	private void createAddressees(List<Object> domainObjects) {
+		Addressee add = new Addressee();
+		add.setName("addressee_01");
+		add.setPointsOfContact(this.marketStreet_20);
+		
+		domainObjects.add(add);
 	}
 }

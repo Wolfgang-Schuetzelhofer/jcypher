@@ -69,6 +69,7 @@ public class TraversalExpression implements IASTObject {
 		// 0 .. forward, 1 .. backward
 		private int direction;
 		private String attributeName;
+		@Deprecated
 		private boolean isCollection = false;
 		private int minDistance;
 		private int maxDistance;
