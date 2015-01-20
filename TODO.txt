@@ -1,3 +1,7 @@
+how to handle multiple hops with surrogate classes
+
+traversal of maps
+
 optimization: reduce return statements
 
 ---done--- inner class surrogates - handle relations

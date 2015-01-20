@@ -143,6 +143,24 @@ public class DomainQueryTest extends AbstractTestSuite {
 		List<Address> j_smith_AddressResult = result.resultOf(j_smith_Address);
 		List<Object> j_smith_Result = result.resultOf(j_smith);
 		
+		/** 08 ****************************************/
+		testId = "TRAVERSAL_08";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+//		DomainObjectMatch<Address> j_smith_Address = q.createMatch(Address.class);
+//
+//		q.WHERE(j_smith_Address.atttribute("street")).EQUALS("Market Street");
+//		q.WHERE(j_smith_Address.atttribute("number")).EQUALS(20);
+//		
+//		DomainObjectMatch<Object> j_smith =
+//				q.TRAVERSE_FROM(j_smith_Address).BACK("pointsOfContact").TO(Object.class);
+//		
+//		result = q.execute();
+//		
+//		List<Address> j_smith_AddressResult = result.resultOf(j_smith_Address);
+//		List<Object> j_smith_Result = result.resultOf(j_smith);
+		
 		return;
 	}
 	

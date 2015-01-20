@@ -26,6 +26,7 @@ import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.ListFieldMapping;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domain.mapping.ValueAndTypeMapping;
+import iot.jcypher.domain.mapping.surrogate.Array;
 import iot.jcypher.domain.mapping.surrogate.Collection;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -311,7 +312,8 @@ public class QueryExecutor {
 						resPerType.queryIndex = queryIndex;
 						if (startNewQueryAfterThis)
 							break;
-					}
+					} else
+						context.addEmptyFor(cpt); // did not produce a result
 				}
 				
 				if (i == clausesPerTypeList.size()) // we are finished
@@ -826,6 +828,7 @@ public class QueryExecutor {
 					idx++;
 				}
 				
+				TraversalResults travRes = new TraversalResults();
 				for (IASTObject astObj : xpressionsForDom) {
 					for (ClausesPerType clausePerType : clausesPerTypeList) {
 						if (clausePerType.valid) {
@@ -883,7 +886,7 @@ public class QueryExecutor {
 								clausePerType.concatenator = buildPredicateExpression(pred, concat_1, clausePerType, validNodes);
 							} else if (astObj instanceof TraversalExpression) {
 								clausePerType.traversalClauses = createTraversalClauses(clausePerType,
-										(TraversalExpression) astObj, validNodes);
+										(TraversalExpression) astObj, validNodes, travRes);
 							}
 						}
 					}
@@ -1069,33 +1072,44 @@ public class QueryExecutor {
 				return booleanOp;
 			}
 			
-			private List<IClause> createTraversalClauses(ClausesPerType cpt, TraversalExpression travEx, List<String> validNodes) {
+			private List<IClause> createTraversalClauses(ClausesPerType cpt, TraversalExpression travEx,
+					List<String> validNodes, TraversalResults travRes) {
 				List<IClause> ret = new ArrayList<IClause>();
 				String startBName = APIAccess.getBaseNodeName(travEx.getStart());
 				String nm = ValueAccess.getName(cpt.node);
 				String endNodeLabel = getMappingInfo().getLabelForClass(cpt.domainObjectType);
-				String invalidAttrib = null;
-				List<Class<?>> types = new ArrayList<Class<?>>();
-				int idx = -1;
 				
-				List<StepClause> stepClauses = new ArrayList<StepClause>();
+				if (travRes.stepClauses == null)
+					travRes.stepClauses = new ArrayList<StepClause>();
 				
+				List<StepClause> stepCls = new ArrayList<StepClause>();
 				for (String validNodeName : validNodes) {
 					if (validNodeName.indexOf(startBName) == 0) {
-						idx++;
-						stepClauses.addAll(buildStepClauses(travEx, idx, validNodeName, endNodeLabel, nm));
+						int tmpNodeIdx = travRes.stepClauses.size() + stepCls.size();
+						stepCls.addAll(buildStepClauses(travEx, tmpNodeIdx, validNodeName, endNodeLabel, nm));
 					}
 				}
+				travRes.stepClauses.addAll(stepCls);
 				
 				List<JcNode> tempNodes = new ArrayList<JcNode>();
-				for (StepClause sc : stepClauses) {
+				for (StepClause sc : stepCls) {
 					Node mn = sc.getTotalMatchNode();
 					if (mn != null) {
 						tempNodes.add(sc.getEndNode());
 						ret.add(SEPARATE.nextClause());
 						ret.add(sc.getTotalMatchNode());
-					} else
-						invalidAttrib = sc.steps.get(sc.stepIndex).getAttributeName();
+					} else {
+//						if (travRes.invalidAttribs == null) {
+//							travRes.invalidAttribs = new ArrayList<String>();
+//							travRes.inValidTypes = new ArrayList<Class<?>>();
+//						}
+//						String attrib = sc.traversalExpression.getSteps().get(sc.stepIndex).getAttributeName();
+//						Class<?> clazz = getMappingInfo().getClassForLabel(sc.endNodeLabel);
+//						if (!travRes.invalidAttribs.contains(attrib))
+//							travRes.invalidAttribs.add(attrib);
+//						if (!travRes.inValidTypes.contains(clazz))
+//							travRes.inValidTypes.add(clazz);
+					}
 				}
 				
 				if (tempNodes.size() == 1) { // don't need to build union of multiple sets
@@ -1108,8 +1122,8 @@ public class QueryExecutor {
 					ret.add(createWhereIn(concat, cpt.node, tempNodes, false));
 				} else {
 					cpt.valid = false;
-					throw new RuntimeException("attribute: [" + invalidAttrib + "] does not exist " +
-							"in domain object type(s): " + types);
+//					throw new RuntimeException("attribute(s): " + invalidAttribs + " do(es) not exist " +
+//							"in domain object type(s): " + inValidTypes);
 				}
 				return ret;
 			}
@@ -1178,10 +1192,10 @@ public class QueryExecutor {
 				return ret;
 			}
 			
-			private List<StepClause> buildStepClauses(TraversalExpression travEx, int startIdx, String startNodeName,
+			private List<StepClause> buildStepClauses(TraversalExpression travEx, int tmpNodeIdx, String startNodeName,
 					String endNodeLabel, String origEndNodeName) {
 				StepClause stepClause = new StepClause();
-				stepClause.buildAll(travEx, startIdx, startNodeName, endNodeLabel, origEndNodeName);
+				stepClause.buildAll(travEx, tmpNodeIdx, startNodeName, endNodeLabel, origEndNodeName);
 				
 				return stepClause.stepClauses;
 			}
@@ -1315,38 +1329,44 @@ public class QueryExecutor {
 				private StepClause next;
 				private StepClause previous;
 				private FieldMapping fieldMapping;
-				private List<Step> steps;
+				private List<FieldMapping> fieldMappings;
+				private int fmIndex;
+				private TraversalExpression traversalExpression;
+				private Step step;
 				private int stepIndex;
 				private String originalEndNodeName;
 				private String endNodeLabel;
+				private JcNode startNode;
 				private JcNode endNode;
-				private boolean isCollection;
+				@Deprecated
 				private List<Class<?>> resultTypes;
 				private List<StepClause> stepClauses;
 				
-				private void buildAll(TraversalExpression travEx, int startIdx, String startNodeName, String endNodeLabel,
+				private void buildAll(TraversalExpression travEx, int tmpNodeIdx, String startNodeName, String endNodeLabel,
 						String origEndNodeName) {
 					this.stepClauses = new ArrayList<StepClause>();
 					this.originalEndNodeName = origEndNodeName;
 					this.endNodeLabel = endNodeLabel;
-					this.buildFirst(travEx, startIdx, startNodeName);
+					this.traversalExpression = travEx;
+					this.buildFirst(tmpNodeIdx, startNodeName);
 				}
 				
-				private void buildFirst(TraversalExpression travEx, int startIdx, String startNodeName) {
+				private void buildFirst(int tmpNodeIdx, String startNodeName) {
 					this.stepClauses.add(this);
-					JcNode strt = new JcNode(startNodeName);
-					this.matchNode = OPTIONAL_MATCH.node(strt);
-					Class<?> typ = APIAccess.getTypeForNodeName(travEx.getStart(), startNodeName);
-					this.isCollection = typ.equals(Collection.class); // TODO what about other surrogates
-					this.steps = new ArrayList<Step>();
-					this.steps.addAll(travEx.getSteps());
+					this.startNode = new JcNode(startNodeName);
+					this.matchNode = OPTIONAL_MATCH.node(this.startNode);
+					Class<?> typ = APIAccess.getTypeForNodeName(this.traversalExpression.getStart(), startNodeName);
+					boolean isList = typ.equals(Collection.class) ||
+							typ.equals(Array.class); // TODO what about other surrogates
 					this.stepIndex = 0;
+					this.step = this.traversalExpression.getSteps().get(this.stepIndex);
 					List<Class<?>> types = new ArrayList<Class<?>>();
 					types.add(typ);
-					this.build(startIdx, types);
+					this.build(tmpNodeIdx, types, isList);
 				}
 				
-				private void buildNext(int startIdx, List<Class<?>> types, boolean isCollection2) {
+				private void buildNext(int tmpNodeIdx, List<Class<?>> types, boolean isList,
+						Step nextStep, int nextStepIndex) {
 					StepClause stpc = new StepClause();
 					this.next = stpc;
 					stpc.previous = this;
@@ -1354,62 +1374,79 @@ public class QueryExecutor {
 					stpc.matchNode = this.matchNode;
 					stpc.endNodeLabel = this.endNodeLabel;
 					stpc.originalEndNodeName = this.originalEndNodeName;
-					stpc.steps = this.steps;
+					stpc.traversalExpression = this.traversalExpression;
+					stpc.step = nextStep;
 					stpc.stepClauses = this.stepClauses;
-					stpc.stepIndex = this.stepIndex + 1;
-					stpc.isCollection = isCollection2;
-					stpc.build(startIdx, types);
+					stpc.stepIndex = nextStepIndex;
+					stpc.build(tmpNodeIdx, types, isList);
 				}
 				
-				private void build(int startIdx, List<Class<?>> types) {
+				private void build(int tmpNodeIdx, List<Class<?>> types, boolean isList) {
 					FieldMapping fm = null;
 					List<FieldMapping> fms = null;
-					Step step = this.steps.get(this.stepIndex);
 					for (Class<?> t : types) {
-						if (step.getDirection() == 0) { // forward
-							fm = getMappingInfo().getFieldMapping(step.getAttributeName(),
+						if (this.step.getDirection() == 0) { // forward
+							fm = getMappingInfo().getFieldMapping(this.step.getAttributeName(),
 									t);
-							if (fm != null) {
-								this.buildForwardStep(startIdx, fm);
+							if (fm != null)
 								break;
-							}
 						} else { // backward
 							if (fms == null)
 								fms = new ArrayList<FieldMapping>();
-							List<FieldMapping> fms_t = getMappingInfo().getBackwardFieldMappings(step.getAttributeName(),
+							List<FieldMapping> fms_t = getMappingInfo().getBackwardFieldMappings(this.step.getAttributeName(),
 									t);
 							for (FieldMapping f : fms_t) {
 								if (!fms.contains(f))
 									fms.add(f);
 							}
 						}
-						if (!fms.isEmpty()) {
-							this.buildBackwardStep(startIdx, fms);
-						} else {
-							if (fm == null) { // navigation has no result
-								this.matchNode = null;
-							}
+					}
+					
+					boolean doBuild = false;
+					if (fms != null && !fms.isEmpty()) {
+						if (fms.size() == 1) // to optimize
+							this.fieldMapping = fms.get(0);
+						else {
+							this.fieldMappings = fms;
+							this.fmIndex = 0;
 						}
+						doBuild = true;
+					} else {
+						if (fm != null) {
+							this.fieldMapping = fm;
+							doBuild = true;
+						} else // navigation has no result
+							this.matchNode = null;
+					}
+					
+					if (doBuild) {
+						if (this.step.getDirection() == 0) // forward
+							this.buildForwardStep(tmpNodeIdx, isList);
+						else
+							this.buildBackwardStep(tmpNodeIdx);
+					}
+					
+					// test for additional paths
+					if (this.fieldMappings != null && this.fmIndex < this.fieldMappings.size() - 1) {
+						this.cloneTraversal(this, tmpNodeIdx + 1);
 					}
 				}
 				
-				private void buildForwardStep(int startIdx, FieldMapping fm) {
-					this.fieldMapping = fm;
+				private void buildForwardStep(int tmpNodeIdx, boolean listOrArray) {
 					Relation matchRel = matchNode.relation().type(this.fieldMapping.getPropertyOrRelationName());
 					matchRel = matchRel.out();
-					Step step = this.steps.get(this.stepIndex);
 					
-					if (step.getMinDistance() != 1)
-						matchRel = matchRel.minHops(step.getMinDistance());
-					if (step.getMaxDistance() != 1) {
-						if (step.getMaxDistance() == -1)
+					if (this.step.getMinDistance() != 1)
+						matchRel = matchRel.minHops(this.step.getMinDistance());
+					if (this.step.getMaxDistance() != 1) {
+						if (this.step.getMaxDistance() == -1)
 							matchRel = matchRel.maxHopsUnbound();
 						else
-							matchRel = matchRel.maxHops(step.getMaxDistance());
+							matchRel = matchRel.maxHops(this.step.getMaxDistance());
 					}
 					
 					CompoundObjectType cType;
-					if (this.isCollection) {
+					if (listOrArray) {
 						cType = getMappingInfo().getInternalDomainAccess()
 								.getFieldComponentType(this.fieldMapping.getClassFieldName());
 					} else {
@@ -1418,36 +1455,140 @@ public class QueryExecutor {
 					}
 					List<Class<?>> types;
 					Class<?> typ = cType.getType();
-					boolean isCollection = typ.equals(Collection.class); // TODO alternative check for surrogate
-					if (isCollection) { // need to advance one step
-						Step insert = step.createStep(step.getDirection(), "c_content"); //TODO don' hardcode fieldname
-						if (this.steps.size() > this.stepIndex + 1)
-							this.steps.add(this.stepIndex + 1, insert);
-						else
-							this.steps.add(insert);
+					boolean isList = typ.equals(Collection.class) ||
+							typ.equals(Array.class); // TODO alternative check for surrogate
+					Step nextStep = null;
+					int nextStepIndex = this.stepIndex;
+					if (isList) { // need to advance one step
+						// surrogates have one (non-transient) field
+						nextStep = this.step.createStep(this.step.getDirection(),
+								getMappingInfo().getObjectMappingFor(typ)
+									.fieldMappingsIterator().next().getPropertyOrRelationName());
 						types = new ArrayList<Class<?>>();
 						types.add(typ);
 					} else {
+						nextStepIndex++;
+						if (nextStepIndex <= this.traversalExpression.getSteps().size() - 1)
+							nextStep = this.traversalExpression.getSteps().get(nextStepIndex);
 						types = cType.getTypes(true);
 					}
 					
-					if (this.stepIndex >= this.steps.size() - 1) { // we have reached the end
+					if (nextStep == null) { // we have reached the end
 						this.endNode = new JcNode(this.originalEndNodeName.concat(tmpNode)
-								.concat(String.valueOf(startIdx)));
+								.concat(String.valueOf(tmpNodeIdx)));
 						this.matchNode = matchRel.node(this.endNode).label(this.endNodeLabel);
 					} else {
 						this.matchNode = matchRel.node();
-						this.buildNext(startIdx, types, isCollection);
+						this.buildNext(tmpNodeIdx, types, isList, nextStep, nextStepIndex);
 					}
 				}
 				
-				private void buildBackwardStep(int startIdx, List<FieldMapping> fms) {
-					for (int i = 0; i < fms.size(); i++) {
-						
+				private void buildBackwardStep(int tmpNodeIdx) {
+					FieldMapping fm;
+					if (this.fieldMappings != null) // there are multiple navigation paths
+						fm = this.fieldMappings.get(this.fmIndex);
+					else
+						fm = this.fieldMapping;
+
+					Relation matchRel = matchNode.relation().type(fm.getPropertyOrRelationName());
+					matchRel = matchRel.in();
+					
+					if (this.step.getMinDistance() != 1)
+						matchRel = matchRel.minHops(this.step.getMinDistance());
+					if (this.step.getMaxDistance() != 1) {
+						if (this.step.getMaxDistance() == -1)
+							matchRel = matchRel.maxHopsUnbound();
+						else
+							matchRel = matchRel.maxHops(this.step.getMaxDistance());
 					}
-					return;
+					
+					Class<?> typ = fm.getField().getDeclaringClass();
+					boolean isList = typ.equals(Collection.class) ||
+							typ.equals(Array.class); // TODO alternative check for surrogate
+					
+					List<Class<?>> types;
+					Step nextStep = null;
+					int nextStepIndex = this.stepIndex;
+					if (isList) { // need to advance one step
+						// surrogates have one (non-transient) field
+						nextStep = this.step.createStep(this.step.getDirection(),
+								this.step.getAttributeName());
+						types = new ArrayList<Class<?>>();
+						types.add(typ);
+					} else {
+						nextStepIndex++;
+						if (nextStepIndex <= this.traversalExpression.getSteps().size() - 1)
+							nextStep = this.traversalExpression.getSteps().get(nextStepIndex);
+						types = getMappingInfo().getCompoundTypesFor(typ);
+					}
+					
+					if (nextStep == null) { // we have reached the end
+						if (isValidEndNodeType(types)) {
+							this.endNode = new JcNode(this.originalEndNodeName.concat(tmpNode)
+									.concat(String.valueOf(tmpNodeIdx)));
+							this.matchNode = matchRel.node(this.endNode).label(this.endNodeLabel);
+						} else
+							this.matchNode = null;
+					} else {
+						this.matchNode = matchRel.node();
+						this.buildNext(tmpNodeIdx, types, isList, nextStep, nextStepIndex);
+					}
 				}
 				
+				private boolean isValidEndNodeType(List<Class<?>> types) {
+					for (Class<?> clazz : types) {
+						if (this.endNodeLabel.equals(getMappingInfo().getLabelForClass(clazz)))
+							return true;
+					}
+					return false;
+				}
+
+				private void cloneTraversal(StepClause cloneTo, int tmpNodeIdx) {
+					StepClause first = this;
+					while(first.previous != null) {
+						first = first.previous;
+					}
+					StepClause newFirst = new StepClause();
+					newFirst.stepClauses = first.stepClauses;
+					newFirst.cloneFirst(first, cloneTo, tmpNodeIdx);
+				}
+				
+				private void cloneFirst(StepClause toClone, StepClause cloneTo, int tmpNodeIdx) {
+					this.stepClauses.add(this);
+					this.startNode = toClone.startNode;
+					this.originalEndNodeName = toClone.originalEndNodeName;
+					this.endNodeLabel = toClone.endNodeLabel;
+					this.traversalExpression = toClone.traversalExpression;
+					this.matchNode = OPTIONAL_MATCH.node(this.startNode);
+					Class<?> typ = APIAccess.getTypeForNodeName(this.traversalExpression.getStart(),
+							ValueAccess.getName(this.startNode));
+					boolean isList = typ.equals(Collection.class) ||
+							typ.equals(Array.class); // TODO what about other surrogates
+					this.stepIndex = toClone.stepIndex;
+					this.step = toClone.step;
+					this.fieldMapping = toClone.fieldMapping;
+					this.fieldMappings = toClone.fieldMappings;
+					this.fmIndex = toClone.fmIndex;
+					this.buildClone(tmpNodeIdx, toClone == cloneTo, isList);
+				}
+				
+				private void buildClone(int tmpNodeIdx, boolean stopCloning, boolean isList) {
+					FieldMapping fm = null;
+					List<FieldMapping> fms = null;
+					if (stopCloning)
+						this.fmIndex++;
+					
+					if (this.step.getDirection() == 0) // forward
+						this.buildForwardStep(tmpNodeIdx, isList);
+					else
+						this.buildBackwardStep(tmpNodeIdx);
+					
+					// test for additional paths
+					if (this.fieldMappings != null && this.fmIndex < this.fieldMappings.size() - 1) {
+						this.cloneTraversal(this, tmpNodeIdx + 1);
+					}
+				}
+
 				private JcNode getEndNode() {
 					StepClause last = this;
 					while(last.next != null) {
@@ -1463,6 +1604,13 @@ public class QueryExecutor {
 					}
 					return last.matchNode;
 				}
+			}
+			
+			/***********************************/
+			private class TraversalResults {
+				private List<StepClause> stepClauses;
+//				private List<Class<?>> inValidTypes;
+//				private List<String> invalidAttribs;
 			}
 		}
 		
@@ -1669,6 +1817,15 @@ public class QueryExecutor {
 			return resPerType;
 		}
 		
+		private void addEmptyFor(QueryBuilder.ClausesPerType cpt) {
+			DomainObjectMatch<?> dom = cpt.domainObjectMatch;
+			List<ResultsPerType> resPerTypeList = this.resultsMap.get(dom);
+			if (resPerTypeList == null) {
+				resPerTypeList = new ArrayList<ResultsPerType>();
+				this.resultsMap.put(dom, resPerTypeList);
+			}
+		}
+		
 		private void queryExecuted() {
 			Iterator<Entry<DomainObjectMatch<?>, List<ResultsPerType>>> it = this.resultsMap.entrySet().iterator();
 			while(it.hasNext()) {
@@ -1737,6 +1894,11 @@ public class QueryExecutor {
 		public String getLabelForClass(Class<?> clazz) {
 			return ((IIntDomainAccess)domainAccess).getInternalDomainAccess()
 					.getLabelForClass(clazz);
+		}
+		
+		public Class<?> getClassForLabel(String label) {
+			return ((IIntDomainAccess)domainAccess).getInternalDomainAccess()
+					.getClassForLabel(label);
 		}
 		
 		public InternalDomainAccess getInternalDomainAccess() {

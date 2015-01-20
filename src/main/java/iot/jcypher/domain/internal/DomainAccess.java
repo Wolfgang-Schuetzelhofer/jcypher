@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -3045,6 +3045,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		public String getLabelForClass(Class<?> clazz) {
 			domainAccessHandler.updateMappingsIfNeeded();
 			return domainAccessHandler.domainInfo.getLabelForClass(clazz);
+		}
+		
+		public Class<?> getClassForLabel(String label) {
+			domainAccessHandler.updateMappingsIfNeeded();
+			return domainAccessHandler.domainInfo.getClassForLabel(label);
 		}
 		
 		public boolean existsLabel(String label) {
