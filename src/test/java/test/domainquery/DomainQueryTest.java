@@ -126,28 +126,10 @@ public class DomainQueryTest extends AbstractTestSuite {
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
 		/** 07 ****************************************/
-		testId = "TRAVERSAL_07";
-		queriesStream.reset();
-		
-		q = da1.createQuery();
-		DomainObjectMatch<Address> j_smith_Address = q.createMatch(Address.class);
-
-		q.WHERE(j_smith_Address.atttribute("street")).EQUALS("Market Street");
-		q.WHERE(j_smith_Address.atttribute("number")).EQUALS(20);
-		
-		DomainObjectMatch<Object> j_smith =
-				q.TRAVERSE_FROM(j_smith_Address).BACK("pointsOfContact").TO(Object.class);
-		
-		result = q.execute();
-		
-		List<Address> j_smith_AddressResult = result.resultOf(j_smith_Address);
-		List<Object> j_smith_Result = result.resultOf(j_smith);
-		
-		/** 08 ****************************************/
-		testId = "TRAVERSAL_08";
-		queriesStream.reset();
-		
-		q = da1.createQuery();
+//		testId = "TRAVERSAL_07";
+//		queriesStream.reset();
+//		
+//		q = da1.createQuery();
 //		DomainObjectMatch<Address> j_smith_Address = q.createMatch(Address.class);
 //
 //		q.WHERE(j_smith_Address.atttribute("street")).EQUALS("Market Street");
@@ -160,6 +142,34 @@ public class DomainQueryTest extends AbstractTestSuite {
 //		
 //		List<Address> j_smith_AddressResult = result.resultOf(j_smith_Address);
 //		List<Object> j_smith_Result = result.resultOf(j_smith);
+		
+		/** 08 ****************************************/
+		testId = "TRAVERSAL_08";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Area> europe = q.createMatch(Area.class);
+		DomainObjectMatch<Area> usa = q.createMatch(Area.class);
+		DomainObjectMatch<Subject> inEuropeAndUsa = q.createMatch(Subject.class);
+
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+		q.WHERE(usa.atttribute("name")).EQUALS("USA");
+		
+		DomainObjectMatch<Subject> inEurope = q.TRAVERSE_FROM(europe).BACK("partOf").DISTANCE(1, -1)
+				.BACK("area").BACK("pointsOfContact").TO(Subject.class);
+		DomainObjectMatch<Subject> inUsa = q.TRAVERSE_FROM(usa).BACK("partOf").DISTANCE(1, -1)
+				.BACK("area").BACK("pointsOfContact").TO(Subject.class);
+		
+		q.WHERE(inEuropeAndUsa).IN(inEurope);
+		q.WHERE(inEuropeAndUsa).IN(inUsa);
+		
+		result = q.execute();
+		
+		List<Area> europeResult = result.resultOf(europe);
+		List<Area> usaResult = result.resultOf(usa);
+		List<Subject> inEuropeResult = result.resultOf(inEurope);
+		List<Subject> inUsaResult = result.resultOf(inUsa);
+		List<Subject> inEuropeAndUsaResult = result.resultOf(inEuropeAndUsa);
 		
 		return;
 	}

@@ -1381,6 +1381,26 @@ public class QueryExecutor {
 					stpc.build(tmpNodeIdx, types, isList);
 				}
 				
+				private void buildNextClone(int tmpNodeIdx, List<Class<?>> types, boolean isList,
+						CloneInfo cloneInfo) {
+					cloneInfo.toClone = cloneInfo.toClone.next;
+					StepClause stpc = new StepClause();
+					this.next = stpc;
+					stpc.previous = this;
+
+					stpc.matchNode = this.matchNode;
+					stpc.endNodeLabel = this.endNodeLabel;
+					stpc.originalEndNodeName = this.originalEndNodeName;
+					stpc.traversalExpression = this.traversalExpression;
+					stpc.stepClauses = this.stepClauses;
+					stpc.stepIndex = cloneInfo.toClone.stepIndex;
+					stpc.step = cloneInfo.toClone.step;
+					stpc.fieldMapping = cloneInfo.toClone.fieldMapping;
+					stpc.fieldMappings = cloneInfo.toClone.fieldMappings;
+					stpc.fmIndex = cloneInfo.toClone.fmIndex;
+					stpc.buildClone(tmpNodeIdx, cloneInfo, isList);
+				}
+				
 				private void build(int tmpNodeIdx, List<Class<?>> types, boolean isList) {
 					FieldMapping fm = null;
 					List<FieldMapping> fms = null;
@@ -1421,9 +1441,9 @@ public class QueryExecutor {
 					
 					if (doBuild) {
 						if (this.step.getDirection() == 0) // forward
-							this.buildForwardStep(tmpNodeIdx, isList);
+							this.buildForwardStep(tmpNodeIdx, isList, null);
 						else
-							this.buildBackwardStep(tmpNodeIdx);
+							this.buildBackwardStep(tmpNodeIdx, null);
 					}
 					
 					// test for additional paths
@@ -1432,7 +1452,7 @@ public class QueryExecutor {
 					}
 				}
 				
-				private void buildForwardStep(int tmpNodeIdx, boolean listOrArray) {
+				private void buildForwardStep(int tmpNodeIdx, boolean listOrArray, CloneInfo cloneInfo) {
 					Relation matchRel = matchNode.relation().type(this.fieldMapping.getPropertyOrRelationName());
 					matchRel = matchRel.out();
 					
@@ -1479,11 +1499,14 @@ public class QueryExecutor {
 						this.matchNode = matchRel.node(this.endNode).label(this.endNodeLabel);
 					} else {
 						this.matchNode = matchRel.node();
-						this.buildNext(tmpNodeIdx, types, isList, nextStep, nextStepIndex);
+						if (cloneInfo != null)
+							this.buildNextClone(tmpNodeIdx, types, isList, cloneInfo);
+						else
+							this.buildNext(tmpNodeIdx, types, isList, nextStep, nextStepIndex);
 					}
 				}
 				
-				private void buildBackwardStep(int tmpNodeIdx) {
+				private void buildBackwardStep(int tmpNodeIdx, CloneInfo cloneInfo) {
 					FieldMapping fm;
 					if (this.fieldMappings != null) // there are multiple navigation paths
 						fm = this.fieldMappings.get(this.fmIndex);
@@ -1531,7 +1554,10 @@ public class QueryExecutor {
 							this.matchNode = null;
 					} else {
 						this.matchNode = matchRel.node();
-						this.buildNext(tmpNodeIdx, types, isList, nextStep, nextStepIndex);
+						if (cloneInfo != null)
+							this.buildNextClone(tmpNodeIdx, types, isList, cloneInfo);
+						else
+							this.buildNext(tmpNodeIdx, types, isList, nextStep, nextStepIndex);
 					}
 				}
 				
@@ -1550,38 +1576,42 @@ public class QueryExecutor {
 					}
 					StepClause newFirst = new StepClause();
 					newFirst.stepClauses = first.stepClauses;
-					newFirst.cloneFirst(first, cloneTo, tmpNodeIdx);
+					CloneInfo cloneInfo = new CloneInfo();
+					cloneInfo.toClone = first;
+					cloneInfo.cloneTo = cloneTo;
+					newFirst.cloneFirst(cloneInfo, tmpNodeIdx);
 				}
 				
-				private void cloneFirst(StepClause toClone, StepClause cloneTo, int tmpNodeIdx) {
+				private void cloneFirst(CloneInfo cloneInfo, int tmpNodeIdx) {
 					this.stepClauses.add(this);
-					this.startNode = toClone.startNode;
-					this.originalEndNodeName = toClone.originalEndNodeName;
-					this.endNodeLabel = toClone.endNodeLabel;
-					this.traversalExpression = toClone.traversalExpression;
+					this.startNode = cloneInfo.toClone.startNode;
+					this.originalEndNodeName = cloneInfo.toClone.originalEndNodeName;
+					this.endNodeLabel = cloneInfo.toClone.endNodeLabel;
+					this.traversalExpression = cloneInfo.toClone.traversalExpression;
 					this.matchNode = OPTIONAL_MATCH.node(this.startNode);
 					Class<?> typ = APIAccess.getTypeForNodeName(this.traversalExpression.getStart(),
 							ValueAccess.getName(this.startNode));
 					boolean isList = typ.equals(Collection.class) ||
 							typ.equals(Array.class); // TODO what about other surrogates
-					this.stepIndex = toClone.stepIndex;
-					this.step = toClone.step;
-					this.fieldMapping = toClone.fieldMapping;
-					this.fieldMappings = toClone.fieldMappings;
-					this.fmIndex = toClone.fmIndex;
-					this.buildClone(tmpNodeIdx, toClone == cloneTo, isList);
+					this.stepIndex = cloneInfo.toClone.stepIndex;
+					this.step = cloneInfo.toClone.step;
+					this.fieldMapping = cloneInfo.toClone.fieldMapping;
+					this.fieldMappings = cloneInfo.toClone.fieldMappings;
+					this.fmIndex = cloneInfo.toClone.fmIndex;
+					this.buildClone(tmpNodeIdx, cloneInfo, isList);
 				}
 				
-				private void buildClone(int tmpNodeIdx, boolean stopCloning, boolean isList) {
-					FieldMapping fm = null;
-					List<FieldMapping> fms = null;
-					if (stopCloning)
+				private void buildClone(int tmpNodeIdx, CloneInfo cloneInfo, boolean isList) {
+					CloneInfo cli = cloneInfo;
+					if (cli.stopCloning()) {
 						this.fmIndex++;
+						cli = null;
+					}
 					
 					if (this.step.getDirection() == 0) // forward
-						this.buildForwardStep(tmpNodeIdx, isList);
+						this.buildForwardStep(tmpNodeIdx, isList, cli);
 					else
-						this.buildBackwardStep(tmpNodeIdx);
+						this.buildBackwardStep(tmpNodeIdx, cli);
 					
 					// test for additional paths
 					if (this.fieldMappings != null && this.fmIndex < this.fieldMappings.size() - 1) {
@@ -1603,6 +1633,16 @@ public class QueryExecutor {
 						last = last.next;
 					}
 					return last.matchNode;
+				}
+			}
+			
+			/***********************************/
+			private class CloneInfo {
+				private StepClause toClone;
+				private StepClause cloneTo;
+				
+				private boolean stopCloning() {
+					return this.toClone == this.cloneTo;
 				}
 			}
 			
