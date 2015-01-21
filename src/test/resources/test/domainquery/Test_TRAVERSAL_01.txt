@@ -141,3 +141,15 @@ OPTIONAL MATCH (n_1_0:Area)
 WHERE ((NOT n_2_0 IS NULL AND n_1_0 IN[n_2_0]) OR (NOT n_3_0 IS NULL AND n_1_0 IN[n_3_0])) AND n_1_0.areaType = 'CITY'
 RETURN count(DISTINCT n_0_0) AS cnt_0_0, count(DISTINCT n_0_1) AS cnt_0_1, count(DISTINCT n_2_0) AS cnt_2_0, count(DISTINCT n_3_0) AS cnt_3_0, count(DISTINCT n_1_0) AS cnt_1_0
 ------------------------------------------------------------
+
+----TRAVERSAL_07:
+OPTIONAL MATCH (n_0_0:Company)
+WHERE n_0_0.name = 'Global Company' OR (n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John')
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.name = 'Global Company' OR (n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John')
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->(n_1_0_t0:Area)
+OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->()-[:area]->(n_1_0_t1:Area)
+OPTIONAL MATCH (n_1_0:Area)
+WHERE ((NOT n_1_0_t0 IS NULL AND n_1_0 IN[n_1_0_t0]) OR (NOT n_1_0_t1 IS NULL AND n_1_0 IN[n_1_0_t1])) AND (n_1_0.areaType = 'CITY')
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1, id(n_1_0) AS id_1_0
+------------------------------------------------------------

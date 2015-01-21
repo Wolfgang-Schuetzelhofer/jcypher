@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -152,6 +152,10 @@ public class Population {
 
 	public Address getMarketStreet_20() {
 		return marketStreet_20;
+	}
+
+	public Area getSanFrancisco() {
+		return sanFrancisco;
 	}
 
 	private void createPlaces() {

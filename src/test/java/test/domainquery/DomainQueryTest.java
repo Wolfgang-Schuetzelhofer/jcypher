@@ -125,26 +125,26 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
-		/** 07 ****************************************/
-//		testId = "TRAVERSAL_07";
-//		queriesStream.reset();
-//		
-//		q = da1.createQuery();
-//		DomainObjectMatch<Address> j_smith_Address = q.createMatch(Address.class);
-//
-//		q.WHERE(j_smith_Address.atttribute("street")).EQUALS("Market Street");
-//		q.WHERE(j_smith_Address.atttribute("number")).EQUALS(20);
-//		
-//		DomainObjectMatch<Object> j_smith =
-//				q.TRAVERSE_FROM(j_smith_Address).BACK("pointsOfContact").TO(Object.class);
-//		
-//		result = q.execute();
-//		
-//		List<Address> j_smith_AddressResult = result.resultOf(j_smith_Address);
-//		List<Object> j_smith_Result = result.resultOf(j_smith);
+		/** 01 ****************************************/
+		testId = "BACK_01";
+		queriesStream.reset();
 		
-		/** 08 ****************************************/
-		testId = "TRAVERSAL_08";
+		q = da1.createQuery();
+		DomainObjectMatch<Address> j_smith_Address = q.createMatch(Address.class);
+
+		q.WHERE(j_smith_Address.atttribute("street")).EQUALS("Market Street");
+		q.WHERE(j_smith_Address.atttribute("number")).EQUALS(20);
+		
+		DomainObjectMatch<Object> j_smith =
+				q.TRAVERSE_FROM(j_smith_Address).BACK("pointsOfContact").TO(Object.class);
+		
+		result = q.execute();
+		
+		List<Address> j_smith_AddressResult = result.resultOf(j_smith_Address);
+		List<Object> j_smith_Result = result.resultOf(j_smith);
+		
+		/** 02 ****************************************/
+		testId = "BACK_02";
 		queriesStream.reset();
 		
 		q = da1.createQuery();
@@ -376,6 +376,47 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		long areasCount = cResult.countOf(areas);
 		assertEquals(2, areasCount);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 07 ****************************************/
+		testId = "TRAVERSAL_07";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		// create a DomainObjectMatch for objects of type Subject
+		DomainObjectMatch<Subject> smith_globcomMatch = q.createMatch(Subject.class);
+		
+		// Constrain the set of Subjects to contain
+		// 'John Smith' and 'Global Company' only
+		q.WHERE(smith_globcomMatch.atttribute("name")).EQUALS("Global Company");
+		q.OR();
+		q.BR_OPEN();
+			q.WHERE(smith_globcomMatch.atttribute("lastName")).EQUALS("Smith");
+			q.WHERE(smith_globcomMatch.atttribute("firstName")).EQUALS("John");
+		q.BR_CLOSE();
+		
+		// Start with the set containing 'John Smith' and 'Global Company'.
+		// navigate forward via attribute 'pointsOfContact'
+		//          (defined in abstract super class 'Subject'),
+		// navigate forward via attribute 'area',
+		// end matching objects of type Area
+		// (these are the immediate areas referenced by addresses
+		// possibly: Cities, Urban Districts, Villages, ...).
+		DomainObjectMatch<Area> immediateAreasMatch =
+			q.TRAVERSE_FROM(smith_globcomMatch).FORTH("pointsOfContact")
+				.FORTH("area").TO(Area.class);
+		q.WHERE(immediateAreasMatch.atttribute("areaType")).EQUALS(AreaType.CITY);
+		
+		// execute the query
+		result = q.execute();
+		
+		List<Area> immediateAreas = result.resultOf(immediateAreasMatch);
+		List<Area> sf = new ArrayList<Area>();
+		sf.add(population.getSanFrancisco());
+		equals = CompareUtil.equalsList(sf, immediateAreas);
+		assertTrue(equals);
+		
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
 		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
