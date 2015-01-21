@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,7 +73,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		
 		// init db
 		Population population = new Population();
@@ -87,18 +87,18 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-//		errors = da.store(storedDomainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		errors = da.store(storedDomainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 	}
 	
 	@AfterClass
@@ -121,7 +121,14 @@ public class DomainQueryTest extends AbstractTestSuite {
 		IDomainAccess da1;
 		DomainQuery q;
 		DomainQueryResult result = null;
+		boolean equals;
 		String testId;
+		String qCypher;
+		
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_02.txt");
+		
+		Population population = new Population();
+		population.createPopulation();
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
@@ -142,6 +149,13 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		List<Address> j_smith_AddressResult = result.resultOf(j_smith_Address);
 		List<Object> j_smith_Result = result.resultOf(j_smith);
+		
+		equals = CompareUtil.equalsObjects(population.getMarketStreet_20(), j_smith_AddressResult.get(0));
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(population.getSmithFamily_addressee(), j_smith_Result);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
 		/** 02 ****************************************/
 		testId = "BACK_02";
@@ -165,12 +179,55 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		result = q.execute();
 		
-		List<Area> europeResult = result.resultOf(europe);
-		List<Area> usaResult = result.resultOf(usa);
+//		List<Area> europeResult = result.resultOf(europe);
+//		List<Area> usaResult = result.resultOf(usa);
 		List<Subject> inEuropeResult = result.resultOf(inEurope);
 		List<Subject> inUsaResult = result.resultOf(inUsa);
 		List<Subject> inEuropeAndUsaResult = result.resultOf(inEuropeAndUsa);
 		
+		equals = CompareUtil.equalsUnorderedList(population.getSubjectsInEurope(), inEuropeResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(population.getSubjectsInUsa(), inUsaResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsObjects(population.getJohn_smith(), inEuropeAndUsaResult.get(0));
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 03 ****************************************/
+		testId = "BACK_03";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Person> j_smithMatch = q.createMatch(Person.class);
+
+		// Constrain the set of Persons to contain
+		// John Smith only
+		q.WHERE(j_smithMatch.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smithMatch.atttribute("firstName")).EQUALS("John");
+		
+		// Start with 'John Smith'
+		// (j_smithMatch is constraint to match 'John Smith' only),
+		// navigate forward via attribute 'pointsOfContact',
+		// this will lead to 'John Smith's' Address(es),
+		// then navigate backward via attribute 'pointsOfContact',
+		// end matching objects of type Person.
+		// This will lead to all other persons living at 'John Smith's' Address(es).
+		DomainObjectMatch<Person> j_smith_residentsMatch =
+			q.TRAVERSE_FROM(j_smithMatch).FORTH("pointsOfContact")
+				.BACK("pointsOfContact").TO(Person.class);
+		
+		// execute the query
+		result = q.execute();
+		
+		// retrieve the list of matching domain objects.
+		// It will contain all other persons living at 'John Smith's' Address(es).
+		List<Person> j_smith_residents = result.resultOf(j_smith_residentsMatch);
+		
+		equals = CompareUtil.equalsUnorderedList(population.getSmithFamily_no_john(), j_smith_residents);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		return;
 	}
 	

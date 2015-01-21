@@ -47,6 +47,7 @@ public class Population {
 	private Area vienna_01;
 	
 	private Address marketStreet_20;
+	private Person john_smith;
 	
 	private List<Object> berghammers;
 	private List<Object> angelina_smith;
@@ -61,6 +62,10 @@ public class Population {
 	private List<Object> john_smith_addresses;
 	private List<Object> john_smith_globcom;
 	private List<Object> john_smith_globcom_contacts;
+	private List<Object> smithFamily_addressee;
+	private List<Object> smithFamily_no_john;
+	private List<Object> subjectsInEurope;
+	private List<Object> subjectsInUsa;
 	private List<Object> areas_sf_vienna_01;
 	private List<Object> areas_sf_vienna;
 	private List<Object> areas_calif_vienna_up;
@@ -92,6 +97,10 @@ public class Population {
 
 	public List<Object> getAngelina_smith() {
 		return angelina_smith;
+	}
+
+	public Person getJohn_smith() {
+		return john_smith;
 	}
 
 	public List<Object> getJohn_jery_smith() {
@@ -158,6 +167,22 @@ public class Population {
 		return sanFrancisco;
 	}
 
+	public List<Object> getSmithFamily_addressee() {
+		return smithFamily_addressee;
+	}
+
+	public List<Object> getSubjectsInEurope() {
+		return subjectsInEurope;
+	}
+
+	public List<Object> getSubjectsInUsa() {
+		return subjectsInUsa;
+	}
+
+	public List<Object> getSmithFamily_no_john() {
+		return smithFamily_no_john;
+	}
+
 	private void createPlaces() {
 		earth = new Area(null, "Earth", AreaType.PLANET);
 		northAmerica = new Area(null, "North America", AreaType.CONTINENT);
@@ -213,7 +238,7 @@ public class Population {
 		smith_address_2.setArea(vienna_01);
 		EContact jsmith_eContact = new EContact(EContactType.EMAIL, "j.smith@email.smith");
 		
-		Person john_smith = new Person("John", "Smith", Gender.MALE);
+		john_smith = new Person("John", "Smith", Gender.MALE);
 		john_smith.setMatchString("smith");
 		john_smith.getPointsOfContact().add(smith_address);
 		john_smith.getPointsOfContact().add(smith_address_2);
@@ -253,6 +278,25 @@ public class Population {
 		this.john_smith_globcom_contacts.addAll(this.john_smith_addresses);
 		this.john_smith_globcom_contacts.add(jsmith_eContact);
 		
+		this.smithFamily_addressee = new ArrayList<Object>();
+		this.smithFamily_addressee.add(john_smith);
+		this.smithFamily_addressee.add(caroline_smith);
+		this.smithFamily_addressee.add(angie_smith);
+		this.smithFamily_addressee.add(jery_smith);
+		
+		this.smithFamily_no_john = new ArrayList<Object>();
+		this.smithFamily_no_john.add(caroline_smith);
+		this.smithFamily_no_john.add(angie_smith);
+		this.smithFamily_no_john.add(jery_smith);
+		
+		this.subjectsInEurope = new ArrayList<Object>();
+		this.subjectsInEurope.add(john_smith);
+		this.subjectsInUsa = new ArrayList<Object>();
+		this.subjectsInUsa.add(john_smith);
+		this.subjectsInUsa.add(caroline_smith);
+		this.subjectsInUsa.add(angie_smith);
+		this.subjectsInUsa.add(jery_smith);
+		
 		domainObjects.add(john_smith);
 		domainObjects.add(caroline_smith);
 		domainObjects.add(angie_smith);
@@ -286,6 +330,10 @@ public class Population {
 		this.berghammers_globcom.add(christa_berhammer);
 		this.christa_berghammer_globcom = new ArrayList<Object>();
 		this.christa_berghammer_globcom.add(christa_berhammer);
+		
+		this.subjectsInEurope.add(hans_berghammer);
+		this.subjectsInEurope.add(gerda_berhammer);
+		this.subjectsInEurope.add(christa_berhammer);
 		
 		domainObjects.add(hans_berghammer);
 		domainObjects.add(gerda_berhammer);
@@ -324,6 +372,12 @@ public class Population {
 		this.maier_clark.add(herbert_maier);
 		this.maier_clark.add(angie_clark);
 		
+		this.subjectsInEurope.add(herbert_maier);
+		this.subjectsInEurope.add(sarah_maier);
+		
+		this.subjectsInUsa.add(jim_watson);
+		this.subjectsInUsa.add(angie_clark);
+		
 		domainObjects.add(jim_watson);
 		domainObjects.add(angie_clark);
 		domainObjects.add(herbert_maier);
@@ -358,6 +412,9 @@ public class Population {
 		this.john_smith_globcom_contacts.add(0, globCom_address);
 		this.john_smith_globcom_contacts.add(globCom_phone);
 		
+		this.subjectsInEurope.add(smallCom);
+		this.subjectsInUsa.add(globCom);
+		
 		domainObjects.add(globCom);
 		domainObjects.add(smallCom);
 	}
@@ -366,6 +423,8 @@ public class Population {
 		Addressee add = new Addressee();
 		add.setName("addressee_01");
 		add.setPointsOfContact(this.marketStreet_20);
+		
+		this.smithFamily_addressee.add(0, add);
 		
 		domainObjects.add(add);
 	}
