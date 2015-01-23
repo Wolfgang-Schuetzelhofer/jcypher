@@ -1,6 +1,11 @@
 Release Notes
 =======
 
+## 2.2.0
+**New**
+- Domain Queries Part 2 (Traversal Expressions) added.
+- Mapping of inner classes - Domain Mapping now also supports inner classes
+
 ## 2.1.0
 **New**
 - Domain Queries Part 1 (Predicate Expressions) added.

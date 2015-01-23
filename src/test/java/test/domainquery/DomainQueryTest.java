@@ -593,7 +593,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		assertTrue(equals);
 		equals = CompareUtil.equalsUnorderedList(population.getMaier_clark(), matchingExcludeResult);
 		assertTrue(equals);
-		equals = CompareUtil.equalsUnorderedList(domainObjects, allSubjectsResult);
+		equals = CompareUtil.equalsUnorderedList(domainObjects.subList(0, 13), allSubjectsResult);
 		assertTrue(equals);
 		equals = CompareUtil.equalsUnorderedList(population.getWatson_company(), matchingIncludeResult);
 		assertTrue(equals);
@@ -692,7 +692,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		result = q.execute();
 		List<Subject> subjectsResult = result.resultOf(subjects);
 		List<Subject> sortedSubjects = new ArrayList<Subject>();
-		for (Object obj : domainObjects) {
+		for (Object obj : domainObjects.subList(0, 13)) {
 			sortedSubjects.add((Subject) obj);
 		}
 		Collections.sort(sortedSubjects, new SubjectComparator());
@@ -722,7 +722,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		List<Subject> set_02Result = result.resultOf(set_02);
 		List<Subject> intersectionPageResult = result.resultOf(intersectionPage);
 		
-		equals = CompareUtil.equalsUnorderedList(domainObjects, set_00Result);
+		equals = CompareUtil.equalsUnorderedList(domainObjects.subList(0, 13), set_00Result);
 		assertTrue(equals);
 		List<Subject> set_01Comp = set_00Result.subList(5, 10);
 		equals = CompareUtil.equalsList(set_01Comp, set_01Result);
