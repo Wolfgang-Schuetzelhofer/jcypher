@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,9 +30,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>test for equality</i></div>
 	 * <br/>
 	 */
-	public <E> void EQUALS(E value) {
+	public <E> BooleanResult EQUALS(E value) {
 		getPredicateExpression().setOperator(Operator.EQUALS);
 		getPredicateExpression().setValue_2(value);
+		return APIAccess.createBooleanResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -50,9 +51,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>less than</i></div>
 	 * <br/>
 	 */
-	public <E> void LT(E value) {
+	public <E> BooleanResult LT(E value) {
 		getPredicateExpression().setOperator(Operator.LT);
 		getPredicateExpression().setValue_2(value);
+		return APIAccess.createBooleanResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -60,9 +62,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>less than or equal</i></div>
 	 * <br/>
 	 */
-	public <E> void LTE(E value) {
+	public <E> BooleanResult LTE(E value) {
 		getPredicateExpression().setOperator(Operator.LTE);
 		getPredicateExpression().setValue_2(value);
+		return APIAccess.createBooleanResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -70,9 +73,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>greater than</i></div>
 	 * <br/>
 	 */
-	public <E> void GT(E value) {
+	public <E> BooleanResult GT(E value) {
 		getPredicateExpression().setOperator(Operator.GT);
 		getPredicateExpression().setValue_2(value);
+		return APIAccess.createBooleanResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -80,9 +84,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>greater than or equal</i></div>
 	 * <br/>
 	 */
-	public <E> void GTE(E value) {
+	public <E> BooleanResult GTE(E value) {
 		getPredicateExpression().setOperator(Operator.GTE);
 		getPredicateExpression().setValue_2(value);
+		return APIAccess.createBooleanResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -90,9 +95,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>test against a regular expression</i></div>
 	 * <br/>
 	 */
-	public void LIKE(String regex) {
+	public BooleanResult LIKE(String regex) {
 		getPredicateExpression().setOperator(Operator.LIKE);
 		getPredicateExpression().setValue_2(regex);
+		return APIAccess.createBooleanResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -100,8 +106,9 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>test against NULL (test if a property exists)</i></div>
 	 * <br/>
 	 */
-	public void IS_NULL() {
+	public BooleanResult IS_NULL() {
 		getPredicateExpression().setOperator(Operator.IS_NULL);
+		return APIAccess.createBooleanResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -110,9 +117,10 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	@SuppressWarnings("unchecked")
-	public <E> void IN_list(E... value) {
+	public <E> BooleanResult IN_list(E... value) {
 		getPredicateExpression().setOperator(Operator.IN);
 		getPredicateExpression().setValue_2(value);
+		return APIAccess.createBooleanResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -120,9 +128,38 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>test for containment in a list of matched domain objects</i></div>
 	 * <br/>
 	 */
-	public <E> void IN(DomainObjectMatch<E> domainObjects) {
+	public <E> BooleanResult IN(DomainObjectMatch<E> domainObjects) {
 		getPredicateExpression().setOperator(Operator.IN);
 		getPredicateExpression().setValue_2(domainObjects);
+		return APIAccess.createBooleanResult(this.getPredicateExpression());
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>test if this list contains all elements of the target list</i></div>
+	 * <br/>
+	 */
+	@SuppressWarnings("unchecked")
+	public <E> BooleanResult CONTAINS_elements(E... value) {
+		getPredicateExpression().setOperator(Operator.CONTAINS);
+		getPredicateExpression().setValue_2(value);
+		return APIAccess.createBooleanResult(this.getPredicateExpression());
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>test if this list of domain objects contains all elements
+	 * of the target list of domain objects</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i><b>Note:</b> this expression is only valid
+	 * within a collection expression</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. q.SELECT_FROM(addresses).ELEMENTS(
+	 * q.WHERE(addressAreas).CONTAINS(europe));</i></div>
+	 * <br/>
+	 */
+	public <E> BooleanResult CONTAINS(DomainObjectMatch<E> domainObjects) {
+		getPredicateExpression().setOperator(Operator.CONTAINS);
+		getPredicateExpression().setValue_2(domainObjects);
+		return APIAccess.createBooleanResult(this.getPredicateExpression());
 	}
 	
 	private PredicateExpression getPredicateExpression() {

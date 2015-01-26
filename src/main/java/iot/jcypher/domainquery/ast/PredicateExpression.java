@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,7 +17,7 @@
 package iot.jcypher.domainquery.ast;
 
 import iot.jcypher.domainquery.api.IPredicateOperand1;
-import iot.jcypher.query.values.ValueElement;
+import iot.jcypher.domainquery.internal.IASTObjectsContainer;
 
 public class PredicateExpression implements IASTObject {
 
@@ -25,11 +25,14 @@ public class PredicateExpression implements IASTObject {
 	private Operator operator;
 	private Object value_2;
 	private int negationCount;
+	private boolean inCollectionExpression;
 
-	public PredicateExpression(IPredicateOperand1 value_1) {
+	public PredicateExpression(IPredicateOperand1 value_1,
+			IASTObjectsContainer astObjectsContainer) {
 		super();
 		this.value_1 = value_1;
 		this.negationCount = 0;
+		this.inCollectionExpression = astObjectsContainer instanceof SelectExpression<?>;
 	}
 	
 	public Operator getOperator() {
@@ -60,6 +63,10 @@ public class PredicateExpression implements IASTObject {
 		return negationCount;
 	}
 
+	public boolean isInCollectionExpression() {
+		return inCollectionExpression;
+	}
+
 	@Override
 	public String toString() {
 		return "[" + operator + "]";
@@ -67,6 +74,6 @@ public class PredicateExpression implements IASTObject {
 
 	/*****************************************************************/
 	public enum Operator {
-		EQUALS, NOT, LT, GT, LTE, GTE, LIKE, IN, IS_NULL
+		EQUALS, NOT, LT, GT, LTE, GTE, LIKE, IN, CONTAINS, IS_NULL
 	}
 }

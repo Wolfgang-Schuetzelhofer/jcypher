@@ -74,7 +74,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-public class QueryExecutor {
+public class QueryExecutor implements IASTObjectsContainer {
 
 	private static final String idPrefix = "id_";
 	private static final String countPrefix = "cnt_";
@@ -98,6 +98,7 @@ public class QueryExecutor {
 		this.parameters = new HashMap<String, Parameter>();
 	}
 
+	@Override
 	public List<IASTObject> getAstObjects() {
 		return astObjects;
 	}
@@ -469,7 +470,7 @@ public class QueryExecutor {
 		 * @param paramPosition 1 or 2
 		 */
 		private void testValidInOperation(Object value, Operator op,
-				int paramPosition) {
+				int paramPosition, boolean inCollectionExpression) {
 			if (paramPosition == 1) {
 				if (value instanceof DomainObjectMatch<?>) {
 					if (!(op == Operator.IN || op == Operator.IS_NULL))
@@ -923,8 +924,9 @@ public class QueryExecutor {
 				Operator op = pred.getOperator();
 				ValueElement val_1 = null;
 				IPredicateOperand1 v_1 = pred.getValue_1();
+				boolean inCollectionExpression = pred.isInCollectionExpression();
 				
-				testValidInOperation(v_1, op, 1); // throws an exception if not valid
+				testValidInOperation(v_1, op, 1, inCollectionExpression); // throws an exception if not valid
 				if (v_1 instanceof ValueElement)
 					val_1 = testAndCloneIfNeeded((ValueElement)v_1, clausesPerType);
 				else if (v_1 instanceof DomainObjectMatch<?>)
@@ -934,7 +936,7 @@ public class QueryExecutor {
 					Object val_2 = pred.getValue_2();
 					if (val_2 instanceof Parameter)
 						val_2 = ((Parameter)val_2).getValue();
-					testValidInOperation(val_2, op, 2); // throws an exception if not valid
+					testValidInOperation(val_2, op, 2, inCollectionExpression); // throws an exception if not valid
 					
 					boolean val2IsDom = false;
 					List<Object> val_2s = null;

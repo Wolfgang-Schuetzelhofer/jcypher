@@ -22,22 +22,28 @@ import iot.jcypher.domainquery.api.BooleanOperation;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.api.Order;
+import iot.jcypher.domainquery.api.Select;
 import iot.jcypher.domainquery.api.Traverse;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.ast.PredicateExpression;
+import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression;
+import iot.jcypher.domainquery.internal.IASTObjectsContainer;
 import iot.jcypher.domainquery.internal.QueryExecutor;
 
 public class DomainQuery {
 
 	private QueryExecutor queryExecutor;
+	private IASTObjectsContainer astObjectsContainer;
+	private IntAccess intAccess;
 	
 	public DomainQuery(IDomainAccess domainAccess) {
 		super();
 		this.queryExecutor = new QueryExecutor(domainAccess);
+		this.astObjectsContainer = this.queryExecutor;
 	}
 	
 	/**
@@ -71,8 +77,8 @@ public class DomainQuery {
 	 * @return
 	 */
 	public BooleanOperation WHERE(IPredicateOperand1 value) {
-		PredicateExpression pe = new PredicateExpression(value);
-		this.queryExecutor.getAstObjects().add(pe);
+		PredicateExpression pe = new PredicateExpression(value, this.astObjectsContainer);
+		this.astObjectsContainer.getAstObjects().add(pe);
 		BooleanOperation ret = APIAccess.createBooleanOperation(pe);
 		return ret;
 	}
@@ -81,21 +87,21 @@ public class DomainQuery {
 	 * Or two predicate expressions
 	 */
 	public void OR() {
-		this.queryExecutor.getAstObjects().add(new ConcatenateExpression(Concatenator.OR));
+		this.astObjectsContainer.getAstObjects().add(new ConcatenateExpression(Concatenator.OR));
 	}
 	
 	/**
 	 * Open a block, encapsulating predicate expressions
 	 */
 	public void BR_OPEN() {
-		this.queryExecutor.getAstObjects().add(new ConcatenateExpression(Concatenator.BR_OPEN));
+		this.astObjectsContainer.getAstObjects().add(new ConcatenateExpression(Concatenator.BR_OPEN));
 	}
 	
 	/**
 	 * Close a block, encapsulating predicate expressions
 	 */
 	public void BR_CLOSE() {
-		this.queryExecutor.getAstObjects().add(new ConcatenateExpression(Concatenator.BR_CLOSE));
+		this.astObjectsContainer.getAstObjects().add(new ConcatenateExpression(Concatenator.BR_CLOSE));
 	}
 	
 	/**
@@ -124,6 +130,19 @@ public class DomainQuery {
 	}
 	
 	/**
+	 * Select domain objects out of a set of other domain objects.
+	 * @param start with a DomainObjectMatch representing the initial set.
+	 * @return
+	 */
+	public <T> Select<T> SELECT_FROM(DomainObjectMatch<T> start) {
+		SelectExpression<T> se = new SelectExpression<T>(start, this.getIntAccess());
+		this.queryExecutor.getAstObjects().add(se);
+		this.astObjectsContainer = se;
+		Select<T> ret = APIAccess.createSelect(se);
+		return ret;
+	}
+	
+	/**
 	 * Execute the domain query
 	 * @return a DomainQueryResult
 	 */
@@ -146,5 +165,22 @@ public class DomainQuery {
 	
 	QueryExecutor getQueryExecutor() {
 		return this.queryExecutor;
+	}
+	
+	private IntAccess getIntAccess() {
+		if (this.intAccess == null)
+			this.intAccess = new IntAccess();
+		return this.intAccess;
+	}
+	
+	/****************************************************/
+	public class IntAccess {
+		public QueryExecutor getQueryExecutor() {
+			return queryExecutor;
+		}
+		
+		public void resetAstObjectsContainer() {
+			astObjectsContainer = queryExecutor;
+		}
 	}
 }

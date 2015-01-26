@@ -20,6 +20,7 @@ import java.util.List;
 
 import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.PredicateExpression;
+import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
 import iot.jcypher.query.values.JcNode;
@@ -34,6 +35,10 @@ public class APIAccess {
 		return new BooleanOperation(pe);
 	}
 	
+	public static BooleanResult createBooleanResult(PredicateExpression pe) {
+		return new BooleanResult(pe);
+	}
+	
 	public static <T> DomainObjectMatch<T> createDomainObjectMatch(Class<T> domainObjectType,
 			int num, MappingInfo mappingInfo) {
 		return new DomainObjectMatch<T>(domainObjectType, num, mappingInfo);
@@ -41,6 +46,10 @@ public class APIAccess {
 	
 	public static Traverse createTraverse(TraversalExpression te) {
 		return new Traverse(te);
+	}
+	
+	public static <T> Select<T> createSelect(SelectExpression<T> se) {
+		return new Select<T>(se);
 	}
 	
 	public static List<JcNode> getNodes(DomainObjectMatch<?> dom) {

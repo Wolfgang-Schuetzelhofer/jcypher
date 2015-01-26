@@ -73,7 +73,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 		
 		// init db
 		Population population = new Population();
@@ -87,18 +87,18 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
-		List<JcError> errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		
-		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		errors = da.store(storedDomainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
+//		List<JcError> errors = dbAccess.clearDatabase();
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		
+//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+//		errors = da.store(storedDomainObjects);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
 	}
 	
 	@AfterClass
@@ -114,6 +114,55 @@ public class DomainQueryTest extends AbstractTestSuite {
 		queriesStream = null;
 		QueriesPrintObserver.removeAllEnabledQueries();
 		QueriesPrintObserver.removeAllOutputStreams();
+	}
+	
+	@Test
+	public void testDomainQuery_Collections_01() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_02.txt");
+		
+		Population population = new Population();
+		population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "SELECT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Person> j_smith = q.createMatch(Person.class);
+		DomainObjectMatch<Area> europe = q.createMatch(Area.class);
+		
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Address> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Address.class);
+		DomainObjectMatch<Area> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+		
+		DomainObjectMatch<Address> j_smith_EuropeanAddresses =
+				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
+						q.WHERE(j_smith_Areas).CONTAINS(europe)
+				);
+		result = q.execute();
+		
+		List<Area> europeResult = result.resultOf(europe);
+		List<Person> j_smithResult = result.resultOf(j_smith);
+		List<Address> j_smith_AddressesResult = result.resultOf(j_smith_Addresses);
+		List<Area> j_smith_AreasResult = result.resultOf(j_smith_Areas);
+		List<Address> j_smith_EuropeanAddressesResult = result.resultOf(j_smith_EuropeanAddresses);
+		
+		return;
 	}
 	
 	@Test
