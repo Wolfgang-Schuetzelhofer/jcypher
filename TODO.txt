@@ -1,3 +1,7 @@
+check TODOs in QueryExecutor
+
+QueryExecutor-StepClause -> refactor code for stepForward and stepBackward (avoid redundancies)
+
 how to handle multiple hops with surrogate classes
 
 traversal of maps

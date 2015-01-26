@@ -16,19 +16,19 @@
 
 package iot.jcypher.domainquery.ast;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQuery.IntAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
 import iot.jcypher.domainquery.internal.QueryExecutor;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 	
 	private IntAccess domainQueryIntAccess;
 	private DomainObjectMatch<T> start;
+	private DomainObjectMatch<T> end;
 	private List<IASTObject> astObjects;
 
 	public SelectExpression(DomainObjectMatch<T> start, IntAccess domainQueryIntAccess) {
@@ -41,6 +41,14 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 	@Override
 	public List<IASTObject> getAstObjects() {
 		return astObjects;
+	}
+	
+	public void setEnd(DomainObjectMatch<T> end) {
+		this.end = end;
+	}
+	
+	public DomainObjectMatch<T> getEnd() {
+		return end;
 	}
 
 	public DomainObjectMatch<T> getStart() {

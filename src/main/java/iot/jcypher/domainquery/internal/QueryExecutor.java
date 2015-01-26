@@ -35,6 +35,7 @@ import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;
+import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.OrderExpression.OrderBy;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.ast.PredicateExpression;
@@ -469,14 +470,27 @@ public class QueryExecutor implements IASTObjectsContainer {
 		 * @param op
 		 * @param paramPosition 1 or 2
 		 */
-		private void testValidInOperation(Object value, Operator op,
-				int paramPosition, boolean inCollectionExpression) {
+		private void testValidInOperation(Operator op,
+				int paramPosition, PredicateExpression pred) {
+			if (op == Operator.CONTAINS) {
+				if (!(pred.getValue_1() instanceof ValueElement) &&
+						!(pred.isInCollectionExpression() &&
+						pred.getValue_1() instanceof DomainObjectMatch<?> &&
+						pred.getValue_2() instanceof DomainObjectMatch<?>)) {
+					throw new RuntimeException("'CONTAINS' operation on two DomainObjectMatch(es) is only valid within" +
+						" a collection expression");
+				}
+			}
+			
+			Object value;
 			if (paramPosition == 1) {
+				value = pred.getValue_1();
 				if (value instanceof DomainObjectMatch<?>) {
 					if (!(op == Operator.IN || op == Operator.IS_NULL))
 						throw new RuntimeException("invalid parameter 1 in WHERE clause [" + op.name() + "]");
 				}
 			} else if (paramPosition == 2) {
+				value = pred.getValue_2();
 				if (value instanceof DomainObjectMatch<?>) {
 					if (op != Operator.IN)
 						throw new RuntimeException("invalid parameter 2 in WHERE clause [" + op.name() + "]");
@@ -765,6 +779,16 @@ public class QueryExecutor implements IASTObjectsContainer {
 					bName = APIAccess.getBaseNodeName(te.getStart());
 					context.addDependency(bName);
 				}
+			} else if (astObj instanceof SelectExpression<?>) {
+				SelectExpression<?> se = (SelectExpression<?>)astObj;
+				String bName = APIAccess.getBaseNodeName(se.getEnd());
+				if (baseNodeName.equals(bName)) {
+					context.candidates.add(astObj);
+					context.state = State.HAS_XPRESSION;
+					bName = APIAccess.getBaseNodeName(se.getStart());
+					context.addDependency(bName);
+					// TODO add dependencies of expressions within collection expression
+				}
 			}
 		}
 
@@ -888,6 +912,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 							} else if (astObj instanceof TraversalExpression) {
 								clausePerType.traversalClauses = createTraversalClauses(clausePerType,
 										(TraversalExpression) astObj, validNodes, travRes);
+							} else if (astObj instanceof SelectExpression<?>) {
+								String tst = null;
 							}
 						}
 					}
@@ -924,9 +950,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 				Operator op = pred.getOperator();
 				ValueElement val_1 = null;
 				IPredicateOperand1 v_1 = pred.getValue_1();
-				boolean inCollectionExpression = pred.isInCollectionExpression();
 				
-				testValidInOperation(v_1, op, 1, inCollectionExpression); // throws an exception if not valid
+				testValidInOperation(op, 1, pred); // throws an exception if not valid
 				if (v_1 instanceof ValueElement)
 					val_1 = testAndCloneIfNeeded((ValueElement)v_1, clausesPerType);
 				else if (v_1 instanceof DomainObjectMatch<?>)
@@ -936,7 +961,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 					Object val_2 = pred.getValue_2();
 					if (val_2 instanceof Parameter)
 						val_2 = ((Parameter)val_2).getValue();
-					testValidInOperation(val_2, op, 2, inCollectionExpression); // throws an exception if not valid
+					testValidInOperation(op, 2, pred); // throws an exception if not valid
 					
 					boolean val2IsDom = false;
 					List<Object> val_2s = null;

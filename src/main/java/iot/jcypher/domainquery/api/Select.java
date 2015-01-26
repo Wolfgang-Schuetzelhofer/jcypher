@@ -38,6 +38,7 @@ public class Select<T> extends APIObject {
 				se.getQueryExecutor().getMappingInfo());
 		se.getQueryExecutor().getDomainObjectMatches().add(ret);
 		se.resetAstObjectsContainer();
+		se.setEnd(ret);
 		return ret;
 	}
 	

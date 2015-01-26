@@ -150,6 +150,8 @@ public class DomainQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<Area> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
 				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
 		
+//		q.WHERE(j_smith_Areas).CONTAINS(europe); // must throw exception
+		
 		DomainObjectMatch<Address> j_smith_EuropeanAddresses =
 				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
 						q.WHERE(j_smith_Areas).CONTAINS(europe)
