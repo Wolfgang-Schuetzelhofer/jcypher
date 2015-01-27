@@ -16,12 +16,12 @@
 
 package iot.jcypher.domainquery.api;
 
-import iot.jcypher.domainquery.ast.PredicateExpression;
+import iot.jcypher.domainquery.ast.IASTObject;
 
-public class BooleanResult extends APIObject {
+public class TerminalResult extends APIObject {
 	
-	BooleanResult(PredicateExpression pe) {
-		this.astObject = pe;
+	TerminalResult(IASTObject ao) {
+		this.astObject = ao;
 	}
 
 }

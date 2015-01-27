@@ -18,6 +18,7 @@ package iot.jcypher.domainquery.api;
 
 import java.util.List;
 
+import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.ast.SelectExpression;
@@ -35,8 +36,8 @@ public class APIAccess {
 		return new BooleanOperation(pe);
 	}
 	
-	public static BooleanResult createBooleanResult(PredicateExpression pe) {
-		return new BooleanResult(pe);
+	public static TerminalResult createTerminalResult(IASTObject ao) {
+		return new TerminalResult(ao);
 	}
 	
 	public static <T> DomainObjectMatch<T> createDomainObjectMatch(Class<T> domainObjectType,

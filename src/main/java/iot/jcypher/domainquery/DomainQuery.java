@@ -23,6 +23,7 @@ import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.api.Order;
 import iot.jcypher.domainquery.api.Select;
+import iot.jcypher.domainquery.api.TerminalResult;
 import iot.jcypher.domainquery.api.Traverse;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
@@ -86,22 +87,28 @@ public class DomainQuery {
 	/**
 	 * Or two predicate expressions
 	 */
-	public void OR() {
-		this.astObjectsContainer.getAstObjects().add(new ConcatenateExpression(Concatenator.OR));
+	public TerminalResult OR() {
+		ConcatenateExpression ce = new ConcatenateExpression(Concatenator.OR);
+		this.astObjectsContainer.getAstObjects().add(ce);
+		return APIAccess.createTerminalResult(ce);
 	}
 	
 	/**
 	 * Open a block, encapsulating predicate expressions
 	 */
-	public void BR_OPEN() {
-		this.astObjectsContainer.getAstObjects().add(new ConcatenateExpression(Concatenator.BR_OPEN));
+	public TerminalResult BR_OPEN() {
+		ConcatenateExpression ce = new ConcatenateExpression(Concatenator.BR_OPEN);
+		this.astObjectsContainer.getAstObjects().add(ce);
+		return APIAccess.createTerminalResult(ce);
 	}
 	
 	/**
 	 * Close a block, encapsulating predicate expressions
 	 */
-	public void BR_CLOSE() {
-		this.astObjectsContainer.getAstObjects().add(new ConcatenateExpression(Concatenator.BR_CLOSE));
+	public TerminalResult BR_CLOSE() {
+		ConcatenateExpression ce = new ConcatenateExpression(Concatenator.BR_CLOSE);
+		this.astObjectsContainer.getAstObjects().add(ce);
+		return APIAccess.createTerminalResult(ce);
 	}
 	
 	/**

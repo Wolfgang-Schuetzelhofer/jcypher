@@ -23,9 +23,7 @@ import iot.jcypher.domain.internal.SkipLimitCalc;
 import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
 import iot.jcypher.domain.mapping.CompoundObjectType;
 import iot.jcypher.domain.mapping.FieldMapping;
-import iot.jcypher.domain.mapping.ListFieldMapping;
 import iot.jcypher.domain.mapping.ObjectMapping;
-import iot.jcypher.domain.mapping.ValueAndTypeMapping;
 import iot.jcypher.domain.mapping.surrogate.Array;
 import iot.jcypher.domain.mapping.surrogate.Collection;
 import iot.jcypher.domainquery.api.APIAccess;
@@ -35,11 +33,11 @@ import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;
-import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.OrderExpression.OrderBy;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.ast.PredicateExpression.Operator;
+import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression.Step;
 import iot.jcypher.query.JcQuery;
@@ -480,6 +478,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 					throw new RuntimeException("'CONTAINS' operation on two DomainObjectMatch(es) is only valid within" +
 						" a collection expression");
 				}
+				return; // valid
 			}
 			
 			Object value;
@@ -611,7 +610,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 
 		private StateContext findXpressionsFor(DomainObjectMatch<?> dom) {
 			String baseNodeName = APIAccess.getBaseNodeName(dom);
-			StateContext context = new StateContext();
+			StateContext context = new StateContext(baseNodeName);
 			for (int i = 0; i < astObjects.size(); i++) {
 				IASTObject astObj = astObjects.get(i);
 				testXpressionFor(baseNodeName, astObj, context);
@@ -787,7 +786,14 @@ public class QueryExecutor implements IASTObjectsContainer {
 					context.state = State.HAS_XPRESSION;
 					bName = APIAccess.getBaseNodeName(se.getStart());
 					context.addDependency(bName);
-					// TODO add dependencies of expressions within collection expression
+					// add dependencies of predicate expressions within collection expression
+					for(IASTObject ao : se.getAstObjects()) {
+						if (ao instanceof PredicateExpression) {
+							PredicateExpression pred = (PredicateExpression)ao;
+							context.addDependency(getNodeName(pred.getValue_1()));
+							context.addDependency(getNodeName(pred.getValue_2()));
+						}
+					}
 				}
 			}
 		}
@@ -857,64 +863,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				for (IASTObject astObj : xpressionsForDom) {
 					for (ClausesPerType clausePerType : clausesPerTypeList) {
 						if (clausePerType.valid) {
-							if (astObj instanceof ConcatenateExpression) {
-								ConcatenateExpression conc = (ConcatenateExpression)astObj;
-								if (conc.getConcatenator() == Concatenator.BR_OPEN) {
-									if (clausePerType.concatenator == null) {
-										if (clausePerType.concat == null) {
-											if (clausePerType.traversalClauses != null)
-												initTraversalConcat(clausePerType);
-											else
-												clausePerType.concat = WHERE.BR_OPEN();
-											clausePerType.previousOr = false;
-										} else
-											clausePerType.concat = clausePerType.concat.BR_OPEN();
-									} else { // a predicate expression or a block close was before
-										clausePerType.concat = clausePerType.concatenator.AND().BR_OPEN();
-										clausePerType.concatenator = null;
-										clausePerType.previousOr = false;
-									}
-									if (clausePerType.testForNextIsOr)
-										clausePerType.valid = false;
-								} else if (conc.getConcatenator() == Concatenator.BR_CLOSE) {
-									if (clausePerType.concatenator == null) {
-										throw new RuntimeException("illegal statement: " + conc.getConcatenator().name());
-									} else {
-										clausePerType.concatenator = clausePerType.concatenator.BR_CLOSE();
-									}
-									clausePerType.previousOr = false;
-								} else if (conc.getConcatenator() == Concatenator.OR) {
-									if (clausePerType.concatenator == null) {
-										throw new RuntimeException("illegal statement: " + conc.getConcatenator().name());
-									} else {
-										clausePerType.concat = clausePerType.concatenator.OR();
-										clausePerType.previousOr = true;
-										clausePerType.testForNextIsOr = false; // or has occurred, we don't need further testing
-										clausePerType.concatenator = null;
-									}
-								}
-							} else if (astObj instanceof PredicateExpression) {
-								if (clausePerType.testForNextIsOr) {
-									clausePerType.valid = false;
-									continue;
-								}
-								PredicateExpression pred = (PredicateExpression)astObj;
-								if (clausePerType.traversalClauses != null) {
-									if (clausePerType.concat == null)
-										initTraversalConcat(clausePerType);
-								}
-								Concat concat_1 = clausePerType.concat;
-								if (clausePerType.concatenator != null) {
-									concat_1 = clausePerType.concatenator.AND();
-									clausePerType.previousOr = false;
-								}
-								clausePerType.concatenator = buildPredicateExpression(pred, concat_1, clausePerType, validNodes);
-							} else if (astObj instanceof TraversalExpression) {
-								clausePerType.traversalClauses = createTraversalClauses(clausePerType,
-										(TraversalExpression) astObj, validNodes, travRes);
-							} else if (astObj instanceof SelectExpression<?>) {
-								String tst = null;
-							}
+							addClause(astObj, clausePerType, validNodes, travRes);
 						}
 					}
 				}
@@ -927,6 +876,69 @@ public class QueryExecutor implements IASTObjectsContainer {
 				}
 				xpd.clausesPerTypes = clausesPerTypeList;
 				return clausesPerTypeList;
+			}
+			
+			private void addClause(IASTObject astObj, ClausesPerType clausePerType,
+					List<String> validNodes, TraversalResults travRes) {
+				if (astObj instanceof ConcatenateExpression) {
+					ConcatenateExpression conc = (ConcatenateExpression)astObj;
+					if (conc.getConcatenator() == Concatenator.BR_OPEN) {
+						if (clausePerType.concatenator == null) {
+							if (clausePerType.concat == null) {
+								if (clausePerType.traversalClauses != null)
+									initTraversalConcat(clausePerType);
+								else
+									clausePerType.concat = WHERE.BR_OPEN();
+								clausePerType.previousOr = false;
+							} else
+								clausePerType.concat = clausePerType.concat.BR_OPEN();
+						} else { // a predicate expression or a block close was before
+							clausePerType.concat = clausePerType.concatenator.AND().BR_OPEN();
+							clausePerType.concatenator = null;
+							clausePerType.previousOr = false;
+						}
+						if (clausePerType.testForNextIsOr)
+							clausePerType.valid = false;
+					} else if (conc.getConcatenator() == Concatenator.BR_CLOSE) {
+						if (clausePerType.concatenator == null) {
+							throw new RuntimeException("illegal statement: " + conc.getConcatenator().name());
+						} else {
+							clausePerType.concatenator = clausePerType.concatenator.BR_CLOSE();
+						}
+						clausePerType.previousOr = false;
+					} else if (conc.getConcatenator() == Concatenator.OR) {
+						if (clausePerType.concatenator == null) {
+							throw new RuntimeException("illegal statement: " + conc.getConcatenator().name());
+						} else {
+							clausePerType.concat = clausePerType.concatenator.OR();
+							clausePerType.previousOr = true;
+							clausePerType.testForNextIsOr = false; // or has occurred, we don't need further testing
+							clausePerType.concatenator = null;
+						}
+					}
+				} else if (astObj instanceof PredicateExpression) {
+					if (clausePerType.testForNextIsOr) {
+						clausePerType.valid = false;
+						return;
+					}
+					PredicateExpression pred = (PredicateExpression)astObj;
+					if (clausePerType.traversalClauses != null) {
+						if (clausePerType.concat == null)
+							initTraversalConcat(clausePerType);
+					}
+					Concat concat_1 = clausePerType.concat;
+					if (clausePerType.concatenator != null) {
+						concat_1 = clausePerType.concatenator.AND();
+						clausePerType.previousOr = false;
+					}
+					clausePerType.concatenator = buildPredicateExpression(pred, concat_1, clausePerType, validNodes);
+				} else if (astObj instanceof TraversalExpression) {
+					clausePerType.traversalClauses = createTraversalClauses(clausePerType,
+							(TraversalExpression) astObj, validNodes, travRes);
+				} else if (astObj instanceof SelectExpression<?>) {
+					clausePerType.selectClauses = createSelectClauses(clausePerType,
+							(SelectExpression<?>) astObj, validNodes);
+				}
 			}
 			
 			private void initTraversalConcat(ClausesPerType cpt) {
@@ -1027,6 +1039,12 @@ public class QueryExecutor implements IASTObjectsContainer {
 								ret = createWhereIn(concat_1, val_1, (List<JcNode>) val_2, negate);
 							else
 								ret = booleanOp.IN_list(val_2);
+						} else if (op == Operator.CONTAINS) {
+							// must be in collection expression
+							// validity test has already been done
+							if (pred.getValue_1() instanceof DomainObjectMatch<?>) {
+								
+							}
 						} else if (op == Operator.IS_NULL)
 							ret = booleanOp.IS_NULL();
 						else if (op == Operator.LIKE)
@@ -1155,68 +1173,45 @@ public class QueryExecutor implements IASTObjectsContainer {
 				return ret;
 			}
 			
-			@Deprecated
-			private List<IClause> createTraversalClauses_old(ClausesPerType cpt, TraversalExpression travEx, List<String> validNodes) {
+			private List<IClause> createSelectClauses(ClausesPerType cpt, SelectExpression<?> selEx,
+					List<String> validNodes) {
 				List<IClause> ret = new ArrayList<IClause>();
-				String startBName = APIAccess.getBaseNodeName(travEx.getStart());
-				List<JcNode> tempNodes = new ArrayList<JcNode>();
-				String nm = ValueAccess.getName(cpt.node);
-				String endNodeLabel = getMappingInfo().getLabelForClass(cpt.domainObjectType);
-				String invalidAttrib = null;
-				List<Class<?>> types = new ArrayList<Class<?>>();
-				int idx = -1;
+				String nodeLabel = getMappingInfo().getLabelForClass(cpt.domainObjectType);
+				ret.add(
+					OPTIONAL_MATCH.node(cpt.node).label(nodeLabel)
+				);
+				Concat concat = WHERE.BR_OPEN();
+				List<JcNode> nds = APIAccess.getNodes(selEx.getStart());
+				iot.jcypher.query.api.predicate.Concatenator concatenator = createWhereIn(concat, cpt.node, nds, false);
+				ClausesPerType newCpt = new ClausesPerType(cpt.node, cpt.domainObjectMatch, cpt.domainObjectType);
+				newCpt.concatenator = concatenator;
+				TraversalResults travRes = new TraversalResults();
+
+				String baseNodeName = getNodeName(cpt.domainObjectMatch);
+				addClause(new ConcatenateExpression(Concatenator.BR_OPEN), newCpt, validNodes, travRes);
+				for (IASTObject ao : selEx.getAstObjects()) {
+					testCollectionPredicateValidity(ao, baseNodeName);
+					addClause(ao, newCpt, validNodes, travRes);
+					if(!newCpt.valid)
+						break;
+				}
+				if (newCpt.valid)
+					addClause(new ConcatenateExpression(Concatenator.BR_CLOSE), newCpt, validNodes, travRes);
 				
-				List<StepClause> stepClauses = new ArrayList<StepClause>();
+				ret.add(newCpt.concatenator);
 				
-				for (String validNodeName : validNodes) {
-					if (validNodeName.indexOf(startBName) == 0) {
-						idx++;
-						//stepClauses.addAll(buildStepClauses(travEx, idx, validNodeName, endNodeLabel, nm));
-						
-						JcNode strt = new JcNode(validNodeName);
-						JcNode tmp = new JcNode(nm.concat(tmpNode).concat(String.valueOf(idx)));
-						tempNodes.add(tmp);
-						
-						Class<?> typ = APIAccess.getTypeForNodeName(travEx.getStart(), validNodeName);
-						types.add(typ);
-						Node matchNode;
-						matchNode = OPTIONAL_MATCH.node(strt);
-						for (int i = 0; i < travEx.getSteps().size(); i++) {
-							Step step = travEx.getSteps().get(i);
-							step.setCollection(typ.equals(Collection.class));
-							StepClause stepClause = buildStepClause_old(step, types,
-									i == travEx.getSteps().size() - 1 ? tmp : null, matchNode,
-											endNodeLabel, idx, strt);
-							matchNode = stepClause.matchNode;
-							if (matchNode == null) { // match has no valid result
-								invalidAttrib = step.getAttributeName();
-								break;
-							}
-							types = stepClause.resultTypes;
-						}
-						
-						// add only if valid
-						if (matchNode != null) {
-							ret.add(SEPARATE.nextClause());
-							ret.add(matchNode);
-						} else
-							tempNodes.remove(tempNodes.size() - 1);
+				return ret;
+			}
+			
+			private void testCollectionPredicateValidity(IASTObject ao, String baseNodeName) {
+				if (ao instanceof PredicateExpression) {
+					String nm = getNodeName(((PredicateExpression)ao).getValue_1());
+					if (!nm.startsWith(baseNodeName)) {
+						throw new RuntimeException(
+								"Predicate expressions within a collection expression must express constraints on " +
+								"either the source set or on a set derived from the source set");
 					}
 				}
-				if (tempNodes.size() == 1) { // don't need to build union of multiple sets
-					ValueAccess.setName(ValueAccess.getName(cpt.node),
-							tempNodes.get(0));
-				} else if (tempNodes.size() > 1) {
-					ret.add(SEPARATE.nextClause());
-					ret.add(OPTIONAL_MATCH.node(cpt.node).label(endNodeLabel));
-					Concat concat = WHERE.BR_OPEN();
-					ret.add(createWhereIn(concat, cpt.node, tempNodes, false));
-				} else {
-					cpt.valid = false;
-					throw new RuntimeException("attribute: [" + invalidAttrib + "] does not exist " +
-							"in domain object type(s): " + types);
-				}
-				return ret;
 			}
 			
 			private List<StepClause> buildStepClauses(TraversalExpression travEx, int tmpNodeIdx, String startNodeName,
@@ -1225,129 +1220,6 @@ public class QueryExecutor implements IASTObjectsContainer {
 				stepClause.buildAll(travEx, tmpNodeIdx, startNodeName, endNodeLabel, origEndNodeName);
 				
 				return stepClause.stepClauses;
-			}
-			
-			@Deprecated
-			private StepClause buildStepClause_old(Step step, List<Class<?>> types, JcNode nd,
-					Node matchNode, String nodeLabel, int tmpIdx, JcNode strt) {
-				StepClause ret = new StepClause();
-				FieldMapping fm = null;
-				List<FieldMapping> fms = new ArrayList<FieldMapping>();
-				for (Class<?> t : types) {
-					if (step.getDirection() == 0) { // forward
-						fm = getMappingInfo().getFieldMapping(step.getAttributeName(),
-								t);
-						if (fm != null)
-							break;
-					} else { // backward
-						List<FieldMapping> fms_t = getMappingInfo().getBackwardFieldMappings(step.getAttributeName(),
-								t);
-						for (FieldMapping f : fms_t) {
-							if (!fms.contains(f))
-								fms.add(f);
-						}
-					}
-				}
-				if (fm != null) {
-					ret = this.buildForwardStep(fm, step, ret, matchNode, nd, nodeLabel, tmpIdx, strt);
-				} else if (!fms.isEmpty()) {
-					ret = this.buildBackwardStep(fms, step, ret, matchNode, nd, nodeLabel, tmpIdx, strt);
-				}
-				return ret;
-			}
-			
-			@Deprecated
-			private StepClause buildBackwardStep(List<FieldMapping> fms, Step step, StepClause stepClause,
-					Node matchNode, JcNode nd, String nodeLabel, int tmpIdx, JcNode strt) {
-				StepClause ret = stepClause;
-				List<Class<?>> types = new ArrayList<Class<?>>();
-				Relation matchRel = matchNode.relation().in();
-				
-				// surrogate navigations (e.g. via Collection) are always at the end of the list.
-				boolean hasSurrogate = false;
-				String step2RelationName = null;
-				for (int i = 0; i < fms.size(); i++) {
-					if (i > 0) {
-						matchRel = OPTIONAL_MATCH.node(strt).relation().in();
-					}
-					FieldMapping fm = fms.get(i);
-					boolean surrogate = fm instanceof ListFieldMapping || fm instanceof ValueAndTypeMapping;
-					if (surrogate)
-						hasSurrogate = true;
-					matchRel = matchRel.type(fm.getPropertyOrRelationName());
-					types.add(fm.getFieldType());
-				}
-				
-				if (step.getMinDistance() != 1)
-					matchRel = matchRel.minHops(step.getMinDistance());
-				if (step.getMaxDistance() != 1) {
-					if (step.getMaxDistance() == -1)
-						matchRel = matchRel.maxHopsUnbound();
-					else
-						matchRel = matchRel.maxHops(step.getMaxDistance());
-				}
-				
-				if (step2RelationName != null) {
-					// we have surrogate navigation plus direct navigation
-					matchRel = matchRel.node().relation().in().type(step2RelationName)
-							.minHops(step.getMinDistance());
-					if (step.getMaxDistance() != 1) {
-						if (step.getMaxDistance() == -1)
-							matchRel = matchRel.maxHopsUnbound();
-						else
-							matchRel = matchRel.maxHops(step.getMaxDistance());
-					}
-				}
-				
-				if (nd != null) { // we have reached the end
-					ret.matchNode = matchRel.node(nd).label(nodeLabel);
-				} else
-					ret.matchNode = matchRel.node();
-				ret.resultTypes = types;
-				
-				return ret;
-			}
-			
-			@Deprecated
-			private StepClause buildForwardStep(FieldMapping fm, Step step, StepClause stepClause,
-					Node matchNode, JcNode nd, String nodeLabel, int tmpIdx, JcNode strt) {
-				StepClause ret = stepClause;
-				Relation matchRel = matchNode.relation().type(fm.getPropertyOrRelationName());
-				matchRel = matchRel.out();
-				
-				if (step.getMinDistance() != 1)
-					matchRel = matchRel.minHops(step.getMinDistance());
-				if (step.getMaxDistance() != 1) {
-					if (step.getMaxDistance() == -1)
-						matchRel = matchRel.maxHopsUnbound();
-					else
-						matchRel = matchRel.maxHops(step.getMaxDistance());
-				}
-				
-				CompoundObjectType cType;
-				if (step.isCollection()) {
-					cType = getMappingInfo().getInternalDomainAccess()
-							.getFieldComponentType(fm.getClassFieldName());
-				} else {
-					cType = getMappingInfo().getInternalDomainAccess()
-							.getConcreteFieldType(fm.getClassFieldName());
-				}
-				Class<?> typ = cType.getType();
-				boolean isCollection = typ.equals(Collection.class); // TODO alternative check for surrogate
-				if (nd != null && !isCollection) { // we have reached the end
-					ret.matchNode = matchRel.node(nd).label(nodeLabel);
-				} else
-					ret.matchNode = matchRel.node();
-				if (isCollection) { // need to advance one step
-					Step insert = step.createStep(step.getDirection(), "c_content"); //TODO don' hardcode fieldname
-					insert.setCollection(true);
-					List<Class<?>> tps = new ArrayList<Class<?>>();
-					tps.add(typ);
-					ret = buildStepClause_old(insert, tps, nd, ret.matchNode, nodeLabel, tmpIdx, strt);
-				} else {
-					ret.resultTypes = cType.getTypes(true);
-				}
-				return ret;
 			}
 			
 			/***************************/
@@ -1365,8 +1237,6 @@ public class QueryExecutor implements IASTObjectsContainer {
 				private String endNodeLabel;
 				private JcNode startNode;
 				private JcNode endNode;
-				@Deprecated
-				private List<Class<?>> resultTypes;
 				private List<StepClause> stepClauses;
 				
 				private void buildAll(TraversalExpression travEx, int tmpNodeIdx, String startNodeName, String endNodeLabel,
@@ -1685,6 +1555,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 		private class StateContext {
 			private State state;
 			private int blockCount;
+			private String baseNodeName;
 			private List<IASTObject> candidates;
 			private List<String> dependencies;
 			
@@ -1693,24 +1564,28 @@ public class QueryExecutor implements IASTObjectsContainer {
 			private int orRemoveState;
 			private IASTObject orToAdd;
 			
-			private StateContext() {
+			private StateContext(String bndNm) {
 				super();
 				this.state = State.INIT;
 				this.blockCount = 0;
 				this.candidates = new ArrayList<IASTObject>();
 				this.orRemoveState = -1;
+				this.baseNodeName = bndNm;
 			}
 			
 			private void addDependency(String nodeName) {
-				String nn = nodeName;
-				if (this.dependencies == null)
-					this.dependencies = new ArrayList<String>();
-				int idx = nodeName.indexOf(separator);
-				idx = nodeName.indexOf(separator, idx + 1);
-				if (idx >= 0)
-					nn = nodeName.substring(0, idx);
-				if (!this.dependencies.contains(nn))
-					this.dependencies.add(nn);
+				if (nodeName != null) {
+					String nn = nodeName;
+					if (this.dependencies == null)
+						this.dependencies = new ArrayList<String>();
+					int idx = nodeName.indexOf(separator);
+					idx = nodeName.indexOf(separator, idx + 1);
+					// extract base-node-name if needed
+					if (idx >= 0)
+						nn = nodeName.substring(0, idx);
+					if (!nn.equals(this.baseNodeName) && !this.dependencies.contains(nn))
+						this.dependencies.add(nn);
+				}
 			}
 		}
 		
@@ -1729,6 +1604,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 			private Concat concat = null;
 			private iot.jcypher.query.api.predicate.Concatenator concatenator = null;
 			private List<IClause> traversalClauses;
+			private List<IClause> selectClauses;
 			private boolean closeBracket;
 			
 			private ClausesPerType(JcNode node, DomainObjectMatch<?> dom, Class<?> type) {
@@ -1767,6 +1643,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 							}
 							this.clauses.addAll(this.traversalClauses);
 							this.traversalClauses = null;
+						} else if (this.selectClauses != null) {
+							this.clauses.addAll(this.selectClauses);
 						} else {
 							String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
 							this.clauses.add(

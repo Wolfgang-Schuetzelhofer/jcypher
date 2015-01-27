@@ -30,10 +30,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>test for equality</i></div>
 	 * <br/>
 	 */
-	public <E> BooleanResult EQUALS(E value) {
+	public <E> TerminalResult EQUALS(E value) {
 		getPredicateExpression().setOperator(Operator.EQUALS);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createBooleanResult(this.getPredicateExpression());
+		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -51,10 +51,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>less than</i></div>
 	 * <br/>
 	 */
-	public <E> BooleanResult LT(E value) {
+	public <E> TerminalResult LT(E value) {
 		getPredicateExpression().setOperator(Operator.LT);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createBooleanResult(this.getPredicateExpression());
+		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -62,10 +62,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>less than or equal</i></div>
 	 * <br/>
 	 */
-	public <E> BooleanResult LTE(E value) {
+	public <E> TerminalResult LTE(E value) {
 		getPredicateExpression().setOperator(Operator.LTE);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createBooleanResult(this.getPredicateExpression());
+		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -73,10 +73,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>greater than</i></div>
 	 * <br/>
 	 */
-	public <E> BooleanResult GT(E value) {
+	public <E> TerminalResult GT(E value) {
 		getPredicateExpression().setOperator(Operator.GT);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createBooleanResult(this.getPredicateExpression());
+		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -84,10 +84,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>greater than or equal</i></div>
 	 * <br/>
 	 */
-	public <E> BooleanResult GTE(E value) {
+	public <E> TerminalResult GTE(E value) {
 		getPredicateExpression().setOperator(Operator.GTE);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createBooleanResult(this.getPredicateExpression());
+		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -95,10 +95,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>test against a regular expression</i></div>
 	 * <br/>
 	 */
-	public BooleanResult LIKE(String regex) {
+	public TerminalResult LIKE(String regex) {
 		getPredicateExpression().setOperator(Operator.LIKE);
 		getPredicateExpression().setValue_2(regex);
-		return APIAccess.createBooleanResult(this.getPredicateExpression());
+		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -106,9 +106,9 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>test against NULL (test if a property exists)</i></div>
 	 * <br/>
 	 */
-	public BooleanResult IS_NULL() {
+	public TerminalResult IS_NULL() {
 		getPredicateExpression().setOperator(Operator.IS_NULL);
-		return APIAccess.createBooleanResult(this.getPredicateExpression());
+		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -117,10 +117,10 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	@SuppressWarnings("unchecked")
-	public <E> BooleanResult IN_list(E... value) {
+	public <E> TerminalResult IN_list(E... value) {
 		getPredicateExpression().setOperator(Operator.IN);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createBooleanResult(this.getPredicateExpression());
+		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -128,10 +128,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>test for containment in a list of matched domain objects</i></div>
 	 * <br/>
 	 */
-	public <E> BooleanResult IN(DomainObjectMatch<E> domainObjects) {
+	public <E> TerminalResult IN(DomainObjectMatch<E> domainObjects) {
 		getPredicateExpression().setOperator(Operator.IN);
 		getPredicateExpression().setValue_2(domainObjects);
-		return APIAccess.createBooleanResult(this.getPredicateExpression());
+		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -140,10 +140,10 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	@SuppressWarnings("unchecked")
-	public <E> BooleanResult CONTAINS_elements(E... value) {
+	public <E> TerminalResult CONTAINS_elements(E... value) {
 		getPredicateExpression().setOperator(Operator.CONTAINS);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createBooleanResult(this.getPredicateExpression());
+		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
 	/**
@@ -156,10 +156,10 @@ public class BooleanOperation extends APIObject {
 	 * q.WHERE(addressAreas).CONTAINS(europe));</i></div>
 	 * <br/>
 	 */
-	public <E> BooleanResult CONTAINS(DomainObjectMatch<E> domainObjects) {
+	public <E> TerminalResult CONTAINS(DomainObjectMatch<E> domainObjects) {
 		getPredicateExpression().setOperator(Operator.CONTAINS);
 		getPredicateExpression().setValue_2(domainObjects);
-		return APIAccess.createBooleanResult(this.getPredicateExpression());
+		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
 	private PredicateExpression getPredicateExpression() {

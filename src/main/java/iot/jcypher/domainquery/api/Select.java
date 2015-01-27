@@ -28,7 +28,7 @@ public class Select<T> extends APIObject {
 	 * Specify one or more predicate expressions to constrain the set of domain objects
 	 * @param where one or more predicate expressions
 	 */
-	public DomainObjectMatch<T> ELEMENTS(BooleanResult...  where) {
+	public DomainObjectMatch<T> ELEMENTS(TerminalResult...  where) {
 		// all boolean results have already been added to the astObjects list
 		// of the SelectExpression
 		SelectExpression<T> se = this.getSelectExpression();
