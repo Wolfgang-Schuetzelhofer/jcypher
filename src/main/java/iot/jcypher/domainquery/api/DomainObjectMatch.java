@@ -35,11 +35,14 @@ import iot.jcypher.query.values.ValueElement;
 
 public class DomainObjectMatch<T> implements IPredicateOperand1 {
 
-	public static final String nodePrefix = "n_";
 	private static final String separator = "_";
 	private static final String msg_1 = "attributes used in WHERE clauses must be of simple type." +
 									" Not true for attribute [";
 	
+	private DomainObjectMatch<?> traversalSource;
+	// true, if it is derived by traversal and used in a predicate expression
+	// within a collection expression
+	private boolean needsPath;
 	private Class<T> domainObjectType;
 	private String baseNodeName;
 	private List<JcNode> nodes;
@@ -57,11 +60,12 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		this.pageLength = -1;
 		this.pageOffset = 0;
 		this.pageChanged = false;
+		this.needsPath = false;
 		init(num);
 	}
 	
 	private void init(int num) {
-		this.baseNodeName = nodePrefix.concat(String.valueOf(num));
+		this.baseNodeName =APIAccess.nodePrefix.concat(String.valueOf(num));
 		this.typeList = this.mappingInfo.getCompoundTypesFor(this.domainObjectType);
 		this.nodes = new ArrayList<JcNode>(this.typeList.size());
 		for (int i = 0; i < this.typeList.size(); i++) {
@@ -190,6 +194,22 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		return null;
 	}
 	
+	DomainObjectMatch<?> getTraversalSource() {
+		return traversalSource;
+	}
+
+	void setTraversalSource(DomainObjectMatch<?> traversalSource) {
+		this.traversalSource = traversalSource;
+	}
+
+	boolean needsPath() {
+		return needsPath;
+	}
+
+	void setNeedsPath(boolean needsPath) {
+		this.needsPath = needsPath;
+	}
+
 	private boolean needsRelation(FieldMapping fm) {
 		boolean ret;
 		InternalDomainAccess internalAccess = null;
@@ -224,7 +244,8 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 						ret = (E) n.property(propName);
 					else if (attributeType.equals(JcString.class))
 						ret = (E) n.stringProperty(propName);
-					ValueAccess.setHint((ValueElement)ret, validFor);
+					ValueAccess.setHint((ValueElement)ret, APIAccess.hintKey_validNodes, validFor);
+					ValueAccess.setHint((ValueElement)ret, APIAccess.hintKey_dom, this);
 				}
 			}
 		}

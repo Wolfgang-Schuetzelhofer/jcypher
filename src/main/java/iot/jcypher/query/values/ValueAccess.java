@@ -107,15 +107,16 @@ public class ValueAccess {
 		return ve.cloneShallow();
 	}
 	
-	public static void setHint(ValueElement ve, Object hint) {
-		ve.setHint(hint);
+	public static void setHint(ValueElement ve, String key, Object hint) {
+		ve.setHint(key, hint);
 	}
 	
-	public static Object getAnyHint(ValueElement ve) {
+	public static Object getAnyHint(ValueElement ve, String key) {
 		ValueElement toTest = ve;
 		while (toTest != null) {
-			if (toTest.getHint() != null)
-				return toTest.getHint();
+			Object hint = toTest.getHint(key);
+			if (hint != null)
+				return hint;
 			toTest = toTest.getPredecessor();
 		}
 		return null;

@@ -16,6 +16,7 @@
 
 package iot.jcypher.domainquery.ast;
 
+import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.QueryExecutor;
 
@@ -50,6 +51,7 @@ public class TraversalExpression implements IASTObject {
 
 	public void setEnd(DomainObjectMatch<?> end) {
 		this.end = end;
+		APIAccess.setTraversalSource(this.end, this.start);
 	}
 
 	public DomainObjectMatch<?> getEnd() {

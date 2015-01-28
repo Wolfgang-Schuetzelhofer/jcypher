@@ -16,8 +16,12 @@
 
 package iot.jcypher.domainquery.ast;
 
+import iot.jcypher.domainquery.api.APIAccess;
+import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
+import iot.jcypher.query.values.ValueAccess;
+import iot.jcypher.query.values.ValueElement;
 
 public class PredicateExpression implements IASTObject {
 
@@ -41,6 +45,12 @@ public class PredicateExpression implements IASTObject {
 
 	public void setOperator(Operator operator) {
 		this.operator = operator;
+	}
+	
+	public DomainObjectMatch<?> getStartDOM() {
+		if (value_1 instanceof DomainObjectMatch<?>)
+			return (DomainObjectMatch<?>)value_1;
+		return (DomainObjectMatch<?>)ValueAccess.getAnyHint((ValueElement)value_1, APIAccess.hintKey_dom);
 	}
 	
 	public IPredicateOperand1 getValue_1() {

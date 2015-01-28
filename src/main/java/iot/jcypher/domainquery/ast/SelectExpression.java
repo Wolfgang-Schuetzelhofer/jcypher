@@ -17,6 +17,7 @@
 package iot.jcypher.domainquery.ast;
 
 import iot.jcypher.domainquery.DomainQuery.IntAccess;
+import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
 import iot.jcypher.domainquery.internal.QueryExecutor;
@@ -38,9 +39,27 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 		this.domainQueryIntAccess = domainQueryIntAccess;
 	}
 	
-	@Override
 	public List<IASTObject> getAstObjects() {
 		return astObjects;
+	}
+	
+	@Override
+	public void addAstObject(IASTObject astObj) {
+		if (astObj instanceof PredicateExpression) {
+			// this must represent either the source set or a set derived from the source set by traversal
+			DomainObjectMatch<?> dom = ((PredicateExpression)astObj).getStartDOM();
+			// must be a derived set
+			if (dom != this.start) {
+				DomainObjectMatch<?> src = APIAccess.getTraversalSource(dom);
+				if (src != this.start)
+					throw new RuntimeException(
+							"Predicate expressions within a collection expression must express constraints on " +
+							"either the source set or on a set derived from the source set by traversal");
+				else
+					APIAccess.setNeedsPath(dom, true);
+			}
+		}
+		this.astObjects.add(astObj);
 	}
 	
 	public void setEnd(DomainObjectMatch<T> end) {

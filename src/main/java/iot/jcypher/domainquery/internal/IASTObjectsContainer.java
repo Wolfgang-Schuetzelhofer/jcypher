@@ -18,9 +18,7 @@ package iot.jcypher.domainquery.internal;
 
 import iot.jcypher.domainquery.ast.IASTObject;
 
-import java.util.List;
-
 public interface IASTObjectsContainer {
 
-	public List<IASTObject> getAstObjects();
+	public void addAstObject(IASTObject astObj);
 }

@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package iot.jcypher.query.values;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.query.values.functions.FUNCTION;
 
@@ -24,7 +27,7 @@ public class ValueElement implements IFragment, IPredicateOperand1 {
 	private ValueElement predecessor;
 	private IOperatorOrFunction operatorOrFunction;
 	// allows to maintain additional info
-	private Object hint;
+	private Map<String, Object> hint;
 
 	ValueElement() {
 		super();
@@ -82,12 +85,16 @@ public class ValueElement implements IFragment, IPredicateOperand1 {
 		this.operatorOrFunction = operatorOrFunction;
 	}
 	
-	Object getHint() {
-		return hint;
+	Object getHint(String key) {
+		if (this.hint != null)
+			return this.hint.get(key);
+		return null;
 	}
 
-	void setHint(Object hint) {
-		this.hint = hint;
+	void setHint(String key, Object value) {
+		if (this.hint == null)
+			this.hint = new HashMap<String, Object>();
+		this.hint.put(key, value);
 	}
 
 	ValueElement cloneShallow() {

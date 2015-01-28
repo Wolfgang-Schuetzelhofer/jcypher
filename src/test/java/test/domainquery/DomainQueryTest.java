@@ -155,9 +155,12 @@ public class DomainQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<Address> j_smith_EuropeanAddresses =
 				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
 //						q.WHERE(j_smith_Areas).CONTAINS(europe)
-						q.WHERE(j_smith_Addresses.atttribute("number")).EQUALS(20),
-						q.OR(),
-						q.WHERE(j_smith_Addresses.atttribute("number")).EQUALS(32)
+						
+						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Europe")
+						
+//						q.WHERE(j_smith_Addresses.atttribute("number")).EQUALS(20),
+//						q.OR(),
+//						q.WHERE(j_smith_Addresses.atttribute("number")).EQUALS(32)
 				);
 		result = q.execute();
 		

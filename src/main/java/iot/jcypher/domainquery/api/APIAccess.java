@@ -27,6 +27,11 @@ import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
 import iot.jcypher.query.values.JcNode;
 
 public class APIAccess {
+	
+	public static final String nodePrefix = "n_";
+	public static final String pathPrefix = "p_";
+	public static final String hintKey_validNodes = "vn";
+	public static final String hintKey_dom = "dom";
 
 	public static Order createOrder(OrderExpression orderExpression) {
 		return new Order(orderExpression);
@@ -91,5 +96,21 @@ public class APIAccess {
 
 	public static int getPageLength(DomainObjectMatch<?> dom) {
 		return dom.getPageLength();
+	}
+	
+	public static DomainObjectMatch<?> getTraversalSource(DomainObjectMatch<?> dom) {
+		return dom.getTraversalSource();
+	}
+
+	public static void setTraversalSource(DomainObjectMatch<?> dom, DomainObjectMatch<?> traversalSource) {
+		dom.setTraversalSource(traversalSource);
+	}
+	
+	public static boolean needsPath(DomainObjectMatch<?> dom) {
+		return dom.needsPath();
+	}
+
+	public static void setNeedsPath(DomainObjectMatch<?> dom, boolean needsPath) {
+		dom.setNeedsPath(needsPath);
 	}
 }

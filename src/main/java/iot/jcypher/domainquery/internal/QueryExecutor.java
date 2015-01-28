@@ -57,6 +57,7 @@ import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
+import iot.jcypher.query.values.JcPath;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
 import iot.jcypher.query.writer.Format;
@@ -98,8 +99,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 	}
 
 	@Override
-	public List<IASTObject> getAstObjects() {
-		return astObjects;
+	public void addAstObject(IASTObject astObj) {
+		this.astObjects.add(astObj);
 	}
 	
 	public OrderExpression getOrderFor(DomainObjectMatch<?> dom) {
@@ -524,7 +525,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 					if (validNodes.contains(nodeName))
 						ret.add(ve);
 					if (validFor == null) {
-						Object hint = ValueAccess.getAnyHint(ve);
+						Object hint = ValueAccess.getAnyHint(ve, APIAccess.hintKey_validNodes);
 						if (hint instanceof List<?>) {
 							validFor = (List<JcNode>) hint; 
 						}
@@ -594,7 +595,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 			if (clausesPerType.previousOr || !Settings.strict) { // build the clause even if the expression will return no result
 				return;									     // because it is concatenated by OR
 			}
-			Object hint = ValueAccess.getAnyHint(ve);
+			Object hint = ValueAccess.getAnyHint(ve, APIAccess.hintKey_validNodes);
 			if (hint instanceof List<?>) {
 				List<JcNode> validFor = (List<JcNode>) hint; 
 				String nm = ValueAccess.getName(clausesPerType.node);
@@ -812,7 +813,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 		
 		private JcNumber getJcNumber(String prefix, JcNode n) {
 			String nm = ValueAccess.getName(n);
-			nm = nm.substring(DomainObjectMatch.nodePrefix.length());
+			nm = nm.substring(APIAccess.nodePrefix.length());
 			nm = prefix.concat(nm);
 			return new JcNumber(nm);
 		}
@@ -1137,9 +1138,11 @@ public class QueryExecutor implements IASTObjectsContainer {
 				travRes.stepClauses.addAll(stepCls);
 				
 				List<JcNode> tempNodes = new ArrayList<JcNode>();
+				List<StepClause> validStepClauses = new ArrayList<StepClause>(); 
 				for (StepClause sc : stepCls) {
 					Node mn = sc.getTotalMatchNode();
 					if (mn != null) {
+						validStepClauses.add(sc);
 						tempNodes.add(sc.getEndNode());
 						ret.add(SEPARATE.nextClause());
 						ret.add(sc.getTotalMatchNode());
@@ -1157,10 +1160,19 @@ public class QueryExecutor implements IASTObjectsContainer {
 					}
 				}
 				
-				if (tempNodes.size() == 1) { // don't need to build union of multiple sets
-					ValueAccess.setName(ValueAccess.getName(cpt.node),
-							tempNodes.get(0));
-				} else if (tempNodes.size() > 1) {
+				if (validStepClauses.size() == 1) { // don't need to build union of multiple sets
+					StepClause sc = validStepClauses.get(0);
+					String nnm = ValueAccess.getName(cpt.node);
+					ValueAccess.setName(nnm,
+							sc.getEndNode());
+					if (sc.jcPath != null)
+						ValueAccess.setName(sc.pathFromNode(nnm), sc.jcPath);
+				} else if (validStepClauses.size() > 1) {
+					for (StepClause sc : validStepClauses) {
+						if (sc.jcPath != null)
+							ValueAccess.setName(sc.pathFromNode(
+									ValueAccess.getName(sc.getEndNode())), sc.jcPath);
+					}
 					ret.add(SEPARATE.nextClause());
 					ret.add(OPTIONAL_MATCH.node(cpt.node).label(endNodeLabel));
 					Concat concat = WHERE.BR_OPEN();
@@ -1187,31 +1199,22 @@ public class QueryExecutor implements IASTObjectsContainer {
 				newCpt.concatenator = concatenator;
 				TraversalResults travRes = new TraversalResults();
 
-				String baseNodeName = getNodeName(cpt.domainObjectMatch);
-				addClause(new ConcatenateExpression(Concatenator.BR_OPEN), newCpt, validNodes, travRes);
+				if (selEx.getAstObjects().size() > 0)
+					addClause(new ConcatenateExpression(Concatenator.BR_OPEN), newCpt, validNodes, travRes);
 				for (IASTObject ao : selEx.getAstObjects()) {
-					testCollectionPredicateValidity(ao, baseNodeName);
 					addClause(ao, newCpt, validNodes, travRes);
 					if(!newCpt.valid)
 						break;
 				}
-				if (newCpt.valid)
+				if (newCpt.valid && selEx.getAstObjects().size() > 0)
 					addClause(new ConcatenateExpression(Concatenator.BR_CLOSE), newCpt, validNodes, travRes);
 				
-				ret.add(newCpt.concatenator);
+				if (newCpt.valid)
+					ret.add(newCpt.concatenator);
+				else
+					ret.add(concatenator);
 				
 				return ret;
-			}
-			
-			private void testCollectionPredicateValidity(IASTObject ao, String baseNodeName) {
-				if (ao instanceof PredicateExpression) {
-					String nm = getNodeName(((PredicateExpression)ao).getValue_1());
-					if (!nm.startsWith(baseNodeName)) {
-						throw new RuntimeException(
-								"Predicate expressions within a collection expression must express constraints on " +
-								"either the source set or on a set derived from the source set");
-					}
-				}
 			}
 			
 			private List<StepClause> buildStepClauses(TraversalExpression travEx, int tmpNodeIdx, String startNodeName,
@@ -1235,6 +1238,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				private int stepIndex;
 				private String originalEndNodeName;
 				private String endNodeLabel;
+				private JcPath jcPath;
 				private JcNode startNode;
 				private JcNode endNode;
 				private List<StepClause> stepClauses;
@@ -1251,7 +1255,11 @@ public class QueryExecutor implements IASTObjectsContainer {
 				private void buildFirst(int tmpNodeIdx, String startNodeName) {
 					this.stepClauses.add(this);
 					this.startNode = new JcNode(startNodeName);
-					this.matchNode = OPTIONAL_MATCH.node(this.startNode);
+					if (APIAccess.needsPath(this.traversalExpression.getEnd())) {
+						this.jcPath = new JcPath(pathFromNode(startNodeName));
+						this.matchNode = OPTIONAL_MATCH.path(this.jcPath).node(this.startNode);
+					} else
+						this.matchNode = OPTIONAL_MATCH.node(this.startNode);
 					Class<?> typ = APIAccess.getTypeForNodeName(this.traversalExpression.getStart(), startNodeName);
 					boolean isList = typ.equals(Collection.class) ||
 							typ.equals(Array.class); // TODO what about other surrogates
@@ -1482,10 +1490,14 @@ public class QueryExecutor implements IASTObjectsContainer {
 				private void cloneFirst(CloneInfo cloneInfo, int tmpNodeIdx) {
 					this.stepClauses.add(this);
 					this.startNode = cloneInfo.toClone.startNode;
+					this.jcPath = cloneInfo.toClone.jcPath;
 					this.originalEndNodeName = cloneInfo.toClone.originalEndNodeName;
 					this.endNodeLabel = cloneInfo.toClone.endNodeLabel;
 					this.traversalExpression = cloneInfo.toClone.traversalExpression;
-					this.matchNode = OPTIONAL_MATCH.node(this.startNode);
+					if (this.jcPath != null)
+						this.matchNode = OPTIONAL_MATCH.path(this.jcPath).node(this.startNode);
+					else
+						this.matchNode = OPTIONAL_MATCH.node(this.startNode);
 					Class<?> typ = APIAccess.getTypeForNodeName(this.traversalExpression.getStart(),
 							ValueAccess.getName(this.startNode));
 					boolean isList = typ.equals(Collection.class) ||
@@ -1530,6 +1542,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 						last = last.next;
 					}
 					return last.matchNode;
+				}
+				
+				private String pathFromNode(String nodeName) {
+					return nodeName.replace(APIAccess.nodePrefix, APIAccess.pathPrefix);
 				}
 			}
 			

@@ -79,7 +79,7 @@ public class DomainQuery {
 	 */
 	public BooleanOperation WHERE(IPredicateOperand1 value) {
 		PredicateExpression pe = new PredicateExpression(value, this.astObjectsContainer);
-		this.astObjectsContainer.getAstObjects().add(pe);
+		this.astObjectsContainer.addAstObject(pe);
 		BooleanOperation ret = APIAccess.createBooleanOperation(pe);
 		return ret;
 	}
@@ -89,7 +89,7 @@ public class DomainQuery {
 	 */
 	public TerminalResult OR() {
 		ConcatenateExpression ce = new ConcatenateExpression(Concatenator.OR);
-		this.astObjectsContainer.getAstObjects().add(ce);
+		this.astObjectsContainer.addAstObject(ce);
 		return APIAccess.createTerminalResult(ce);
 	}
 	
@@ -98,7 +98,7 @@ public class DomainQuery {
 	 */
 	public TerminalResult BR_OPEN() {
 		ConcatenateExpression ce = new ConcatenateExpression(Concatenator.BR_OPEN);
-		this.astObjectsContainer.getAstObjects().add(ce);
+		this.astObjectsContainer.addAstObject(ce);
 		return APIAccess.createTerminalResult(ce);
 	}
 	
@@ -107,7 +107,7 @@ public class DomainQuery {
 	 */
 	public TerminalResult BR_CLOSE() {
 		ConcatenateExpression ce = new ConcatenateExpression(Concatenator.BR_CLOSE);
-		this.astObjectsContainer.getAstObjects().add(ce);
+		this.astObjectsContainer.addAstObject(ce);
 		return APIAccess.createTerminalResult(ce);
 	}
 	
@@ -131,7 +131,7 @@ public class DomainQuery {
 	 */
 	public Traverse TRAVERSE_FROM(DomainObjectMatch<?> start) {
 		TraversalExpression te = new TraversalExpression(start, this.queryExecutor);
-		this.queryExecutor.getAstObjects().add(te);
+		this.queryExecutor.addAstObject(te);
 		Traverse ret = APIAccess.createTraverse(te);
 		return ret;
 	}
@@ -143,7 +143,7 @@ public class DomainQuery {
 	 */
 	public <T> Select<T> SELECT_FROM(DomainObjectMatch<T> start) {
 		SelectExpression<T> se = new SelectExpression<T>(start, this.getIntAccess());
-		this.queryExecutor.getAstObjects().add(se);
+		this.queryExecutor.addAstObject(se);
 		this.astObjectsContainer = se;
 		Select<T> ret = APIAccess.createSelect(se);
 		return ret;
