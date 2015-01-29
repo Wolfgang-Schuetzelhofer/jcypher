@@ -76,7 +76,7 @@ public class PredicateExpression implements IASTObject {
 	public boolean isInCollectionExpression() {
 		return inCollectionExpression;
 	}
-
+	
 	@Override
 	public String toString() {
 		return "[" + operator + "]";

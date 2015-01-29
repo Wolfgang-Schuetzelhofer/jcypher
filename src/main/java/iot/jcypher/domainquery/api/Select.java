@@ -29,7 +29,7 @@ public class Select<T> extends APIObject {
 	 * @param where one or more predicate expressions
 	 */
 	public DomainObjectMatch<T> ELEMENTS(TerminalResult...  where) {
-		// all boolean results have already been added to the astObjects list
+		// all where expressions have already been added to the astObjects list
 		// of the SelectExpression
 		SelectExpression<T> se = this.getSelectExpression();
 		DomainObjectMatch<T> ret =APIAccess.createDomainObjectMatch(

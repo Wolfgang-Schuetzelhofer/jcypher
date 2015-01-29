@@ -31,6 +31,7 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 	private DomainObjectMatch<T> start;
 	private DomainObjectMatch<T> end;
 	private List<IASTObject> astObjects;
+	private List<PredicateExpression> startWithTraversal;
 
 	public SelectExpression(DomainObjectMatch<T> start, IntAccess domainQueryIntAccess) {
 		super();
@@ -55,8 +56,11 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 					throw new RuntimeException(
 							"Predicate expressions within a collection expression must express constraints on " +
 							"either the source set or on a set derived from the source set by traversal");
-				else
-					APIAccess.setNeedsPath(dom, true);
+				else {
+					if (this.startWithTraversal == null)
+						this.startWithTraversal = new ArrayList<PredicateExpression>();
+					this.startWithTraversal.add((PredicateExpression)astObj);
+				}
 			}
 		}
 		this.astObjects.add(astObj);
@@ -64,6 +68,12 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 	
 	public void setEnd(DomainObjectMatch<T> end) {
 		this.end = end;
+		if (this.startWithTraversal != null) {
+			for (PredicateExpression pred : this.startWithTraversal) {
+				DomainObjectMatch<?> dom = pred.getStartDOM();
+				APIAccess.addCollectExpressionOwner(dom, this.end);
+			}
+		}
 	}
 	
 	public DomainObjectMatch<T> getEnd() {
@@ -76,6 +86,10 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 	
 	public QueryExecutor getQueryExecutor() {
 		return this.domainQueryIntAccess.getQueryExecutor();
+	}
+	
+	public List<PredicateExpression> getStartWithTraversal() {
+		return startWithTraversal;
 	}
 
 	public void resetAstObjectsContainer() {

@@ -40,9 +40,10 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 									" Not true for attribute [";
 	
 	private DomainObjectMatch<?> traversalSource;
-	// true, if it is derived by traversal and used in a predicate expression
-	// within a collection expression
-	private boolean needsPath;
+	
+	// a collectExpressionOwner is the DomaiObjectMatch which
+	// is produced by a collection expression
+	private List<DomainObjectMatch<?>> collectExpressionOwner;
 	private Class<T> domainObjectType;
 	private String baseNodeName;
 	private List<JcNode> nodes;
@@ -60,7 +61,6 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		this.pageLength = -1;
 		this.pageOffset = 0;
 		this.pageChanged = false;
-		this.needsPath = false;
 		init(num);
 	}
 	
@@ -202,12 +202,15 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		this.traversalSource = traversalSource;
 	}
 
-	boolean needsPath() {
-		return needsPath;
+	List<DomainObjectMatch<?>> getCollectExpressionOwner() {
+		return collectExpressionOwner;
 	}
-
-	void setNeedsPath(boolean needsPath) {
-		this.needsPath = needsPath;
+	
+	void addCollectExpressionOwner(DomainObjectMatch<?> dom) {
+		if (this.collectExpressionOwner == null)
+			this.collectExpressionOwner = new ArrayList<DomainObjectMatch<?>>();
+		if (!this.collectExpressionOwner.contains(dom))
+			this.collectExpressionOwner.add(dom);
 	}
 
 	private boolean needsRelation(FieldMapping fm) {

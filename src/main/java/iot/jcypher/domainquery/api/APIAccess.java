@@ -106,11 +106,12 @@ public class APIAccess {
 		dom.setTraversalSource(traversalSource);
 	}
 	
-	public static boolean needsPath(DomainObjectMatch<?> dom) {
-		return dom.needsPath();
+	public static List<DomainObjectMatch<?>> getCollectExpressionOwner(DomainObjectMatch<?> dom) {
+		return dom.getCollectExpressionOwner();
 	}
-
-	public static void setNeedsPath(DomainObjectMatch<?> dom, boolean needsPath) {
-		dom.setNeedsPath(needsPath);
+	
+	public static void addCollectExpressionOwner(DomainObjectMatch<?> dom,
+			DomainObjectMatch<?> collectXprOwner) {
+		dom.addCollectExpressionOwner(collectXprOwner);
 	}
 }
