@@ -57,6 +57,10 @@ public class PredicateExpression implements IASTObject {
 		return value_1;
 	}
 
+	public void setValue_1(IPredicateOperand1 value_1) {
+		this.value_1 = value_1;
+	}
+
 	public Object getValue_2() {
 		return value_2;
 	}

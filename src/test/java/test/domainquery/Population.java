@@ -24,6 +24,7 @@ import test.domainquery.model.Addressee;
 import test.domainquery.model.Area;
 import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
+import test.domainquery.model.EArea;
 import test.domainquery.model.EContact;
 import test.domainquery.model.EContact.EContactType;
 import test.domainquery.model.Gender;
@@ -45,6 +46,8 @@ public class Population {
 	private Area vienna;
 	private Area vienna_17;
 	private Area vienna_01;
+	private EArea electronicAreaSF;
+	private EArea electronicAreaUSA;
 	
 	private Address marketStreet_20;
 	private Person john_smith;
@@ -211,6 +214,9 @@ public class Population {
 		vienna_17.setPartOf(vienna);
 		vienna_01 = new Area("1010", "Innere Stadt", AreaType.URBAN_DISTRICT);
 		vienna_01.setPartOf(vienna);
+		electronicAreaUSA = new EArea("region_1", AreaType.ELECTRONIC);
+		electronicAreaSF = new EArea("region_11", AreaType.ELECTRONIC);
+		electronicAreaSF.setPartOf(electronicAreaUSA);
 		
 		this.areas_sf_vienna_01 = new ArrayList<Object>();
 		this.areas_sf_vienna_01.add(this.sanFrancisco);
@@ -236,12 +242,16 @@ public class Population {
 		smith_address.setArea(sanFrancisco);
 		Address smith_address_2 = new Address("Schweden Platz", 32);
 		smith_address_2.setArea(vienna_01);
+		Address smith_address_3 = new Address("Karlsplatz Stachus", 1);
+		smith_address_3.setArea(munich);
 		EContact jsmith_eContact = new EContact(EContactType.EMAIL, "j.smith@email.smith");
+		jsmith_eContact.setArea(electronicAreaSF);
 		
 		john_smith = new Person("John", "Smith", Gender.MALE);
 		john_smith.setMatchString("smith");
 		john_smith.getPointsOfContact().add(smith_address);
 		john_smith.getPointsOfContact().add(smith_address_2);
+		john_smith.getPointsOfContact().add(smith_address_3);
 		john_smith.getPointsOfContact().add(jsmith_eContact);
 		Person caroline_smith = new Person("Caroline", "Smith", Gender.FEMALE);
 		caroline_smith.setMatchString("smith");
@@ -272,6 +282,7 @@ public class Population {
 		this.john_smith_addresses = new ArrayList<Object>();
 		this.john_smith_addresses.add(smith_address);
 		this.john_smith_addresses.add(smith_address_2);
+		this.john_smith_addresses.add(smith_address_3);
 		this.john_smith_globcom = new ArrayList<Object>();
 		this.john_smith_globcom.add(john_smith);
 		this.john_smith_globcom_contacts = new ArrayList<Object>();

@@ -21,10 +21,12 @@ import java.util.List;
 import java.util.ListIterator;
 
 import test.domainmapping.util.AlreadyCompared;
+import test.domainquery.model.AbstractArea;
 import test.domainquery.model.Address;
 import test.domainquery.model.Addressee;
 import test.domainquery.model.Area;
 import test.domainquery.model.Company;
+import test.domainquery.model.EArea;
 import test.domainquery.model.EContact;
 import test.domainquery.model.Person;
 import test.domainquery.model.Subject;
@@ -103,8 +105,8 @@ public class CompareUtil {
 			return CompareUtil.equalsAddress((Address)o_1, (Address)o_2, acs);
 		else if (o_1 instanceof EContact)
 			return CompareUtil.equalsEContact((EContact)o_1, (EContact)o_2, acs);
-		else if (o_1 instanceof Area)
-			return CompareUtil.equalsArea((Area)o_1, (Area)o_2, acs);
+		else if (o_1 instanceof AbstractArea)
+			return CompareUtil.equalsAbstractArea((AbstractArea)o_1, (AbstractArea)o_2, acs);
 		else if (o_1 instanceof Addressee)
 			return CompareUtil.equalsAddressee((Addressee)o_1, (Addressee)o_2, acs);
 		else if (o_1 instanceof List<?>)
@@ -213,6 +215,41 @@ public class CompareUtil {
 		return true;
 	}
 	
+	private static boolean equalsAbstractArea(AbstractArea o_1, AbstractArea o_2, List<AlreadyCompared> alreadyCompareds) {
+		List<AlreadyCompared> acs = alreadyCompareds;
+		if (acs == null)
+			acs = new ArrayList<AlreadyCompared>();
+		AlreadyCompared ac = AlreadyCompared.alreadyCompared(o_1, o_2, acs);
+		if (ac != null) // avoid infinite loops
+			return ac.getResult();
+		
+		ac = new AlreadyCompared(o_1, o_2);
+		acs.add(ac);
+		
+		ac.setResult(true);
+		
+		if (o_1 == o_2)
+			return true;
+		if (o_1 == null) {
+			if (o_2 != null)
+				return ac.setResult(false);
+		}
+		if (o_1.getClass() != o_2.getClass())
+			return ac.setResult(false);
+		else if (o_1 instanceof Area)
+			return CompareUtil.equalsArea((Area)o_1, (Area)o_2, acs);
+		else if (o_1 instanceof EArea)
+			return CompareUtil.equalsEArea((EArea)o_1, (EArea)o_2, acs);
+		if (o_1.getAreaType() != o_2.getAreaType())
+			return ac.setResult(false);
+		if (o_1.getPartOf() == null) {
+			if (o_2.getPartOf() != null)
+				return ac.setResult(false);
+		} else if (!equalsAbstractArea(o_1.getPartOf(), o_2.getPartOf(), acs))
+			return ac.setResult(false);
+		return true;
+	}
+	
 	@SuppressWarnings("rawtypes")
 	private static boolean equalsList(List list_1, List list_2, List<AlreadyCompared> alreadyCompareds) {
 		List<AlreadyCompared> acs = alreadyCompareds;
@@ -267,7 +304,7 @@ public class CompareUtil {
 		if (o_1.getArea() == null) {
 			if (o_2.getArea() != null)
 				return ac.setResult(false);
-		} else if (!equalsArea(o_1.getArea(), o_2.getArea(), acs))
+		} else if (!equalsAbstractArea(o_1.getArea(), o_2.getArea(), acs))
 			return ac.setResult(false);
 		if (o_1.getNumber() != o_2.getNumber())
 			return ac.setResult(false);
@@ -334,6 +371,11 @@ public class CompareUtil {
 		}
 		if (o_1.getClass() != o_2.getClass())
 			return ac.setResult(false);
+		if (o_1.getArea() == null) {
+			if (o_2.getArea() != null)
+				return ac.setResult(false);
+		} else if (!equalsAbstractArea(o_1.getArea(), o_2.getArea(), acs))
+			return ac.setResult(false);
 		if (o_1.geteAddress() == null) {
 			if (o_2.geteAddress() != null)
 				return ac.setResult(false);
@@ -348,40 +390,42 @@ public class CompareUtil {
 		List<AlreadyCompared> acs = alreadyCompareds;
 		if (acs == null)
 			acs = new ArrayList<AlreadyCompared>();
-		AlreadyCompared ac = AlreadyCompared.alreadyCompared(o_1, o_2, acs);
-		if (ac != null) // avoid infinite loops
-			return ac.getResult();
-		
-		ac = new AlreadyCompared(o_1, o_2);
-		acs.add(ac);
-		
-		ac.setResult(true);
 		
 		if (o_1 == o_2)
 			return true;
 		if (o_1 == null) {
 			if (o_2 != null)
-				return ac.setResult(false);
+				return false;
 		}
-		if (o_1.getClass() != o_2.getClass())
-			return ac.setResult(false);
 		if (o_1.getAreaCode() == null) {
 			if (o_2.getAreaCode() != null)
-				return ac.setResult(false);
+				return false;
 		} else if (!o_1.getAreaCode().equals(o_2.getAreaCode()))
-			return ac.setResult(false);
-		if (o_1.getAreaType() != o_2.getAreaType())
-			return ac.setResult(false);
+			return false;
 		if (o_1.getName() == null) {
 			if (o_2.getName() != null)
-				return ac.setResult(false);
+				return false;
 		} else if (!o_1.getName().equals(o_2.getName()))
-			return ac.setResult(false);
-		if (o_1.getPartOf() == null) {
-			if (o_2.getPartOf() != null)
-				return ac.setResult(false);
-		} else if (!equalsArea(o_1.getPartOf(), o_2.getPartOf(), acs))
-			return ac.setResult(false);
+			return false;
+		return true;
+	}
+	
+	private static boolean equalsEArea(EArea o_1, EArea o_2, List<AlreadyCompared> alreadyCompareds) {
+		List<AlreadyCompared> acs = alreadyCompareds;
+		if (acs == null)
+			acs = new ArrayList<AlreadyCompared>();
+		
+		if (o_1 == o_2)
+			return true;
+		if (o_1 == null) {
+			if (o_2 != null)
+				return false;
+		}
+		if (o_1.getRegion() == null) {
+			if (o_2.getRegion() != null)
+				return false;
+		} else if (!o_1.getRegion().equals(o_2.getRegion()))
+			return false;
 		return true;
 	}
 }

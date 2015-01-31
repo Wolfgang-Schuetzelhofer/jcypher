@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,5 +17,6 @@
 package test.domainquery.model;
 
 public enum AreaType {
-	DISTRICT, URBAN_DISTRICT, CITY, VILLAGE, STATE, COUNTRY, CONTINENT, PLANET
+	DISTRICT, URBAN_DISTRICT, CITY, VILLAGE, STATE, COUNTRY, CONTINENT, PLANET,
+	ELECTRONIC
 }

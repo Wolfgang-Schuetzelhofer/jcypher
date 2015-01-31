@@ -16,32 +16,29 @@
 
 package test.domainquery.model;
 
-public class Area extends AbstractArea {
+public abstract class AbstractArea {
 
-	private String areaCode;
-	private String name;
+	private AreaType areaType;
+	private AbstractArea partOf;
 	
-	public Area() {
+	public AbstractArea() {
 		super();
 	}
 
-	public Area(String areaCode, String name, AreaType areaType) {
-		super(areaType);
-		this.areaCode = areaCode;
-		this.name = name;
-	}
-
-	public String getAreaCode() {
-		return areaCode;
-	}
-
-	public String getName() {
-		return name;
-	}
-
-		@Override
-	public String toString() {
-		return "Area [name=" + name + "]";
+	public AbstractArea(AreaType areaType) {
+		super();
+		this.areaType = areaType;
 	}
 	
+	public AreaType getAreaType() {
+		return areaType;
+	}
+
+	public AbstractArea getPartOf() {
+		return partOf;
+	}
+
+	public void setPartOf(AbstractArea partOf) {
+		this.partOf = partOf;
+	}
 }

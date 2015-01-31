@@ -20,6 +20,7 @@ public class EContact implements PointOfContact {
 
 	private EContactType type;
 	private String eAddress;
+	private EArea area;
 	
 	public EContact() {
 		super();
@@ -37,6 +38,14 @@ public class EContact implements PointOfContact {
 
 	public String geteAddress() {
 		return eAddress;
+	}
+
+	public EArea getArea() {
+		return area;
+	}
+
+	public void setArea(EArea area) {
+		this.area = area;
 	}
 
 	@Override
