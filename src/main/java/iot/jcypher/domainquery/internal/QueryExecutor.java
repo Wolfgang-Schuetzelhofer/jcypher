@@ -967,8 +967,12 @@ public class QueryExecutor implements IASTObjectsContainer {
 						}
 					}
 				} else if (astObj instanceof SelectExpression<?>) {
-					clausePerType.selectClauses = createSelectClauses(clausePerType,
+					List<IClause> selCls = createSelectClauses(clausePerType,
 							(SelectExpression<?>) astObj, cbContext);
+					if (selCls != null)
+						clausePerType.selectClauses = selCls;
+					else
+						clausePerType.valid = false;
 				}
 			}
 			
@@ -1218,6 +1222,11 @@ public class QueryExecutor implements IASTObjectsContainer {
 			
 			private List<IClause> createSelectClauses(ClausesPerType cpt, SelectExpression<?> selEx,
 					ClauseBuilderContext cbContext) {
+				// the select can return results only for valid nodes in start set,
+				// because it selects from the start set.
+				if (!cbContext.isNodeValid(APIAccess.getNodeForType(selEx.getStart(), cpt.domainObjectType)))
+					return null;
+				
 				List<IClause> ret = new ArrayList<IClause>();
 				
 				// get the DOMs which are derived by traversal and which occur
@@ -1236,7 +1245,6 @@ public class QueryExecutor implements IASTObjectsContainer {
 						// for all types of the DomainObjectMatch
 						List<Class<?>> typeList = APIAccess.getTypeList(dom);
 						for (int i = 0; i < typeList.size(); i++) {
-							// TODO is this test required? Do test with abstract types.
 							if (cbContext.isNodeValid(APIAccess.getNodes(dom).get(i))) {
 								Class<?> clazz = typeList.get(i);
 								// The TraversalResult contains the cloned traversal clauses
@@ -1255,30 +1263,32 @@ public class QueryExecutor implements IASTObjectsContainer {
 									tpd.paths.addAll(travResult.getStartPaths());
 									int idx2 = 0;
 									for (List<IClause> part : travResult.expressionParts) {
-										// TODO is number of end nodes always equal to number of parts?
-										JcNode nd = travResult.getEndNodes().get(idx2);
-										ClausesPerType intCpt = new ClausesPerType(nd, dom,
-												travResult.domainObjectType);
-										intCpt.concat = WHERE.BR_OPEN();
-										for (IASTObject ao : xpd.xPressions) {
-											if (ao instanceof PredicateExpression) {
-												PredicateExpression pred = (PredicateExpression)ao;
-												IPredicateOperand1 val1 = pred.getValue_1();
-												if (val1 instanceof ValueElement) {
-													ValueElement ve = (ValueElement)val1;
-													ve = cloneVe(ve, ValueAccess.findFirst(ve), nd);
-													pred.setValue_1(ve);
+										if (!part.isEmpty()) {
+											// TODO is number of end nodes always equal to number of parts?
+											JcNode nd = travResult.getEndNodes().get(idx2);
+											ClausesPerType intCpt = new ClausesPerType(nd, dom,
+													travResult.domainObjectType);
+											intCpt.concat = WHERE.BR_OPEN();
+											for (IASTObject ao : xpd.xPressions) {
+												if (ao instanceof PredicateExpression) {
+													PredicateExpression pred = (PredicateExpression)ao;
+													IPredicateOperand1 val1 = pred.getValue_1();
+													if (val1 instanceof ValueElement) {
+														ValueElement ve = (ValueElement)val1;
+														ve = cloneVe(ve, ValueAccess.findFirst(ve), nd);
+														pred.setValue_1(ve);
+													}
 												}
+												addClause(ao, intCpt, cbContext);
+												if (idx == 0)
+													astObject2TraversalPaths.put(ao, tpd);
 											}
-											addClause(ao, intCpt, cbContext);
-											if (idx == 0)
-												astObject2TraversalPaths.put(ao, tpd);
+											idx++;
+											idx2++;
+											ret.addAll(part);
+											ret.add(intCpt.concatenator);
+											ret.add(SEPARATE.nextClause());
 										}
-										idx++;
-										idx2++;
-										ret.addAll(part);
-										ret.add(intCpt.concatenator);
-										ret.add(SEPARATE.nextClause());
 									}
 								} else { // mark the IASTObjects which have already been processed
 									tpd.paths.addAll(travResult.getStartPaths());
@@ -1296,7 +1306,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 					OPTIONAL_MATCH.node(cpt.node).label(nodeLabel)
 				);
 				Concat concat = WHERE.BR_OPEN();
-				List<JcNode> nds = APIAccess.getNodes(selEx.getStart());
+				List<JcNode> nds = cbContext.filterValidNodes(APIAccess.getNodes(selEx.getStart()));
 				iot.jcypher.query.api.predicate.Concatenator concatenator = createWhereIn(concat, cpt.node, nds, false);
 				ClausesPerType tempCpt = new ClausesPerType(cpt.node, cpt.domainObjectMatch, cpt.domainObjectType);
 				tempCpt.concatenator = concatenator;
@@ -1585,15 +1595,18 @@ public class QueryExecutor implements IASTObjectsContainer {
 					}
 					
 					if (nextStep == null) { // we have reached the end
-						this.endNode = new JcNode(this.originalEndNodeName.concat(tmpNodePostPrefix)
-								.concat(String.valueOf(tmpNodeIdx)));
-						StepClause first = this.getFirst();
-						if (first.jcPath != null) {
-							String npm = ValueAccess.getName(first.jcPath).concat(tmpNodePostPrefix)
-									.concat(String.valueOf(tmpNodeIdx));
-							ValueAccess.setName(npm, first.jcPath);
-						}
-						this.matchNode = matchRel.node(this.endNode).label(this.endNodeLabel);
+						if (isValidEndNodeType(types)) {
+							this.endNode = new JcNode(this.originalEndNodeName.concat(tmpNodePostPrefix)
+									.concat(String.valueOf(tmpNodeIdx)));
+							StepClause first = this.getFirst();
+							if (first.jcPath != null) {
+								String npm = ValueAccess.getName(first.jcPath).concat(tmpNodePostPrefix)
+										.concat(String.valueOf(tmpNodeIdx));
+								ValueAccess.setName(npm, first.jcPath);
+							}
+							this.matchNode = matchRel.node(this.endNode).label(this.endNodeLabel);
+						} else
+							this.matchNode = null;
 					} else {
 						this.matchNode = matchRel.node();
 						if (cloneInfo != null)
@@ -1806,6 +1819,15 @@ public class QueryExecutor implements IASTObjectsContainer {
 						return true;
 				}
 				return false;
+			}
+			
+			private List<JcNode> filterValidNodes(List<JcNode> nds) {
+				List<JcNode> ret = new ArrayList<JcNode>();
+				for (JcNode n : nds) {
+					if (this.isNodeValid(n))
+						ret.add(n);
+				}
+				return ret;
 			}
 		}
 		

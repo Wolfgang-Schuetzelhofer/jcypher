@@ -82,6 +82,18 @@ public class APIAccess {
 		return dom.getTypeForNodeName(nodeName);
 	}
 	
+	public static JcNode getNodeForType(DomainObjectMatch<?> dom, Class<?> clazz) {
+		List<Class<?>> tl = dom.getTypeList();
+		int idx = -1;
+		for (int i = 0; i< tl.size(); i++) {
+			if (tl.get(i).equals(clazz)) {
+				idx = i;
+				break;
+			}
+		}
+		return dom.getNodes().get(idx);
+	}
+	
 	public static boolean isPageChanged(DomainObjectMatch<?> dom) {
 		return dom.isPageChanged();
 	}
