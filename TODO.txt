@@ -1,3 +1,5 @@
+DomainObjectMatch.size() for predicates in collection expressions
+
 check TODOs in QueryExecutor
 
 QueryExecutor-StepClause -> refactor code for stepForward and stepBackward (avoid redundancies)
