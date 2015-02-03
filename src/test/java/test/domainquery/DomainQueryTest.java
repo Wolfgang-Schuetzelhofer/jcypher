@@ -51,6 +51,7 @@ import test.domainquery.model.Address;
 import test.domainquery.model.Area;
 import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
+import test.domainquery.model.EContact.EContactType;
 import test.domainquery.model.Person;
 import test.domainquery.model.PointOfContact;
 import test.domainquery.model.Subject;
@@ -115,6 +116,63 @@ public class DomainQueryTest extends AbstractTestSuite {
 		queriesStream = null;
 		QueriesPrintObserver.removeAllEnabledQueries();
 		QueriesPrintObserver.removeAllOutputStreams();
+	}
+	
+	@Test
+	public void testDomainQuery_Collections_06() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_02.txt");
+		
+		Population population = new Population();
+		population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "SELECT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Object> j_smith = q.createMatch(Object.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Object> j_smith_PoCs =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Object.class);
+		DomainObjectMatch<Object> j_smith_Areas = q.TRAVERSE_FROM(j_smith_PoCs).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Object.class);
+		q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria");
+		q.OR();
+		q.WHERE(j_smith_Areas.atttribute("region")).EQUALS("region_1");
+//		q.OR();
+//		q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("USA");
+		
+		DomainObjectMatch<Object> j_smith_FilteredPoCs =
+				q.SELECT_FROM(j_smith_PoCs).ELEMENTS(
+						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria"),
+						q.OR(),
+						q.WHERE(j_smith_Areas.atttribute("areaType")).EQUALS(AreaType.ELECTRONIC),
+						q.OR(),
+						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("USA")
+				);
+		q.WHERE(j_smith_FilteredPoCs.atttribute("number")).EQUALS(32);
+		q.OR();
+		q.WHERE(j_smith_FilteredPoCs.atttribute("type")).EQUALS(EContactType.EMAIL);
+		result = q.execute();
+		
+		List<Object> j_smithResult = result.resultOf(j_smith);
+		List<Object> j_smith_PoCsResult = result.resultOf(j_smith_PoCs);
+		List<Object> j_smith_AreasResult = result.resultOf(j_smith_Areas);
+		List<Object> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPoCs);
+		
+		return;
 	}
 	
 	@Test

@@ -921,6 +921,15 @@ public class QueryExecutor implements IASTObjectsContainer {
 			
 			private void addClause(IASTObject astObj, ClausesPerType clausePerType,
 					ClauseBuilderContext cbContext) {
+				// The following if may only be executed after select clauses have
+				// been added and when thereafter the first expression is added
+				if (clausePerType.selectClauses != null && !clausePerType.closeBracket) {
+					// need to encapsulate the following expressions by brackets
+					clausePerType.concat = clausePerType.concatenator.AND().BR_OPEN();
+					clausePerType.concatenator = null;
+					clausePerType.closeBracket = true;
+				}
+				
 				if (astObj instanceof ConcatenateExpression) {
 					ConcatenateExpression conc = (ConcatenateExpression)astObj;
 					if (conc.getConcatenator() == Concatenator.BR_OPEN) {
@@ -974,7 +983,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 					}
 					clausePerType.concatenator = buildPredicateExpression(pred, concat_1, clausePerType, cbContext);
 				} else if (astObj instanceof TraversalExpression) {
-					clausePerType.traversalClauses = createTraversalClauses(clausePerType,
+					clausePerType.traversalClauses = createTraversalClauses(
+							clausePerType.node, clausePerType,
 							(TraversalExpression) astObj, cbContext, false).getAllClauses(); // no copy with path
 					List<DomainObjectMatch<?>> collXOwner =
 							APIAccess.getCollectExpressionOwner(((TraversalExpression)astObj).getEnd());
@@ -986,24 +996,15 @@ public class QueryExecutor implements IASTObjectsContainer {
 						for (DomainObjectMatch<?> dom : collXOwner) {
 							String nnm = ValueAccess.getName(clausePerType.node).concat(collNodePostPrefix)
 									.concat(APIAccess.getBaseNodeName(dom));
-							JcNode n = new JcNode(nnm);
-							ClausesPerType tempCpt =
-									new ClausesPerType(n,
-											clausePerType.domainObjectMatch,
-											clausePerType.domainObjectType);
-							TraversalResult travResult = createTraversalClauses(tempCpt,
+							TraversalResult travResult = createTraversalClauses(
+									new JcNode(nnm), clausePerType,
 									(TraversalExpression) astObj, cbContext, true); // copy with path
 							cbContext.addTravClausesPerColl(dom,
 									clausePerType.domainObjectType, travResult);
 						}
 					}
 				} else if (astObj instanceof SelectExpression<?>) {
-					List<IClause> selCls = createSelectClauses(clausePerType,
-							(SelectExpression<?>) astObj, cbContext);
-					if (selCls != null)
-						clausePerType.selectClauses = selCls;
-					else
-						clausePerType.valid = false;
+					createAddSelectClauses(clausePerType, (SelectExpression<?>) astObj, cbContext);
 				}
 			}
 			
@@ -1183,13 +1184,15 @@ public class QueryExecutor implements IASTObjectsContainer {
 				return booleanOp;
 			}
 			
-			private TraversalResult createTraversalClauses(ClausesPerType cpt, TraversalExpression travEx,
+			private TraversalResult createTraversalClauses(JcNode origEndNode,
+					ClausesPerType clausesPerType,
+					TraversalExpression travEx,
 					ClauseBuilderContext cbContext, boolean copy) {
 				TraversalResult ret = new TraversalResult();
 				ret.expressionParts = new ArrayList<List<IClause>>();
 				String startBName = APIAccess.getBaseNodeName(travEx.getStart());
-				String origEndNodeName = ValueAccess.getName(cpt.node);
-				String endNodeLabel = getMappingInfo().getLabelForClass(cpt.domainObjectType);
+				String endNodeLabel = getMappingInfo().getLabelForClass(clausesPerType.domainObjectType);
+				String origEndNodeName = ValueAccess.getName(origEndNode);
 				
 				List<StepClause> stepCls = new ArrayList<StepClause>();
 				for (String validNodeName : cbContext.validNodes) {
@@ -1211,19 +1214,18 @@ public class QueryExecutor implements IASTObjectsContainer {
 				
 				if (stepCls.size() == 1) { // don't need to build union of multiple sets
 					StepClause sc = stepCls.get(0);
-					String nnm = ValueAccess.getName(cpt.node);
 					JcNode endNd = sc.getEndNode();
-					ValueAccess.setName(nnm,
+					ValueAccess.setName(origEndNodeName,
 							endNd);
 					if (sc.jcPath != null) {
-						ValueAccess.setName(sc.pathFromNode(nnm), sc.jcPath);
+						ValueAccess.setName(sc.pathFromNode(origEndNodeName), sc.jcPath);
 						ret.getStartPaths().add(sc.jcPath);
-						cpt.node = endNd;
-						ret.getClausesPerTypeList().add(cpt);
+						ret.getClausesPerTypeList().add(
+								new ClausesPerType(endNd, clausesPerType.domainObjectMatch,
+										clausesPerType.domainObjectType));
 					}
 				} else if (stepCls.size() > 1) {
 					List<JcNode> tempNodes = new ArrayList<JcNode>();
-					int idx = 0;
 					for (StepClause sc : stepCls) {
 						JcNode endNd = sc.getEndNode();
 						tempNodes.add(endNd);
@@ -1231,43 +1233,39 @@ public class QueryExecutor implements IASTObjectsContainer {
 							ValueAccess.setName(sc.pathFromNode(
 									ValueAccess.getName(sc.getEndNode())), sc.jcPath);
 							ret.getStartPaths().add(sc.jcPath);
-							if (idx == 0) {
-								cpt.node = endNd;
-								ret.getClausesPerTypeList().add(cpt);
-							} else {
-								ClausesPerType ncpt = new ClausesPerType(endNd, cpt.domainObjectMatch,
-										cpt.domainObjectType);
-								ret.getClausesPerTypeList().add(ncpt);
-							}
+							ret.getClausesPerTypeList().add(
+									new ClausesPerType(endNd, clausesPerType.domainObjectMatch,
+											clausesPerType.domainObjectType));
 						}
-						idx++;
 					}
 					if (!copy) { // in this case the collection expression using
 										// the copy works on each part-path in turn
 										// therefore  we don't need to build the union
 						List<IClause> part = new ArrayList<IClause>();
 						part.add(SEPARATE.nextClause());
-						part.add(OPTIONAL_MATCH.node(cpt.node).label(endNodeLabel));
+						part.add(OPTIONAL_MATCH.node(origEndNode).label(endNodeLabel));
 						Concat concat = WHERE.BR_OPEN();
-						part.add(createWhereIn(concat, cpt.node, tempNodes, false));
+						part.add(createWhereIn(concat, origEndNode, tempNodes, false));
 						ret.expressionParts.add(part);
 					}
 				} else {
-					cpt.valid = false;
+					clausesPerType.valid = false;
 //					throw new RuntimeException("attribute(s): " + invalidAttribs + " do(es) not exist " +
 //							"in domain object type(s): " + inValidTypes);
 				}
 				return ret;
 			}
 			
-			private List<IClause> createSelectClauses(ClausesPerType cpt, SelectExpression<?> selEx,
+			private void createAddSelectClauses(ClausesPerType cpt, SelectExpression<?> selEx,
 					ClauseBuilderContext cbContext) {
 				// the select can return results only for valid nodes in start set,
 				// because it selects from the start set.
-				if (!cbContext.isNodeValid(APIAccess.getNodeForType(selEx.getStart(), cpt.domainObjectType)))
-					return null;
+				if (!cbContext.isNodeValid(APIAccess.getNodeForType(selEx.getStart(), cpt.domainObjectType))) {
+					cpt.valid = false;
+					return;
+				}
 				
-				List<IClause> ret = new ArrayList<IClause>();
+				List<IClause> selectClauses = new ArrayList<IClause>();
 				
 				// get the DOMs which are derived by traversal and which occur
 				// as start in a predicate expression within this collection expression.
@@ -1305,11 +1303,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 									int idx2 = 0;
 									for (List<IClause> part : travResult.expressionParts) {
 										if (!part.isEmpty()) {
-											// TODO is number of end nodes always equal to number of parts?
 											ClausesPerType iCpt = travResult.clausesPerTypeList.get(idx2);
-											JcNode nd = iCpt.node;
-											ClausesPerType intCpt = new ClausesPerType(nd, dom,
-													iCpt.domainObjectType);
+											
+											if (dom != iCpt.domainObjectMatch)
+												throw new RuntimeException("internal error");
 											
 											// if there are predicate expressions which already
 											// constrain the result set of the traversal expression
@@ -1318,32 +1315,32 @@ public class QueryExecutor implements IASTObjectsContainer {
 											// the collection expression
 											boolean bracket = false;
 											if (iCpt.concatenator != null) {
-												intCpt.concat = iCpt.concatenator.BR_CLOSE().AND().BR_OPEN();
-												intCpt.concatenator = null;
+												iCpt.concat = iCpt.concatenator.BR_CLOSE().AND().BR_OPEN();
+												iCpt.concatenator = null;
 												bracket = true;
 											} else
-												intCpt.concat = WHERE.BR_OPEN();
+												iCpt.concat = WHERE.BR_OPEN();
 											for (IASTObject ao : xpd.xPressions) {
 												if (ao instanceof PredicateExpression) {
 													PredicateExpression pred = (PredicateExpression)ao;
 													IPredicateOperand1 val1 = pred.getValue_1();
 													if (val1 instanceof ValueElement) {
 														ValueElement ve = (ValueElement)val1;
-														ve = cloneVe(ve, ValueAccess.findFirst(ve), nd);
+														ve = cloneVe(ve, ValueAccess.findFirst(ve), iCpt.node);
 														pred.setValue_1(ve);
 													}
 												}
-												addClause(ao, intCpt, cbContext);
+												addClause(ao, iCpt, cbContext);
 												if (idx == 0)
 													astObject2TraversalPaths.put(ao, tpd);
 											}
 											if (bracket)
-												intCpt.concatenator = intCpt.concatenator.BR_CLOSE();
+												iCpt.concatenator = iCpt.concatenator.BR_CLOSE();
 											idx++;
 											idx2++;
-											ret.addAll(part);
-											ret.add(intCpt.concatenator);
-											ret.add(SEPARATE.nextClause());
+											selectClauses.addAll(part);
+											selectClauses.add(iCpt.concatenator);
+											selectClauses.add(SEPARATE.nextClause());
 										}
 									}
 								} else { // mark the IASTObjects which have already been processed
@@ -1358,18 +1355,16 @@ public class QueryExecutor implements IASTObjectsContainer {
 				}
 				
 				String nodeLabel = getMappingInfo().getLabelForClass(cpt.domainObjectType);
-				ret.add(
+				selectClauses.add(
 					OPTIONAL_MATCH.node(cpt.node).label(nodeLabel)
 				);
 				Concat concat = WHERE.BR_OPEN();
 				List<JcNode> nds = cbContext.filterValidNodes(APIAccess.getNodes(selEx.getStart()));
-				iot.jcypher.query.api.predicate.Concatenator concatenator = createWhereIn(concat, cpt.node, nds, false);
-				ClausesPerType tempCpt = new ClausesPerType(cpt.node, cpt.domainObjectMatch, cpt.domainObjectType);
-				tempCpt.concatenator = concatenator;
+				cpt.concatenator = createWhereIn(concat, cpt.node, nds, false);
 				cbContext.stepClausesCount = 0;
 
 				if (selEx.getAstObjects().size() > 0)
-					addClause(new ConcatenateExpression(Concatenator.BR_OPEN), tempCpt, cbContext);
+					addClause(new ConcatenateExpression(Concatenator.BR_OPEN), cpt, cbContext);
 				
 				for (IASTObject ao : selEx.getAstObjects()) {
 					TraversalPathsPerDOM tpd = astObject2TraversalPaths.get(ao);
@@ -1377,25 +1372,20 @@ public class QueryExecutor implements IASTObjectsContainer {
 						if (!tpd.consumed) {
 							tpd.consumed = true;
 							// add clauses for the traversals (match path start)
-							addTraversalConstraints2Select(tpd.paths, tempCpt);
+							addTraversalConstraints2Select(tpd.paths, cpt);
 						}
 					} else {
-						addClause(ao, tempCpt, cbContext);
-						if(!tempCpt.valid)
+						addClause(ao, cpt, cbContext);
+						if(!cpt.valid)
 							break;
 					}
 				}
 				
 				
-				if (tempCpt.valid && selEx.getAstObjects().size() > 0)
-					addClause(new ConcatenateExpression(Concatenator.BR_CLOSE), tempCpt, cbContext);
+				if (cpt.valid && selEx.getAstObjects().size() > 0)
+					addClause(new ConcatenateExpression(Concatenator.BR_CLOSE), cpt, cbContext);
 				
-				if (tempCpt.concatenator != null)
-					ret.add(tempCpt.concatenator);
-				else
-					ret.add(concatenator);
-				
-				return ret;
+				cpt.selectClauses = selectClauses;
 			}
 			
 			private void addTraversalConstraints2Select(List<JcPath> paths, ClausesPerType cpt) {
