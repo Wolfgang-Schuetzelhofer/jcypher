@@ -1587,9 +1587,9 @@ public class QueryExecutor implements IASTObjectsContainer {
 					
 					if (doBuild) {
 						if (this.step.getDirection() == 0) // forward
-							this.buildForwardStep(tmpNodeIdx, isList, null);
+							this.buildStep(tmpNodeIdx, isList, null, true);
 						else
-							this.buildBackwardStep(tmpNodeIdx, null);
+							this.buildStep(tmpNodeIdx, isList, null, false);
 					}
 					
 					// test for additional paths
@@ -1598,6 +1598,94 @@ public class QueryExecutor implements IASTObjectsContainer {
 					}
 				}
 				
+				private void buildStep(int tmpNodeIdx, boolean listOrArray, CloneInfo cloneInfo,
+						boolean forward) {
+					FieldMapping fm;
+					if (this.fieldMappings != null && !forward) // there are multiple navigation paths
+						fm = this.fieldMappings.get(this.fmIndex);
+					else
+						fm = this.fieldMapping;
+					
+					Relation matchRel = matchNode.relation().type(fm.getPropertyOrRelationName());
+					if (forward)
+						matchRel = matchRel.out();
+					else
+						matchRel = matchRel.in();
+					
+					if (this.step.getMinDistance() != 1)
+						matchRel = matchRel.minHops(this.step.getMinDistance());
+					if (this.step.getMaxDistance() != 1) {
+						if (this.step.getMaxDistance() == -1)
+							matchRel = matchRel.maxHopsUnbound();
+						else
+							matchRel = matchRel.maxHops(this.step.getMaxDistance());
+					}
+					
+					Class<?> typ;
+					CompoundObjectType cType = null;
+					if (forward) {
+						if (listOrArray) {
+							cType = getMappingInfo().getInternalDomainAccess()
+									.getFieldComponentType(this.fieldMapping.getClassFieldName());
+						} else {
+							cType = getMappingInfo().getInternalDomainAccess()
+									.getConcreteFieldType(this.fieldMapping.getClassFieldName());
+						}
+						typ = cType.getType();
+					} else { // backward
+						typ = fm.getField().getDeclaringClass();
+					}
+					
+					boolean isList = typ.equals(Collection.class) ||
+							typ.equals(Array.class); // TODO alternative check for surrogate
+					Step nextStep = null;
+					int nextStepIndex = this.stepIndex;
+					List<Class<?>> types;
+					if (isList) { // need to advance one step
+						// surrogates have one (non-transient) field
+						if (forward) {
+							nextStep = this.step.createStep(this.step.getDirection(),
+									getMappingInfo().getObjectMappingFor(typ)
+										.fieldMappingsIterator().next().getPropertyOrRelationName());
+						} else { // backward
+							nextStep = this.step.createStep(this.step.getDirection(),
+									this.step.getAttributeName());
+						}
+						types = new ArrayList<Class<?>>();
+						types.add(typ);
+					} else {
+						nextStepIndex++;
+						if (nextStepIndex <= this.traversalExpression.getSteps().size() - 1)
+							nextStep = this.traversalExpression.getSteps().get(nextStepIndex);
+						if (forward)
+							types = cType.getTypes(true);
+						else
+							types = getMappingInfo().getCompoundTypesFor(typ);
+					}
+					
+					if (nextStep == null) { // we have reached the end
+						if (isValidEndNodeType(types)) {
+							this.endNode = new JcNode(this.originalEndNodeName.concat(tmpNodePostPrefix)
+									.concat(String.valueOf(tmpNodeIdx)));
+							StepClause first = this.getFirst();
+							if (first.jcPath != null) {
+								String npm = ValueAccess.getName(first.jcPath).concat(tmpNodePostPrefix)
+										.concat(String.valueOf(tmpNodeIdx));
+								ValueAccess.setName(npm, first.jcPath);
+							}
+							this.matchNode = matchRel.node(this.endNode).label(this.endNodeLabel);
+						} else
+							this.matchNode = null;
+					} else {
+						this.matchNode = matchRel.node();
+						if (cloneInfo != null)
+							this.buildNextClone(tmpNodeIdx, types, isList, cloneInfo);
+						else
+							this.buildNext(tmpNodeIdx, types, isList, nextStep, nextStepIndex);
+					}
+				}
+				
+				@Deprecated
 				private void buildForwardStep(int tmpNodeIdx, boolean listOrArray, CloneInfo cloneInfo) {
 					Relation matchRel = matchNode.relation().type(this.fieldMapping.getPropertyOrRelationName());
 					matchRel = matchRel.out();
@@ -1661,6 +1749,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 					}
 				}
 				
+				@Deprecated
 				private void buildBackwardStep(int tmpNodeIdx, CloneInfo cloneInfo) {
 					FieldMapping fm;
 					if (this.fieldMappings != null) // there are multiple navigation paths
@@ -1771,9 +1860,9 @@ public class QueryExecutor implements IASTObjectsContainer {
 					}
 					
 					if (this.step.getDirection() == 0) // forward
-						this.buildForwardStep(tmpNodeIdx, isList, cli);
+						this.buildStep(tmpNodeIdx, isList, cli, true);
 					else
-						this.buildBackwardStep(tmpNodeIdx, cli);
+						this.buildStep(tmpNodeIdx, isList, cli, false);
 					
 					// test for additional paths
 					if (this.fieldMappings != null && this.fmIndex < this.fieldMappings.size() - 1) {
