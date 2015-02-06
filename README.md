@@ -1,4 +1,4 @@
-JCypher
+![](https://github.com/Wolfgang-Schuetzelhofer/jcypher/blob/master/src/test/resources/docs/jcypher_logo_3_long_1.png)
 =======
 
 ## Introduction
