@@ -599,10 +599,12 @@ public class QueryExecutor implements IASTObjectsContainer {
 		private void testValidForType(JcNode first,
 				ValueElement ve, ClausesPerType clausesPerType) {
 			if (ve == first) {
+				clausesPerType.oneValid = true;
 				return;
 			}
 			if (clausesPerType.previousOr || !Settings.strict) { // build the clause even if the expression will return no result
-				return;									     // because it is concatenated by OR
+				clausesPerType.oneValid = true; // because it is concatenated by OR
+				return;	
 			}
 			Object hint = ValueAccess.getAnyHint(ve, APIAccess.hintKey_validNodes);
 			if (hint instanceof List<?>) {
@@ -610,6 +612,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				String nm = ValueAccess.getName(clausesPerType.node);
 				for(JcNode n : validFor) {
 					if (nm.startsWith(ValueAccess.getName(n))) {
+						clausesPerType.oneValid = true;
 						return;
 					}
 				}
@@ -895,9 +898,13 @@ public class QueryExecutor implements IASTObjectsContainer {
 				}
 				for (ClausesPerType clausePerType : clausesPerTypeList) {
 					if (clausePerType.valid) {
-						// add node names for which there is (will be) a match clause
-						String nm = ValueAccess.getName(clausePerType.node);
-						cbContext.validNodes.add(nm);
+						if (clausePerType.testForNextIsOr && !clausePerType.oneValid) // is not valid because we have reached
+							clausePerType.valid = false;		// the end, there is no next OR
+						else {
+							// add node names for which there is (will be) a match clause
+							String nm = ValueAccess.getName(clausePerType.node);
+							cbContext.validNodes.add(nm);
+						}
 					}
 				}
 				xpd.clausesPerTypes = clausesPerTypeList;
@@ -1107,11 +1114,11 @@ public class QueryExecutor implements IASTObjectsContainer {
 							else
 								ret = booleanOp.IN_list(val_2);
 						} else if (op == Operator.CONTAINS) {
+							// value_1 must be a DomainObjactMatch,
 							// must be in collection expression
 							// validity test has already been done
-							if (pred.getValue_1() instanceof DomainObjectMatch<?>) {
-								
-							}
+							if (val2IsDom)
+								ret = createWhereIn(concat_1, val_1, (List<JcNode>) val_2, negate);
 						} else if (op == Operator.IS_NULL)
 							ret = booleanOp.IS_NULL();
 						else if (op == Operator.LIKE)
@@ -1417,13 +1424,25 @@ public class QueryExecutor implements IASTObjectsContainer {
 				stepClause.buildAll(travEx, tmpNodeIdx, startNodeName, endNodeLabel,
 						origEndNodeName, copy);
 				
-				List<StepClause> validClauses = new ArrayList<StepClause>();
-				for (StepClause sc : stepClause.stepClauses) {
-					if (sc.getTotalMatchNode() != null)
-						validClauses.add(sc);
+				return this.filterValidClauses(stepClause.stepClauses);
+			}
+			
+			private List<StepClause> filterValidClauses(List<StepClause> toFilter) {
+				List<StepClause> ret = new ArrayList<StepClause>();
+				for(StepClause sc : toFilter) {
+					if (sc.getTotalMatchNode() != null) {
+						boolean doAdd = true;
+						for (StepClause scRet : ret) {
+							if (scRet.isSameAs(sc)) {
+								doAdd = false;
+								break;
+							}
+						}
+						if (doAdd)
+							ret.add(sc);
+					}
 				}
-				
-				return validClauses;
+				return ret;
 			}
 			
 			/***************************/
@@ -1897,6 +1916,40 @@ public class QueryExecutor implements IASTObjectsContainer {
 				private String pathFromNode(String nodeName) {
 					return nodeName.replaceFirst(APIAccess.nodePrefix, APIAccess.pathPrefix);
 				}
+				
+				private boolean isSameAs(StepClause toCompare) {
+					if (toCompare == null)
+						return false;
+					
+					if (!this.originalEndNodeName.equals(toCompare.originalEndNodeName))
+						return false;
+					
+					if (this.startNode != null) {
+						if (toCompare.startNode == null)
+							return false;
+						if (!ValueAccess.getName(this.startNode).equals(
+								ValueAccess.getName(toCompare.startNode)))
+							return false;
+					} else if (toCompare.startNode != null)
+						return false;
+					
+					String relName = getFieldMapping().getPropertyOrRelationName();
+					String oRelName = toCompare.getFieldMapping().getPropertyOrRelationName();
+					if (!relName.equals(oRelName))
+						return false;
+					
+					if (this.next != null)
+						return this.next.isSameAs(toCompare.next);
+					else if (toCompare.next != null)
+						return false;
+					return true;
+				}
+
+				private FieldMapping getFieldMapping() {
+					if (this.fieldMappings != null)
+						return this.fieldMappings.get(this.fmIndex);
+					return this.fieldMapping;
+				}
 			}
 			
 			/***********************************/
@@ -2014,6 +2067,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 			private JcNode node;
 			private Class<?> domainObjectType;
 			private boolean valid;
+			private boolean oneValid;
 			private boolean previousOr;
 			private boolean testForNextIsOr;
 			private int pageOffset;
@@ -2032,6 +2086,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				this.domainObjectMatch = dom;
 				this.domainObjectType = type;
 				this.valid = true;
+				this.oneValid = false;
 				this.previousOr = false;
 				this.testForNextIsOr = false;
 				this.closeBracket = false;

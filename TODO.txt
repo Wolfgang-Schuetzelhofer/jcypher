@@ -1,3 +1,5 @@
+check traversal query "BACK_03" for optimization on IN clause
+
 DomainObjectMatch.size() for predicates in collection expressions
 
 check TODOs in QueryExecutor

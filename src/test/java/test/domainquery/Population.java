@@ -69,9 +69,9 @@ public class Population {
 	private List<Object> smithFamily_no_john;
 	private List<Object> subjectsInEurope;
 	private List<Object> subjectsInUsa;
-	private List<Object> areas_sf_vienna_01;
-	private List<Object> areas_sf_vienna;
-	private List<Object> areas_calif_vienna_up;
+	private List<Object> areas_sf_vienna_01_munich;
+	private List<Object> areas_sf_vienna_munich;
+	private List<Object> areas_calif_vienna_munich_up;
 	
 	public Population() {
 		super();
@@ -150,16 +150,16 @@ public class Population {
 		return john_smith_globcom_contacts;
 	}
 
-	public List<Object> getAreas_sf_vienna_01() {
-		return areas_sf_vienna_01;
+	public List<Object> getAreas_sf_vienna_01_munich() {
+		return areas_sf_vienna_01_munich;
 	}
 
-	public List<Object> getAreas_sf_vienna() {
-		return areas_sf_vienna;
+	public List<Object> getAreas_sf_vienna_munich() {
+		return areas_sf_vienna_munich;
 	}
 
-	public List<Object> getAreas_calif_vienna_up() {
-		return areas_calif_vienna_up;
+	public List<Object> getAreas_calif_vienna_munich_up() {
+		return areas_calif_vienna_munich_up;
 	}
 
 	public Address getMarketStreet_20() {
@@ -168,6 +168,10 @@ public class Population {
 
 	public Area getSanFrancisco() {
 		return sanFrancisco;
+	}
+
+	public Area getMunich() {
+		return munich;
 	}
 
 	public List<Object> getSmithFamily_addressee() {
@@ -200,7 +204,7 @@ public class Population {
 		europe.setPartOf(earth);
 		germany = new Area("2", "Germany", AreaType.COUNTRY);
 		germany.setPartOf(europe);
-		munich = new Area(null, "munich", AreaType.CITY);
+		munich = new Area(null, "Munich", AreaType.CITY);
 		munich.setPartOf(germany);
 		newYork = new Area(null, "New York", AreaType.STATE);
 		newYork.setPartOf(usa);
@@ -218,22 +222,25 @@ public class Population {
 		electronicAreaSF = new EArea("region_11", AreaType.ELECTRONIC);
 		electronicAreaSF.setPartOf(electronicAreaUSA);
 		
-		this.areas_sf_vienna_01 = new ArrayList<Object>();
-		this.areas_sf_vienna_01.add(this.sanFrancisco);
-		this.areas_sf_vienna_01.add(this.vienna_01);
+		this.areas_sf_vienna_01_munich = new ArrayList<Object>();
+		this.areas_sf_vienna_01_munich.add(this.sanFrancisco);
+		this.areas_sf_vienna_01_munich.add(this.munich);
+		this.areas_sf_vienna_01_munich.add(this.vienna_01);
 		
-		this.areas_sf_vienna = new ArrayList<Object>();
-		this.areas_sf_vienna.add(this.sanFrancisco);
-		this.areas_sf_vienna.add(this.vienna);
+		this.areas_sf_vienna_munich = new ArrayList<Object>();
+		this.areas_sf_vienna_munich.add(this.sanFrancisco);
+		this.areas_sf_vienna_munich.add(this.vienna);
+		this.areas_sf_vienna_munich.add(this.munich);
 		
-		this.areas_calif_vienna_up = new ArrayList<Object>();
-		this.areas_calif_vienna_up.add(california);
-		this.areas_calif_vienna_up.add(usa);
-		this.areas_calif_vienna_up.add(northAmerica);
-		this.areas_calif_vienna_up.add(earth);
-		this.areas_calif_vienna_up.add(vienna);
-		this.areas_calif_vienna_up.add(austria);
-		this.areas_calif_vienna_up.add(europe);
+		this.areas_calif_vienna_munich_up = new ArrayList<Object>();
+		this.areas_calif_vienna_munich_up.add(california);
+		this.areas_calif_vienna_munich_up.add(usa);
+		this.areas_calif_vienna_munich_up.add(northAmerica);
+		this.areas_calif_vienna_munich_up.add(earth);
+		this.areas_calif_vienna_munich_up.add(vienna);
+		this.areas_calif_vienna_munich_up.add(austria);
+		this.areas_calif_vienna_munich_up.add(europe);
+		this.areas_calif_vienna_munich_up.add(germany);
 	}
 	
 	private void createSmithFamily(List<Object> domainObjects) {
@@ -285,8 +292,11 @@ public class Population {
 		this.john_smith_addresses.add(smith_address_3);
 		this.john_smith_globcom = new ArrayList<Object>();
 		this.john_smith_globcom.add(john_smith);
+		
 		this.john_smith_globcom_contacts = new ArrayList<Object>();
-		this.john_smith_globcom_contacts.addAll(this.john_smith_addresses);
+		this.john_smith_globcom_contacts.add(smith_address_3);
+		this.john_smith_globcom_contacts.add(smith_address);
+		this.john_smith_globcom_contacts.add(smith_address_2);
 		this.john_smith_globcom_contacts.add(jsmith_eContact);
 		
 		this.smithFamily_addressee = new ArrayList<Object>();
@@ -420,7 +430,7 @@ public class Population {
 		this.christa_berghammer_globcom.add(globCom);
 		
 		this.john_smith_globcom.add(0, globCom);
-		this.john_smith_globcom_contacts.add(0, globCom_address);
+		this.john_smith_globcom_contacts.add(1, globCom_address);
 		this.john_smith_globcom_contacts.add(globCom_phone);
 		
 		this.subjectsInEurope.add(smallCom);

@@ -64,7 +64,7 @@ ORDER BY n_1_0.street
 WHERE NOT n_1_0 IS NULL
 RETURN DISTINCT id(n_1_0) AS id_1_0
 SKIP 2
-LIMIT 1
+LIMIT 2
 OPTIONAL MATCH (n_0_0:Company)
 WHERE n_0_0.name = 'Global Company' OR (n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John')
 OPTIONAL MATCH (n_0_1:Person)
@@ -76,7 +76,7 @@ WHERE ((NOT n_1_1_t2 IS NULL AND n_1_1 IN[n_1_1_t2]) OR (NOT n_1_1_t3 IS NULL AN
 WITH n_1_1
 WHERE NOT n_1_1 IS NULL
 RETURN DISTINCT id(n_1_1) AS id_1_1
-LIMIT 1
+LIMIT 0
 OPTIONAL MATCH (n_0_0:Company)
 WHERE n_0_0.name = 'Global Company' OR (n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John')
 OPTIONAL MATCH (n_0_1:Person)
@@ -109,9 +109,7 @@ OPTIONAL MATCH (n_0_1:Person)
 WHERE n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John'
 OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_0:Address)
 WHERE n_1_0.street =~ 'Mark.*'
-OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_1:EContact)
-WHERE n_1_1.street =~ 'Mark.*'
-RETURN DISTINCT id(n_0_1) AS id_0_1, id(n_1_0) AS id_1_0, id(n_1_1) AS id_1_1
+RETURN DISTINCT id(n_0_1) AS id_0_1, id(n_1_0) AS id_1_0
 ------------------------------------------------------------
 
 ----TRAVERSAL_06:
