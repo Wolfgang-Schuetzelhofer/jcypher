@@ -53,12 +53,14 @@ import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.factories.clause.WITH;
+import iot.jcypher.query.factories.xpression.I;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcPath;
+import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
 import iot.jcypher.query.writer.Format;
@@ -1125,7 +1127,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 							if (val2IsDom)
 								ret = createWhereIn(concat_1, val_1, (List<JcNode>) val_2, negate);
 							else
-								ret = createContains(concat_1, (JcCollection) val_1, val_2, negate);
+								ret = createContains(concat_1, (JcCollection) val_1, (Object[]) val_2, negate);
 						} else if (op == Operator.IS_NULL)
 							ret = booleanOp.IS_NULL();
 						else if (op == Operator.LIKE)
@@ -1148,15 +1150,30 @@ public class QueryExecutor implements IASTObjectsContainer {
 			}
 			
 			private iot.jcypher.query.api.predicate.Concatenator createContains(
-					Concat concat, JcCollection val_1, Object val_2,
+					Concat concat, JcCollection val_1, Object[] val_2,
 					boolean negate) {
-//				Concat concat_1 = concat;
-//				if (concat_1 == null)
-//					concat_1 = WHERE.BR_OPEN();
-//				JcValue v = new JcValue("x");
-//				iot.jcypher.query.api.predicate.Concatenator fx =
-//						WHERE.valueOf((C.FILTER().fromAll(v).IN(val_1).WHERE().valueOf(v).EQUALS(val_2));
-				return null;
+				JcValue x = new JcValue("x");
+				iot.jcypher.query.api.predicate.Concatenator fx = null;
+				if (val_2.length == 1) {
+					if (concat != null)
+						fx = concat.holdsTrue(I.forAny(x).IN(val_1).WHERE().valueOf(x).EQUALS(val_2[0]));
+					else
+						fx =	WHERE.holdsTrue(I.forAny(x).IN(val_1).WHERE().valueOf(x).EQUALS(val_2[0]));
+				} else if (val_2.length > 1) {
+					Concat concat_1;
+					if (concat != null)
+						concat_1 = concat.BR_OPEN();
+					else
+						concat_1 = WHERE.BR_OPEN();
+					for (int i = 0; i < val_2.length;i++) {
+						if (fx == null)
+							fx = concat_1.holdsTrue(I.forAny(x).IN(val_1).WHERE().valueOf(x).EQUALS(val_2[i]));
+						else
+							fx = fx.AND().holdsTrue(I.forAny(x).IN(val_1).WHERE().valueOf(x).EQUALS(val_2[i]));
+					}
+					fx = fx.BR_CLOSE();
+				}
+				return fx;
 			}
 
 			/**

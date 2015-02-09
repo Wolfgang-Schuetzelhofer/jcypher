@@ -296,8 +296,12 @@ public class FieldMapping {
 	 * @return
 	 */
 	protected Class<?> getComponentType(GrNode rNode) {
-		// do nothing in this implementation
+		// do nothing in this implementation except for primitive arrays
 		// overwritten by subclasses
+		Class<?> compType;
+		if (this.getFieldType().isArray() && (compType = this.getFieldType().getComponentType()).isPrimitive()) {
+			return compType;
+		}
 		return null;
 	}
 	

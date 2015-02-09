@@ -1,0 +1,29 @@
+----PREDICATES_01:
+OPTIONAL MATCH (n_0_0:NumberHolder)
+WHERE  ANY(x IN n_0_0.numbers WHERE x = 2)
+RETURN DISTINCT id(n_0_0) AS id_0_0
+------------------------------------------------------------
+
+----PREDICATES_02:
+OPTIONAL MATCH (n_0_0:NumberHolder)
+WHERE  ANY(x IN n_0_0.numbers WHERE x = 2) AND  ANY(x IN n_0_0.numbers WHERE x = 5)
+RETURN DISTINCT id(n_0_0) AS id_0_0
+------------------------------------------------------------
+
+----PREDICATES_03:
+OPTIONAL MATCH (n_0_0:NumberHolder)
+WHERE  ANY(x IN n_0_0.numbers WHERE x = 2) OR  ANY(x IN n_0_0.numbers WHERE x = 5)
+RETURN DISTINCT id(n_0_0) AS id_0_0
+------------------------------------------------------------
+
+----PREDICATES_04:
+OPTIONAL MATCH (n_0_0:NumberHolder)
+WHERE ( ANY(x IN n_0_0.numbers WHERE x = 2) AND  ANY(x IN n_0_0.numbers WHERE x = 3))
+RETURN DISTINCT id(n_0_0) AS id_0_0
+------------------------------------------------------------
+
+----PREDICATES_05:
+OPTIONAL MATCH (n_0_0:NumberHolder)
+WHERE ( ANY(x IN n_0_0.numbers WHERE x = 2) AND  ANY(x IN n_0_0.numbers WHERE x = 5))
+RETURN DISTINCT id(n_0_0) AS id_0_0
+------------------------------------------------------------

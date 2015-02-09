@@ -18,6 +18,8 @@ package iot.jcypher.domain.mapping;
 
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 
+import java.lang.reflect.Array;
+import java.lang.reflect.Constructor;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -134,8 +136,16 @@ public class MappingUtil {
 						for (Object elem : coll) {
 							converted.add(convertFromProperty(elem, componentType, null, null));
 						}
-						coll.clear();
-						coll.addAll(converted);
+						if (componentType.isPrimitive()) {
+							Object array = Array.newInstance(componentType, coll.size());
+							for (int i = 0; i < converted.size(); i++) {
+								Array.set(array, i, converted.get(i));
+							}
+							return array;
+						} else {
+							coll.clear();
+							coll.addAll(converted);
+						}
 					}
 				}
 			} else if (Map.class.isAssignableFrom(targetType)) { // only possible for empty maps

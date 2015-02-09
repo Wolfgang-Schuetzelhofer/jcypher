@@ -880,7 +880,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		String testId;
 		String qCypher;
 		
-		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_01.txt");
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_PREDICATES_01.txt");
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
@@ -896,6 +896,79 @@ public class DomainQueryTest extends AbstractTestSuite {
 		result = q.execute();
 		
 		List<NumberHolder> nhResult = result.resultOf(nh);
+		assertTrue(nhResult.size() == 1 && equalsIntArrays(nhResult.get(0).getNumbers(), new int[]{1,2,3}));
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 02 ****************************************/
+		testId = "PREDICATES_02";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		nh = q.createMatch(NumberHolder.class);
+
+		q.WHERE(nh.collectionAtttribute("numbers")).CONTAINS_elements(2);
+		q.WHERE(nh.collectionAtttribute("numbers")).CONTAINS_elements(5);
+		
+		result = q.execute();
+		
+		nhResult = result.resultOf(nh);
+		assertTrue(nhResult.size() == 0);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 03 ****************************************/
+		testId = "PREDICATES_03";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		nh = q.createMatch(NumberHolder.class);
+
+		q.WHERE(nh.collectionAtttribute("numbers")).CONTAINS_elements(2);
+		q.OR();
+		q.WHERE(nh.collectionAtttribute("numbers")).CONTAINS_elements(5);
+		
+		result = q.execute();
+		
+		nhResult = result.resultOf(nh);
+		assertTrue(nhResult.size() == 2 && (equalsIntArrays(nhResult.get(0).getNumbers(), new int[]{1,2,3}) ||
+				equalsIntArrays(nhResult.get(1).getNumbers(), new int[]{1,2,3})) &&
+				(equalsIntArrays(nhResult.get(0).getNumbers(), new int[]{4,5,6}) ||
+						equalsIntArrays(nhResult.get(1).getNumbers(), new int[]{4,5,6})));
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 04 ****************************************/
+		testId = "PREDICATES_04";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		nh = q.createMatch(NumberHolder.class);
+
+		q.WHERE(nh.collectionAtttribute("numbers")).CONTAINS_elements(2, 3);
+		
+		result = q.execute();
+		
+		nhResult = result.resultOf(nh);
+		assertTrue(nhResult.size() == 1 && equalsIntArrays(nhResult.get(0).getNumbers(), new int[]{1,2,3}));
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 05 ****************************************/
+		testId = "PREDICATES_05";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		nh = q.createMatch(NumberHolder.class);
+
+		q.WHERE(nh.collectionAtttribute("numbers")).CONTAINS_elements(2, 5);
+		
+		result = q.execute();
+		
+		nhResult = result.resultOf(nh);
+		assertTrue(nhResult.size() == 0);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
 		return;
 	}
@@ -1163,6 +1236,20 @@ public class DomainQueryTest extends AbstractTestSuite {
 		assertTrue(equals);
 		
 		return;
+	}
+	
+	private boolean equalsIntArrays(int[] a1, int[] a2) {
+		if (a1 == a2)
+			return true;
+		if (a1 == null || a2 == null)
+			return false;
+		if (a1.length != a2.length)
+			return false;
+		for (int i = 0; i < a1.length; i++) {
+			if (a1[i] != a2[i])
+				return false;
+		}
+		return true;
 	}
 	
 	/***************************************/
