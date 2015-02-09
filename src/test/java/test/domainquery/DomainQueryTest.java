@@ -52,6 +52,7 @@ import test.domainquery.model.Address;
 import test.domainquery.model.Area;
 import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
+import test.domainquery.model.NumberHolder;
 import test.domainquery.model.EContact.EContactType;
 import test.domainquery.model.Person;
 import test.domainquery.model.PointOfContact;
@@ -83,6 +84,12 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		storedDomainObjects = population.createPopulation();
 		
+		NumberHolder n1 = new NumberHolder("n_123", new int[]{1, 2, 3});
+		NumberHolder n2 = new NumberHolder("n_456", new int[]{4, 5, 6});
+		List<Object> nhs = new ArrayList<Object>();
+		nhs.add(n1);
+		nhs.add(n2);
+		
 		QueriesPrintObserver.addOutputStream(System.out);
 		queriesStream = new ByteArrayOutputStream();
 		QueriesPrintObserver.addOutputStream(queriesStream);
@@ -90,18 +97,23 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
-		List<JcError> errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		
-		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		errors = da.store(storedDomainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
+//		List<JcError> errors = dbAccess.clearDatabase();
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		
+//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+//		errors = da.store(storedDomainObjects);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		errors = da.store(nhs);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
 	}
 	
 	@AfterClass
@@ -855,6 +867,35 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
 		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		return;
+	}
+	
+	@Test
+	public void testDomainQuery_Contains_01() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_01.txt");
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "PREDICATES_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<NumberHolder> nh = q.createMatch(NumberHolder.class);
+
+		q.WHERE(nh.collectionAtttribute("numbers")).CONTAINS_elements(2);
+		
+		result = q.execute();
+		
+		List<NumberHolder> nhResult = result.resultOf(nh);
 		
 		return;
 	}

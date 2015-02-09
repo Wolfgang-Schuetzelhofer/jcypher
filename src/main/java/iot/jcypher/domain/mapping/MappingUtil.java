@@ -64,7 +64,9 @@ public class MappingUtil {
 				Number.class.isAssignableFrom(type) ||
 				Boolean.class.isAssignableFrom(type) ||
 				Date.class.isAssignableFrom(type) ||
-				Enum.class.isAssignableFrom(type);
+				Enum.class.isAssignableFrom(type) ||
+				type.isArray() && type.getComponentType().isPrimitive();
+		// TODO arrays containing Date types ?
 	}
 	
 	@SuppressWarnings("rawtypes")

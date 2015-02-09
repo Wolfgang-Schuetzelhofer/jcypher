@@ -247,6 +247,12 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 						ret = (E) n.property(propName);
 					else if (attributeType.equals(JcString.class))
 						ret = (E) n.stringProperty(propName);
+					else if (attributeType.equals(JcBoolean.class))
+						ret = (E) n.booleanProperty(propName);
+					else if (attributeType.equals(JcNumber.class))
+						ret = (E) n.numberProperty(propName);
+					else if (attributeType.equals(JcCollection.class))
+						ret = (E) n.collectionProperty(propName);
 					ValueAccess.setHint((ValueElement)ret, APIAccess.hintKey_validNodes, validFor);
 					ValueAccess.setHint((ValueElement)ret, APIAccess.hintKey_dom, this);
 				}

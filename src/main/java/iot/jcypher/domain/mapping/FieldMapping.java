@@ -362,7 +362,8 @@ public class FieldMapping {
 	public static FieldKind getFieldKind(Class<?> typ) {
 		return Collection.class.isAssignableFrom(typ) ? FieldKind.COLLECTION :
 			Map.class.isAssignableFrom(typ) ? FieldKind.MAP :
-				typ.isArray() ? FieldKind.ARRAY : FieldKind.SINGLE;
+				typ.isArray() && !typ.getComponentType().isPrimitive() ? FieldKind.ARRAY : FieldKind.SINGLE;
+		// TODO what about Date values -> they are seen as simple types
 	}
 	
 	protected String getDOClassFieldName() {

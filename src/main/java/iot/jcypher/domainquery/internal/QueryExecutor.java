@@ -55,6 +55,7 @@ import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.factories.clause.WITH;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
+import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcPath;
@@ -481,12 +482,16 @@ public class QueryExecutor implements IASTObjectsContainer {
 		private void testValidInOperation(Operator op,
 				int paramPosition, PredicateExpression pred) {
 			if (op == Operator.CONTAINS) {
-				if (!(pred.getValue_1() instanceof ValueElement) &&
+				if (!(pred.getValue_1() instanceof JcCollection) &&
 						!(pred.isInCollectionExpression() &&
 						pred.getValue_1() instanceof DomainObjectMatch<?> &&
 						pred.getValue_2() instanceof DomainObjectMatch<?>)) {
-					throw new RuntimeException("'CONTAINS' operation on two DomainObjectMatch(es) is only valid within" +
-						" a collection expression");
+					if (!(pred.getValue_1() instanceof ValueElement))
+						throw new RuntimeException("'CONTAINS' operation on two DomainObjectMatch(es) is only valid within" +
+								" a collection expression");
+					else
+						throw new RuntimeException("'CONTAINS' operation can only be performed on a 'Collection Attribute'." +
+								"\nUse .collectionAttribute() on the DomainObjectMatch to access the attribute for the 'CONTAINS' operation!");
 				}
 				return; // valid
 			}
@@ -1119,6 +1124,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 							// validity test has already been done
 							if (val2IsDom)
 								ret = createWhereIn(concat_1, val_1, (List<JcNode>) val_2, negate);
+							else
+								ret = createContains(concat_1, (JcCollection) val_1, val_2, negate);
 						} else if (op == Operator.IS_NULL)
 							ret = booleanOp.IS_NULL();
 						else if (op == Operator.LIKE)
@@ -1140,6 +1147,18 @@ public class QueryExecutor implements IASTObjectsContainer {
 				return ret;
 			}
 			
+			private iot.jcypher.query.api.predicate.Concatenator createContains(
+					Concat concat, JcCollection val_1, Object val_2,
+					boolean negate) {
+//				Concat concat_1 = concat;
+//				if (concat_1 == null)
+//					concat_1 = WHERE.BR_OPEN();
+//				JcValue v = new JcValue("x");
+//				iot.jcypher.query.api.predicate.Concatenator fx =
+//						WHERE.valueOf((C.FILTER().fromAll(v).IN(val_1).WHERE().valueOf(v).EQUALS(val_2));
+				return null;
+			}
+
 			/**
 			 * return true if a WITH clause is to be added because an order expression is required
 			 * @param cpt
