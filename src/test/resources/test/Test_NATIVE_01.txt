@@ -1,5 +1,0 @@
-----NATIVE_01:
-MERGE (keanu:Person { name:'Keanu Reeves' })
-ON CREATE SET keanu.created = timestamp()
-ON MATCH SET keanu.lastSeen = timestamp()
-------------------------------------------------------------

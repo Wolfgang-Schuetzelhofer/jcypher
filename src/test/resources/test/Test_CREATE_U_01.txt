@@ -1,9 +1,0 @@
-----CREATE_U_01:
-CREATE UNIQUE (a)-[r:RELTYPE]->(b)
-------------------------------------------------------------
-
-----CREATE_U_02:
-CREATE UNIQUE
-     (a)-[r:RELTYPE]->(b),
-     p = (andres{name:'Andres'})-[:WORKS_AT]->(neo)<-[:WORKS_AT]-(michael{name:'Micheal'})
-------------------------------------------------------------
