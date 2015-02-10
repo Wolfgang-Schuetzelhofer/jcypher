@@ -4,7 +4,7 @@
 ## Introduction
 
 **JCypher** provides seamlessly integrated Java access to graph databases (Neo4J) at different levels of abstraction. 
-To start top-down:
+Starting top-down:
 
 - At the topmost level of abstraction, JCypher allows to map **complex business domains** to graph databases.
    You can take an arbitrarily complex graph of domain objects (pojos (plain old java objects)) and store it
