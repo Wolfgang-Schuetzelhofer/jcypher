@@ -53,6 +53,7 @@ import test.domainquery.model.Area;
 import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
 import test.domainquery.model.NumberHolder;
+import test.domainquery.model.SubNumberHolder;
 import test.domainquery.model.EContact.EContactType;
 import test.domainquery.model.Person;
 import test.domainquery.model.PointOfContact;
@@ -77,7 +78,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		
 		// init db
 		Population population = new Population();
@@ -86,9 +87,11 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		NumberHolder n1 = new NumberHolder("n_123", new int[]{1, 2, 3});
 		NumberHolder n2 = new NumberHolder("n_456", new int[]{4, 5, 6});
+		SubNumberHolder sn1 = new SubNumberHolder("subn_347", new int[]{3, 4, 7});
 		List<Object> nhs = new ArrayList<Object>();
 		nhs.add(n1);
 		nhs.add(n2);
+		nhs.add(sn1);
 		
 		QueriesPrintObserver.addOutputStream(System.out);
 		queriesStream = new ByteArrayOutputStream();
@@ -97,23 +100,23 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-//		errors = da.store(storedDomainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		errors = da.store(nhs);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		errors = da.store(storedDomainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		errors = da.store(nhs);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 	}
 	
 	@AfterClass
@@ -967,6 +970,41 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		nhResult = result.resultOf(nh);
 		assertTrue(nhResult.size() == 0);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 06 ****************************************/
+		testId = "PREDICATES_06";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		nh = q.createMatch(NumberHolder.class);
+
+		q.WHERE(nh.collectionAtttribute("numbers")).CONTAINS_elements(3, 4);
+		
+		result = q.execute();
+		
+		nhResult = result.resultOf(nh);
+		assertTrue(nhResult.size() == 1 && equalsIntArrays(nhResult.get(0).getNumbers(), new int[]{3,4,7}));
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 07 ****************************************/
+		testId = "PREDICATES_07";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		nh = q.createMatch(NumberHolder.class);
+
+		q.WHERE(nh.collectionAtttribute("numbers")).CONTAINS_elements(3);
+		
+		result = q.execute();
+		
+		nhResult = result.resultOf(nh);
+		assertTrue(nhResult.size() == 2 && (equalsIntArrays(nhResult.get(0).getNumbers(), new int[]{1,2,3}) ||
+				equalsIntArrays(nhResult.get(1).getNumbers(), new int[]{1,2,3})) &&
+				(equalsIntArrays(nhResult.get(0).getNumbers(), new int[]{3,4,7}) ||
+						equalsIntArrays(nhResult.get(1).getNumbers(), new int[]{3,4,7})));
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
 		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
