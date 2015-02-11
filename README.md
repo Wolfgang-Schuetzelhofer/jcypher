@@ -1,7 +1,7 @@
 ![](https://github.com/Wolfgang-Schuetzelhofer/jcypher/blob/master/src/test/resources/docs/jcypher_logo_3_long_1.png)
-[**JCypher Project Homepage**](http://wolfgang-schuetzelhofer.github.io/jcypher/) 
 =======
 
+[**JCypher Project Homepage**](http://wolfgang-schuetzelhofer.github.io/jcypher/)
 ## Introduction
 
 **JCypher** provides seamlessly integrated Java access to graph databases (Neo4J) at different levels of abstraction. 
