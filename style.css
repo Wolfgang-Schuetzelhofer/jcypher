@@ -51,6 +51,8 @@ body{
     border-right-style: groove;
     border-right-width: 3px;
     padding-left: 1em;
+    padding-right: 2em;
+    width: 9em;
 }
 .btn {
   background: #3498db;
