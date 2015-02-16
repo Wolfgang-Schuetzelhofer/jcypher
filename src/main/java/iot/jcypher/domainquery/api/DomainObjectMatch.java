@@ -74,6 +74,16 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	}
 	
 	/**
+	 * <b>Note:</b> this expression is only valid within a collection expression.
+	 * <br/>It constrains a set by applying the COUNT expression on another set which must be directly derived via a traversal expression. 
+	 * <br/>'addresses' below has been directly derived from 'persons' via traversal.
+	 * <br/>e.g. q.SELECT_FROM(persons).ELEMENTS( q.WHERE(addresses.COUNT()).EQUALS(3));
+	 */
+	public Count COUNT() {
+		return APIAccess.createCount(this);
+	}
+	
+	/**
 	 * Access an attribute, don't rely on a specific attribute type
 	 * @param name the attribute name
 	 * @return

@@ -78,7 +78,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 		
 		// init db
 		Population population = new Population();
@@ -100,23 +100,23 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
-		List<JcError> errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		
-		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		errors = da.store(storedDomainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		errors = da.store(nhs);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
+//		List<JcError> errors = dbAccess.clearDatabase();
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		
+//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+//		errors = da.store(storedDomainObjects);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		errors = da.store(nhs);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
 	}
 	
 	@AfterClass
@@ -132,6 +132,42 @@ public class DomainQueryTest extends AbstractTestSuite {
 		queriesStream = null;
 		QueriesPrintObserver.removeAllEnabledQueries();
 		QueriesPrintObserver.removeAllOutputStreams();
+	}
+	
+	/** CONTAINS */
+	@Test
+	public void testDomainQuery_Collections_08() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_02.txt");
+		
+		Population population = new Population();
+		population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "SELECT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Object> persons = q.createMatch(Object.class);
+		
+		DomainObjectMatch<Object> addresses = q.TRAVERSE_FROM(persons).FORTH("pointsOfContact").TO(Object.class);
+
+		DomainObjectMatch<Object> num_addresses = q.SELECT_FROM(persons).ELEMENTS(
+				q.WHERE(addresses.COUNT()).EQUALS(3)
+				);
+		result = q.execute();
+		
+		List<Object> num_addressesResult = result.resultOf(num_addresses);
+		
+		return;
 	}
 	
 	@Test
@@ -1007,6 +1043,25 @@ public class DomainQueryTest extends AbstractTestSuite {
 						equalsIntArrays(nhResult.get(1).getNumbers(), new int[]{3,4,7})));
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
 		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 08 ****************************************/
+		testId = "PREDICATES_08";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		nh = q.createMatch(NumberHolder.class);
+
+		q.WHERE(nh.collectionAtttribute("numbers").length()).EQUALS(3);
+		
+		result = q.execute();
+		
+		nhResult = result.resultOf(nh);
+//		assertTrue(nhResult.size() == 2 && (equalsIntArrays(nhResult.get(0).getNumbers(), new int[]{1,2,3}) ||
+//				equalsIntArrays(nhResult.get(1).getNumbers(), new int[]{1,2,3})) &&
+//				(equalsIntArrays(nhResult.get(0).getNumbers(), new int[]{3,4,7}) ||
+//						equalsIntArrays(nhResult.get(1).getNumbers(), new int[]{3,4,7})));
+//		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+//		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
 		return;
 	}

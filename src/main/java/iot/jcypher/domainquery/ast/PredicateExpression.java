@@ -17,6 +17,7 @@
 package iot.jcypher.domainquery.ast;
 
 import iot.jcypher.domainquery.api.APIAccess;
+import iot.jcypher.domainquery.api.Count;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
@@ -50,6 +51,8 @@ public class PredicateExpression implements IASTObject {
 	public DomainObjectMatch<?> getStartDOM() {
 		if (value_1 instanceof DomainObjectMatch<?>)
 			return (DomainObjectMatch<?>)value_1;
+		else if (value_1 instanceof Count)
+			return APIAccess.getDomainObjectMatch((Count) value_1);
 		return (DomainObjectMatch<?>)ValueAccess.getAnyHint((ValueElement)value_1, APIAccess.hintKey_dom);
 	}
 	

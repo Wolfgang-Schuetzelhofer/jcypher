@@ -1,3 +1,5 @@
+test for contains and count if direct traversals
+
 check traversal query "BACK_03" for optimization on IN clause
 
 DomainObjectMatch.size() for predicates in collection expressions

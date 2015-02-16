@@ -27,6 +27,7 @@ import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domain.mapping.surrogate.Array;
 import iot.jcypher.domain.mapping.surrogate.Collection;
 import iot.jcypher.domainquery.api.APIAccess;
+import iot.jcypher.domainquery.api.Count;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
@@ -483,8 +484,16 @@ public class QueryExecutor implements IASTObjectsContainer {
 		 */
 		private void testValidInOperation(Operator op,
 				int paramPosition, PredicateExpression pred) {
+			if (pred.getValue_1() instanceof Count) {
+				if (!pred.isInCollectionExpression())
+					throw new RuntimeException("'COUNT' operation on a DomainObjectMatch is only valid within" +
+							" a collection expression");
+			}
+			
 			if (op == Operator.CONTAINS) {
-				if (!(pred.getValue_1() instanceof JcCollection) &&
+				if (pred.getValue_1() instanceof Count)
+					throw new RuntimeException("'CONTAINS' cannot be applied to COUNT on DomainObject(s)");
+				else if (!(pred.getValue_1() instanceof JcCollection) &&
 						!(pred.isInCollectionExpression() &&
 						pred.getValue_1() instanceof DomainObjectMatch<?> &&
 						pred.getValue_2() instanceof DomainObjectMatch<?>)) {
@@ -494,7 +503,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 					else
 						throw new RuntimeException("'CONTAINS' operation can only be performed on a 'Collection Attribute'." +
 								"\nUse .collectionAttribute() on the DomainObjectMatch to access the attribute for the 'CONTAINS' operation!");
-				}
+				} 
 				return; // valid
 			}
 			
@@ -826,6 +835,9 @@ public class QueryExecutor implements IASTObjectsContainer {
 					return ValueAccess.getName((JcNode)first);
 			} else if (value instanceof DomainObjectMatch<?>) {
 				return APIAccess.getBaseNodeName((DomainObjectMatch<?>)value);
+			} else if (value instanceof Count) {
+				return APIAccess.getBaseNodeName(
+						APIAccess.getDomainObjectMatch((Count)value));
 			}
 			return null;
 		}
@@ -1047,7 +1059,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				testValidInOperation(op, 1, pred); // throws an exception if not valid
 				if (v_1 instanceof ValueElement)
 					val_1 = testAndCloneIfNeeded((ValueElement)v_1, clausesPerType);
-				else if (v_1 instanceof DomainObjectMatch<?>)
+				else if (v_1 instanceof DomainObjectMatch<?> || v_1 instanceof Count)
 					val_1 = clausesPerType.node;
 				
 				if (val_1 != null) { // if either really null or invalid

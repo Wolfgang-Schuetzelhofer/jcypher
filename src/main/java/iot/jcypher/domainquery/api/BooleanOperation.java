@@ -151,7 +151,10 @@ public class BooleanOperation extends APIObject {
 	 * <div color='red' style="font-size:18px;color:red"><i>test if this list of domain objects contains all elements
 	 * of the target list of domain objects</i></div>
 	 * <div color='red' style="font-size:18px;color:red"><i><b>Note:</b> this expression is only valid
-	 * within a collection expression</i></div>
+	 * within a collection expression.</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>It constrains a set by applying the CONTAINS expression
+	 *  on another set which must be directly derived via a traversal expression.
+	 *  <br/> 'addressAreas' below has been directly derived from 'addresses' via traversal.</i></div>
 	 * <div color='red' style="font-size:18px;color:red"><i>e.g. q.SELECT_FROM(addresses).ELEMENTS(
 	 * q.WHERE(addressAreas).CONTAINS(europe));</i></div>
 	 * <br/>

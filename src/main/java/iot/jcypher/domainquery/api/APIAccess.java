@@ -58,6 +58,14 @@ public class APIAccess {
 		return new Select<T>(se);
 	}
 	
+	public static Count createCount(DomainObjectMatch<?> dom) {
+		return new Count(dom);
+	}
+	
+	public static DomainObjectMatch<?> getDomainObjectMatch(Count count) {
+		return count.getDomainObjectMatch();
+	}
+	
 	public static List<JcNode> getNodes(DomainObjectMatch<?> dom) {
 		return dom.getNodes();
 	}
