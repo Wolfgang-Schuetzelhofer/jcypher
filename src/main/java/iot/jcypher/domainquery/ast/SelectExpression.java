@@ -21,9 +21,11 @@ import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
 import iot.jcypher.domainquery.internal.QueryExecutor;
+import iot.jcypher.query.api.IClause;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 	

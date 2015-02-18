@@ -1,12 +1,17 @@
+constraints on trevaersal results in select expressions may only be expressed on direct traversals from the expressions source set
+-> do a validation
+
+problem with unconstraint optional matches
+
 test for contains and count if direct traversals
 
 check traversal query "BACK_03" for optimization on IN clause
 
-DomainObjectMatch.size() for predicates in collection expressions
+---done--- DomainObjectMatch.COUNT() for predicates in collection expressions
 
 check TODOs in QueryExecutor
 
-QueryExecutor-StepClause -> refactor code for stepForward and stepBackward (avoid redundancies)
+---done--- QueryExecutor-StepClause -> refactor code for stepForward and stepBackward (avoid redundancies)
 
 how to handle multiple hops with surrogate classes
 

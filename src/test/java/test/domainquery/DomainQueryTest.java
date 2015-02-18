@@ -156,16 +156,16 @@ public class DomainQueryTest extends AbstractTestSuite {
 		queriesStream.reset();
 		
 		q = da1.createQuery();
-		DomainObjectMatch<Object> persons = q.createMatch(Object.class);
+		DomainObjectMatch<Subject> persons = q.createMatch(Subject.class);
 		
 		DomainObjectMatch<Object> addresses = q.TRAVERSE_FROM(persons).FORTH("pointsOfContact").TO(Object.class);
 
-		DomainObjectMatch<Object> num_addresses = q.SELECT_FROM(persons).ELEMENTS(
+		DomainObjectMatch<Subject> num_addresses = q.SELECT_FROM(persons).ELEMENTS(
 				q.WHERE(addresses.COUNT()).EQUALS(3)
 				);
 		result = q.execute();
 		
-		List<Object> num_addressesResult = result.resultOf(num_addresses);
+		List<Subject> num_addressesResult = result.resultOf(persons);
 		
 		return;
 	}

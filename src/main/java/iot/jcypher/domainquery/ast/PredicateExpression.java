@@ -40,6 +40,13 @@ public class PredicateExpression implements IASTObject {
 		this.inCollectionExpression = astObjectsContainer instanceof SelectExpression<?>;
 	}
 	
+	public PredicateExpression(IPredicateOperand1 value_1, boolean inColl) {
+		super();
+		this.value_1 = value_1;
+		this.negationCount = 0;
+		this.inCollectionExpression = inColl;
+	}
+	
 	public Operator getOperator() {
 		return operator;
 	}
@@ -82,6 +89,14 @@ public class PredicateExpression implements IASTObject {
 
 	public boolean isInCollectionExpression() {
 		return inCollectionExpression;
+	}
+	
+	public PredicateExpression createCopy() {
+		PredicateExpression ret = new PredicateExpression(this.value_1, this.inCollectionExpression);
+		ret.negationCount = this.negationCount;
+		ret.operator = this.operator;
+		ret.value_2 = this.value_2;
+		return ret;
 	}
 	
 	@Override
