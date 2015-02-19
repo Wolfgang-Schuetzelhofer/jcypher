@@ -73,6 +73,7 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 		this.end = end;
 		if (this.traversalResults != null) {
 			for (DomainObjectMatch<?> dom : this.traversalResults) {
+				// add the collection owner to a traversal owner
 				APIAccess.addCollectExpressionOwner(dom, this.end);
 			}
 		}

@@ -312,7 +312,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 							if (cpt.needSkipsLimits()) { // need to add it to the RETURN clause
 																		// does not work at the WITH clause
 								if (i > startIdx) { // start a new query beginning with this one
-									startIdx = i;
+									startIdx = i;     // at the next run
 									break;
 								}
 								needWith = true;
@@ -323,6 +323,17 @@ public class QueryExecutor implements IASTObjectsContainer {
 								startNewQueryAfterThis = true;
 							}
 						}
+						
+						if (cpt.startCountSelectXpr) { // we may need a distinct query.
+							// A count expression is based on a traversal expression, which
+							// will have been created already. It spoils the the traversal clones
+							// for the select expression. To avoid this, we need a distinct query.
+							if (i > startIdx) { // start a new query beginning with this one
+								startIdx = i;     // at the next run
+								break;
+							}
+						}
+						
 						if (needAddDependencies) {
 							cpt.addDependencyClauses(clauses);
 							needAddDependencies = false;
@@ -1393,7 +1404,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 										countXpd = buildExpressionsPerDOM(dom, selEx.getAstObjects(), 2);
 									}
 									if (countXpd != null && countXpd.xPressions.size() > 0)
-										cpt.hasCountXpr = true;
+										cpt.startCountSelectXpr = true;
 									// also serves as marker, that the teraversal expression clone has been added
 									travResult.expressionsPerDOM = xpd; 
 									travResult.countExpressionsPerDOM = countXpd;
@@ -1448,12 +1459,12 @@ public class QueryExecutor implements IASTObjectsContainer {
 												if (ao instanceof PredicateExpression) {
 													if (countWithClauses == null) {
 														countWithClauses = new ArrayList<IClause>();
-														// init with clauses
-														for (String vn : cbContext.validNodes) {
-															countWithClauses.add(WITH.value(new JcNode(vn)));
-														}
+														cpt.countWithValidNodes = new ArrayList<String>();
+														cpt.countWithClausesIdxs = new ArrayList<Integer>();
+														// init valid nodes for with clauses
+														cpt.countWithValidNodes.addAll(cbContext.validNodes);
 													}
-													addCountWithClause(iCpt, countWithClauses, selectClauses);
+													addCountWithClause(iCpt, countWithClauses, selectClauses, cpt);
 												}
 											}
 										}
@@ -1464,9 +1475,6 @@ public class QueryExecutor implements IASTObjectsContainer {
 									for (IASTObject ao : travResult.expressionsPerDOM.xPressions) {
 										astObject2TraversalPaths.put(ao, tpd);
 									}
-									if (travResult.countExpressionsPerDOM != null &&
-											travResult.countExpressionsPerDOM.xPressions.size() > 0)
-										cpt.hasCountXpr = true;
 								}
 							}
 						}
@@ -1544,11 +1552,12 @@ public class QueryExecutor implements IASTObjectsContainer {
 			}
 			
 			private void addCountWithClause(ClausesPerType iCpt, List<IClause> countWithClauses,
-					List<IClause> selectClauses) {
+					List<IClause> selectClauses, ClausesPerType cpt) {
 				String alias = ValueAccess.getName(iCpt.node).concat(countXprPostPrefix);
 				JcNumber num = new JcNumber(alias);
 				selectClauses.add(WITH.count().value(iCpt.node).AS(num));
 				selectClauses.addAll(countWithClauses);
+				cpt.countWithClausesIdxs.add(0, selectClauses.size());
 				countWithClauses.add(0, WITH.value(num));
 			}
 
@@ -2177,7 +2186,9 @@ public class QueryExecutor implements IASTObjectsContainer {
 			private iot.jcypher.query.api.predicate.Concatenator concatenator = null;
 			private List<IClause> traversalClauses;
 			private List<IClause> selectClauses;
-			private boolean hasCountXpr;
+			private boolean startCountSelectXpr;
+			private List<Integer> countWithClausesIdxs;
+			private List<String> countWithValidNodes;
 			private boolean closeBracket;
 			
 			private ClausesPerType(JcNode node, DomainObjectMatch<?> dom, Class<?> type) {
@@ -2190,7 +2201,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				this.previousOr = false;
 				this.testForNextIsOr = false;
 				this.closeBracket = false;
-				this.hasCountXpr = false;
+				this.startCountSelectXpr = false;
 			}
 			
 			private boolean needSkipsLimits() {
@@ -2219,6 +2230,15 @@ public class QueryExecutor implements IASTObjectsContainer {
 							this.clauses.addAll(this.traversalClauses);
 							this.traversalClauses = null;
 						} else if (this.selectClauses != null) {
+							if (this.countWithClausesIdxs != null) {
+								// add missing with clauses
+								for (int idx : this.countWithClausesIdxs) {
+									for (String nnm : this.countWithValidNodes) {
+										JcNode n = new JcNode(nnm);
+										this.selectClauses.add(idx, WITH.value(n));
+									}
+								}
+							}
 							this.clauses.addAll(this.selectClauses);
 						} else {
 							String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
@@ -2236,20 +2256,58 @@ public class QueryExecutor implements IASTObjectsContainer {
 				return this.clauses;
 			}
 			
-			private void addMatchClauses(List<IClause> clauses) {
+			private void addClausesTo(List<IClause> clauses) {
 				List<IClause> mcs = this.getClauses();
 				if (mcs != null)
 					clauses.addAll(mcs);
 			}
 			
 			private void addDependencyClauses(List<IClause> clauses) {
+				boolean hasCountWithXpr = this.countWithClausesIdxs != null;
+				List<String> depBases = null;
+				if (hasCountWithXpr)
+					depBases = new ArrayList<String>();
 				if (this.expressionsPerDOM.flattenedDependencies != null) {
 					for (ExpressionsPerDOM xpd : this.expressionsPerDOM.flattenedDependencies) {
+						// for a traversal expression for this select expression we do not need to
+						// add the original traversal expression, because the select expression
+						// will work on the clones.
+						List<DomainObjectMatch<?>> collOwner = APIAccess.getCollectExpressionOwner(xpd.domainObjectMatch);
+						boolean addExpressions = collOwner == null || !collOwner.contains(this.domainObjectMatch);
 						for (ClausesPerType cpt : xpd.clausesPerTypes) {
-							cpt.addMatchClauses(clauses);
+							if (addExpressions) {
+								cpt.addClausesTo(clauses);
+								if (hasCountWithXpr) {
+									String bnm = APIAccess.getBaseNodeName(cpt.domainObjectMatch);
+									if (!depBases.contains(bnm))
+										depBases.add(bnm);
+								}
+							} else {
+								if (this.countWithValidNodes != null)
+									this.countWithValidNodes.remove(ValueAccess.getName(cpt.node));
+							}
 						}
 					}
 				}
+				if (hasCountWithXpr) {
+					// remove from valid nodes those which have not been
+					// added as dependency. Otherwise these will lead to errors
+					// on WITH clauses
+					int sz = this.countWithValidNodes.size();
+					for (int i = sz - 1; i >= 0; i--) {
+						if (!isValidDependency(this.countWithValidNodes.get(i), depBases))
+							this.countWithValidNodes.remove(i);
+					}
+				}
+			}
+
+			private boolean isValidDependency(String vn,
+					List<String> depBases) {
+				for (String bnm : depBases) {
+					if (vn.startsWith(bnm))
+						return true;
+				}
+				return false;
 			}
 		}
 		

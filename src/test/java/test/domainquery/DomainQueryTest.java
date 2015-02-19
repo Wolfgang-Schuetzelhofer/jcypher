@@ -136,6 +136,65 @@ public class DomainQueryTest extends AbstractTestSuite {
 	
 	/** CONTAINS */
 	@Test
+	public void testDomainQuery_Collections_09() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_02.txt");
+		
+		Population population = new Population();
+		population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "SELECT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+//		DomainObjectMatch<Person> subjects = q.createMatch(Person.class);
+//		DomainObjectMatch<Area> europe = q.createMatch(Area.class);
+		DomainObjectMatch<Person> j_smith = q.createMatch(Person.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+//		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+		
+//		DomainObjectMatch<Object> addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
+//		DomainObjectMatch<AbstractArea> areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
+//				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+		
+		DomainObjectMatch<PointOfContact> poc = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact")
+				.TO(PointOfContact.class);
+		DomainObjectMatch<AbstractArea> areas_1 = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").FORTH("area")
+				.TO(AbstractArea.class);
+		DomainObjectMatch<AbstractArea> areas_2 = q.TRAVERSE_FROM(areas_1)
+				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+
+//		DomainObjectMatch<Person> num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
+//				q.WHERE(addresses.COUNT()).EQUALS(4),
+//				q.WHERE(areas.COUNT()).EQUALS(12)
+//			);
+		result = q.execute();
+		
+//		List<Person> num_addressesResult = result.resultOf(num_addresses);
+//		List<Person> subjectsResult = result.resultOf(subjects);
+//		List<Object> addressesResult = result.resultOf(addresses);
+//		List<AbstractArea> areasResult = result.resultOf(areas);
+		List<AbstractArea> areas_1Result = result.resultOf(areas_1);
+		List<AbstractArea> areas_2Result = result.resultOf(areas_2);
+		List<PointOfContact> pocResult = result.resultOf(poc);
+		
+		return;
+	}
+	
+	/** CONTAINS */
+	@Test
 	public void testDomainQuery_Collections_08() {
 		IDomainAccess da1;
 		DomainQuery q;
@@ -156,16 +215,66 @@ public class DomainQueryTest extends AbstractTestSuite {
 		queriesStream.reset();
 		
 		q = da1.createQuery();
-		DomainObjectMatch<Subject> persons = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> subjects = q.createMatch(Subject.class);
 		
-		DomainObjectMatch<Object> addresses = q.TRAVERSE_FROM(persons).FORTH("pointsOfContact").TO(Object.class);
+		DomainObjectMatch<Object> addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
 
-		DomainObjectMatch<Subject> num_addresses = q.SELECT_FROM(persons).ELEMENTS(
-				q.WHERE(addresses.COUNT()).EQUALS(3)
-				);
+		DomainObjectMatch<Subject> num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
+				q.WHERE(addresses.COUNT()).EQUALS(4)
+			);
 		result = q.execute();
 		
-		List<Subject> num_addressesResult = result.resultOf(persons);
+		List<Subject> num_addressesResult = result.resultOf(num_addresses);
+		List<Subject> subjectsResult = result.resultOf(subjects);
+		List<Object> addressesResult = result.resultOf(addresses);
+		
+		/** 02 ****************************************/
+		testId = "SELECT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		subjects = q.createMatch(Subject.class);
+		DomainObjectMatch<Area> europe = q.createMatch(Area.class);
+		
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+		
+		addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
+		DomainObjectMatch<Area> areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+
+		num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
+				q.WHERE(addresses.COUNT()).EQUALS(4),
+				q.WHERE(areas).CONTAINS(europe)
+			);
+		result = q.execute();
+		
+		num_addressesResult = result.resultOf(num_addresses);
+		subjectsResult = result.resultOf(subjects);
+		addressesResult = result.resultOf(addresses);
+		
+		/** 03 ****************************************/
+		testId = "SELECT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		subjects = q.createMatch(Subject.class);
+		DomainObjectMatch<Object> europe_1 = q.createMatch(Object.class);
+		
+		q.WHERE(europe_1.atttribute("name")).EQUALS("Europe");
+		
+		addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
+		DomainObjectMatch<Object> areas_1 = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Object.class);
+
+		num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
+				q.WHERE(addresses.COUNT()).EQUALS(4),
+				q.WHERE(areas_1).CONTAINS(europe_1)
+			);
+		result = q.execute();
+		
+		num_addressesResult = result.resultOf(num_addresses);
+		subjectsResult = result.resultOf(subjects);
+		addressesResult = result.resultOf(addresses);
 		
 		return;
 	}
