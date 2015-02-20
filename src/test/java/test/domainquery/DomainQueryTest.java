@@ -52,6 +52,7 @@ import test.domainquery.model.Address;
 import test.domainquery.model.Area;
 import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
+import test.domainquery.model.EContact;
 import test.domainquery.model.NumberHolder;
 import test.domainquery.model.SubNumberHolder;
 import test.domainquery.model.EContact.EContactType;
@@ -156,39 +157,73 @@ public class DomainQueryTest extends AbstractTestSuite {
 		queriesStream.reset();
 		
 		q = da1.createQuery();
-//		DomainObjectMatch<Person> subjects = q.createMatch(Person.class);
-//		DomainObjectMatch<Area> europe = q.createMatch(Area.class);
+		DomainObjectMatch<Person> subjects = q.createMatch(Person.class);
+		DomainObjectMatch<Area> europe = q.createMatch(Area.class);
 		DomainObjectMatch<Person> j_smith = q.createMatch(Person.class);
 
 		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
 		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
 		
-//		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
 		
-//		DomainObjectMatch<Object> addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
-//		DomainObjectMatch<AbstractArea> areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
-//				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+		DomainObjectMatch<Object> addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
+		DomainObjectMatch<AbstractArea> areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
 		
-		DomainObjectMatch<PointOfContact> poc = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact")
-				.TO(PointOfContact.class);
 		DomainObjectMatch<AbstractArea> areas_1 = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").FORTH("area")
-				.TO(AbstractArea.class);
-		DomainObjectMatch<AbstractArea> areas_2 = q.TRAVERSE_FROM(areas_1)
 				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
 
-//		DomainObjectMatch<Person> num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
-//				q.WHERE(addresses.COUNT()).EQUALS(4),
-//				q.WHERE(areas.COUNT()).EQUALS(12)
-//			);
+		DomainObjectMatch<Person> num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
+				q.WHERE(addresses.COUNT()).EQUALS(4),
+				q.WHERE(areas.COUNT()).EQUALS(9)
+			);
 		result = q.execute();
 		
-//		List<Person> num_addressesResult = result.resultOf(num_addresses);
+		List<Person> num_addressesResult = result.resultOf(num_addresses);
+		List<AbstractArea> areas_1Result = result.resultOf(areas_1);
+		
+		/** 02 ****************************************/
+		testId = "SELECT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		subjects = q.createMatch(Person.class);
+		europe = q.createMatch(Area.class);
+		j_smith = q.createMatch(Person.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+		
+		addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
+		areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+		
+//		DomainObjectMatch<PointOfContact> poc = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact")
+//				.TO(PointOfContact.class);
+		areas_1 = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+//		DomainObjectMatch<AbstractArea> areas_2 = q.TRAVERSE_FROM(areas_1)
+//				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+
+		num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
+				q.WHERE(addresses.atttribute("number")).EQUALS(20),
+				q.BR_OPEN(),
+					q.WHERE(addresses.COUNT()).EQUALS(4),
+					q.OR(),
+					q.WHERE(areas.COUNT()).EQUALS(8),
+				q.BR_CLOSE()
+			);
+		result = q.execute();
+		
+		num_addressesResult = result.resultOf(num_addresses);
 //		List<Person> subjectsResult = result.resultOf(subjects);
 //		List<Object> addressesResult = result.resultOf(addresses);
 //		List<AbstractArea> areasResult = result.resultOf(areas);
-		List<AbstractArea> areas_1Result = result.resultOf(areas_1);
-		List<AbstractArea> areas_2Result = result.resultOf(areas_2);
-		List<PointOfContact> pocResult = result.resultOf(poc);
+		areas_1Result = result.resultOf(areas_1);
+//		List<AbstractArea> areas_2Result = result.resultOf(areas_2);
+//		List<PointOfContact> pocResult = result.resultOf(poc);
 		
 		return;
 	}
@@ -1011,6 +1046,51 @@ public class DomainQueryTest extends AbstractTestSuite {
 		sf.add(population.getSanFrancisco());
 		sf.add(population.getMunich());
 		equals = CompareUtil.equalsUnorderedList(sf, immediateAreas);
+		assertTrue(equals);
+		
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 08 ****************************************/
+		testId = "TRAVERSAL_08";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		j_smith = q.createMatch(Person.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<AbstractArea> jsAreas = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+		result = q.execute();
+		
+		List<AbstractArea> jsAreasResult = result.resultOf(jsAreas);
+		
+		Person js = population.getJohn_smith();
+		List<AbstractArea> compAreas = new ArrayList<AbstractArea>();
+		for (PointOfContact poc : js.getPointsOfContact()) {
+			if (poc instanceof Address) {
+				AbstractArea ar = ((Address)poc).getArea();
+				ar = ar.getPartOf();
+				while (ar != null) {
+					if (!compAreas.contains(ar))
+						compAreas.add(ar);
+					ar = ar.getPartOf();
+				}
+			}
+			if (poc instanceof EContact) {
+				AbstractArea ar = ((EContact)poc).getArea();
+				ar = ar.getPartOf();
+				while (ar != null) {
+					if (!compAreas.contains(ar))
+						compAreas.add(ar);
+					ar = ar.getPartOf();
+				}
+			}
+		}
+		
+		equals = CompareUtil.equalsUnorderedList(compAreas, jsAreasResult);
 		assertTrue(equals);
 		
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());

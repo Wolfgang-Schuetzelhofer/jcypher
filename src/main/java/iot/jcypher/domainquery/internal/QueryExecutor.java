@@ -1555,7 +1555,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 					List<IClause> selectClauses, ClausesPerType cpt) {
 				String alias = ValueAccess.getName(iCpt.node).concat(countXprPostPrefix);
 				JcNumber num = new JcNumber(alias);
-				selectClauses.add(WITH.count().value(iCpt.node).AS(num));
+				selectClauses.add(WITH.count().DISTINCT().value(iCpt.node).AS(num));
 				selectClauses.addAll(countWithClauses);
 				cpt.countWithClausesIdxs.add(0, selectClauses.size());
 				countWithClauses.add(0, WITH.value(num));
@@ -1657,7 +1657,6 @@ public class QueryExecutor implements IASTObjectsContainer {
 				private Node matchNode;
 				private StepClause next;
 				private StepClause previous;
-				private FieldMapping fieldMapping;
 				private List<FieldMapping> fieldMappings;
 				private int fmIndex;
 				private TraversalExpression traversalExpression;
@@ -1727,21 +1726,22 @@ public class QueryExecutor implements IASTObjectsContainer {
 					stpc.stepClauses = this.stepClauses;
 					stpc.stepIndex = cloneInfo.toClone.stepIndex;
 					stpc.step = cloneInfo.toClone.step;
-					stpc.fieldMapping = cloneInfo.toClone.fieldMapping;
 					stpc.fieldMappings = cloneInfo.toClone.fieldMappings;
 					stpc.fmIndex = cloneInfo.toClone.fmIndex;
 					stpc.buildClone(tmpNodeIdx, cloneInfo, isList);
 				}
 				
 				private void build(int tmpNodeIdx, List<Class<?>> types, boolean isList) {
-					FieldMapping fm = null;
 					List<FieldMapping> fms = null;
 					for (Class<?> t : types) {
 						if (this.step.getDirection() == 0) { // forward
-							fm = getMappingInfo().getFieldMapping(this.step.getAttributeName(),
+							FieldMapping fm = getMappingInfo().getFieldMapping(this.step.getAttributeName(),
 									t);
-							if (fm != null)
-								break;
+							if (fm != null) {
+								if (fms == null)
+									fms = new ArrayList<FieldMapping>();
+								fms.add(fm);
+							}
 						} else { // backward
 							if (fms == null)
 								fms = new ArrayList<FieldMapping>();
@@ -1756,19 +1756,12 @@ public class QueryExecutor implements IASTObjectsContainer {
 					
 					boolean doBuild = false;
 					if (fms != null && !fms.isEmpty()) {
-						if (fms.size() == 1) // to optimize
-							this.fieldMapping = fms.get(0);
-						else {
-							this.fieldMappings = fms;
-							this.fmIndex = 0;
-						}
+						this.fieldMappings = fms;
+						this.fmIndex = 0;
 						doBuild = true;
 					} else {
-						if (fm != null) {
-							this.fieldMapping = fm;
-							doBuild = true;
-						} else // navigation has no result
-							this.matchNode = null;
+						// navigation has no result
+						this.matchNode = null;
 					}
 					
 					if (doBuild) {
@@ -1786,11 +1779,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				
 				private void buildStep(int tmpNodeIdx, boolean listOrArray, CloneInfo cloneInfo,
 						boolean forward) {
-					FieldMapping fm;
-					if (this.fieldMappings != null && !forward) // there are multiple navigation paths
-						fm = this.fieldMappings.get(this.fmIndex);
-					else
-						fm = this.fieldMapping;
+					FieldMapping fm = this.fieldMappings.get(this.fmIndex);
 					
 					Relation matchRel = matchNode.relation().type(fm.getPropertyOrRelationName());
 					if (forward)
@@ -1812,10 +1801,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 					if (forward) {
 						if (listOrArray) {
 							cType = getMappingInfo().getInternalDomainAccess()
-									.getFieldComponentType(this.fieldMapping.getClassFieldName());
+									.getFieldComponentType(fm.getClassFieldName());
 						} else {
 							cType = getMappingInfo().getInternalDomainAccess()
-									.getConcreteFieldType(this.fieldMapping.getClassFieldName());
+									.getConcreteFieldType(fm.getClassFieldName());
 						}
 						typ = cType.getType();
 					} else { // backward
@@ -1906,7 +1895,6 @@ public class QueryExecutor implements IASTObjectsContainer {
 							typ.equals(Array.class); // TODO what about other surrogates
 					this.stepIndex = cloneInfo.toClone.stepIndex;
 					this.step = cloneInfo.toClone.step;
-					this.fieldMapping = cloneInfo.toClone.fieldMapping;
 					this.fieldMappings = cloneInfo.toClone.fieldMappings;
 					this.fmIndex = cloneInfo.toClone.fmIndex;
 					this.buildClone(tmpNodeIdx, cloneInfo, isList);
@@ -1989,7 +1977,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				private FieldMapping getFieldMapping() {
 					if (this.fieldMappings != null)
 						return this.fieldMappings.get(this.fmIndex);
-					return this.fieldMapping;
+					return null;
 				}
 			}
 			
