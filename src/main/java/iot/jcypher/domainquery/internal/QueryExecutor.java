@@ -1312,7 +1312,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 					ValueAccess.setName(origEndNodeName,
 							endNd);
 					if (sc.jcPath != null) {
-						ValueAccess.setName(sc.pathFromNode(origEndNodeName), sc.jcPath);
+						ValueAccess.setName(pathFromNode(origEndNodeName), sc.jcPath);
 						ret.getStartPaths().add(sc.jcPath);
 						ret.getClausesPerTypeList().add(
 								new ClausesPerType(endNd, clausesPerType.domainObjectMatch,
@@ -1326,7 +1326,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 						JcNode endNd = sc.getEndNode();
 						tempNodes.add(endNd);
 						if (sc.jcPath != null) {
-							ValueAccess.setName(sc.pathFromNode(
+							ValueAccess.setName(pathFromNode(
 									ValueAccess.getName(endNd)), sc.jcPath);
 							ret.getStartPaths().add(sc.jcPath);
 							ret.getClausesPerTypeList().add(
@@ -1374,7 +1374,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				List<DomainObjectMatch<?>> travDOMs = selEx.getTraversalResults();
 				Map<IASTObject, TraversalPathsPerDOM> astObject2TraversalPaths =
 						new HashMap<IASTObject, TraversalPathsPerDOM>();
-				List<IClause> countWithClauses = null;
+				List<IClause> countWithClauses = new ArrayList<IClause>();
 				if (travDOMs != null) {
 					for (DomainObjectMatch<?> dom : travDOMs) {
 						int idx = 0;
@@ -1430,9 +1430,15 @@ public class QueryExecutor implements IASTObjectsContainer {
 												bracket = true;
 											} else
 												iCpt.concat = WHERE.BR_OPEN();
+											
+											// the path is needed, when a predicate expression is
+											// added, expressed on the result of a traversal expression
+											// (then the constraint will be expressed on head(nodes(path)))
+											boolean needPath = false;
 											// without count expressions
 											for (IASTObject ao : xpd.xPressions) {
 												if (ao instanceof PredicateExpression) {
+													needPath = true;
 													PredicateExpression pred = (PredicateExpression)ao;
 													IPredicateOperand1 val1 = pred.getValue_1();
 													if (val1 instanceof ValueElement) {
@@ -1444,6 +1450,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 												addClause(ao, iCpt, cbContext);
 												if (idx == 0)
 													astObject2TraversalPaths.put(ao, tpd);
+											}
+											if (needPath) {
+												JcPath p = new JcPath(pathFromNode(ValueAccess.getName(iCpt.node)));
+												countWithClauses.add(WITH.value(p));
 											}
 											if (bracket)
 												iCpt.concatenator = iCpt.concatenator.BR_CLOSE();
@@ -1457,8 +1467,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 											// now the count expressions
 											for (IASTObject ao : countXpd.xPressions) {
 												if (ao instanceof PredicateExpression) {
-													if (countWithClauses == null) {
-														countWithClauses = new ArrayList<IClause>();
+													if (cpt.countWithValidNodes == null) {
 														cpt.countWithValidNodes = new ArrayList<String>();
 														cpt.countWithClausesIdxs = new ArrayList<Integer>();
 														// init valid nodes for with clauses
@@ -1502,29 +1511,41 @@ public class QueryExecutor implements IASTObjectsContainer {
 				cpt.concatenator = createWhereIn(concat, cpt.node, nds, false);
 				cbContext.stepClausesCount = 0;
 
-				boolean brAdded = false;
+				// scope: 0 .. constrain by head(nodes(path))
+				// 1 .. constraint on source set
+				// 2 .. count expression
+				// 3 .. finish (close open brackets)
+				int scope = -1;
+				List<IASTObject> pendingBrOpen = new ArrayList<IASTObject>();
+				List<IASTObject> pendingBrClose = new ArrayList<IASTObject>();
+				IASTObject pendingOr = null;
 				for (IASTObject ao : selEx.getAstObjects()) {
 					TraversalPathsPerDOM tpd = astObject2TraversalPaths.get(ao);
 					if (tpd != null) { // constraint defined by a traversal expression
 						if (!tpd.consumed) {
 							tpd.consumed = true;
-							if (!brAdded) {
-								addClause(new ConcatenateExpression(Concatenator.BR_OPEN), cpt, cbContext);
-								brAdded = true;
-							}
+							// force a scope change
+							int oldScope = (scope == 0) ? 8 : scope;
+							scope = handleScopeClose(oldScope, 0, cpt, cbContext, pendingBrClose);
+							pendingOr = handleScopeOpen(oldScope, 0, cpt, cbContext, pendingBrOpen, pendingOr);
 							// add clauses for the traversals (match path start)
+							// as head(nodes(path))
 							addTraversalConstraints2Select(tpd.paths, cpt);
+							// brClose done by handleScopeClose()
 						}
 					} else {
-						if (!brAdded) {
-							addClause(new ConcatenateExpression(Concatenator.BR_OPEN), cpt, cbContext);
-							brAdded = true;
-						}
 						// count expressions are handled differently
 						if (ao instanceof PredicateExpression &&
 								((PredicateExpression)ao).getValue_1() instanceof Count) {
 							List<JcNode> countNodes = cbContext.getCountsFor(cpt.domainObjectMatch,
 									((PredicateExpression)ao).getStartDOM(), ValueAccess.getName(nd));
+							int oldScope = scope;
+							scope = handleScopeClose(scope, 2, cpt, cbContext, pendingBrClose);
+							pendingOr = handleScopeOpen(oldScope, 2, cpt, cbContext, pendingBrOpen, pendingOr);
+							if (pendingOr != null) {
+								addClause(pendingOr, cpt, cbContext);
+								pendingOr = null;
+							}
 							JcNumber prevNum = null;
 							for (JcNode n : countNodes) {
 								String alias = ValueAccess.getName(n).concat(countXprPostPrefix);
@@ -1537,23 +1558,87 @@ public class QueryExecutor implements IASTObjectsContainer {
 							PredicateExpression newPred = ((PredicateExpression)ao).createCopy();
 							newPred.setValue_1(prevNum);
 							addClause(newPred, cpt, cbContext);
-						} else
-							addClause(ao, cpt, cbContext);
+							// brClose done by handleScopeClose()
+						} else {
+							if (ao instanceof ConcatenateExpression) {
+								if (((ConcatenateExpression)ao).getConcatenator() == Concatenator.OR) {
+									pendingOr = ao;
+								} else if (((ConcatenateExpression)ao).getConcatenator() == Concatenator.BR_OPEN) {
+									pendingBrOpen.add(ao);
+								} else if (((ConcatenateExpression)ao).getConcatenator() == Concatenator.BR_CLOSE) {
+									pendingBrClose.add(ao);
+								}
+							} else if (ao instanceof PredicateExpression) {
+								int oldScope = scope;
+								scope = handleScopeClose(scope, 1, cpt, cbContext, pendingBrClose);
+								pendingOr = handleScopeOpen(oldScope, 1, cpt, cbContext, pendingBrOpen, pendingOr);
+								handleBrackets(cpt, cbContext, pendingBrClose);
+								if (pendingOr != null) {
+									addClause(pendingOr, cpt, cbContext);
+									pendingOr = null;
+								}
+								handleBrackets(cpt, cbContext, pendingBrOpen);
+								addClause(ao, cpt, cbContext);
+								// the expression is valid within the select expression,
+								// as it must be expressed either on the source set
+								// or on a set directly derived from the source set by traversal;
+								// we must avoid testing validity afterwards
+								cpt.testForNextIsOr = false;
+							}
+						}
 						if(!cpt.valid)
 							break;
 					}
 				}
 				
-				
-				if (cpt.valid && brAdded)
-					addClause(new ConcatenateExpression(Concatenator.BR_CLOSE), cpt, cbContext);
+				handleScopeClose(scope, 3, cpt, cbContext, pendingBrClose);
 				
 				cpt.selectClauses = selectClauses;
 			}
 			
+			private void handleBrackets(ClausesPerType cpt,
+					ClauseBuilderContext cbContext, List<IASTObject> pendingBr) {
+				if (!pendingBr.isEmpty()) {
+					for (IASTObject iao : pendingBr)
+						addClause(iao, cpt, cbContext);
+					pendingBr.clear();
+				}
+			}
+			
+			private int handleScopeClose(int scope, int newScope, ClausesPerType cpt,
+					ClauseBuilderContext cbContext, List<IASTObject> pendingBrClose) {
+				if (scope != -1 && scope != newScope) {
+					if (!pendingBrClose.isEmpty()) {
+						for (IASTObject iao : pendingBrClose)
+							addClause(iao, cpt, cbContext);
+						pendingBrClose.clear();
+					} else
+						addClause(new ConcatenateExpression(Concatenator.BR_CLOSE), cpt, cbContext);
+				}
+				return newScope;
+			}
+			
+			private IASTObject handleScopeOpen(int scope, int newScope, ClausesPerType cpt,
+					ClauseBuilderContext cbContext, List<IASTObject> pendingBrOpen,
+					IASTObject pendingOr) {
+				if (scope != newScope) {
+					if (pendingOr != null)
+						addClause(pendingOr, cpt, cbContext);
+					if (!pendingBrOpen.isEmpty()) {
+						for (IASTObject iao : pendingBrOpen)
+							addClause(iao, cpt, cbContext);
+						pendingBrOpen.clear();
+					} else
+						addClause(new ConcatenateExpression(Concatenator.BR_OPEN), cpt, cbContext);
+					return null;
+				} else
+					return pendingOr;
+			}
+
 			private void addCountWithClause(ClausesPerType iCpt, List<IClause> countWithClauses,
 					List<IClause> selectClauses, ClausesPerType cpt) {
-				String alias = ValueAccess.getName(iCpt.node).concat(countXprPostPrefix);
+				String nnm = ValueAccess.getName(iCpt.node);
+				String alias = nnm.concat(countXprPostPrefix);
 				JcNumber num = new JcNumber(alias);
 				selectClauses.add(WITH.count().DISTINCT().value(iCpt.node).AS(num));
 				selectClauses.addAll(countWithClauses);
@@ -1563,6 +1648,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 
 			private void addTraversalConstraints2Select(List<JcPath> paths, ClausesPerType cpt) {
 				if (paths.size() > 0) {
+					cpt.oneValid = true;
 					boolean bracket = false;
 					if (cpt.concatenator != null) {
 						cpt.concat = cpt.concatenator.AND().BR_OPEN();
@@ -1609,6 +1695,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 					}
 				}
 				return ret;
+			}
+			
+			private String pathFromNode(String nodeName) {
+				return nodeName.replaceFirst(APIAccess.nodePrefix, APIAccess.pathPrefix);
 			}
 			
 			/***************************/
@@ -1940,10 +2030,6 @@ public class QueryExecutor implements IASTObjectsContainer {
 						last = last.next;
 					}
 					return last;
-				}
-				
-				private String pathFromNode(String nodeName) {
-					return nodeName.replaceFirst(APIAccess.nodePrefix, APIAccess.pathPrefix);
 				}
 				
 				private boolean isSameAs(StepClause toCompare) {

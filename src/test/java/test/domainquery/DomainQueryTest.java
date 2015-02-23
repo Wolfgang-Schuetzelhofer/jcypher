@@ -189,11 +189,53 @@ public class DomainQueryTest extends AbstractTestSuite {
 		q = da1.createQuery();
 		subjects = q.createMatch(Person.class);
 		europe = q.createMatch(Area.class);
-		j_smith = q.createMatch(Person.class);
 
-		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
-		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
 		
+		addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
+		areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+		
+		num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
+				q.WHERE(addresses.atttribute("number")).EQUALS(20),
+				//q.OR(),
+				q.WHERE(subjects.atttribute("firstName")).EQUALS("Jeremy")
+			);
+		result = q.execute();
+		
+		num_addressesResult = result.resultOf(num_addresses);
+		
+		/** 03 ****************************************/
+		testId = "SELECT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		subjects = q.createMatch(Person.class);
+		europe = q.createMatch(Area.class);
+
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+		
+		addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
+		areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+		
+		num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
+				q.WHERE(addresses.atttribute("number")).EQUALS(20),
+				q.OR(),
+				q.WHERE(areas.atttribute("name")).EQUALS("Europe")
+			);
+		result = q.execute();
+		
+		num_addressesResult = result.resultOf(num_addresses);
+		
+		/** 04 ****************************************/
+		testId = "SELECT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		subjects = q.createMatch(Person.class);
+		europe = q.createMatch(Area.class);
+
 		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
 		
 		addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
@@ -202,17 +244,15 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 //		DomainObjectMatch<PointOfContact> poc = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact")
 //				.TO(PointOfContact.class);
-		areas_1 = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
 //		DomainObjectMatch<AbstractArea> areas_2 = q.TRAVERSE_FROM(areas_1)
 //				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
 
 		num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
-				q.WHERE(addresses.atttribute("number")).EQUALS(20),
+				q.WHERE(subjects.atttribute("lastName")).EQUALS("Smith"),
 				q.BR_OPEN(),
 					q.WHERE(addresses.COUNT()).EQUALS(4),
 					q.OR(),
-					q.WHERE(areas.COUNT()).EQUALS(8),
+					q.WHERE(areas.COUNT()).EQUALS(9),
 				q.BR_CLOSE()
 			);
 		result = q.execute();
@@ -221,7 +261,6 @@ public class DomainQueryTest extends AbstractTestSuite {
 //		List<Person> subjectsResult = result.resultOf(subjects);
 //		List<Object> addressesResult = result.resultOf(addresses);
 //		List<AbstractArea> areasResult = result.resultOf(areas);
-		areas_1Result = result.resultOf(areas_1);
 //		List<AbstractArea> areas_2Result = result.resultOf(areas_2);
 //		List<PointOfContact> pocResult = result.resultOf(poc);
 		
