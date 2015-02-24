@@ -1,0 +1,15 @@
+----SELECT_01:
+OPTIONAL MATCH (n_0_0:NumberHolder)
+WHERE  ANY(x IN n_0_0.numbers WHERE x = 2)
+OPTIONAL MATCH (n_0_1:SubNumberHolder)
+WHERE  ANY(x IN n_0_1.numbers WHERE x = 2)
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1
+------------------------------------------------------------
+
+----SELECT_02:
+OPTIONAL MATCH (n_0_0:NumberHolder)
+WHERE  ANY(x IN n_0_0.numbers WHERE x = 2) AND  ANY(x IN n_0_0.numbers WHERE x = 5)
+OPTIONAL MATCH (n_0_1:SubNumberHolder)
+WHERE  ANY(x IN n_0_1.numbers WHERE x = 2) AND  ANY(x IN n_0_1.numbers WHERE x = 5)
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1
+------------------------------------------------------------

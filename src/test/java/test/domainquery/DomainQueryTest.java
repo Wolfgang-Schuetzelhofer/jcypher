@@ -242,6 +242,29 @@ public class DomainQueryTest extends AbstractTestSuite {
 		areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
 				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
 		
+		num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
+				q.WHERE(addresses.atttribute("number")).EQUALS(20),
+//				q.OR(),
+				q.WHERE(areas).CONTAINS(europe)
+			);
+		result = q.execute();
+		
+		num_addressesResult = result.resultOf(num_addresses);
+		
+		/** 05 ****************************************/
+		testId = "SELECT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		subjects = q.createMatch(Person.class);
+		europe = q.createMatch(Area.class);
+
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+		
+		addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
+		areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+		
 //		DomainObjectMatch<PointOfContact> poc = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact")
 //				.TO(PointOfContact.class);
 //		DomainObjectMatch<AbstractArea> areas_2 = q.TRAVERSE_FROM(areas_1)
@@ -673,7 +696,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		String testId;
 		String qCypher;
 		
-//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_02.txt");
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_SELECT_01.txt");
 		
 		Population population = new Population();
 		population.createPopulation();
@@ -724,6 +747,10 @@ public class DomainQueryTest extends AbstractTestSuite {
 		List<Address> j_smith_AddressesResult = result.resultOf(j_smith_Addresses);
 		List<Area> j_smith_AreasResult = result.resultOf(j_smith_Areas);
 		List<Address> j_smith_FilteredAddressesResult = result.resultOf(j_smith_FilteredAddresses);
+		
+		assertTrue(europeResult.size() == 1);
+		equals = CompareUtil.equalsObjects(population.getEurope(), europeResult.get(0));
+		assertTrue(equals);
 		
 		return;
 	}
@@ -1284,12 +1311,25 @@ public class DomainQueryTest extends AbstractTestSuite {
 		result = q.execute();
 		
 		nhResult = result.resultOf(nh);
-//		assertTrue(nhResult.size() == 2 && (equalsIntArrays(nhResult.get(0).getNumbers(), new int[]{1,2,3}) ||
-//				equalsIntArrays(nhResult.get(1).getNumbers(), new int[]{1,2,3})) &&
-//				(equalsIntArrays(nhResult.get(0).getNumbers(), new int[]{3,4,7}) ||
-//						equalsIntArrays(nhResult.get(1).getNumbers(), new int[]{3,4,7})));
-//		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
-//		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		assertTrue(nhResult.size() == 3);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 09 ****************************************/
+		testId = "PREDICATES_09";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		nh = q.createMatch(NumberHolder.class);
+
+		q.WHERE(nh.collectionAtttribute("numbers").length()).EQUALS(2);
+		
+		result = q.execute();
+		
+		nhResult = result.resultOf(nh);
+		assertTrue(nhResult.size() == 0);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
 		return;
 	}

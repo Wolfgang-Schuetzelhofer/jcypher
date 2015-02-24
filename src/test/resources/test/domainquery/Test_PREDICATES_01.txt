@@ -53,3 +53,19 @@ OPTIONAL MATCH (n_0_1:SubNumberHolder)
 WHERE  ANY(x IN n_0_1.numbers WHERE x = 3)
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1
 ------------------------------------------------------------
+
+----PREDICATES_08:
+OPTIONAL MATCH (n_0_0:NumberHolder)
+WHERE length(n_0_0.numbers) = 3
+OPTIONAL MATCH (n_0_1:SubNumberHolder)
+WHERE length(n_0_1.numbers) = 3
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1
+------------------------------------------------------------
+
+----PREDICATES_09:
+OPTIONAL MATCH (n_0_0:NumberHolder)
+WHERE length(n_0_0.numbers) = 2
+OPTIONAL MATCH (n_0_1:SubNumberHolder)
+WHERE length(n_0_1.numbers) = 2
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1
+------------------------------------------------------------

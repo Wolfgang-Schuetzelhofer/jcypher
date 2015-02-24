@@ -1515,6 +1515,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				// 1 .. constraint on source set
 				// 2 .. count expression
 				// 3 .. finish (close open brackets)
+				// 4 .. to force scope change
 				int scope = -1;
 				List<IASTObject> pendingBrOpen = new ArrayList<IASTObject>();
 				List<IASTObject> pendingBrClose = new ArrayList<IASTObject>();
@@ -1525,7 +1526,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 						if (!tpd.consumed) {
 							tpd.consumed = true;
 							// force a scope change
-							int oldScope = (scope == 0) ? 8 : scope;
+							int oldScope = (scope == 0) ? 4 : scope;
 							scope = handleScopeClose(oldScope, 0, cpt, cbContext, pendingBrClose);
 							pendingOr = handleScopeOpen(oldScope, 0, cpt, cbContext, pendingBrOpen, pendingOr);
 							// add clauses for the traversals (match path start)

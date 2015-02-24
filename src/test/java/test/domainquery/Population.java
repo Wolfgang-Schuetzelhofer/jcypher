@@ -174,6 +174,10 @@ public class Population {
 		return munich;
 	}
 
+	public Area getEurope() {
+		return europe;
+	}
+
 	public List<Object> getSmithFamily_addressee() {
 		return smithFamily_addressee;
 	}
