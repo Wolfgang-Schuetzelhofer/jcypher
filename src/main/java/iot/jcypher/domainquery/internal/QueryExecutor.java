@@ -1313,12 +1313,13 @@ public class QueryExecutor implements IASTObjectsContainer {
 							endNd);
 					if (sc.jcPath != null) {
 						ValueAccess.setName(pathFromNode(origEndNodeName), sc.jcPath);
-						ret.getStartPaths().add(sc.jcPath);
+						String startNodeName = ValueAccess.getName(sc.startNode);
+						ret.addStartPath(startNodeName, sc.jcPath);
 						ret.getClausesPerTypeList().add(
 								new ClausesPerType(endNd, clausesPerType.domainObjectMatch,
 										clausesPerType.domainObjectType));
 						cbContext.addCountFor(collOwner, clausesPerType.domainObjectMatch,
-								ValueAccess.getName(sc.startNode), endNd);
+								startNodeName, endNd);
 					}
 				} else if (stepCls.size() > 1) {
 					List<JcNode> tempNodes = new ArrayList<JcNode>();
@@ -1328,12 +1329,13 @@ public class QueryExecutor implements IASTObjectsContainer {
 						if (sc.jcPath != null) {
 							ValueAccess.setName(pathFromNode(
 									ValueAccess.getName(endNd)), sc.jcPath);
-							ret.getStartPaths().add(sc.jcPath);
+							String startNodeName = ValueAccess.getName(sc.startNode);
+							ret.addStartPath(startNodeName, sc.jcPath);
 							ret.getClausesPerTypeList().add(
 									new ClausesPerType(endNd, clausesPerType.domainObjectMatch,
 											clausesPerType.domainObjectType));
 							cbContext.addCountFor(collOwner, clausesPerType.domainObjectMatch,
-									ValueAccess.getName(sc.startNode), endNd);
+									startNodeName, endNd);
 						}
 					}
 					if (!copy) { // in this case the collection expression using
@@ -1409,7 +1411,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 									travResult.expressionsPerDOM = xpd; 
 									travResult.countExpressionsPerDOM = countXpd;
 									
-									tpd.paths.addAll(travResult.getStartPaths());
+									tpd.addAll(travResult.getStartPathMap());
 									int idx2 = 0;
 									for (List<IClause> part : travResult.expressionParts) {
 										if (!part.isEmpty()) {
@@ -1479,7 +1481,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 										}
 									}
 								} else { // mark the IASTObjects which have already been processed
-									tpd.paths.addAll(travResult.getStartPaths());
+									tpd.addAll(travResult.getStartPathMap());
 									// without count expressions, count expressions are handled differently
 									for (IASTObject ao : travResult.expressionsPerDOM.xPressions) {
 										astObject2TraversalPaths.put(ao, tpd);
@@ -1531,7 +1533,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 							pendingOr = handleScopeOpen(oldScope, 0, cpt, cbContext, pendingBrOpen, pendingOr);
 							// add clauses for the traversals (match path start)
 							// as head(nodes(path))
-							addTraversalConstraints2Select(tpd.paths, cpt);
+							addTraversalConstraints2Select(tpd, nds, cpt);
 							// brClose done by handleScopeClose()
 						}
 					} else {
@@ -1647,7 +1649,9 @@ public class QueryExecutor implements IASTObjectsContainer {
 				countWithClauses.add(0, WITH.value(num));
 			}
 
-			private void addTraversalConstraints2Select(List<JcPath> paths, ClausesPerType cpt) {
+			private void addTraversalConstraints2Select(TraversalPathsPerDOM tpd,
+					List<JcNode> startNds, ClausesPerType cpt) {
+				List<JcPath> paths = tpd.getAllPaths(startNds);
 				if (paths.size() > 0) {
 					cpt.oneValid = true;
 					boolean bracket = false;
@@ -1704,20 +1708,45 @@ public class QueryExecutor implements IASTObjectsContainer {
 			
 			/***************************/
 			private class TraversalPathsPerDOM {
-				private List<JcPath> paths;
+				// key is the start node name
+				private Map<String, List<JcPath>> pathMap;
 				private boolean consumed;
 				
 				private TraversalPathsPerDOM() {
 					super();
-					this.paths = new ArrayList<JcPath>();
+					this.pathMap = new HashMap<String, List<JcPath>>();
 					this.consumed = false;
+				}
+				
+				private void addAll(Map<String, List<JcPath>> pMap) {
+					Iterator<Entry<String, List<JcPath>>> it = pMap.entrySet().iterator();
+					while(it.hasNext()) {
+						Entry<String, List<JcPath>> entry = it.next();
+						List<JcPath> pths = this.pathMap.get(entry.getKey());
+						if (pths == null) {
+							pths = new ArrayList<JcPath>();
+							this.pathMap.put(entry.getKey(), pths);
+						}
+						pths.addAll(entry.getValue());
+					}
+				}
+				
+				private List<JcPath> getAllPaths(List<JcNode> nodes) {
+					List<JcPath> ret = new ArrayList<JcPath>();
+					for (JcNode n : nodes) {
+						List<JcPath> pths = this.pathMap.get(ValueAccess.getName(n));
+						if (pths != null)
+							ret.addAll(pths);
+					}
+					return ret;
 				}
 			}
 			
 			/***************************/
 			private class TraversalResult {
 				private List<List<IClause>> expressionParts;
-				private List<JcPath> startPaths;
+				// key is the start node name
+				private Map<String, List<JcPath>> startPathMap;
 				private List<ClausesPerType> clausesPerTypeList;
 				private ExpressionsPerDOM expressionsPerDOM;
 				private ExpressionsPerDOM countExpressionsPerDOM;
@@ -1730,10 +1759,19 @@ public class QueryExecutor implements IASTObjectsContainer {
 					return ret;
 				}
 				
-				private List<JcPath> getStartPaths() {
-					if (this.startPaths == null)
-						this.startPaths = new ArrayList<JcPath>();
-					return this.startPaths;
+				private Map<String, List<JcPath>> getStartPathMap() {
+					if (this.startPathMap == null)
+						this.startPathMap = new HashMap<String, List<JcPath>>();
+					return this.startPathMap;
+				}
+				
+				private void addStartPath(String startNodeName, JcPath startPath) {
+					List<JcPath> pths = this.getStartPathMap().get(startNodeName);
+					if (pths == null) {
+						pths = new ArrayList<JcPath>();
+						this.getStartPathMap().put(startNodeName, pths);
+					}
+					pths.add(startPath);
 				}
 				
 				private List<ClausesPerType> getClausesPerTypeList() {

@@ -50,6 +50,7 @@ public class Population {
 	private EArea electronicAreaUSA;
 	
 	private Address marketStreet_20;
+	private Address schwedenPlatz_32;
 	private Person john_smith;
 	
 	private List<Object> berghammers;
@@ -63,6 +64,7 @@ public class Population {
 	private List<Object> berghammers_globcom;
 	private List<Object> christa_berghammer_globcom;
 	private List<Object> john_smith_addresses;
+	private EContact john_smith_econtact;
 	private List<Object> john_smith_globcom;
 	private List<Object> john_smith_globcom_contacts;
 	private List<Object> smithFamily_addressee;
@@ -104,6 +106,10 @@ public class Population {
 
 	public Person getJohn_smith() {
 		return john_smith;
+	}
+
+	public EContact getJohn_smith_econtact() {
+		return john_smith_econtact;
 	}
 
 	public List<Object> getJohn_jery_smith() {
@@ -164,6 +170,10 @@ public class Population {
 
 	public Address getMarketStreet_20() {
 		return marketStreet_20;
+	}
+
+	public Address getSchwedenPlatz_32() {
+		return schwedenPlatz_32;
 	}
 
 	public Area getSanFrancisco() {
@@ -253,10 +263,12 @@ public class Population {
 		smith_address.setArea(sanFrancisco);
 		Address smith_address_2 = new Address("Schweden Platz", 32);
 		smith_address_2.setArea(vienna_01);
+		this.schwedenPlatz_32 = smith_address_2;
 		Address smith_address_3 = new Address("Karlsplatz Stachus", 1);
 		smith_address_3.setArea(munich);
 		EContact jsmith_eContact = new EContact(EContactType.EMAIL, "j.smith@email.smith");
 		jsmith_eContact.setArea(electronicAreaSF);
+		this.john_smith_econtact = jsmith_eContact;
 		
 		john_smith = new Person("John", "Smith", Gender.MALE);
 		john_smith.setMatchString("smith");
