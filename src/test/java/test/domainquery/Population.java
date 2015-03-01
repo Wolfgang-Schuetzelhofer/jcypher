@@ -188,6 +188,14 @@ public class Population {
 		return europe;
 	}
 
+	public Area getAustria() {
+		return austria;
+	}
+
+	public EArea getElectronicAreaUSA() {
+		return electronicAreaUSA;
+	}
+
 	public List<Object> getSmithFamily_addressee() {
 		return smithFamily_addressee;
 	}

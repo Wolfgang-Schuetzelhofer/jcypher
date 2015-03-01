@@ -426,8 +426,9 @@ public class DomainQueryTest extends AbstractTestSuite {
 		return;
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Test
-	public void testDomainQuery_Collections_06() {
+	public void testDomainQuery_Collections_02() {
 		IDomainAccess da1;
 		DomainQuery q;
 		DomainQueryResult result = null;
@@ -435,126 +436,15 @@ public class DomainQueryTest extends AbstractTestSuite {
 		String testId;
 		String qCypher;
 		
-//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_02.txt");
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_SELECT_01.txt");
 		
 		Population population = new Population();
 		population.createPopulation();
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
-		/** 01 ****************************************/
-		testId = "SELECT_01";
-		queriesStream.reset();
-		
-		q = da1.createQuery();
-		DomainObjectMatch<Object> j_smith = q.createMatch(Object.class);
-
-		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
-		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
-		
-		DomainObjectMatch<Object> j_smith_PoCs =
-				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Object.class);
-		DomainObjectMatch<Object> j_smith_Areas = q.TRAVERSE_FROM(j_smith_PoCs).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(Object.class);
-		q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria");
-		q.OR();
-		q.WHERE(j_smith_Areas.atttribute("region")).EQUALS("region_1");
-//		q.OR();
-//		q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("USA");
-		
-		DomainObjectMatch<Object> j_smith_FilteredPoCs =
-				q.SELECT_FROM(j_smith_PoCs).ELEMENTS(
-						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria"),
-						q.OR(),
-						q.WHERE(j_smith_Areas.atttribute("areaType")).EQUALS(AreaType.ELECTRONIC),
-						q.OR(),
-						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("USA")
-				);
-		q.WHERE(j_smith_FilteredPoCs.atttribute("number")).EQUALS(32);
-		q.OR();
-		q.WHERE(j_smith_FilteredPoCs.atttribute("type")).EQUALS(EContactType.EMAIL);
-		result = q.execute();
-		
-		List<Object> j_smithResult = result.resultOf(j_smith);
-		List<Object> j_smith_PoCsResult = result.resultOf(j_smith_PoCs);
-		List<Object> j_smith_AreasResult = result.resultOf(j_smith_Areas);
-		List<Object> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPoCs);
-		
-		return;
-	}
-	
-	@Test
-	public void testDomainQuery_Collections_05() {
-		IDomainAccess da1;
-		DomainQuery q;
-		DomainQueryResult result = null;
-		boolean equals;
-		String testId;
-		String qCypher;
-		
-//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_02.txt");
-		
-		Population population = new Population();
-		population.createPopulation();
-		
-		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		
-		/** 01 ****************************************/
-		testId = "SELECT_01";
-		queriesStream.reset();
-		
-		q = da1.createQuery();
-		DomainObjectMatch<Object> j_smith = q.createMatch(Object.class);
-
-		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
-		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
-		
-		DomainObjectMatch<Object> j_smith_PoCs =
-				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Object.class);
-		DomainObjectMatch<Object> j_smith_Areas = q.TRAVERSE_FROM(j_smith_PoCs).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(Object.class);
-		q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria");
-		q.OR();
-		q.WHERE(j_smith_Areas.atttribute("region")).EQUALS("region_1");
-//		q.OR();
-//		q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("USA");
-		
-		DomainObjectMatch<Object> j_smith_FilteredPoCs =
-				q.SELECT_FROM(j_smith_PoCs).ELEMENTS(
-						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria"),
-						q.OR(),
-						q.WHERE(j_smith_Areas.atttribute("areaType")).EQUALS(AreaType.ELECTRONIC),
-						q.OR(),
-						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("USA")
-				);
-		result = q.execute();
-		
-		List<Object> j_smithResult = result.resultOf(j_smith);
-		List<Object> j_smith_PoCsResult = result.resultOf(j_smith_PoCs);
-		List<Object> j_smith_AreasResult = result.resultOf(j_smith_Areas);
-		List<Object> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPoCs);
-		
-		return;
-	}
-	
-	@Test
-	public void testDomainQuery_Collections_04() {
-		IDomainAccess da1;
-		DomainQuery q;
-		DomainQueryResult result = null;
-		boolean equals;
-		String testId;
-		String qCypher;
-		
-//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_TRAVERSAL_02.txt");
-		
-		Population population = new Population();
-		population.createPopulation();
-		
-		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		
-		/** 01 ****************************************/
-		testId = "SELECT_01";
+		/** 04 ****************************************/
+		testId = "SELECT_04";
 		queriesStream.reset();
 		
 		q = da1.createQuery();
@@ -573,15 +463,121 @@ public class DomainQueryTest extends AbstractTestSuite {
 						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria"),
 						q.OR(),
 						q.WHERE(j_smith_Areas.atttribute("region")).EQUALS("region_1")
-//						q.OR(),
-//						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("EConatcs USA")
 				);
 		result = q.execute();
 		
-		List<Object> j_smithResult = result.resultOf(j_smith);
 		List<Object> j_smith_PoCsResult = result.resultOf(j_smith_PoCs);
 		List<Object> j_smith_AreasResult = result.resultOf(j_smith_Areas);
 		List<Object> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPoCs);
+		
+		List<PointOfContact> pocComp = new ArrayList<PointOfContact>();
+		pocComp.addAll((Collection<? extends PointOfContact>) population.getJohn_smith_addresses());
+		pocComp.add(population.getJohn_smith_econtact());
+		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_PoCsResult);
+		assertTrue(equals);
+		List<AbstractArea> compAreas = new ArrayList<AbstractArea>();
+		for (int i = 0; i < population.getJohn_smith_addresses().size(); i++) {
+			Address addr = (Address)population.getJohn_smith_addresses().get(i);
+			AbstractArea ar = ((Address)addr).getArea();
+			ar = ar.getPartOf();
+			while (ar != null) {
+				if (!compAreas.contains(ar))
+					compAreas.add(ar);
+				ar = ar.getPartOf();
+			}
+		}
+		compAreas.add(population.getJohn_smith_econtact().getArea().getPartOf());
+		equals = CompareUtil.equalsUnorderedList(compAreas, j_smith_AreasResult);
+		assertTrue(equals);
+		pocComp = new ArrayList<PointOfContact>();
+		pocComp.add(population.getSchwedenPlatz_32());
+		pocComp.add(population.getJohn_smith_econtact());
+		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_FilteredPoCsResult);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 05 ****************************************/
+		testId = "SELECT_05";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		j_smith = q.createMatch(Object.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		j_smith_PoCs =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Object.class);
+		j_smith_Areas = q.TRAVERSE_FROM(j_smith_PoCs).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Object.class);
+		q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria");
+		q.OR();
+		q.WHERE(j_smith_Areas.atttribute("region")).EQUALS("region_1");
+		
+		j_smith_FilteredPoCs =
+				q.SELECT_FROM(j_smith_PoCs).ELEMENTS(
+						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria"),
+						q.OR(),
+						q.WHERE(j_smith_Areas.atttribute("areaType")).EQUALS(AreaType.ELECTRONIC),
+						q.OR(),
+						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("USA")
+				);
+		result = q.execute();
+		
+		j_smith_AreasResult = result.resultOf(j_smith_Areas);
+		j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPoCs);
+		
+		List<Object> compAustReg1 = new ArrayList<Object>();
+		compAustReg1.add(population.getAustria());
+		compAustReg1.add(population.getElectronicAreaUSA());
+		equals = CompareUtil.equalsUnorderedList(compAustReg1, j_smith_AreasResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_FilteredPoCsResult);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 06 ****************************************/
+		testId = "SELECT_06";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		j_smith = q.createMatch(Object.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		j_smith_PoCs =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Object.class);
+		j_smith_Areas = q.TRAVERSE_FROM(j_smith_PoCs).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Object.class);
+		q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria");
+		q.OR();
+		q.WHERE(j_smith_Areas.atttribute("region")).EQUALS("region_1");
+		
+		j_smith_FilteredPoCs =
+				q.SELECT_FROM(j_smith_PoCs).ELEMENTS(
+						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria"),
+						q.OR(),
+						q.WHERE(j_smith_Areas.atttribute("areaType")).EQUALS(AreaType.ELECTRONIC),
+						q.OR(),
+						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("USA")
+				);
+		q.WHERE(j_smith_FilteredPoCs.atttribute("number")).EQUALS(32);
+		q.OR();
+		q.WHERE(j_smith_FilteredPoCs.atttribute("type")).EQUALS(EContactType.EMAIL);
+		result = q.execute();
+		
+		j_smith_AreasResult = result.resultOf(j_smith_Areas);
+		j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPoCs);
+		
+		equals = CompareUtil.equalsUnorderedList(compAustReg1, j_smith_AreasResult);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_FilteredPoCsResult);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
 		return;
 	}
