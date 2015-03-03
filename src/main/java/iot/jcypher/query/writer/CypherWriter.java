@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,6 +46,7 @@ import iot.jcypher.query.ast.pattern.PatternRelation;
 import iot.jcypher.query.ast.pattern.PatternRelation.Direction;
 import iot.jcypher.query.ast.predicate.BooleanOp;
 import iot.jcypher.query.ast.predicate.BooleanOp.Operator;
+import iot.jcypher.query.ast.predicate.BooleanValue;
 import iot.jcypher.query.ast.predicate.ExistsPattern;
 import iot.jcypher.query.ast.predicate.Predicate;
 import iot.jcypher.query.ast.predicate.PredicateConcatenator;
@@ -514,6 +515,9 @@ public class CypherWriter {
 			} else if (pred instanceof PredicateFunction) {
 				PredicateFunction pf = (PredicateFunction)pred;
 				CollectionCypherWriter.toCypherExpression(pf, context);
+			} else if (pred instanceof BooleanValue) {
+				PrimitiveCypherWriter.writePrimitiveValue(((BooleanValue)pred).isTRUE() ? Boolean.TRUE : Boolean.FALSE,
+						context, context.buffer);
 			}
 		}
 		

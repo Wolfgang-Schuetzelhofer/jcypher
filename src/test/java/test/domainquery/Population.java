@@ -51,6 +51,7 @@ public class Population {
 	
 	private Address marketStreet_20;
 	private Address schwedenPlatz_32;
+	private Address stachus_1;
 	private Person john_smith;
 	
 	private List<Object> berghammers;
@@ -74,6 +75,7 @@ public class Population {
 	private List<Object> areas_sf_vienna_01_munich;
 	private List<Object> areas_sf_vienna_munich;
 	private List<Object> areas_calif_vienna_munich_up;
+	private List<Object> all_PointsOfContact = new ArrayList<Object>();
 	
 	public Population() {
 		super();
@@ -176,6 +178,10 @@ public class Population {
 		return schwedenPlatz_32;
 	}
 
+	public Address getStachus_1() {
+		return stachus_1;
+	}
+
 	public Area getSanFrancisco() {
 		return sanFrancisco;
 	}
@@ -198,6 +204,10 @@ public class Population {
 
 	public List<Object> getSmithFamily_addressee() {
 		return smithFamily_addressee;
+	}
+
+	public List<Object> getAll_PointsOfContact() {
+		return all_PointsOfContact;
 	}
 
 	public List<Object> getSubjectsInEurope() {
@@ -268,15 +278,20 @@ public class Population {
 	private void createSmithFamily(List<Object> domainObjects) {
 		Address smith_address = new Address("Market Street", 20);
 		this.marketStreet_20 = smith_address;
+		this.all_PointsOfContact.add(smith_address);
 		smith_address.setArea(sanFrancisco);
 		Address smith_address_2 = new Address("Schweden Platz", 32);
 		smith_address_2.setArea(vienna_01);
 		this.schwedenPlatz_32 = smith_address_2;
+		this.all_PointsOfContact.add(smith_address_2);
 		Address smith_address_3 = new Address("Karlsplatz Stachus", 1);
 		smith_address_3.setArea(munich);
+		this.stachus_1 = smith_address_3;
+		this.all_PointsOfContact.add(smith_address_3);
 		EContact jsmith_eContact = new EContact(EContactType.EMAIL, "j.smith@email.smith");
 		jsmith_eContact.setArea(electronicAreaSF);
 		this.john_smith_econtact = jsmith_eContact;
+		this.all_PointsOfContact.add(jsmith_eContact);
 		
 		john_smith = new Person("John", "Smith", Gender.MALE);
 		john_smith.setMatchString("smith");
@@ -351,6 +366,7 @@ public class Population {
 	private void createBerghammers(List<Object> domainObjects) {
 		Address berghammer_address = new Address("Hochstrasse", 4);
 		berghammer_address.setArea(munich);
+		this.all_PointsOfContact.add(berghammer_address);
 		
 		Person hans_berghammer = new Person("Hans", "Berghammer", Gender.MALE);
 		hans_berghammer.setMatchString("berghammer");
@@ -388,18 +404,21 @@ public class Population {
 	private void createMore(List<Object> domainObjects) {
 		Address watson_address = new Address("Broadway", 53);
 		watson_address.setArea(newYorkCity);
+		this.all_PointsOfContact.add(watson_address);
 		Person jim_watson = new Person("Jim", "Watson", Gender.MALE);
 		jim_watson.setMatchString("match_2");
 		jim_watson.getPointsOfContact().add(watson_address);
 		
 		Address clark_address = new Address("Pearl Street", 124);
 		clark_address.setArea(newYorkCity);
+		this.all_PointsOfContact.add(clark_address);
 		Person angie_clark = new Person("Angelina", "Clark", Gender.FEMALE);
 		angie_clark.setMatchString("match_1");
 		angie_clark.getPointsOfContact().add(clark_address);
 		
 		Address maier_address = new Address("Lackner Gasse", 12);
 		maier_address.setArea(vienna_17);
+		this.all_PointsOfContact.add(maier_address);
 		Person herbert_maier = new Person("Herbert", "Maier", Gender.MALE);
 		herbert_maier.setMatchString("match_1");
 		herbert_maier.getPointsOfContact().add(maier_address);
@@ -433,6 +452,8 @@ public class Population {
 		Address globCom_address = new Address("Kearny Street", 29);
 		globCom_address.setArea(sanFrancisco);
 		EContact globCom_phone = new EContact(EContactType.TELEPHONE, "12345");
+		this.all_PointsOfContact.add(globCom_address);
+		this.all_PointsOfContact.add(globCom_phone);
 		
 		Company globCom = new Company();
 		globCom.setMatchString("match_1");
@@ -442,6 +463,7 @@ public class Population {
 		
 		Address smallCom_address = new Address("Schiller Strasse", 15);
 		smallCom_address.setArea(munich);
+		this.all_PointsOfContact.add(smallCom_address);
 		
 		Company smallCom = new Company();
 		smallCom.setMatchString("match_5");

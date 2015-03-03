@@ -43,12 +43,16 @@ import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression.Step;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
+import iot.jcypher.query.api.APIObjectAccess;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.pattern.Node;
 import iot.jcypher.query.api.pattern.Relation;
 import iot.jcypher.query.api.predicate.BooleanOperation;
 import iot.jcypher.query.api.predicate.Concat;
+import iot.jcypher.query.api.predicate.PFactory;
 import iot.jcypher.query.api.returns.RSortable;
+import iot.jcypher.query.ast.predicate.BooleanValue;
+import iot.jcypher.query.ast.predicate.IPredicateHolder;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
@@ -542,13 +546,23 @@ public class QueryExecutor implements IASTObjectsContainer {
 			}
 		}
 
-		private List<JcNode> collectNodes(DomainObjectMatch<?> dom, List<String> validNodes) {
+		private List<JcNode> collectNodes(DomainObjectMatch<?> dom, List<String> validNodes,
+				Class<?> resultType) {
 			List<JcNode> ret = new ArrayList<JcNode>();
-			List<JcNode> nodes = APIAccess.getNodes((DomainObjectMatch<?>)dom);
-			for(JcNode n : nodes) {
-				String nnm = ValueAccess.getName(n);
-				if (validNodes.contains(nnm))
-					ret.add(n);
+			if (resultType != null) {
+				JcNode n = APIAccess.getNodeForType(dom, resultType);
+				if (n != null) {
+					String nnm = ValueAccess.getName(n);
+					if (validNodes.contains(nnm))
+						ret.add(n);
+				}
+			} else {
+				List<JcNode> nodes = APIAccess.getNodes((DomainObjectMatch<?>)dom);
+				for(JcNode n : nodes) {
+					String nnm = ValueAccess.getName(n);
+					if (validNodes.contains(nnm))
+						ret.add(n);
+				}
 			}
 			return ret;
 		}
@@ -1111,7 +1125,12 @@ public class QueryExecutor implements IASTObjectsContainer {
 						if (val_2 instanceof DomainObjectMatch<?>) { // after test op must be IN or EQUALS
 							val2IsDom = true;
 							val_2s = new ArrayList<Object>();
-							val_2s.add(collectNodes((DomainObjectMatch<?>)val_2, cbContext.validNodes));
+							if (op == Operator.CONTAINS) {
+								// we must be within a collect expression
+								val_2s.add(collectNodes((DomainObjectMatch<?>)val_2, cbContext.validNodes,
+										clausesPerType.domainObjectType));
+							} else
+								val_2s.add(collectNodes((DomainObjectMatch<?>)val_2, cbContext.validNodes, null));
 						} else
 							val_2s = buildAllInstances((ValueElement)val_2, cbContext.validNodes);
 					} else if (val_2 != null) {
@@ -1255,24 +1274,33 @@ public class QueryExecutor implements IASTObjectsContainer {
 					Concat concat, ValueElement val_1, List<JcNode> val_2, boolean not) {
 				iot.jcypher.query.api.predicate.Concatenator booleanOp = null;
 				Concat concat_1 = concat;
-				int idx = 0;
-				for (JcNode n : val_2) {
-					if (idx == 0 && val_2.size() > 1) // encapsulate with brackets
-						concat_1 = concat_1.BR_OPEN();
-					if (not) {
-						if (idx == 0)
-							booleanOp = concat_1.valueOf(n).IS_NULL().OR().NOT().valueOf(val_1).IN_list(n).BR_CLOSE();
-						else
-							booleanOp = booleanOp.AND().BR_OPEN().valueOf(n).IS_NULL().OR().NOT().valueOf(val_1).IN_list(n).BR_CLOSE();
-					} else {
-						if (idx == 0)
-							booleanOp = concat_1.NOT().valueOf(n).IS_NULL().AND().valueOf(val_1).IN_list(n).BR_CLOSE();
-						else
-							booleanOp.OR().BR_OPEN().NOT().valueOf(n).IS_NULL().AND().valueOf(val_1).IN_list(n).BR_CLOSE();
+				if (val_2.isEmpty()) {
+					iot.jcypher.query.ast.predicate.PredicateExpression px =
+							(iot.jcypher.query.ast.predicate.PredicateExpression)APIObjectAccess.getAstNode(concat_1);
+					IPredicateHolder ph = px.getLastPredicateHolder();
+					BooleanValue bv = new BooleanValue(false);
+					ph.setPredicate(bv);
+					booleanOp = PFactory.createConcatenator(px.getRoot());
+				} else {
+					int idx = 0;
+					for (JcNode n : val_2) {
+						if (idx == 0 && val_2.size() > 1) // encapsulate with brackets
+							concat_1 = concat_1.BR_OPEN();
+						if (not) {
+							if (idx == 0)
+								booleanOp = concat_1.valueOf(n).IS_NULL().OR().NOT().valueOf(val_1).IN_list(n).BR_CLOSE();
+							else
+								booleanOp = booleanOp.AND().BR_OPEN().valueOf(n).IS_NULL().OR().NOT().valueOf(val_1).IN_list(n).BR_CLOSE();
+						} else {
+							if (idx == 0)
+								booleanOp = concat_1.NOT().valueOf(n).IS_NULL().AND().valueOf(val_1).IN_list(n).BR_CLOSE();
+							else
+								booleanOp.OR().BR_OPEN().NOT().valueOf(n).IS_NULL().AND().valueOf(val_1).IN_list(n).BR_CLOSE();
+						}
+						if ((idx == val_2.size() - 1) && val_2.size() > 1) // encapsulate with brackets
+							booleanOp = booleanOp.BR_CLOSE();
+						idx++;
 					}
-					if ((idx == val_2.size() - 1) && val_2.size() > 1) // encapsulate with brackets
-						booleanOp = booleanOp.BR_CLOSE();
-					idx++;
 				}
 				return booleanOp;
 			}

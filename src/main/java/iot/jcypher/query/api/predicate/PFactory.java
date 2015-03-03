@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import iot.jcypher.query.api.pattern.IElement;
 import iot.jcypher.query.api.pattern.XFactory;
 import iot.jcypher.query.ast.collection.CollectExpression;
 import iot.jcypher.query.ast.predicate.BooleanOp;
+import iot.jcypher.query.ast.predicate.BooleanValue;
 import iot.jcypher.query.ast.predicate.ExistsPattern;
 import iot.jcypher.query.ast.predicate.Negation;
 import iot.jcypher.query.ast.predicate.PredicateExpression;
@@ -76,6 +77,10 @@ public class PFactory {
 		ep.setPatternExpression(XFactory.getExpression(expression));
 		PredicateExpression xpr = new PredicateExpression();
 		xpr.setPredicate(ep);
+		return new Concatenator(xpr);
+	}
+	
+	public static Concatenator createConcatenator(PredicateExpression xpr) {
 		return new Concatenator(xpr);
 	}
 	

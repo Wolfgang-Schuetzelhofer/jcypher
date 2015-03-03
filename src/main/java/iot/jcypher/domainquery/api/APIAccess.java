@@ -99,7 +99,9 @@ public class APIAccess {
 				break;
 			}
 		}
-		return dom.getNodes().get(idx);
+		if (idx != -1)
+			return dom.getNodes().get(idx);
+		return null;
 	}
 	
 	public static boolean isPageChanged(DomainObjectMatch<?> dom) {

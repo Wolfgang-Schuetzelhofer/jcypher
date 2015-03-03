@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -73,6 +73,12 @@ public class PredicateExpression extends ASTNode implements IPredicateHolder {
 
 	public PredicateExpression getParent() {
 		return parent;
+	}
+	
+	public PredicateExpression getRoot() {
+		if (this.parent != null)
+			return this.parent.getRoot();
+		return this;
 	}
 
 	public void setParent(PredicateExpression parent) {
