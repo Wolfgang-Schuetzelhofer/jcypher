@@ -16,6 +16,7 @@
 
 package iot.jcypher.domainquery.api;
 
+import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.ast.SelectExpression;
 
 public class Select<T> extends APIObject {
@@ -32,14 +33,25 @@ public class Select<T> extends APIObject {
 		// all where expressions have already been added to the astObjects list
 		// of the SelectExpression
 		SelectExpression<T> se = this.getSelectExpression();
-		DomainObjectMatch<T> ret =APIAccess.createDomainObjectMatch(
+		DomainObjectMatch<T> selDom =APIAccess.createDomainObjectMatch(
 					se.getStart().getDomainObjectType(),
 				se.getQueryExecutor().getDomainObjectMatches().size(),
 				se.getQueryExecutor().getMappingInfo());
-		se.getQueryExecutor().getDomainObjectMatches().add(ret);
+		se.getQueryExecutor().getDomainObjectMatches().add(selDom);
 		se.resetAstObjectsContainer();
-		se.setEnd(ret);
-		return ret;
+		se.setEnd(selDom);
+		if (se.isReject()) {
+			// remove it from the return statement
+			// it is only temporary
+			APIAccess.setPartOfReturn(selDom, false);
+			DomainQuery q = se.getDomainQuery();
+			DomainObjectMatch<T> rejectDom = q.createMatch(se.getStart().getDomainObjectType());
+			// build complementary set
+			q.WHERE(rejectDom).IN(se.getStart());
+			q.WHERE(rejectDom).NOT().IN(selDom);
+			return rejectDom;
+		}
+		return selDom;
 	}
 	
 	@SuppressWarnings("unchecked")

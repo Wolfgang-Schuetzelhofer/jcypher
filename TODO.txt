@@ -5,7 +5,7 @@ problem with unconstraint optional matches
 
 test for contains and count if direct traversals
 
-check traversal query "BACK_03" for optimization on IN clause
+---done--- check traversal query "BACK_02" for optimization on IN clause
 
 ---done--- DomainObjectMatch.COUNT() for predicates in collection expressions
 

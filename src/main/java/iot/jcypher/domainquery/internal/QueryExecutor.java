@@ -343,10 +343,12 @@ public class QueryExecutor implements IASTObjectsContainer {
 							needAddDependencies = false;
 						}
 						clauses.addAll(cpt.getClauses());
-						toReturn.add(cpt);
-						QueryContext.ResultsPerType resPerType = context.addFor(cpt, context.execCount);
-						context.resultsPerType.add(resPerType);
-						resPerType.queryIndex = queryIndex;
+						if (APIAccess.isPartOfReturn(cpt.domainObjectMatch)) {
+							toReturn.add(cpt);
+							QueryContext.ResultsPerType resPerType = context.addFor(cpt, context.execCount);
+							context.resultsPerType.add(resPerType);
+							resPerType.queryIndex = queryIndex;
+						}
 						if (startNewQueryAfterThis)
 							break;
 					} else
@@ -1125,12 +1127,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 						if (val_2 instanceof DomainObjectMatch<?>) { // after test op must be IN or EQUALS
 							val2IsDom = true;
 							val_2s = new ArrayList<Object>();
-							if (op == Operator.CONTAINS) {
-								// we must be within a collect expression
-								val_2s.add(collectNodes((DomainObjectMatch<?>)val_2, cbContext.validNodes,
-										clausesPerType.domainObjectType));
-							} else
-								val_2s.add(collectNodes((DomainObjectMatch<?>)val_2, cbContext.validNodes, null));
+							val_2s.add(collectNodes((DomainObjectMatch<?>)val_2, cbContext.validNodes,
+									clausesPerType.domainObjectType));
 						} else
 							val_2s = buildAllInstances((ValueElement)val_2, cbContext.validNodes);
 					} else if (val_2 != null) {
@@ -1519,15 +1517,6 @@ public class QueryExecutor implements IASTObjectsContainer {
 						}
 					}
 				}
-				
-				// in case of a count expression we need a with clause
-				// yielding the counts of the traversal results
-//				if (countWithClauses != null) {
-//					selectClauses.addAll(countWithClauses);
-//					for (String vn : cbContext.validNodes) {
-//						selectClauses.add(WITH.value(new JcNode(vn)));
-//					}
-//				}
 				
 				String nodeLabel = getMappingInfo().getLabelForClass(cpt.domainObjectType);
 				selectClauses.add(

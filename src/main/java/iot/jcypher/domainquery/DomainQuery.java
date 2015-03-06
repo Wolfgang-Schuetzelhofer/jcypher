@@ -150,6 +150,20 @@ public class DomainQuery {
 	}
 	
 	/**
+	 * Reject domain objects from a set of domain objects.
+	 * Answer a set containing all objects of the source set except the rejected ones.
+	 * @param start with a DomainObjectMatch representing the initial set.
+	 * @return
+	 */
+	public <T> Select<T> REJECT_FROM(DomainObjectMatch<T> start) {
+		SelectExpression<T> se = new SelectExpression<T>(start, this.getIntAccess(), true);
+		this.queryExecutor.addAstObject(se);
+		this.astObjectsContainer = se;
+		Select<T> ret = APIAccess.createSelect(se);
+		return ret;
+	}
+	
+	/**
 	 * Execute the domain query
 	 * @return a DomainQueryResult
 	 */
@@ -184,6 +198,10 @@ public class DomainQuery {
 	public class IntAccess {
 		public QueryExecutor getQueryExecutor() {
 			return queryExecutor;
+		}
+		
+		public DomainQuery getDomainQuery() {
+			return DomainQuery.this;
 		}
 		
 		public void resetAstObjectsContainer() {

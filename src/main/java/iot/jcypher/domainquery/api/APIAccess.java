@@ -136,4 +136,12 @@ public class APIAccess {
 			DomainObjectMatch<?> collectXprOwner) {
 		dom.addCollectExpressionOwner(collectXprOwner);
 	}
+	
+	public static boolean isPartOfReturn(DomainObjectMatch<?> dom) {
+		return dom.isPartOfReturn();
+	}
+
+	public static void setPartOfReturn(DomainObjectMatch<?> dom, boolean partOfReturn) {
+		dom.setPartOfReturn(partOfReturn);
+	}
 }

@@ -52,6 +52,7 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	private int pageOffset;
 	private int pageLength;
 	private boolean pageChanged;
+	private boolean partOfReturn;
 	
 	DomainObjectMatch(Class<T> targetType, int num,
 			MappingInfo mappingInfo) {
@@ -61,6 +62,7 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		this.pageLength = -1;
 		this.pageOffset = 0;
 		this.pageChanged = false;
+		this.partOfReturn = true;
 		init(num);
 	}
 	
@@ -179,6 +181,14 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		return pageLength;
 	}
 	
+	boolean isPartOfReturn() {
+		return partOfReturn;
+	}
+
+	void setPartOfReturn(boolean partOfReturn) {
+		this.partOfReturn = partOfReturn;
+	}
+
 	Class<?> getTypeForNodeName(String nodeName) {
 		int idx = -1;
 		for (int i = 0; i < this.nodes.size(); i++) {

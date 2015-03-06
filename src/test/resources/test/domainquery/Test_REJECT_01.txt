@@ -1,0 +1,83 @@
+----REJECT_01:
+OPTIONAL MATCH (n_0_0:Person)
+WHERE n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John'
+OPTIONAL MATCH (n_1_0:Area)
+WHERE n_1_0.name = 'Europe'
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_2_0:Address)
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_2_1:EContact)
+OPTIONAL MATCH (n_2_0)-[:area]->()-[:partOf*]->(n_3_0_t0:Area)
+OPTIONAL MATCH (n_2_1)-[:area]->()-[:partOf*]->(n_3_0_t1:Area)
+OPTIONAL MATCH (n_3_0:Area)
+WHERE ((NOT n_3_0_t0 IS NULL AND n_3_0 IN[n_3_0_t0]) OR (NOT n_3_0_t1 IS NULL AND n_3_0 IN[n_3_0_t1]))
+OPTIONAL MATCH p_3_0_cn_4_t2 = (n_2_0)-[:area]->()-[:partOf*]->(n_3_0_cn_4_t2:Area)
+WHERE (NOT n_1_0 IS NULL AND n_3_0_cn_4_t2 IN[n_1_0])
+OPTIONAL MATCH p_3_0_cn_4_t3 = (n_2_1)-[:area]->()-[:partOf*]->(n_3_0_cn_4_t3:Area)
+WHERE (NOT n_1_0 IS NULL AND n_3_0_cn_4_t3 IN[n_1_0])
+OPTIONAL MATCH (n_4_0:Address)
+WHERE (NOT n_2_0 IS NULL AND n_4_0 IN[n_2_0]) AND (n_4_0 = head(nodes(p_3_0_cn_4_t2)))
+OPTIONAL MATCH (n_4_1:EContact)
+WHERE (NOT n_2_1 IS NULL AND n_4_1 IN[n_2_1]) AND (n_4_1 = head(nodes(p_3_0_cn_4_t3)))
+OPTIONAL MATCH (n_5_0:Address)
+WHERE (NOT n_2_0 IS NULL AND n_5_0 IN[n_2_0]) AND (n_4_0 IS NULL OR NOT n_5_0 IN[n_4_0])
+OPTIONAL MATCH (n_5_1:EContact)
+WHERE (NOT n_2_1 IS NULL AND n_5_1 IN[n_2_1]) AND (n_4_1 IS NULL OR NOT n_5_1 IN[n_4_1])
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_2_0) AS id_2_0, id(n_2_1) AS id_2_1, id(n_3_0) AS id_3_0, id(n_5_0) AS id_5_0, id(n_5_1) AS id_5_1
+------------------------------------------------------------
+
+----REJECT_02:
+OPTIONAL MATCH (n_0_8:Person)
+WHERE n_0_8.lastName = 'Smith' AND n_0_8.firstName = 'John'
+OPTIONAL MATCH (n_1_2:Addressee)
+WHERE n_1_2.name = 'Europe'
+OPTIONAL MATCH (n_1_3:Area)
+WHERE n_1_3.name = 'Europe'
+OPTIONAL MATCH (n_1_4:Company)
+WHERE n_1_4.name = 'Europe'
+OPTIONAL MATCH (n_1_7:NumberHolder)
+WHERE n_1_7.name = 'Europe'
+OPTIONAL MATCH (n_1_9:SubNumberHolder)
+WHERE n_1_9.name = 'Europe'
+OPTIONAL MATCH (n_0_8)-[:pointsOfContact]->()-[:c_content]->(n_2_1:Address)
+OPTIONAL MATCH (n_0_8)-[:pointsOfContact]->()-[:c_content]->(n_2_6:EContact)
+OPTIONAL MATCH (n_2_1)-[:area]->()-[:partOf*]->(n_3_3_t0:Area)
+OPTIONAL MATCH (n_2_6)-[:area]->()-[:partOf*]->(n_3_3_t1:Area)
+OPTIONAL MATCH (n_3_3:Area)
+WHERE ((NOT n_3_3_t0 IS NULL AND n_3_3 IN[n_3_3_t0]) OR (NOT n_3_3_t1 IS NULL AND n_3_3 IN[n_3_3_t1]))
+OPTIONAL MATCH (n_2_1)-[:area]->()-[:partOf*]->(n_3_5_t4:EArea)
+OPTIONAL MATCH (n_2_6)-[:area]->()-[:partOf*]->(n_3_5_t5:EArea)
+OPTIONAL MATCH (n_3_5:EArea)
+WHERE ((NOT n_3_5_t4 IS NULL AND n_3_5 IN[n_3_5_t4]) OR (NOT n_3_5_t5 IS NULL AND n_3_5 IN[n_3_5_t5]))
+OPTIONAL MATCH p_3_3_cn_4_t2 = (n_2_1)-[:area]->()-[:partOf*]->(n_3_3_cn_4_t2:Area)
+WHERE (NOT n_1_3 IS NULL AND n_3_3_cn_4_t2 IN[n_1_3])
+OPTIONAL MATCH p_3_3_cn_4_t3 = (n_2_6)-[:area]->()-[:partOf*]->(n_3_3_cn_4_t3:Area)
+WHERE (NOT n_1_3 IS NULL AND n_3_3_cn_4_t3 IN[n_1_3])
+OPTIONAL MATCH p_3_5_cn_4_t6 = (n_2_1)-[:area]->()-[:partOf*]->(n_3_5_cn_4_t6:EArea)
+WHERE ((false))
+OPTIONAL MATCH p_3_5_cn_4_t7 = (n_2_6)-[:area]->()-[:partOf*]->(n_3_5_cn_4_t7:EArea)
+WHERE ((false))
+OPTIONAL MATCH (n_4_1:Address)
+WHERE (NOT n_2_1 IS NULL AND n_4_1 IN[n_2_1]) AND (n_4_1 = head(nodes(p_3_3_cn_4_t2)) OR n_4_1 = head(nodes(p_3_5_cn_4_t6)))
+OPTIONAL MATCH (n_4_6:EContact)
+WHERE (NOT n_2_6 IS NULL AND n_4_6 IN[n_2_6]) AND (n_4_6 = head(nodes(p_3_3_cn_4_t3)) OR n_4_6 = head(nodes(p_3_5_cn_4_t7)))
+OPTIONAL MATCH (n_5_0:Collection)
+WHERE (false) AND (false)
+OPTIONAL MATCH (n_5_1:Address)
+WHERE (NOT n_2_1 IS NULL AND n_5_1 IN[n_2_1]) AND (n_4_1 IS NULL OR NOT n_5_1 IN[n_4_1])
+OPTIONAL MATCH (n_5_2:Addressee)
+WHERE (false) AND (false)
+OPTIONAL MATCH (n_5_3:Area)
+WHERE (false) AND (false)
+OPTIONAL MATCH (n_5_4:Company)
+WHERE (false) AND (false)
+OPTIONAL MATCH (n_5_5:EArea)
+WHERE (false) AND (false)
+OPTIONAL MATCH (n_5_6:EContact)
+WHERE (NOT n_2_6 IS NULL AND n_5_6 IN[n_2_6]) AND (n_4_6 IS NULL OR NOT n_5_6 IN[n_4_6])
+OPTIONAL MATCH (n_5_7:NumberHolder)
+WHERE (false) AND (false)
+OPTIONAL MATCH (n_5_8:Person)
+WHERE (false) AND (false)
+OPTIONAL MATCH (n_5_9:SubNumberHolder)
+WHERE (false) AND (false)
+RETURN DISTINCT id(n_0_8) AS id_0_8, id(n_1_2) AS id_1_2, id(n_1_3) AS id_1_3, id(n_1_4) AS id_1_4, id(n_1_7) AS id_1_7, id(n_1_9) AS id_1_9, id(n_2_1) AS id_2_1, id(n_2_6) AS id_2_6, id(n_3_3) AS id_3_3, id(n_3_5) AS id_3_5, id(n_5_0) AS id_5_0, id(n_5_1) AS id_5_1, id(n_5_2) AS id_5_2, id(n_5_3) AS id_5_3, id(n_5_4) AS id_5_4, id(n_5_5) AS id_5_5, id(n_5_6) AS id_5_6, id(n_5_7) AS id_5_7, id(n_5_8) AS id_5_8, id(n_5_9) AS id_5_9
+------------------------------------------------------------

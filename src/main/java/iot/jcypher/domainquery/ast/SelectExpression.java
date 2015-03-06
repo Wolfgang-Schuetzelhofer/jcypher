@@ -16,16 +16,15 @@
 
 package iot.jcypher.domainquery.ast;
 
+import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQuery.IntAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
 import iot.jcypher.domainquery.internal.QueryExecutor;
-import iot.jcypher.query.api.IClause;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 	
@@ -34,12 +33,19 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 	private DomainObjectMatch<T> end;
 	private List<IASTObject> astObjects;
 	private List<DomainObjectMatch<?>> traversalResults;
+	private boolean reject;
 
 	public SelectExpression(DomainObjectMatch<T> start, IntAccess domainQueryIntAccess) {
+		this(start, domainQueryIntAccess, false);
+	}
+	
+	public SelectExpression(DomainObjectMatch<T> start, IntAccess domainQueryIntAccess,
+			boolean reject) {
 		super();
 		this.start = start;
 		this.astObjects = new ArrayList<IASTObject>();
 		this.domainQueryIntAccess = domainQueryIntAccess;
+		this.reject = reject;
 	}
 	
 	public List<IASTObject> getAstObjects() {
@@ -91,8 +97,16 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 		return this.domainQueryIntAccess.getQueryExecutor();
 	}
 	
+	public DomainQuery getDomainQuery() {
+		return this.domainQueryIntAccess.getDomainQuery();
+	}
+	
 	public List<DomainObjectMatch<?>> getTraversalResults() {
 		return traversalResults;
+	}
+
+	public boolean isReject() {
+		return reject;
 	}
 
 	public void resetAstObjectsContainer() {

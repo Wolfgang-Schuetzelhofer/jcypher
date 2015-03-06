@@ -17,9 +17,9 @@ OPTIONAL MATCH (n_0_0)<-[:partOf*1..]-()<-[:area]-()<-[:c_content]-()<-[:pointsO
 OPTIONAL MATCH (n_1_0)<-[:partOf*1..]-()<-[:area]-()<-[:c_content]-()<-[:pointsOfContact]-(n_4_0:Company)
 OPTIONAL MATCH (n_1_0)<-[:partOf*1..]-()<-[:area]-()<-[:c_content]-()<-[:pointsOfContact]-(n_4_1:Person)
 OPTIONAL MATCH (n_2_0:Company)
-WHERE ((NOT n_3_0 IS NULL AND n_2_0 IN[n_3_0]) OR (NOT n_3_1 IS NULL AND n_2_0 IN[n_3_1])) AND ((NOT n_4_0 IS NULL AND n_2_0 IN[n_4_0]) OR (NOT n_4_1 IS NULL AND n_2_0 IN[n_4_1]))
+WHERE (NOT n_3_0 IS NULL AND n_2_0 IN[n_3_0]) AND (NOT n_4_0 IS NULL AND n_2_0 IN[n_4_0])
 OPTIONAL MATCH (n_2_1:Person)
-WHERE ((NOT n_3_0 IS NULL AND n_2_1 IN[n_3_0]) OR (NOT n_3_1 IS NULL AND n_2_1 IN[n_3_1])) AND ((NOT n_4_0 IS NULL AND n_2_1 IN[n_4_0]) OR (NOT n_4_1 IS NULL AND n_2_1 IN[n_4_1]))
+WHERE (NOT n_3_1 IS NULL AND n_2_1 IN[n_3_1]) AND (NOT n_4_1 IS NULL AND n_2_1 IN[n_4_1])
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_3_0) AS id_3_0, id(n_3_1) AS id_3_1, id(n_4_0) AS id_4_0, id(n_4_1) AS id_4_1, id(n_2_0) AS id_2_0, id(n_2_1) AS id_2_1
 ------------------------------------------------------------
 
