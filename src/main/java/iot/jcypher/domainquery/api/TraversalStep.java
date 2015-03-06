@@ -66,7 +66,7 @@ public class TraversalStep extends APIObject {
 	/**
 	 * End the traversal of the domain object graph matching a specific type of domain objects
 	 * @param domainObjectType
-	 * @return a DomainObjectType
+	 * @return a DomainObjectMatch
 	 */
 	public <T> DomainObjectMatch<T> TO(Class<T> domainObjectType) {
 		TraversalExpression te = (TraversalExpression)this.astObject;

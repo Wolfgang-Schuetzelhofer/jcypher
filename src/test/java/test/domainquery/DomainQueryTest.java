@@ -137,6 +137,39 @@ public class DomainQueryTest extends AbstractTestSuite {
 	}
 	
 	@Test
+	public void testDomainQuery_Collect_01() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_REJECT_01.txt");
+		
+		Population population = new Population();
+		population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "COLLECT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Person> personsMatch = q.createMatch(Person.class);
+		
+		q.WHERE(personsMatch.stringAtttribute("lastName")).EQUALS("Smith");
+		DomainObjectMatch<String> namesMatch = q.COLLECT(personsMatch.atttribute("firstName")).AS(String.class);
+		
+		result = q.execute();
+		
+		List<String> names = result.resultOf(namesMatch);
+		
+		return;
+	}
+	
+	@Test
 	public void testDomainQuery_Reject_01() {
 		IDomainAccess da1;
 		DomainQuery q;

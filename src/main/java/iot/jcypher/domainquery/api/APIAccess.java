@@ -18,6 +18,7 @@ package iot.jcypher.domainquery.api;
 
 import java.util.List;
 
+import iot.jcypher.domainquery.ast.CollectExpression;
 import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.PredicateExpression;
@@ -56,6 +57,10 @@ public class APIAccess {
 	
 	public static <T> Select<T> createSelect(SelectExpression<T> se) {
 		return new Select<T>(se);
+	}
+	
+	public static Collect createCollect(CollectExpression ce) {
+		return new Collect(ce);
 	}
 	
 	public static Count createCount(DomainObjectMatch<?> dom) {

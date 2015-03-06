@@ -19,12 +19,14 @@ package iot.jcypher.domainquery;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.BooleanOperation;
+import iot.jcypher.domainquery.api.Collect;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.api.Order;
 import iot.jcypher.domainquery.api.Select;
 import iot.jcypher.domainquery.api.TerminalResult;
 import iot.jcypher.domainquery.api.Traverse;
+import iot.jcypher.domainquery.ast.CollectExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.OrderExpression;
@@ -34,6 +36,7 @@ import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
 import iot.jcypher.domainquery.internal.QueryExecutor;
+import iot.jcypher.query.values.JcProperty;
 
 public class DomainQuery {
 
@@ -161,6 +164,17 @@ public class DomainQuery {
 		this.astObjectsContainer = se;
 		Select<T> ret = APIAccess.createSelect(se);
 		return ret;
+	}
+	
+	/**
+	 * Collect the specified attribute from all objects in a DomainObjectMatch
+	 * @param attribute
+	 * @return
+	 */
+	public Collect COLLECT(JcProperty attribute) {
+		CollectExpression ce = new CollectExpression(attribute, this.getIntAccess());
+		Collect coll = APIAccess.createCollect(ce);
+		return coll;
 	}
 	
 	/**
