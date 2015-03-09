@@ -16,6 +16,9 @@
 
 package iot.jcypher.domainquery.ast;
 
+import java.util.Date;
+
+import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.Count;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -76,7 +79,10 @@ public class PredicateExpression implements IASTObject {
 	}
 
 	public void setValue_2(Object value_2) {
-		this.value_2 = value_2;
+		if (value_2 instanceof Date)
+			this.value_2 = MappingUtil.dateToLong((Date)value_2);
+		else
+			this.value_2 = value_2;
 	}
 
 	public void addNegation() {

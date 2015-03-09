@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,21 @@
 package iot.jcypher.domain.mapping;
 
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
+import iot.jcypher.query.values.JcBoolean;
+import iot.jcypher.query.values.JcNumber;
+import iot.jcypher.query.values.JcPrimitive;
+import iot.jcypher.query.values.JcString;
 
 import java.lang.reflect.Array;
-import java.lang.reflect.Constructor;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -40,19 +46,39 @@ public class MappingUtil {
 		return getSimpleDateFormat().format(date);
 	}
 	
-	public static Date stringToDate(String date) {
+	public static Date stringToDate(String date, Class<?> dateType) {
 		try {
-			return getSimpleDateFormat().parse(date);
+			Date dat = getSimpleDateFormat().parse(date);
+			if (dateType.equals(java.sql.Date.class))
+				return new java.sql.Date(dat.getTime());
+			else if (dateType.equals(Time.class))
+				return new Time(dat.getTime());
+			else if (dateType.equals(Timestamp.class))
+				return new Timestamp(dat.getTime());
+			return dat;
 		} catch (ParseException e) {
 			throw new RuntimeException(e);
 		}
 	}
 	
 	public static long dateToLong(Date date) {
-		return date.getTime();
+		long millis = date.getTime();
+		if (date instanceof java.sql.Date)
+			return millis;
+		else if (date instanceof Time)
+			return millis;
+		else if (date instanceof Timestamp)
+			return millis;
+		return (millis / 1000) * 1000;
 	}
 	
-	public static Date longToDate(long millis) {
+	public static Date longToDate(long millis, Class<?> dateType) {
+		if (dateType.equals(java.sql.Date.class))
+			return new java.sql.Date(millis);
+		else if (dateType.equals(Time.class))
+			return new Time(millis);
+		else if (dateType.equals(Timestamp.class))
+			return new Timestamp(millis);
 		return new Date(millis);
 	}
 	
@@ -83,6 +109,13 @@ public class MappingUtil {
 				if (map.isEmpty()) { // empty maps are mapped to empty lists
 					return Collections.EMPTY_LIST;
 				}
+			} else if (value instanceof Collection<?>) {
+				List<Object> ret = new ArrayList<Object>();
+				Iterator<?> it = ((Collection<?>)value).iterator();
+				while(it.hasNext()) {
+					ret.add(convertToProperty(it.next()));
+				}
+				return ret;
 			}
 		}
 		return value;
@@ -110,7 +143,7 @@ public class MappingUtil {
 			Class<?>componentType, Class<?> concreteFieldType) {
 		if (value != null) {
 			if (Date.class.isAssignableFrom(targetType) && value instanceof Number) {
-				return longToDate(((Number)value).longValue());
+				return longToDate(((Number)value).longValue(), targetType);
 			} else if (Enum.class.isAssignableFrom(targetType)) {
 				Object[] enums=targetType.getEnumConstants();
 				for (int i = 0; i < enums.length; i++) {
@@ -167,6 +200,24 @@ public class MappingUtil {
 			}
 		}
 		return value;
+	}
+	
+	/**
+	 * Answer an appropriate instance of a JcPrimitive for the given simple-type and name.
+	 * E.g. given a type java.lang.String, a JcString instance will be returned.
+	 * @param type
+	 * @param name
+	 * @return
+	 */
+	public static JcPrimitive fromType(Class<?> type, String name) {
+		// TODO what about dates and arrays
+		if (type.equals(String.class))
+			return new JcString(name);
+		else if (type.equals(Number.class))
+			return new JcNumber(name);
+		else if (type.equals(Boolean.class))
+			return new JcBoolean(name);
+		return null;
 	}
 	
 	private static Object convertToPrimitive(Object value, Class<?> targetType) {

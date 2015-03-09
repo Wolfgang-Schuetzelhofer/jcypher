@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,6 @@ import iot.jcypher.domain.mapping.surrogate.InnerClassSurrogate;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Map;
 
@@ -64,19 +63,19 @@ public class FieldMapping {
 				// we can map to a property
 				Object value = this.field.get(domainObject);
 				ret = value;
-				value = MappingUtil.convertToProperty(value);
+				Object mappedValue = MappingUtil.convertToProperty(value);
 				GrProperty prop = rNode.getProperty(this.propertyName);
-				if (value != null) {
+				if (mappedValue != null) {
 					boolean propModified = false;
 					if (prop != null) {
-						Object propValue = MappingUtil.convertFromProperty(prop.getValue(), value.getClass(),
+						Object propValue = MappingUtil.convertFromProperty(prop.getValue(), mappedValue.getClass(),
 								getComponentType(rNode), getConcreteFieldType());
-						if (!propValue.equals(value)) {
-							prop.setValue(value);
+						if (!propValue.equals(mappedValue)) {
+							prop.setValue(mappedValue);
 							propModified = true;
 						}
 					} else {
-						rNode.addProperty(this.propertyName, value);
+						rNode.addProperty(this.propertyName, mappedValue);
 						propModified = true;
 					}
 					if (propModified)

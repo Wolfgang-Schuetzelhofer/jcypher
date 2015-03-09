@@ -23,6 +23,7 @@ import iot.jcypher.domain.internal.SkipLimitCalc;
 import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
 import iot.jcypher.domain.mapping.CompoundObjectType;
 import iot.jcypher.domain.mapping.FieldMapping;
+import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domain.mapping.surrogate.Array;
 import iot.jcypher.domain.mapping.surrogate.Collection;
@@ -30,6 +31,7 @@ import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.Count;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
+import iot.jcypher.domainquery.ast.CollectExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
@@ -45,6 +47,7 @@ import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.APIObjectAccess;
 import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.api.collection.CTerminal;
 import iot.jcypher.query.api.pattern.Node;
 import iot.jcypher.query.api.pattern.Relation;
 import iot.jcypher.query.api.predicate.BooleanOperation;
@@ -58,6 +61,7 @@ import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.factories.clause.WITH;
+import iot.jcypher.query.factories.xpression.C;
 import iot.jcypher.query.factories.xpression.I;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
@@ -65,6 +69,7 @@ import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcPath;
+import iot.jcypher.query.values.JcPrimitive;
 import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
@@ -89,6 +94,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 	private static final String tmpNodePostPrefix = "_t";
 	private static final String collNodePostPrefix = "_c";
 	private static final String countXprPostPrefix = "_cnt";
+	private static final String collectNodePostfix = "_col";
 	private static final char separator = '_';
 	
 	private IDomainAccess domainAccess;
@@ -190,6 +196,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 		return this.mappingInfo;
 	}
 	
+	@SuppressWarnings("unchecked")
 	public <T> List<T> loadResult(DomainObjectMatch<T> match) {
 		if (APIAccess.isPageChanged(match)) // need to execute the query
 			execute();
@@ -200,26 +207,37 @@ public class QueryExecutor implements IASTObjectsContainer {
 			throw new RuntimeException("DomainObjectMatch was not defined in this query");
 		Map<Class<?>, List<Long>> type2IdsMap = new HashMap<Class<?>, List<Long>>();
 		List<Long> allIds = new ArrayList<Long>();
+		List<T> ret = null;
 		for (QueryContext.ResultsPerType resPerType : resPerTypeList) {
-			List<Long> ids = type2IdsMap.get(resPerType.type);
-			boolean addList = false;
-			if (ids == null) {
-				ids = new ArrayList<Long>();
-				addList = true;
+			if (resPerType.jcPrimitive != null) {
+				if (ret == null)
+					ret = new ArrayList<T>();
+				if (resPerType.simpleValues != null)
+					ret.addAll((java.util.Collection<? extends T>) resPerType.simpleValues);
+			} else {
+				List<Long> ids = type2IdsMap.get(resPerType.type);
+				boolean addList = false;
+				if (ids == null) {
+					ids = new ArrayList<Long>();
+					addList = true;
+				}
+				ids.addAll(resPerType.ids);
+				allIds.addAll(resPerType.ids);
+				if (ids.isEmpty())
+					addList = false;
+				if (addList)
+					type2IdsMap.put(resPerType.type, ids);
 			}
-			ids.addAll(resPerType.ids);
-			allIds.addAll(resPerType.ids);
-			if (ids.isEmpty())
-				addList = false;
-			if (addList)
-				type2IdsMap.put(resPerType.type, ids);
 		}
-		long[] idsArray = new long[allIds.size()];
-		for (int i = 0; i < allIds.size(); i++) {
-			idsArray[i] = allIds.get(i).longValue();
+		
+		if (ret == null) { // not null in case of primitive values
+			long[] idsArray = new long[allIds.size()];
+			for (int i = 0; i < allIds.size(); i++) {
+				idsArray[i] = allIds.get(i).longValue();
+			}
+			ret = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().
+				loadByIds(APIAccess.getDomainObjectType(match), type2IdsMap, -1, idsArray);
 		}
-		List<T> ret = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().
-			loadByIds(APIAccess.getDomainObjectType(match), type2IdsMap, -1, idsArray);
 		return ret;
 	}
 	
@@ -377,22 +395,29 @@ public class QueryExecutor implements IASTObjectsContainer {
 			int idx = 0;
 			for (ClausesPerType cpt : toReturn) {
 				JcNode n = cpt.node;
-				RSortable returnClause;
-				if (isCountQuery)
-					returnClause = RETURN.count().DISTINCT().value(n).AS(this.getJcNumber(countPrefix, n));
-				else {
-					if (idx == 0)
-						returnClause = RETURN.DISTINCT().value(n.id()).AS(this.getJcNumber(idPrefix, n));
-					else
-						returnClause = RETURN.value(n.id()).AS(this.getJcNumber(idPrefix, n));
-					
-					// add skip and limit if required
-					if (cpt.pageOffset > 0)
-						returnClause = (RSortable)returnClause.SKIP(cpt.pageOffset);
-					if (cpt.pageLength >= 0)
-						returnClause = (RSortable)returnClause.LIMIT(cpt.pageLength);
+				RSortable returnClause = null;
+				if (isCountQuery) {
+					if (cpt.extractExpression != null) {
+						ret.add(RETURN.count().DISTINCT().collection(cpt.extractExpression).AS(this.getJcNumber(countPrefix, n)));
+					} else
+						returnClause = RETURN.count().DISTINCT().value(n).AS(this.getJcNumber(countPrefix, n));
+				} else {
+					if (cpt.extractExpression != null) {
+						ret.add(RETURN.collection(cpt.extractExpression).AS(cpt.node));
+					} else {
+						if (idx == 0)
+							returnClause = RETURN.DISTINCT().value(n.id()).AS(this.getJcNumber(idPrefix, n));
+						else
+							returnClause = RETURN.value(n.id()).AS(this.getJcNumber(idPrefix, n));
+						// add skip and limit if required
+						if (cpt.pageOffset > 0)
+							returnClause = (RSortable)returnClause.SKIP(cpt.pageOffset);
+						if (cpt.pageLength >= 0)
+							returnClause = (RSortable)returnClause.LIMIT(cpt.pageLength);
+					}
 				}
-				ret.add(returnClause);
+				if (returnClause != null)
+					ret.add(returnClause);
 				idx++;
 			}
 			return ret;
@@ -400,21 +425,39 @@ public class QueryExecutor implements IASTObjectsContainer {
 
 		void extractUniqueIds(List<JcQueryResult> results, List<QueryContext.ResultsPerType> resultsPerTypeList) {
 			Set<Long> uniqueIds = new LinkedHashSet<Long>();
+			Set<Object> simpleVals = new LinkedHashSet<Object>();
 			for (QueryContext.ResultsPerType resPerType : resultsPerTypeList) {
 				uniqueIds.clear();
+				simpleVals.clear();
 				JcQueryResult result = results.get(resPerType.queryIndex);
-				List<BigDecimal> idList = result.resultOf(resPerType.jcNumber);
-				for (BigDecimal bd : idList) {
-					if (bd != null) {
-						uniqueIds.add(bd.longValue());
+				if (MappingUtil.isSimpleType(resPerType.type)) {
+					flatten(result.resultOf(resPerType.jcPrimitive), simpleVals);
+					resPerType.simpleValues = new ArrayList<Object>();
+					resPerType.simpleValues.addAll(simpleVals);
+				} else {
+					List<BigDecimal> idList = result.resultOf(resPerType.jcNumber);
+					for (BigDecimal bd : idList) {
+						if (bd != null) {
+							uniqueIds.add(bd.longValue());
+						}
 					}
+					resPerType.ids = new ArrayList<Long>();
+					resPerType.ids.addAll(uniqueIds);
 				}
-				resPerType.ids = new ArrayList<Long>();
-				resPerType.ids.addAll(uniqueIds);
 			}
 			return;
 		}
 		
+		@SuppressWarnings({ "unchecked", "rawtypes" })
+		private void flatten(List<?> resultOf, Set<Object> simpleVals) {
+			for (Object elem : resultOf) {
+				if (elem instanceof List<?>)
+					simpleVals.addAll((java.util.Collection) elem);
+				else
+					simpleVals.add(elem);
+			}
+		}
+
 		void extractCounts(List<JcQueryResult> results, List<QueryContext.ResultsPerType> resultsPerTypeList) {
 			for (QueryContext.ResultsPerType resPerType : resultsPerTypeList) {
 				JcQueryResult result = results.get(resPerType.queryIndex);
@@ -572,7 +615,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 		/**
 		 * @param val
 		 * @param validNodes if != null, use list to filter nodes
-		 * @return
+		 * @return a list of ValueElements
 		 */
 		@SuppressWarnings("unchecked")
 		private List<Object> buildAllInstances(ValueElement ve, List<String> validNodes) {
@@ -876,6 +919,15 @@ public class QueryExecutor implements IASTObjectsContainer {
 						}
 					}
 				}
+			} else if (astObj instanceof CollectExpression) {
+				CollectExpression ce = (CollectExpression)astObj;
+				String bName = APIAccess.getBaseNodeName(ce.getEnd());
+				if (baseNodeName.equals(bName)) {
+					context.candidates.add(astObj);
+					context.state = State.HAS_XPRESSION;
+					bName = APIAccess.getBaseNodeName(ce.getStartDOM());
+					context.addDependency(bName);
+				}
 			}
 		}
 
@@ -1002,7 +1054,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 					ClauseBuilderContext cbContext) {
 				// The following if may only be executed after select clauses have
 				// been added and when thereafter the first expression is added
-				if (clausePerType.selectClauses != null && !clausePerType.closeBracket) {
+				if (clausePerType.collectionClauses != null && !clausePerType.closeBracket) {
 					// need to encapsulate the following expressions by brackets
 					clausePerType.concat = clausePerType.concatenator.AND().BR_OPEN();
 					clausePerType.concatenator = null;
@@ -1084,6 +1136,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 					}
 				} else if (astObj instanceof SelectExpression<?>) {
 					createAddSelectClauses(clausePerType, (SelectExpression<?>) astObj, cbContext);
+				} else if (astObj instanceof CollectExpression) {
+					createCollectClauses(clausePerType, (CollectExpression) astObj, cbContext);
 				}
 			}
 			
@@ -1382,6 +1436,36 @@ public class QueryExecutor implements IASTObjectsContainer {
 				return ret;
 			}
 			
+			private void createCollectClauses(ClausesPerType cpt, CollectExpression collEx,
+					ClauseBuilderContext cbContext) {
+				List<JcNode> nodes = cbContext.filterValidNodes(APIAccess.getNodes(collEx.getStartDOM()));
+				
+				JcNode unionNode;
+				JcValue val;
+				if (nodes.size() > 0) {
+					if (nodes.size() > 1) {
+						String unionName = APIAccess.getBaseNodeName(cpt.domainObjectMatch).concat(collectNodePostfix);
+						unionNode = new JcNode(unionName);
+						List<IClause> collectClauses = new ArrayList<IClause>();
+						collectClauses.add(OPTIONAL_MATCH.node(unionNode));
+						collectClauses.add(createWhereIn(WHERE.BR_OPEN(), unionNode, nodes, false));
+						cpt.collectionClauses = collectClauses;
+					} else
+						unionNode = nodes.get(0);
+					JcCollection unionColl = new JcCollection(ValueAccess.getName(unionNode));
+					
+					String tempName = APIAccess.getBaseNodeName(cpt.domainObjectMatch).concat(tmpNodePostPrefix);
+					JcNode tempNode = new JcNode(tempName);
+					ValueElement first = ValueAccess.findFirst(collEx.getAttribute());
+					val = (JcValue)cloneVe(collEx.getAttribute(), first, tempNode);
+					
+					cpt.extractExpression = C.EXTRACT().valueOf(val).fromAll(tempNode).IN_list(unionColl);
+				} else
+					cpt.valid = false;
+
+				return;
+			}
+			
 			private void createAddSelectClauses(ClausesPerType cpt, SelectExpression<?> selEx,
 					ClauseBuilderContext cbContext) {
 				// the select can return results only for valid nodes in start set,
@@ -1613,7 +1697,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				
 				handleScopeClose(scope, 3, cpt, cbContext, pendingBrClose);
 				
-				cpt.selectClauses = selectClauses;
+				cpt.collectionClauses = selectClauses;
 			}
 			
 			private void handleBrackets(ClausesPerType cpt,
@@ -2315,7 +2399,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 			private Concat concat = null;
 			private iot.jcypher.query.api.predicate.Concatenator concatenator = null;
 			private List<IClause> traversalClauses;
-			private List<IClause> selectClauses;
+			private List<IClause> collectionClauses;
+			private CTerminal extractExpression;
 			private boolean startCountSelectXpr;
 			private List<Integer> countWithClausesIdxs;
 			private List<String> countWithValidNodes;
@@ -2359,22 +2444,24 @@ public class QueryExecutor implements IASTObjectsContainer {
 							}
 							this.clauses.addAll(this.traversalClauses);
 							this.traversalClauses = null;
-						} else if (this.selectClauses != null) {
+						} else if (this.collectionClauses != null) {
 							if (this.countWithClausesIdxs != null) {
 								// add missing with clauses
 								for (int idx : this.countWithClausesIdxs) {
 									for (String nnm : this.countWithValidNodes) {
 										JcNode n = new JcNode(nnm);
-										this.selectClauses.add(idx, WITH.value(n));
+										this.collectionClauses.add(idx, WITH.value(n));
 									}
 								}
 							}
-							this.clauses.addAll(this.selectClauses);
+							this.clauses.addAll(this.collectionClauses);
 						} else {
-							String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
-							this.clauses.add(
-								OPTIONAL_MATCH.node(this.node).label(nodeLabel)
-							);
+							if (this.extractExpression == null) {
+								String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
+								this.clauses.add(
+									OPTIONAL_MATCH.node(this.node).label(nodeLabel)
+								);
+							}
 						}
 						if (this.concatenator != null)
 							this.clauses.add(this.closeBracket ? this.concatenator.BR_CLOSE() :
@@ -2519,7 +2606,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 			}
 			if (resPerType == null) {
 				String pref = isCountQuery ? countPrefix : idPrefix;
-				resPerType = new ResultsPerType(type, cpt.getJcNumber(pref));
+				resPerType = new ResultsPerType(type, ValueAccess.getName(cpt.node), cpt.getJcNumber(pref));
 				resPerTypeList.add(resPerType);
 			}
 			return resPerType;
@@ -2545,17 +2632,20 @@ public class QueryExecutor implements IASTObjectsContainer {
 		/************************************/
 		private class ResultsPerType {
 			private Class<?> type;
+			private JcPrimitive jcPrimitive;
 			private JcNumber jcNumber;
 			private List<Long> ids;
+			private List<Object> simpleValues;
 			private long count;
 			private int queryIndex;
 			
-			private ResultsPerType(Class<?> type, JcNumber num) {
+			private ResultsPerType(Class<?> type, String retName, JcNumber num) {
 				super();
 				this.type = type;
 				this.jcNumber = num;
 				this.count = 0;
 				this.queryIndex = 0;
+				this.jcPrimitive = MappingUtil.fromType(type, retName);
 			}
 		}
 	}

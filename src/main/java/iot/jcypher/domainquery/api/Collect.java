@@ -35,6 +35,7 @@ public class Collect extends APIObject {
 		DomainObjectMatch<T> ret =APIAccess.createDomainObjectMatch(domainObjectType,
 				ce.getQueryExecutor().getDomainObjectMatches().size(),
 				ce.getQueryExecutor().getMappingInfo());
+		ce.setEnd(ret);
 		ce.getQueryExecutor().getDomainObjectMatches().add(ret);
 		return ret;
 	}

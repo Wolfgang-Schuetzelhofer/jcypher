@@ -64,7 +64,7 @@ optimize query building for MapEntry (- classFieldName)
 
 ambiguous with null values -- revisit
 
-handle Date subclasses
+---done--- handle Date subclasses
 
 ---done--- map lists of lists, maps of maps, maps of lists, lists of maps
 

@@ -174,6 +174,7 @@ public class DomainQuery {
 	public Collect COLLECT(JcProperty attribute) {
 		CollectExpression ce = new CollectExpression(attribute, this.getIntAccess());
 		Collect coll = APIAccess.createCollect(ce);
+		this.queryExecutor.addAstObject(ce);
 		return coll;
 	}
 	

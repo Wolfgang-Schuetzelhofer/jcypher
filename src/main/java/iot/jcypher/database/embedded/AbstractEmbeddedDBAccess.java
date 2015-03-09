@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -50,6 +50,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
+
+import scala.collection.convert.Wrappers.SeqWrapper;
 
 public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 
@@ -403,6 +405,14 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 				for (Object v : arr) {
 					writeLiteralValue(v, jsarr);
 				}
+			}
+			array.add(jsarr);
+		} else if (val instanceof SeqWrapper<?>) {
+			JsonArrayBuilder jsarr = Json.createArrayBuilder();
+			int sz = ((SeqWrapper<?>)val).size();
+			for (int i = 0; i < sz; i++) {
+				Object obj = ((SeqWrapper<?>)val).get(i);
+				writeLiteralValue(obj, jsarr);
 			}
 			array.add(jsarr);
 		}

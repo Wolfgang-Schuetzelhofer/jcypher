@@ -17,14 +17,19 @@
 package iot.jcypher.domainquery.ast;
 
 import iot.jcypher.domainquery.DomainQuery.IntAccess;
+import iot.jcypher.domainquery.api.APIAccess;
+import iot.jcypher.domainquery.api.Count;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.QueryExecutor;
 import iot.jcypher.query.values.JcProperty;
+import iot.jcypher.query.values.ValueAccess;
+import iot.jcypher.query.values.ValueElement;
 
 public class CollectExpression implements IASTObject {
 
 	private IntAccess domainQueryIntAccess;
 	private JcProperty attribute;
+	private DomainObjectMatch<?> end;
 
 	public CollectExpression(JcProperty attribute, IntAccess domainQueryIntAccess) {
 		super();
@@ -34,5 +39,21 @@ public class CollectExpression implements IASTObject {
 	
 	public QueryExecutor getQueryExecutor() {
 		return this.domainQueryIntAccess.getQueryExecutor();
+	}
+	
+	public DomainObjectMatch<?> getStartDOM() {
+		return (DomainObjectMatch<?>)ValueAccess.getAnyHint(this.attribute, APIAccess.hintKey_dom);
+	}
+
+	public DomainObjectMatch<?> getEnd() {
+		return end;
+	}
+
+	public void setEnd(DomainObjectMatch<?> end) {
+		this.end = end;
+	}
+
+	public JcProperty getAttribute() {
+		return attribute;
 	}
 }

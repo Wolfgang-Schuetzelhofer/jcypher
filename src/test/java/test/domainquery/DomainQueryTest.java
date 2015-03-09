@@ -35,10 +35,14 @@ import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Date;
+import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Properties;
 
@@ -53,6 +57,7 @@ import test.domainquery.model.Address;
 import test.domainquery.model.Area;
 import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
+import test.domainquery.model.DateHolder;
 import test.domainquery.model.EContact;
 import test.domainquery.model.NumberHolder;
 import test.domainquery.model.SubNumberHolder;
@@ -80,7 +85,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		
 		// init db
 		Population population = new Population();
@@ -95,6 +100,25 @@ public class DomainQueryTest extends AbstractTestSuite {
 		nhs.add(n2);
 		nhs.add(sn1);
 		
+//		List<Date> dates = new ArrayList<Date>();
+//		long millis = 292517846786l;
+//		Calendar cal = GregorianCalendar.getInstance();
+//		cal.set(1960, 1, 8, 0, 0, 0);
+//		Date date = cal.getTime();
+//		dates.add(date);
+//		dates.add(new Timestamp(millis));
+//		DateHolder dh = new DateHolder("w", date);
+//		dh.setSqlTimestamp(new Timestamp(millis));
+//		nhs.add(dh);
+//		cal = GregorianCalendar.getInstance();
+//		cal.set(1963, 9, 24, 0, 0, 0);
+//		date = cal.getTime();
+//		dates.add(date);
+//		dh.setDates(dates);
+//		DateHolder dh1 = new DateHolder("d", date);
+//		dh1.setSqlTimestamp(new Timestamp(millis));
+//		nhs.add(dh1);
+		
 		QueriesPrintObserver.addOutputStream(System.out);
 		queriesStream = new ByteArrayOutputStream();
 		QueriesPrintObserver.addOutputStream(queriesStream);
@@ -102,23 +126,22 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-//		errors = da.store(storedDomainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		errors = da.store(nhs);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		errors = da.store(storedDomainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		errors = da.store(nhs);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 	}
 	
 	@AfterClass
@@ -134,6 +157,43 @@ public class DomainQueryTest extends AbstractTestSuite {
 		queriesStream = null;
 		QueriesPrintObserver.removeAllEnabledQueries();
 		QueriesPrintObserver.removeAllOutputStreams();
+	}
+	
+	//@Test
+	public void testDomainQuery_Date_01() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_REJECT_01.txt");
+		
+		Population population = new Population();
+		population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "DATE_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<DateHolder> dateHolderMatch = q.createMatch(DateHolder.class);
+		
+		Calendar cal = GregorianCalendar.getInstance();
+		cal.set(1960, 1, 8, 0, 0, 0);
+//		cal.set(1963, 9, 24, 0, 0, 0);
+		Date date = cal.getTime();
+		
+		q.WHERE(dateHolderMatch.atttribute("date")).EQUALS(date);
+		
+		result = q.execute();
+		
+		List<DateHolder> dateHolders = result.resultOf(dateHolderMatch);
+		
+		return;
 	}
 	
 	@Test
@@ -157,14 +217,36 @@ public class DomainQueryTest extends AbstractTestSuite {
 		queriesStream.reset();
 		
 		q = da1.createQuery();
-		DomainObjectMatch<Person> personsMatch = q.createMatch(Person.class);
+		DomainObjectMatch<Subject> subjectsMatch = q.createMatch(Subject.class);
 		
-		q.WHERE(personsMatch.stringAtttribute("lastName")).EQUALS("Smith");
-		DomainObjectMatch<String> namesMatch = q.COLLECT(personsMatch.atttribute("firstName")).AS(String.class);
+		q.WHERE(subjectsMatch.stringAtttribute("lastName")).EQUALS("Smith");
+//		q.OR();
+//		q.WHERE(subjectsMatch.atttribute("name")).EQUALS("Global Company");
+		DomainObjectMatch<String> namesMatch = q.COLLECT(subjectsMatch.atttribute("firstName")).AS(String.class);
 		
+		CountQueryResult countResult = q.executeCount();
 		result = q.execute();
 		
+		long numNames = countResult.countOf(namesMatch);
 		List<String> names = result.resultOf(namesMatch);
+		
+		/** 02 ****************************************/
+		testId = "COLLECT_02";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Object> objectsMatch = q.createMatch(Object.class);
+		
+		// if we don't do this, query execution performance will be very poor
+		q.WHERE(objectsMatch.atttribute("name")).LIKE(".*");
+		
+		DomainObjectMatch<String> objNamesMatch = q.COLLECT(objectsMatch.atttribute("name")).AS(String.class);
+		
+		countResult = q.executeCount();
+		result = q.execute();
+		
+		long numObjNames = countResult.countOf(objNamesMatch);
+		List<String> objNames = result.resultOf(objNamesMatch);
 		
 		return;
 	}
