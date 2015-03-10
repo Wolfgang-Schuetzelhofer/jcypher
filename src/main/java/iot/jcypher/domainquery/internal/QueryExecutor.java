@@ -47,7 +47,6 @@ import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.APIObjectAccess;
 import iot.jcypher.query.api.IClause;
-import iot.jcypher.query.api.collection.CTerminal;
 import iot.jcypher.query.api.pattern.Node;
 import iot.jcypher.query.api.pattern.Relation;
 import iot.jcypher.query.api.predicate.BooleanOperation;
@@ -396,14 +395,11 @@ public class QueryExecutor implements IASTObjectsContainer {
 			for (ClausesPerType cpt : toReturn) {
 				JcNode n = cpt.node;
 				RSortable returnClause = null;
-				if (isCountQuery) {
-					if (cpt.extractExpression != null) {
-						ret.add(RETURN.count().DISTINCT().collection(cpt.extractExpression).AS(this.getJcNumber(countPrefix, n)));
-					} else
-						returnClause = RETURN.count().DISTINCT().value(n).AS(this.getJcNumber(countPrefix, n));
-				} else {
-					if (cpt.extractExpression != null) {
-						ret.add(RETURN.collection(cpt.extractExpression).AS(cpt.node));
+				if (isCountQuery)
+					returnClause = RETURN.count().DISTINCT().value(n).AS(this.getJcNumber(countPrefix, n));
+				else {
+					if (cpt.isCollectExpression) {
+						ret.add(RETURN.value(cpt.node));
 					} else {
 						if (idx == 0)
 							returnClause = RETURN.DISTINCT().value(n.id()).AS(this.getJcNumber(idPrefix, n));
@@ -1436,20 +1432,27 @@ public class QueryExecutor implements IASTObjectsContainer {
 				return ret;
 			}
 			
+			@SuppressWarnings("unchecked")
 			private void createCollectClauses(ClausesPerType cpt, CollectExpression collEx,
 					ClauseBuilderContext cbContext) {
-				List<JcNode> nodes = cbContext.filterValidNodes(APIAccess.getNodes(collEx.getStartDOM()));
+				cpt.isCollectExpression = true;
+				List<JcNode> nodes;
+				Object hint = ValueAccess.getAnyHint(collEx.getAttribute(), APIAccess.hintKey_validNodes);
+				if (hint instanceof List<?>) {
+					nodes = (List<JcNode>) hint;
+					nodes = cbContext.filterValidNodes(nodes);
+				} else
+					nodes = cbContext.filterValidNodes(APIAccess.getNodes(collEx.getStartDOM()));
 				
 				JcNode unionNode;
 				JcValue val;
 				if (nodes.size() > 0) {
+					List<IClause> collectClauses = new ArrayList<IClause>();
 					if (nodes.size() > 1) {
 						String unionName = APIAccess.getBaseNodeName(cpt.domainObjectMatch).concat(collectNodePostfix);
 						unionNode = new JcNode(unionName);
-						List<IClause> collectClauses = new ArrayList<IClause>();
 						collectClauses.add(OPTIONAL_MATCH.node(unionNode));
 						collectClauses.add(createWhereIn(WHERE.BR_OPEN(), unionNode, nodes, false));
-						cpt.collectionClauses = collectClauses;
 					} else
 						unionNode = nodes.get(0);
 					JcCollection unionColl = new JcCollection(ValueAccess.getName(unionNode));
@@ -1458,8 +1461,13 @@ public class QueryExecutor implements IASTObjectsContainer {
 					JcNode tempNode = new JcNode(tempName);
 					ValueElement first = ValueAccess.findFirst(collEx.getAttribute());
 					val = (JcValue)cloneVe(collEx.getAttribute(), first, tempNode);
-					
-					cpt.extractExpression = C.EXTRACT().valueOf(val).fromAll(tempNode).IN_list(unionColl);
+					collectClauses.add(
+							WITH.collection(C.EXTRACT().valueOf(val).fromAll(tempNode).IN_list(unionColl)).AS(cpt.node));
+					for (String nnm : cbContext.validNodes) {
+						JcNode n = new JcNode(nnm);
+						collectClauses.add(WITH.value(n));
+					}
+					cpt.collectionClauses = collectClauses;
 				} else
 					cpt.valid = false;
 
@@ -2400,7 +2408,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 			private iot.jcypher.query.api.predicate.Concatenator concatenator = null;
 			private List<IClause> traversalClauses;
 			private List<IClause> collectionClauses;
-			private CTerminal extractExpression;
+			private boolean isCollectExpression;
 			private boolean startCountSelectXpr;
 			private List<Integer> countWithClausesIdxs;
 			private List<String> countWithValidNodes;
@@ -2417,6 +2425,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				this.testForNextIsOr = false;
 				this.closeBracket = false;
 				this.startCountSelectXpr = false;
+				this.isCollectExpression = false;
 			}
 			
 			private boolean needSkipsLimits() {
@@ -2456,12 +2465,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 							}
 							this.clauses.addAll(this.collectionClauses);
 						} else {
-							if (this.extractExpression == null) {
-								String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
-								this.clauses.add(
-									OPTIONAL_MATCH.node(this.node).label(nodeLabel)
-								);
-							}
+							String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
+							this.clauses.add(
+								OPTIONAL_MATCH.node(this.node).label(nodeLabel)
+							);
 						}
 						if (this.concatenator != null)
 							this.clauses.add(this.closeBracket ? this.concatenator.BR_CLOSE() :

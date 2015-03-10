@@ -85,7 +85,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 		
 		// init db
 		Population population = new Population();
@@ -126,22 +126,22 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
-		List<JcError> errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		errors = da.store(storedDomainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		errors = da.store(nhs);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
+//		List<JcError> errors = dbAccess.clearDatabase();
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+//		errors = da.store(storedDomainObjects);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		errors = da.store(nhs);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
 	}
 	
 	@AfterClass
@@ -218,17 +218,26 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		q = da1.createQuery();
 		DomainObjectMatch<Subject> subjectsMatch = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> subjectsMatch2 = q.createMatch(Subject.class);
 		
-		q.WHERE(subjectsMatch.stringAtttribute("lastName")).EQUALS("Smith");
+//		q.WHERE(subjectsMatch.stringAtttribute("lastName")).EQUALS("Smith");
 //		q.OR();
 //		q.WHERE(subjectsMatch.atttribute("name")).EQUALS("Global Company");
-		DomainObjectMatch<String> namesMatch = q.COLLECT(subjectsMatch.atttribute("firstName")).AS(String.class);
+		q.ORDER(subjectsMatch).BY("firstName");
+		subjectsMatch.setPage(0, 5);
+		q.ORDER(subjectsMatch2).BY("lastName");
+		DomainObjectMatch<String> firstNamesMatch = q.COLLECT(subjectsMatch.atttribute("firstName")).AS(String.class);
+		DomainObjectMatch<String> lastNamesMatch = q.COLLECT(subjectsMatch2.atttribute("lastName")).AS(String.class);
 		
 		CountQueryResult countResult = q.executeCount();
 		result = q.execute();
 		
-		long numNames = countResult.countOf(namesMatch);
-		List<String> names = result.resultOf(namesMatch);
+		long numFirstNames = countResult.countOf(firstNamesMatch);
+		long numLastNames = countResult.countOf(lastNamesMatch);
+		long numSubjects = countResult.countOf(subjectsMatch);
+		List<String> firstNames = result.resultOf(firstNamesMatch);
+		List<String> lastNames = result.resultOf(lastNamesMatch);
+		List<Subject> subjects = result.resultOf(subjectsMatch);
 		
 		/** 02 ****************************************/
 		testId = "COLLECT_02";
