@@ -224,7 +224,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 //		q.OR();
 //		q.WHERE(subjectsMatch.atttribute("name")).EQUALS("Global Company");
 		q.ORDER(subjectsMatch).BY("firstName");
-		subjectsMatch.setPage(0, 5);
+//		subjectsMatch.setPage(0, 5);
 		q.ORDER(subjectsMatch2).BY("lastName");
 		DomainObjectMatch<String> firstNamesMatch = q.COLLECT(subjectsMatch.atttribute("firstName")).AS(String.class);
 		DomainObjectMatch<String> lastNamesMatch = q.COLLECT(subjectsMatch2.atttribute("lastName")).AS(String.class);

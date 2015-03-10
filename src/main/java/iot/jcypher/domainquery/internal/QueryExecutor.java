@@ -316,8 +316,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 				queryIndex++;
 				List<IClause> clauses = new ArrayList<IClause>();
 				List<ClausesPerType> toReturn = new ArrayList<ClausesPerType>();
+				List<ClausesPerType> added = new ArrayList<ClausesPerType>();
 				List<IClause> withClauses = null;
-				boolean needAddDependencies = startIdx > 0;
 				boolean needWith = false;
 				int i;
 				for (i = startIdx; i < clausesPerTypeList.size(); i++) {
@@ -355,10 +355,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 							}
 						}
 						
-						if (needAddDependencies) {
-							cpt.addDependencyClauses(clauses);
-							needAddDependencies = false;
-						}
+						cpt.addDependencyClauses(clauses, added);
 						clauses.addAll(cpt.getClauses());
 						if (APIAccess.isPartOfReturn(cpt.domainObjectMatch)) {
 							toReturn.add(cpt);
@@ -370,6 +367,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 							break;
 					} else
 						context.addEmptyFor(cpt); // did not produce a result
+					added.add(cpt);
 				}
 				
 				if (i == clausesPerTypeList.size()) // we are finished
@@ -2486,7 +2484,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 					clauses.addAll(mcs);
 			}
 			
-			private void addDependencyClauses(List<IClause> clauses) {
+			private void addDependencyClauses(List<IClause> clauses, List<ClausesPerType> added) {
 				boolean hasCountWithXpr = this.countWithClausesIdxs != null;
 				List<String> depBases = null;
 				if (hasCountWithXpr)
@@ -2499,16 +2497,19 @@ public class QueryExecutor implements IASTObjectsContainer {
 						List<DomainObjectMatch<?>> collOwner = APIAccess.getCollectExpressionOwner(xpd.domainObjectMatch);
 						boolean addExpressions = collOwner == null || !collOwner.contains(this.domainObjectMatch);
 						for (ClausesPerType cpt : xpd.clausesPerTypes) {
-							if (addExpressions) {
-								cpt.addClausesTo(clauses);
-								if (hasCountWithXpr) {
-									String bnm = APIAccess.getBaseNodeName(cpt.domainObjectMatch);
-									if (!depBases.contains(bnm))
-										depBases.add(bnm);
+							if (!added.contains(cpt)) {
+								if (addExpressions) {
+									cpt.addClausesTo(clauses);
+									if (hasCountWithXpr) {
+										String bnm = APIAccess.getBaseNodeName(cpt.domainObjectMatch);
+										if (!depBases.contains(bnm))
+											depBases.add(bnm);
+									}
+								} else {
+									if (this.countWithValidNodes != null)
+										this.countWithValidNodes.remove(ValueAccess.getName(cpt.node));
 								}
-							} else {
-								if (this.countWithValidNodes != null)
-									this.countWithValidNodes.remove(ValueAccess.getName(cpt.node));
+								added.add(cpt);
 							}
 						}
 					}
