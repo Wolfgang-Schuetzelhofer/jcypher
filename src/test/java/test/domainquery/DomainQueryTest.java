@@ -227,6 +227,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 //		subjectsMatch.setPage(0, 5);
 		q.ORDER(subjectsMatch2).BY("lastName");
 		DomainObjectMatch<String> firstNamesMatch = q.COLLECT(subjectsMatch.atttribute("firstName")).AS(String.class);
+		firstNamesMatch.setPage(0, 5);
 		DomainObjectMatch<String> lastNamesMatch = q.COLLECT(subjectsMatch2.atttribute("lastName")).AS(String.class);
 		
 		CountQueryResult countResult = q.executeCount();
