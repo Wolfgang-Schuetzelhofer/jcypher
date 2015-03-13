@@ -121,4 +121,8 @@ public class ValueAccess {
 		}
 		return null;
 	}
+	
+	public static boolean isSame(JcValue val1, JcValue val2) {
+		return val1.getName() != null && val1.getName().equals(val2.getName());
+	}
 }

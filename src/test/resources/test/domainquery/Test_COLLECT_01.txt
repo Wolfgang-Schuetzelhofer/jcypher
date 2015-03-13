@@ -1,0 +1,65 @@
+----COLLECT_01:
+OPTIONAL MATCH (n_0_0:Company)
+OPTIONAL MATCH (n_0_1:Person)
+OPTIONAL MATCH (n_1_0:Company)
+OPTIONAL MATCH (n_1_1:Person)
+WITH extract(n_2_t IN [n_0_1] | n_2_t.firstName) AS n_2_0, n_1_1, n_1_0, n_0_1, n_0_0
+WITH extract(n_3_t IN [n_1_1] | n_3_t.lastName) AS n_3_0, n_2_0, n_1_1, n_1_0, n_0_1, n_0_0
+RETURN count(DISTINCT n_0_0) AS cnt_0_0, count(DISTINCT n_0_1) AS cnt_0_1, count(DISTINCT n_1_0) AS cnt_1_0, count(DISTINCT n_1_1) AS cnt_1_1, count(DISTINCT n_2_0) AS cnt_2_0, count(DISTINCT n_3_0) AS cnt_3_0
+
+OPTIONAL MATCH (n_0_0:Company)
+OPTIONAL MATCH (n_0_1:Person)
+OPTIONAL MATCH (n_1_0:Company)
+OPTIONAL MATCH (n_1_1:Person)
+WITH n_0_0, n_0_1, n_1_0, n_1_1
+ORDER BY n_0_1.firstName, n_1_1.lastName DESC
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1, id(n_1_0) AS id_1_0, id(n_1_1) AS id_1_1
+OPTIONAL MATCH (n_0_0:Company)
+OPTIONAL MATCH (n_0_1:Person)
+WITH extract(n_2_t IN [n_0_1] | n_2_t.firstName) AS n_2_0, n_0_1, n_0_0
+ORDER BY n_0_1.firstName
+WHERE NOT n_2_0 IS NULL
+RETURN DISTINCT n_2_0
+LIMIT 5
+OPTIONAL MATCH (n_1_0:Company)
+OPTIONAL MATCH (n_1_1:Person)
+WITH extract(n_3_t IN [n_1_1] | n_3_t.lastName) AS n_3_0, n_1_1, n_1_0
+ORDER BY n_1_1.lastName DESC
+RETURN DISTINCT n_3_0
+------------------------------------------------------------
+
+----COLLECT_02:
+OPTIONAL MATCH (n_0_2:Addressee)
+WHERE n_0_2.name =~ '.*'
+OPTIONAL MATCH (n_0_3:Area)
+WHERE n_0_3.name =~ '.*'
+OPTIONAL MATCH (n_0_4:Company)
+WHERE n_0_4.name =~ '.*'
+OPTIONAL MATCH (n_0_5:DateHolder)
+WHERE n_0_5.name =~ '.*'
+OPTIONAL MATCH (n_0_8:NumberHolder)
+WHERE n_0_8.name =~ '.*'
+OPTIONAL MATCH (n_0_10:SubNumberHolder)
+WHERE n_0_10.name =~ '.*'
+OPTIONAL MATCH (n_1_col)
+WHERE ((NOT n_0_2 IS NULL AND n_1_col IN[n_0_2]) OR (NOT n_0_3 IS NULL AND n_1_col IN[n_0_3]) OR (NOT n_0_4 IS NULL AND n_1_col IN[n_0_4]) OR (NOT n_0_5 IS NULL AND n_1_col IN[n_0_5]) OR (NOT n_0_8 IS NULL AND n_1_col IN[n_0_8]) OR (NOT n_0_10 IS NULL AND n_1_col IN[n_0_10]))
+WITH extract(n_1_t IN [n_1_col] | n_1_t.name) AS n_1_0, n_0_10, n_0_8, n_0_5, n_0_4, n_0_3, n_0_2
+RETURN count(DISTINCT n_0_2) AS cnt_0_2, count(DISTINCT n_0_3) AS cnt_0_3, count(DISTINCT n_0_4) AS cnt_0_4, count(DISTINCT n_0_5) AS cnt_0_5, count(DISTINCT n_0_8) AS cnt_0_8, count(DISTINCT n_0_10) AS cnt_0_10, count(DISTINCT n_1_0) AS cnt_1_0
+
+OPTIONAL MATCH (n_0_2:Addressee)
+WHERE n_0_2.name =~ '.*'
+OPTIONAL MATCH (n_0_3:Area)
+WHERE n_0_3.name =~ '.*'
+OPTIONAL MATCH (n_0_4:Company)
+WHERE n_0_4.name =~ '.*'
+OPTIONAL MATCH (n_0_5:DateHolder)
+WHERE n_0_5.name =~ '.*'
+OPTIONAL MATCH (n_0_8:NumberHolder)
+WHERE n_0_8.name =~ '.*'
+OPTIONAL MATCH (n_0_10:SubNumberHolder)
+WHERE n_0_10.name =~ '.*'
+OPTIONAL MATCH (n_1_col)
+WHERE ((NOT n_0_2 IS NULL AND n_1_col IN[n_0_2]) OR (NOT n_0_3 IS NULL AND n_1_col IN[n_0_3]) OR (NOT n_0_4 IS NULL AND n_1_col IN[n_0_4]) OR (NOT n_0_5 IS NULL AND n_1_col IN[n_0_5]) OR (NOT n_0_8 IS NULL AND n_1_col IN[n_0_8]) OR (NOT n_0_10 IS NULL AND n_1_col IN[n_0_10]))
+WITH extract(n_1_t IN [n_1_col] | n_1_t.name) AS n_1_0, n_0_10, n_0_8, n_0_5, n_0_4, n_0_3, n_0_2
+RETURN DISTINCT id(n_0_2) AS id_0_2, id(n_0_3) AS id_0_3, id(n_0_4) AS id_0_4, id(n_0_5) AS id_0_5, id(n_0_8) AS id_0_8, id(n_0_10) AS id_0_10, n_1_0
+------------------------------------------------------------

@@ -100,24 +100,24 @@ public class DomainQueryTest extends AbstractTestSuite {
 		nhs.add(n2);
 		nhs.add(sn1);
 		
-//		List<Date> dates = new ArrayList<Date>();
-//		long millis = 292517846786l;
-//		Calendar cal = GregorianCalendar.getInstance();
-//		cal.set(1960, 1, 8, 0, 0, 0);
-//		Date date = cal.getTime();
-//		dates.add(date);
-//		dates.add(new Timestamp(millis));
-//		DateHolder dh = new DateHolder("w", date);
-//		dh.setSqlTimestamp(new Timestamp(millis));
-//		nhs.add(dh);
-//		cal = GregorianCalendar.getInstance();
-//		cal.set(1963, 9, 24, 0, 0, 0);
-//		date = cal.getTime();
-//		dates.add(date);
-//		dh.setDates(dates);
-//		DateHolder dh1 = new DateHolder("d", date);
-//		dh1.setSqlTimestamp(new Timestamp(millis));
-//		nhs.add(dh1);
+		List<Date> dates = new ArrayList<Date>();
+		long millis = 292517846786l;
+		Calendar cal = GregorianCalendar.getInstance();
+		cal.set(1960, 1, 8, 0, 0, 0);
+		Date date = cal.getTime();
+		dates.add(date);
+		dates.add(new Timestamp(millis));
+		DateHolder dh = new DateHolder("w", date);
+		dh.setSqlTimestamp(new Timestamp(millis));
+		nhs.add(dh);
+		cal = GregorianCalendar.getInstance();
+		cal.set(1963, 9, 24, 0, 0, 0);
+		date = cal.getTime();
+		dates.add(date);
+		dh.setDates(dates);
+		DateHolder dh1 = new DateHolder("d", date);
+		dh1.setSqlTimestamp(new Timestamp(millis));
+		nhs.add(dh1);
 		
 		QueriesPrintObserver.addOutputStream(System.out);
 		queriesStream = new ByteArrayOutputStream();
@@ -205,10 +205,15 @@ public class DomainQueryTest extends AbstractTestSuite {
 		String testId;
 		String qCypher;
 		
-//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_REJECT_01.txt");
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_COLLECT_01.txt");
 		
 		Population population = new Population();
-		population.createPopulation();
+		List<Object> objs = population.createPopulation();
+		List<Subject> allSubjects = new ArrayList<Subject>();
+		for (Object obj : objs) {
+			if (obj instanceof Subject)
+				allSubjects.add((Subject)obj);
+		}
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
@@ -220,12 +225,8 @@ public class DomainQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<Subject> subjectsMatch = q.createMatch(Subject.class);
 		DomainObjectMatch<Subject> subjectsMatch2 = q.createMatch(Subject.class);
 		
-//		q.WHERE(subjectsMatch.stringAtttribute("lastName")).EQUALS("Smith");
-//		q.OR();
-//		q.WHERE(subjectsMatch.atttribute("name")).EQUALS("Global Company");
 		q.ORDER(subjectsMatch).BY("firstName");
-//		subjectsMatch.setPage(0, 5);
-		q.ORDER(subjectsMatch2).BY("lastName");
+		q.ORDER(subjectsMatch2).BY("lastName").DESCENDING();
 		DomainObjectMatch<String> firstNamesMatch = q.COLLECT(subjectsMatch.atttribute("firstName")).AS(String.class);
 		firstNamesMatch.setPage(0, 5);
 		DomainObjectMatch<String> lastNamesMatch = q.COLLECT(subjectsMatch2.atttribute("lastName")).AS(String.class);
@@ -239,6 +240,17 @@ public class DomainQueryTest extends AbstractTestSuite {
 		List<String> firstNames = result.resultOf(firstNamesMatch);
 		List<String> lastNames = result.resultOf(lastNamesMatch);
 		List<Subject> subjects = result.resultOf(subjectsMatch);
+//		List<Subject> subjects2 = result.resultOf(subjectsMatch2);
+		
+		assertEquals(10, numFirstNames);
+		assertEquals(5, numLastNames);
+		assertEquals(13, numSubjects);
+		assertEquals("[Angelina, Caroline, Christa, Gerda, Hans]", firstNames.toString());
+		assertEquals("[Watson, Smith, Maier, Clark, Berghammer]", lastNames.toString());
+		equals = CompareUtil.equalsUnorderedList(allSubjects, subjects);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
 		/** 02 ****************************************/
 		testId = "COLLECT_02";
@@ -247,16 +259,26 @@ public class DomainQueryTest extends AbstractTestSuite {
 		q = da1.createQuery();
 		DomainObjectMatch<Object> objectsMatch = q.createMatch(Object.class);
 		
+//		q.ORDER(objectsMatch).BY("name");
 		// if we don't do this, query execution performance will be very poor
 		q.WHERE(objectsMatch.atttribute("name")).LIKE(".*");
 		
 		DomainObjectMatch<String> objNamesMatch = q.COLLECT(objectsMatch.atttribute("name")).AS(String.class);
+//		objNamesMatch.setPage(0, 5);
 		
 		countResult = q.executeCount();
 		result = q.execute();
 		
 		long numObjNames = countResult.countOf(objNamesMatch);
 		List<String> objNames = result.resultOf(objNamesMatch);
+		
+		assertEquals(21, numObjNames);
+		assertEquals("[San Francisco, Global Company, addressee_01, n_123, w, n_456," +
+				" d, Small Company, California, USA, North America, Earth, Innere Stadt, Vienna," +
+				" Austria, Europe, Munich, Germany, New York City, New York, Hernals]",
+				objNames.toString());
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
 		return;
 	}

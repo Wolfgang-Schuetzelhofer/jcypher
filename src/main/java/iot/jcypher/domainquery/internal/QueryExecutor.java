@@ -45,6 +45,7 @@ import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression.Step;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
+import iot.jcypher.query.api.APIObject;
 import iot.jcypher.query.api.APIObjectAccess;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.pattern.Node;
@@ -55,6 +56,8 @@ import iot.jcypher.query.api.predicate.PFactory;
 import iot.jcypher.query.api.returns.RSortable;
 import iot.jcypher.query.ast.predicate.BooleanValue;
 import iot.jcypher.query.ast.predicate.IPredicateHolder;
+import iot.jcypher.query.ast.returns.ReturnElement;
+import iot.jcypher.query.ast.returns.ReturnExpression;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
@@ -355,7 +358,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 							}
 						}
 						
-						cpt.addDependencyClauses(clauses, added, orderClausesHolder);
+						cpt.addDependencyClauses(clauses, added, orderClausesHolder,
+								cbContext, context.execCount);
 						clauses.addAll(cpt.getClauses(added));
 						if (APIAccess.isPartOfReturn(cpt.domainObjectMatch)) {
 							toReturn.add(cpt);
@@ -363,19 +367,21 @@ public class QueryExecutor implements IASTObjectsContainer {
 							context.resultsPerType.add(resPerType);
 							resPerType.queryIndex = queryIndex;
 						}
+						added.add(cpt);
+						lastIsWith = cpt.lastIsWith;
 						if (startNewQueryAfterThis)
 							break;
 					} else
 						context.addEmptyFor(cpt); // did not produce a result
-					added.add(cpt);
-					lastIsWith = cpt.lastIsWith;
 				}
 				
 				if (i == clausesPerTypeList.size()) // we are finished
 					startIdx = i;
 				
 				List<IClause> returnClauses = buildReturnClauses(toReturn, context.execCount);
-				orderClausesHolder.addClauses(clauses, lastIsWith, added);
+				// if we need to add WITH clauses,
+				// add only those which will be returned
+				orderClausesHolder.addClauses(clauses, lastIsWith, toReturn);
 				clauses.addAll(returnClauses);
 				
 				IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
@@ -397,7 +403,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 					returnClause = RETURN.count().DISTINCT().value(n).AS(this.getJcNumber(countPrefix, n));
 				else {
 					if (cpt.isCollectExpression) {
-						returnClause = RETURN.value(cpt.node);
+						if (idx == 0)
+							returnClause = RETURN.DISTINCT().value(cpt.node);
+						else
+							returnClause = RETURN.value(cpt.node);
 					} else {
 						if (idx == 0)
 							returnClause = RETURN.DISTINCT().value(n.id()).AS(this.getJcNumber(idPrefix, n));
@@ -960,34 +969,60 @@ public class QueryExecutor implements IASTObjectsContainer {
 			}
 			
 			private void addClauses(List<IClause> addTo, boolean lastIsWith,
-					List<ClausesPerType> added) {
-				if (this.toOrder != null) {
-					RSortable withClause = null;
-					if (lastIsWith) {
-						while(addTo.get(addTo.size() - 1) instanceof SEPARATE)
-							addTo.remove(addTo.size() - 1);
-						withClause = (RSortable) addTo.get(addTo.size() - 1);
-					} else {
-						for (ClausesPerType cpt : added) {
-							withClause = WITH.value(cpt.node);
-							addTo.add(withClause);
+					List<ClausesPerType> withToAdd) {
+				if (this.toOrder != null || this.whereNot != null) {
+					if (!lastIsWith) { // need to add WITH clauses
+						for (ClausesPerType cpt : withToAdd) {
+							addTo.add(WITH.value(cpt.node));
 						}
 					}
+				}
+				if (this.toOrder != null) {
 					for (ClausesPerType cpt : this.toOrder) {
 						List<OrderBy> ocs = getOrderExpressionsFor(cpt);
-						for (OrderBy ob : ocs) {
-							if (ob.getDirection() == 0)
-								withClause = withClause.ORDER_BY(ob.getAttributeName()); // TODO use property name
-							else
-								withClause = withClause.ORDER_BY_DESC(ob.getAttributeName());
+						// returns an index of an RSortable
+						int idx = this.indexOfOrderClause(cpt, addTo);
+						if (idx != -1) {
+							RSortable orderClause = (RSortable) addTo.get(idx);
+							for (OrderBy ob : ocs) {
+								if (ob.getDirection() == 0)
+									orderClause = orderClause.ORDER_BY(ob.getAttributeName()); // TODO use property name
+								else
+									orderClause = orderClause.ORDER_BY_DESC(ob.getAttributeName());
+							}
+							addTo.set(idx, orderClause);
 						}
 					}
-					// replace the last one
-					addTo.set(addTo.size() - 1, withClause);
 				}
 				
 				if (this.whereNot != null)
 					addTo.add(this.whereNot);
+			}
+			
+			private int indexOfOrderClause(ClausesPerType cpt, List<IClause> clauses) {
+				int strt = clauses.size() - 1;
+				while(strt >= 0 && clauses.get(strt) instanceof SEPARATE)
+					strt--;
+				int idx = -1;
+				for (int i = strt; i >= 0; i--) {
+					IClause clause = clauses.get(i);
+					if (clause instanceof RSortable) { // only RSortables can be ordered
+						// can only be a ReturnExpression
+						ReturnExpression rexp = (ReturnExpression)APIObjectAccess.getAstNode((APIObject) clause);
+						if (rexp.getAlias() != null && ValueAccess.isSame(rexp.getAlias(), cpt.node)) {
+							idx = i;
+							break;
+						} else if (rexp.getReturnValue() instanceof ReturnElement) {
+							JcValue elem = ((ReturnElement)rexp.getReturnValue()).getElement();
+							if (ValueAccess.isSame(elem, cpt.node)) {
+								idx = i;
+								break;
+							}
+						}
+					} else
+						break;
+				}
+				return idx;
 			}
 		}
 		
@@ -1763,6 +1798,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 				JcNumber num = new JcNumber(alias);
 				selectClauses.add(WITH.count().DISTINCT().value(iCpt.node).AS(num));
 				selectClauses.addAll(countWithClauses);
+				if (cpt.withClausesAddIdxs == null)
+					cpt.withClausesAddIdxs = new ArrayList<Integer>();
 				cpt.withClausesAddIdxs.add(0, selectClauses.size());
 				countWithClauses.add(0, WITH.value(num));
 			}
@@ -2464,9 +2501,9 @@ public class QueryExecutor implements IASTObjectsContainer {
 							this.clauses.addAll(this.traversalClauses);
 							this.traversalClauses = null;
 						} else if (this.collectionClauses != null) {
+							int offset = this.clauses.size();
+							this.clauses.addAll(this.collectionClauses);
 							if (this.withClausesAddIdxs != null) {
-								int offset = this.clauses.size();
-								this.clauses.addAll(this.collectionClauses);
 								// add missing with clauses
 								for (int idx : this.withClausesAddIdxs) {
 									for (ClausesPerType cpt : added) {
@@ -2497,7 +2534,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 			}
 			
 			private void addDependencyClauses(List<IClause> clauses, List<ClausesPerType> added,
-					OrderClausesHolder withClausesHolder) {
+					OrderClausesHolder withClausesHolder, ClauseBuilderContext cbContext,
+					boolean isCountQuery) {
 				if (this.expressionsPerDOM.flattenedDependencies != null) {
 					for (ExpressionsPerDOM xpd : this.expressionsPerDOM.flattenedDependencies) {
 						// for a traversal expression for this select expression we do not need to
@@ -2506,12 +2544,16 @@ public class QueryExecutor implements IASTObjectsContainer {
 						List<DomainObjectMatch<?>> collOwner = APIAccess.getCollectExpressionOwner(xpd.domainObjectMatch);
 						boolean addExpressions = collOwner == null || !collOwner.contains(this.domainObjectMatch);
 						for (ClausesPerType cpt : xpd.clausesPerTypes) {
-							if (!added.contains(cpt)) {
-								if (addExpressions) {
-									withClausesHolder.checkForOrdeClause(cpt);
-									cpt.addClausesTo(clauses, added);
+							if (cbContext.isNodeValid(cpt.node)) {
+								if (!added.contains(cpt)) {
+									if (addExpressions) {
+										if (!isCountQuery)
+											withClausesHolder.checkForOrdeClause(cpt);
+										cpt.addClausesTo(clauses, added);
+										added.add(cpt);
+									}
+//									added.add(cpt);
 								}
-								added.add(cpt);
 							}
 						}
 					}
