@@ -105,7 +105,8 @@ public class DomainQueryTest extends AbstractTestSuite {
 		Calendar cal = GregorianCalendar.getInstance();
 		cal.set(1960, 1, 8, 0, 0, 0);
 		Date date = cal.getTime();
-		dates.add(date);
+		long tm = (date.getTime() / 1000) * 1000;
+		dates.add(new Timestamp(tm));
 		dates.add(new Timestamp(millis));
 		DateHolder dh = new DateHolder("w", date);
 		dh.setSqlTimestamp(new Timestamp(millis));
@@ -113,7 +114,8 @@ public class DomainQueryTest extends AbstractTestSuite {
 		cal = GregorianCalendar.getInstance();
 		cal.set(1963, 9, 24, 0, 0, 0);
 		date = cal.getTime();
-		dates.add(date);
+		tm = (date.getTime() / 1000) * 1000;
+		dates.add(new Timestamp(tm));
 		dh.setDates(dates);
 		DateHolder dh1 = new DateHolder("d", date);
 		dh1.setSqlTimestamp(new Timestamp(millis));
@@ -159,16 +161,12 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.removeAllOutputStreams();
 	}
 	
-	//@Test
+	@Test
 	public void testDomainQuery_Date_01() {
 		IDomainAccess da1;
 		DomainQuery q;
 		DomainQueryResult result = null;
-		boolean equals;
-		String testId;
-		String qCypher;
-		
-//		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_REJECT_01.txt");
+		long millis = 292517846786l;
 		
 		Population population = new Population();
 		population.createPopulation();
@@ -176,7 +174,6 @@ public class DomainQueryTest extends AbstractTestSuite {
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
 		/** 01 ****************************************/
-		testId = "DATE_01";
 		queriesStream.reset();
 		
 		q = da1.createQuery();
@@ -184,7 +181,6 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		Calendar cal = GregorianCalendar.getInstance();
 		cal.set(1960, 1, 8, 0, 0, 0);
-//		cal.set(1963, 9, 24, 0, 0, 0);
 		Date date = cal.getTime();
 		
 		q.WHERE(dateHolderMatch.atttribute("date")).EQUALS(date);
@@ -192,6 +188,50 @@ public class DomainQueryTest extends AbstractTestSuite {
 		result = q.execute();
 		
 		List<DateHolder> dateHolders = result.resultOf(dateHolderMatch);
+		
+		Timestamp ts = new Timestamp(millis);
+		assertEquals(1, dateHolders.size());
+		DateHolder dh = dateHolders.get(0);
+		assertEquals("w", dh.getName());
+		assertTrue(ts.equals(dh.getSqlTimestamp()));
+		
+		List<Date> dates = new ArrayList<Date>();
+		cal = GregorianCalendar.getInstance();
+		cal.set(1960, 1, 8, 0, 0, 0);
+		date = cal.getTime();
+		long tm = (date.getTime() / 1000) * 1000;
+		dates.add(new Timestamp(tm));
+		dates.add(new Timestamp(millis));
+		cal = GregorianCalendar.getInstance();
+		cal.set(1963, 9, 24, 0, 0, 0);
+		date = cal.getTime();
+		tm = (date.getTime() / 1000) * 1000;
+		dates.add(new Timestamp(tm));
+		
+		CompareUtil.equalsList(dates, dh.getDates());
+		
+		/** 02 ****************************************/
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		dateHolderMatch = q.createMatch(DateHolder.class);
+		
+		cal = GregorianCalendar.getInstance();
+		cal.set(1963, 9, 24, 0, 0, 0);
+		date = cal.getTime();
+		
+		q.WHERE(dateHolderMatch.atttribute("date")).EQUALS(date);
+		
+		result = q.execute();
+		
+		dateHolders = result.resultOf(dateHolderMatch);
+		
+		assertEquals(1, dateHolders.size());
+		dh = dateHolders.get(0);
+		assertEquals("d", dh.getName());
+		assertTrue(ts.equals(dh.getSqlTimestamp()));
+		
+		assertTrue(dh.getDates() == null);
 		
 		return;
 	}
