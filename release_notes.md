@@ -1,6 +1,14 @@
 Release Notes
 =======
 
+## 2.3.0
+**New**
+- Domain Queries Part 3 (Collection Expressions - SELECT, REJECT, COLLECT) added.
+
+**Fixed**
+- Support for Date subclasses (java.sql.Date, java.sql.Time, java.sql.Timestamp)
+- Fixed bug accessing embedded databases
+
 ## 2.2.0
 **New**
 - Domain Queries Part 2 (Traversal Expressions) added.

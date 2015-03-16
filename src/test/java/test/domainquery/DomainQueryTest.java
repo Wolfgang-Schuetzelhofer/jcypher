@@ -805,7 +805,9 @@ public class DomainQueryTest extends AbstractTestSuite {
 		List<Object> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPoCs);
 		
 		List<PointOfContact> pocComp = new ArrayList<PointOfContact>();
-		pocComp.addAll((Collection<? extends PointOfContact>) population.getJohn_smith_addresses());
+		for (Object obj : population.getJohn_smith_addresses()) {
+			pocComp.add((PointOfContact) obj);
+		}
 		pocComp.add(population.getJohn_smith_econtact());
 		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_PoCsResult);
 		assertTrue(equals);
@@ -1032,7 +1034,9 @@ public class DomainQueryTest extends AbstractTestSuite {
 		List<PointOfContact> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPoCs);
 		
 		List<PointOfContact> pocComp = new ArrayList<PointOfContact>();
-		pocComp.addAll((Collection<? extends PointOfContact>) population.getJohn_smith_addresses());
+		for (Object obj : population.getJohn_smith_addresses()) {
+			pocComp.add((PointOfContact) obj);
+		}
 		pocComp.add(population.getJohn_smith_econtact());
 		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_PoCsResult);
 		assertTrue(equals);
