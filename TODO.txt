@@ -88,7 +88,7 @@ reentrancy, multithreading, concurrency on db !!
 
 ---done--- Recursions in buildClosureQuery ?!
 
-Problem: DISTINCT with Multiple RETURNs
+---done--- Problem: DISTINCT with Multiple RETURNs
 
 ---done--- Consolidate Util classes
 
@@ -127,7 +127,7 @@ Relationship types with uncommon characters
 
 ---done--- function length(path)
 
-substringFrom(start) instead of substring(start)
+---obsolete--- substringFrom(start) instead of substring(start)
 
 ---done--- Number operators % , ^
 
@@ -137,16 +137,16 @@ substringFrom(start) instead of substring(start)
 
 ---done---map PredicateExpression to CollectExpression ausführlich testen !!!
 
-JcValue als Variable in z.B. forAll(x) dort darf nur x aber kein Ausdruck stehen (wie stell ich das sicher !?)
+---obsolete--- JcValue als Variable in z.B. forAll(x) dort darf nur x aber kein Ausdruck stehen (wie stell ich das sicher !?)
 
 ---done---ClauseType gehört in ASTNode, ClausePart wird obsolet
 
 ---done--- Verwendung von P kontrollieren --> (wird in return expressions benötigt)
 
-RETURN element: runtime: das erste in der ValueElement Kette verwenden oder exception werfen !?
+---obsolete--- RETURN element: runtime: das erste in der ValueElement Kette verwenden oder exception werfen !?
 		-->
 
-ValueElement ist einziger Parent von JcValue
+---is ok--- ValueElement ist einziger Parent von JcValue
 
 ---done--- collect() zu returns, weg von collections ?! --> NEIN
 

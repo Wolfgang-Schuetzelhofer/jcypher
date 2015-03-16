@@ -85,7 +85,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		
 		// init db
 		Population population = new Population();
@@ -128,22 +128,22 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-//		errors = da.store(storedDomainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		errors = da.store(nhs);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		errors = da.store(storedDomainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		errors = da.store(nhs);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 	}
 	
 	@AfterClass
