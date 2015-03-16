@@ -21,7 +21,8 @@ body{
     background:#D5E6E8 url(bg.png);
     height:100%;
     -webkit-transform:translateX(0);
-    -webkit-transform:translate3d(0,0,0)
+    -webkit-transform:translate3d(0,0,0);
+    font-family: arial,helvetica,sans-serif;
 }
 
 .jc_header_statement {
@@ -29,7 +30,6 @@ body{
     color: #444444;
     text-align: center;
     font-size: 1.5em;
-    font-family: arial,helvetica,sans-serif;
 }
 
 .jc_header_statement_2 {
