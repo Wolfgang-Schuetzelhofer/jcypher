@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,9 @@
 
 package iot.jcypher.query.api.pattern;
 
+import java.util.List;
+
+import iot.jcypher.domain.internal.CurrentDomain;
 import iot.jcypher.query.ast.pattern.PatternExpression;
 import iot.jcypher.query.ast.pattern.PatternNode;
 import iot.jcypher.query.ast.pattern.PatternRelation;
@@ -60,7 +63,11 @@ public class Node extends Element<Node> {
 	 */
 	public Node label(String label) {
 		PatternExpression px = (PatternExpression)this.astNode;
-		((PatternNode)px.getLastElement()).getLabels().add(label);
+		List<String> labels = ((PatternNode)px.getLastElement()).getLabels();
+		labels.add(label);
+		String dLab = CurrentDomain.label.get();
+		if (dLab != null && !labels.contains(dLab))
+			labels.add(dLab);
 		return this;
 	}
 
