@@ -18,6 +18,7 @@ package iot.jcypher.domainquery.internal;
 
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
+import iot.jcypher.domain.internal.CurrentDomain;
 import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.domain.internal.SkipLimitCalc;
 import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
@@ -160,14 +161,24 @@ public class QueryExecutor implements IASTObjectsContainer {
 	 * Execute the domain query
 	 */
 	public void execute() {
-		executeInternal(false);
+		String pLab = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().setDomainLabel();
+		try {
+			executeInternal(false);
+		} finally {
+			CurrentDomain.setDomainLabel(pLab);
+		}
 	}
 	
 	/**
 	 * Execute the count query
 	 */
 	public void executeCount() {
-		executeInternal(true);
+		String pLab = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().setDomainLabel();
+		try {
+			executeInternal(true);
+		} finally {
+			CurrentDomain.setDomainLabel(pLab);
+		}
 	}
 	
 	private void executeInternal(boolean execCount) {

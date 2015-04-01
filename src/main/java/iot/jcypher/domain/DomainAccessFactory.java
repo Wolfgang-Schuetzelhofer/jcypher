@@ -17,6 +17,7 @@
 package iot.jcypher.domain;
 
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.domain.IDomainAccess.DomainLabelUse;
 import iot.jcypher.domain.internal.DomainAccess;
 
 /**
@@ -31,6 +32,18 @@ public class DomainAccessFactory {
 	 * @return
 	 */
 	public static IDomainAccess createDomainAccess(IDBAccess dbAccess, String domainName) {
-		return new DomainAccess(dbAccess, domainName);
+		return new DomainAccess(dbAccess, domainName, DomainLabelUse.AUTO);
+	}
+	
+	/**
+	 * @param dbAccess the graph database connection
+	 * @param domainName
+	 * @param domainLabelUse --<b>Note:</b> Consistency may be corrupted, if you change domainLabelUse
+	 * on different creations of DomainAccess to the same domain.
+	 * @return
+	 */
+	public static IDomainAccess createDomainAccess(IDBAccess dbAccess, String domainName,
+			DomainLabelUse domainLabelUse) {
+		return new DomainAccess(dbAccess, domainName, domainLabelUse);
 	}
 }

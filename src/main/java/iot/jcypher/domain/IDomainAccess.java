@@ -133,5 +133,9 @@ public interface IDomainAccess {
 	 * @return a DomainQuery
 	 */
 	public DomainQuery createQuery();
+	
+	public enum DomainLabelUse {
+		AUTO, ALWAYS, NEVER
+	}
 
 }

@@ -102,10 +102,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	/**
 	 * @param dbAccess the graph database connection
 	 * @param domainName
+	 * @param domainLabelUse
 	 */
-	public DomainAccess(IDBAccess dbAccess, String domainName) {
+	public DomainAccess(IDBAccess dbAccess, String domainName, DomainLabelUse domainLabelUse) {
 		super();
-		this.domainAccessHandler = new DomainAccessHandler(dbAccess, domainName);
+		this.domainAccessHandler = new DomainAccessHandler(dbAccess, domainName, domainLabelUse);
 	}
 
 	@Override
@@ -117,27 +118,47 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	
 	@Override
 	public List<JcError> store(List<Object> domainObjects) {
-		return this.domainAccessHandler.store(domainObjects);
+		List<JcError> ret;
+		String pLab = this.domainAccessHandler.setDomainLabel();
+		try {
+			ret = this.domainAccessHandler.store(domainObjects);
+		} finally {
+			CurrentDomain.setDomainLabel(pLab);
+		}
+		return ret;
 	}
 	
 	@Override
 	public <T> T loadById(Class<T> domainObjectClass, int resolutionDepth, long id) {
 		long[] ids = new long[] {id};
-		List<T> ret = this.domainAccessHandler.loadByIds(domainObjectClass, null,
-				resolutionDepth, ids);
+		List<T> ret = this.loadByIds(domainObjectClass, resolutionDepth, ids);
 		return ret.get(0);
 	}
 	
 	@Override
 	public <T> List<T> loadByIds(Class<T> domainObjectClass, int resolutionDepth, long... ids) {
-		return this.domainAccessHandler.loadByIds(domainObjectClass, null,
-				resolutionDepth, ids);
+		List<T> ret;
+		String pLab = this.domainAccessHandler.setDomainLabel();
+		try {
+			ret = this.domainAccessHandler.loadByIds(domainObjectClass, null,
+					resolutionDepth, ids);
+		} finally {
+			CurrentDomain.setDomainLabel(pLab);
+		}
+		return ret;
 	}
 	
 	@Override
 	public <T> List<T> loadByType(Class<T> domainObjectClass, int resolutionDepth,
 			int offset, int count) {
-		return this.domainAccessHandler.loadByType(domainObjectClass, resolutionDepth, offset, count);
+		List<T> ret;
+		String pLab = this.domainAccessHandler.setDomainLabel();
+		try {
+			ret = this.domainAccessHandler.loadByType(domainObjectClass, resolutionDepth, offset, count);
+		} finally {
+			CurrentDomain.setDomainLabel(pLab);
+		}
+		return ret;
 	}
 
 	@Override
@@ -157,13 +178,20 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	public long numberOfInstancesOf(Class<?> type) {
 		List<Class<?>> types = new ArrayList<Class<?>>(1);
 		types.add(type);
-		List<Long> ret = this.domainAccessHandler.numberOfInstancesOf(types);
+		List<Long> ret = this.numberOfInstancesOf(types);
 		return ret.get(0);
 	}
 
 	@Override
 	public List<Long> numberOfInstancesOf(List<Class<?>> types) {
-		return this.domainAccessHandler.numberOfInstancesOf(types);
+		List<Long> ret;
+		String pLab = this.domainAccessHandler.setDomainLabel();
+		try {
+			ret = this.domainAccessHandler.numberOfInstancesOf(types);
+		} finally {
+			CurrentDomain.setDomainLabel(pLab);
+		}
+		return ret;
 	}
 
 	@Override
@@ -188,12 +216,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private static final String DomainInfoLabel2ClassProperty = "label2ClassMap";
 		private static final String DomainInfoFieldComponentTypeProperty = "componentTypeMap";
 		private static final String DomainInfoConcreteFieldTypeProperty = "fieldTypeMap";
+		private static final String DomainInfoUseDomainLabelProperty = "useDomainLabels";
 		private static final String KeyProperty = "key";
 		private static final String ValueProperty = "value";
 		private static final String KeyTypeProperty = "keyType";
 		private static final String ValueTypeProperty = "valueType";
 		
 		private String domainName;
+		private String domainLabel;
 		/**
 		 * defines at which recursion occurrence building a query is stopped
 		 */
@@ -209,9 +239,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		// of the object that has actually been stored in the graph.
 		private Map<Class<?>, CompoundObjectType> type2CompoundTypeMap;
 		private DomainInfo domainInfo;
+		private DomainLabelUse domainLabelUse;
 
-		private DomainAccessHandler(IDBAccess dbAccess, String domainName) {
+		private DomainAccessHandler(IDBAccess dbAccess, String domainName, DomainLabelUse du) {
 			super();
+			this.domainLabelUse = du;
 			this.domainName = domainName;
 			this.dbAccess = new DBAccessWrapper(dbAccess);
 			this.domainState = new DomainState();
@@ -1075,6 +1107,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						.delegate.execute(query);
 				List<JcError> errors = Util.collectErrors(result);
 				if (errors.isEmpty()) {
+//					Util.printResult(result, "DOMAIN INFO", Format.PRETTY_1);
 					((DBAccessWrapper)this.dbAccess)
 						.updateDomainInfo(result);
 				} else
@@ -1108,6 +1141,29 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				}
 			}
 			return ret;
+		}
+		
+		private String setDomainLabel() {
+			boolean useLab;
+			if (this.domainInfo == null) {
+				if (this.domainLabelUse == DomainLabelUse.AUTO) {
+					// useDomainLabels is set correctly from db
+					useLab = this.loadDomainInfoIfNeeded().useDomainLabels;
+				} else {
+					useLab = this.domainLabelUse == DomainLabelUse.ALWAYS;
+				}
+			} else
+				useLab = this.domainInfo.useDomainLabels;
+			String ret = CurrentDomain.label.get();
+			if (useLab)
+				CurrentDomain.setDomainLabel(this.getDomainLabel());
+			return ret;
+		}
+		
+		private String getDomainLabel() {
+			if (this.domainLabel == null)
+				this.domainLabel = this.domainName.replace('-', '_');
+			return this.domainLabel;
 		}
 		
 		private CompoundObjectType getCompoundTypeFor(Class<?> clazz) {
@@ -1258,13 +1314,29 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					JcNode info = new JcNode("info");
 					List<GrNode> rInfos = result.resultOf(info);
 					DomainInfo dInfo;
-					if (rInfos.size() > 0) { // DomainInfo was found in the graph
-						GrNode rInfo = rInfos.get(0);
+					GrNode rInfo;
+					if (rInfos.size() > 0 && (rInfo = rInfos.get(0)) != null) { // DomainInfo was found in the graph
+						rInfo = rInfos.get(0);
 						dInfo = new DomainInfo(rInfo.getId());
 						dInfo.initFrom(rInfo);
 						DomainAccessHandler.this.domainInfo = dInfo;
-					} else
+					} else { // DomainInfo not found
 						DomainAccessHandler.this.domainInfo = new DomainInfo(-1);
+						if (DomainAccessHandler.this.domainLabelUse == DomainLabelUse.AUTO) {
+							JcNumber infos = new JcNumber("infos");
+							List<BigDecimal> cInfos = result.resultOf(infos);
+							// set to true if there exist other domain info nodes
+							DomainAccessHandler.this.domainInfo.useDomainLabels =
+									cInfos.size() > 0 && cInfos.get(0).intValue() > 0;
+						} else
+							DomainAccessHandler.this.domainInfo.useDomainLabels =
+									DomainAccessHandler.this.domainLabelUse == DomainLabelUse.ALWAYS;
+						
+						// the default is false, set changed only if default was changed
+						if (DomainAccessHandler.this.domainInfo.useDomainLabels)
+							DomainAccessHandler.this.domainInfo.changed = true;
+							
+					}
 				} else if (DomainAccessHandler.this.domainInfo.isChanged()) { // update info to graph
 					DomainAccessHandler.this.domainInfo.graphUdated();
 					if (DomainAccessHandler.this.domainInfo.nodeId == -1) {
@@ -1299,13 +1371,22 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				JcQuery query = null;
 				if (DomainAccessHandler.this.domainInfo == null) { // initial load
 					JcNode info = new JcNode("info");
+					JcNode infos = new JcNode("infs");
 					query = new JcQuery();
-					query.setClauses(new IClause[] {
-							MATCH.node(info).label(DomainInfoNodeLabel),
-							WHERE.valueOf(info.property(DomainInfoNameProperty))
-								.EQUALS(DomainAccessHandler.this.domainName),
-							RETURN.value(info)
-					});
+					String pLab = CurrentDomain.label.get();
+					CurrentDomain.setDomainLabel(null);
+					try {
+						query.setClauses(new IClause[] {
+								OPTIONAL_MATCH.node(info).label(DomainInfoNodeLabel),
+								WHERE.valueOf(info.property(DomainInfoNameProperty))
+									.EQUALS(DomainAccessHandler.this.domainName),
+								OPTIONAL_MATCH.node(infos).label(DomainInfoNodeLabel),
+								RETURN.value(info),
+								RETURN.count().value(infos).AS(new JcNumber("infos"))
+						});
+					} finally {
+						CurrentDomain.setDomainLabel(pLab);
+					}
 				} else if (DomainAccessHandler.this.domainInfo.isChanged()) { // update info to graph
 					List<String> class2LabelList = DomainAccessHandler.this.domainInfo.getLabel2ClassNameStringList();
 					List<String> fieldComponentTypeList =
@@ -1319,23 +1400,33 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 								START.node(info).byId(DomainAccessHandler.this.domainInfo.nodeId),
 								DO.SET(info.property(DomainInfoLabel2ClassProperty)).to(class2LabelList),
 								DO.SET(info.property(DomainInfoFieldComponentTypeProperty)).to(fieldComponentTypeList),
-								DO.SET(info.property(DomainInfoConcreteFieldTypeProperty)).to(concreteFieldTypeList)
+								DO.SET(info.property(DomainInfoConcreteFieldTypeProperty)).to(concreteFieldTypeList),
+								DO.SET(info.property(DomainInfoUseDomainLabelProperty))
+									.to(DomainAccessHandler.this.domainInfo.useDomainLabels)
 						});
 					} else { // new DomainInfo node must be stored in the db
 						JcNumber nid = new JcNumber("NID");
-						query.setClauses(new IClause[] {
-								CREATE.node(info).label(DomainInfoNodeLabel)
-									.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName)
-									.property(DomainInfoLabel2ClassProperty).value(class2LabelList)
-									.property(DomainInfoFieldComponentTypeProperty).value(fieldComponentTypeList)
-									.property(DomainInfoConcreteFieldTypeProperty).value(concreteFieldTypeList),
-								RETURN.value(info.id()).AS(nid)
-						});
+						String pLab = CurrentDomain.label.get();
+						CurrentDomain.setDomainLabel(null);
+						try {
+							query.setClauses(new IClause[] {
+									CREATE.node(info).label(DomainInfoNodeLabel)
+										.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName)
+										.property(DomainInfoLabel2ClassProperty).value(class2LabelList)
+										.property(DomainInfoFieldComponentTypeProperty).value(fieldComponentTypeList)
+										.property(DomainInfoConcreteFieldTypeProperty).value(concreteFieldTypeList)
+										.property(DomainInfoUseDomainLabelProperty)
+											.value(DomainAccessHandler.this.domainInfo.useDomainLabels),
+									RETURN.value(info.id()).AS(nid)
+							});
+						} finally {
+							CurrentDomain.setDomainLabel(pLab);
+						}
 					}
 				}
-				if (query != null) {
+//				if (query != null) {
 //					Util.printQuery(query, "DOMAIN INFO", Format.PRETTY_1);
-				}
+//				}
 				return query;
 			}
 		}
@@ -2646,6 +2737,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private Map<String, CompoundObjectType> concreteFieldTypeMap;
 		private Map<Class<?>, List<BackwardField>> componentTypeBackward;
 		private Map<Class<?>, List<BackwardField>> fieldTypeBackward;
+		private boolean useDomainLabels;
 		private DomainInfo(long nid) {
 			super();
 			this.changed = false;
@@ -2656,11 +2748,17 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.concreteFieldTypeMap = new HashMap<String, CompoundObjectType>();
 			this.componentTypeBackward = new HashMap<Class<?>, List<BackwardField>>();
 			this.fieldTypeBackward = new HashMap<Class<?>, List<BackwardField>>();
+			this.useDomainLabels = false;
 		}
 
 		@SuppressWarnings("unchecked")
 		private void initFrom(GrNode rInfo) {
-			GrProperty prop = rInfo.getProperty(DomainAccessHandler.DomainInfoLabel2ClassProperty);
+			GrProperty prop = rInfo.getProperty(DomainAccessHandler.DomainInfoUseDomainLabelProperty);
+			if (prop != null) {
+				this.useDomainLabels = (boolean) prop.getValue();
+			}
+			
+			prop = rInfo.getProperty(DomainAccessHandler.DomainInfoLabel2ClassProperty);
 			if (prop != null) {
 				List<String> val = (List<String>) prop.getValue();
 				for (String str : val) {
@@ -3069,6 +3167,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		public void replace_Id2Object(InnerClassSurrogate surrogate, Object domainObject,
 				long nodeId) {
 			domainAccessHandler.domainState.replace_Id2Object(surrogate, domainObject, nodeId);
+		}
+		
+		public String setDomainLabel() {
+			return domainAccessHandler.setDomainLabel();
 		}
 	}
 }

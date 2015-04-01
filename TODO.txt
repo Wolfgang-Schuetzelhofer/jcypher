@@ -1,3 +1,5 @@
+domain labels with index search
+
 constraints on trevaersal results in select expressions may only be expressed on direct traversals from the expressions source set
 -> do a validation
 

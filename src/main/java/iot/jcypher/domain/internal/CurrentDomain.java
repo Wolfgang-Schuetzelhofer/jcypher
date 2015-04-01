@@ -20,12 +20,10 @@ public class CurrentDomain {
 
 	public static ThreadLocal<String> label = new ThreadLocal<String>();
 	
-	public static String setDomainLabel(String lab) {
-		String ret = label.get();
+	public static void setDomainLabel(String lab) {
 		if (lab == null)
 			label.remove();
 		else
 			label.set(lab);
-		return ret;
 	}
 }
