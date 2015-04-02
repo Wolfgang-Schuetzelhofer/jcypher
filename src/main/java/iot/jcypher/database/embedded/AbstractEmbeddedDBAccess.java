@@ -200,14 +200,19 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 					} else if (iparam instanceof QueryParam) {
 						String key = ((QueryParam)iparam).getKey();
 						Object val = ((QueryParam)iparam).getValue();
-						if (!(val instanceof Number))
-							val = val.toString();
+						val = this.convertVal(val);
 						paramsMap.put(key, val);
 					}
 				}
 			}
 		}
 		return paramsMap;
+	}
+	
+	private Object convertVal(Object val) {
+		if (!(val instanceof Number) && !(val instanceof Boolean))
+			return val.toString();
+		return val;
 	}
 	
 	private void writeAsSet(QueryParamSet paramSet,
@@ -217,8 +222,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		for (QueryParam param : paramSet.getQueryParams()) {
 			String key = param.getOrgName();
 			Object val = param.getValue();
-			if (!(val instanceof Number))
-				val = val.toString();
+			val = this.convertVal(val);
 			set.put(key, val);
 		}
 	}
@@ -228,8 +232,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		for (QueryParam param : paramSet.getQueryParams()) {
 			String key = param.getKey();
 			Object val = param.getValue();
-			if (!(val instanceof Number))
-				val = val.toString();
+			val = this.convertVal(val);
 			paramsMap.put(key, val);
 		}
 	}
