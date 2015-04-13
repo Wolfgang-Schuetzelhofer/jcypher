@@ -34,6 +34,7 @@ import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.ast.CollectExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
+import iot.jcypher.domainquery.ast.UnionExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;

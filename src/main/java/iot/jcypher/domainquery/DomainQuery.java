@@ -34,6 +34,7 @@ import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression;
+import iot.jcypher.domainquery.ast.UnionExpression;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
 import iot.jcypher.domainquery.internal.QueryExecutor;
 import iot.jcypher.query.values.JcProperty;
@@ -227,17 +228,34 @@ public class DomainQuery {
 	private <T> DomainObjectMatch<T> union_Intersection(boolean union, DomainObjectMatch<T>... set) {
 		DomainObjectMatch<T> ret = null;
 		if (set.length > 0) {
+			UnionExpression ue = new UnionExpression(union);
 			ret =APIAccess.createDomainObjectMatch(APIAccess.getDomainObjectType(set[0]),
 					this.queryExecutor.getDomainObjectMatches().size(),
 					this.queryExecutor.getMappingInfo());
 			this.queryExecutor.getDomainObjectMatches().add(ret);
+			ue.setResult(ret);
+			DomainObjectMatch<?> travSource = null;
 			int idx = 0;
+			if (set.length > 1)
+				this.BR_OPEN();
 			for (DomainObjectMatch<T> dom : set) {
+				DomainObjectMatch<?> ts = APIAccess.getTraversalSource(dom);
+				if (idx == 0) {
+					travSource = ts;
+				} else {
+					if (ts != travSource)
+						travSource = null;
+				}
+				ue.getSources().add(dom);
 				if (idx > 0 && union)
 					this.OR();
 				this.WHERE(ret).IN(dom);
 				idx++;
 			}
+			if (set.length > 1)
+				this.BR_CLOSE();
+			if (travSource != null)
+				APIAccess.setTraversalSource(ret, travSource);
 		}
 		return ret;
 	}
