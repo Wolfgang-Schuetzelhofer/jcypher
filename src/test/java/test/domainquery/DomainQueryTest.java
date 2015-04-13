@@ -85,7 +85,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 		
 		// init db
 		Population population = new Population();
@@ -128,22 +128,22 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
-		List<JcError> errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		errors = da.store(storedDomainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		errors = da.store(nhs);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
+//		List<JcError> errors = dbAccess.clearDatabase();
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+//		errors = da.store(storedDomainObjects);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		errors = da.store(nhs);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
 	}
 	
 	@AfterClass
@@ -159,6 +159,131 @@ public class DomainQueryTest extends AbstractTestSuite {
 		queriesStream = null;
 		QueriesPrintObserver.removeAllEnabledQueries();
 		QueriesPrintObserver.removeAllOutputStreams();
+	}
+	
+	@Test
+	public void testDomainQuery_Union_Intersection_01() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_UNION_INTERSECTION_01.txt");
+		
+		Population population = new Population();
+		List<Object> domObjects = population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "UNION_01";
+		queriesStream.reset();
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> smithMatch = q.createMatch(Subject.class);
+		DomainObjectMatch<Subject> bergHammerMatch = q.createMatch(Subject.class);
+		
+		q.WHERE(smithMatch.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(bergHammerMatch.atttribute("lastName")).EQUALS("Berghammer");
+		DomainObjectMatch<Subject> unionMatch = q.UNION(smithMatch, bergHammerMatch);
+		
+		result = q.execute();
+		
+		List<Subject> smith = result.resultOf(smithMatch);
+		List<Subject> bergHammer = result.resultOf(bergHammerMatch);
+		List<Subject> union = result.resultOf(unionMatch);
+		
+		equals = CompareUtil.equalsUnorderedList(population.getSmiths(), smith);
+		assertTrue(equals);
+		equals = CompareUtil.equalsUnorderedList(population.getBerghammers(), bergHammer);
+		assertTrue(equals);
+		List<Object> sAndB = new ArrayList<Object>();
+		sAndB.addAll(population.getSmiths());
+		sAndB.addAll(population.getBerghammers());
+		equals = CompareUtil.equalsUnorderedList(sAndB, union);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 02 ****************************************/
+		testId = "INTERSECTION_01";
+		queriesStream.reset();
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> smith_ChristaMatch = q.createMatch(Subject.class);
+		bergHammerMatch = q.createMatch(Subject.class);
+		
+		q.WHERE(smith_ChristaMatch.atttribute("lastName")).EQUALS("Smith");
+		q.OR();
+		q.BR_OPEN();
+			q.WHERE(smith_ChristaMatch.atttribute("lastName")).EQUALS("Berghammer");
+			q.WHERE(smith_ChristaMatch.atttribute("firstName")).EQUALS("Christa");
+		q.BR_CLOSE();
+		
+		q.WHERE(bergHammerMatch.atttribute("lastName")).EQUALS("Berghammer");
+		
+		DomainObjectMatch<Subject> intersectionMatch = q.INTERSECTION(smithMatch, bergHammerMatch);
+		
+		result = q.execute();
+		
+		List<Subject> smith_Christa = result.resultOf(smith_ChristaMatch);
+		List<Subject> intersection = result.resultOf(intersectionMatch);
+		
+		List<Object> sAndChrista = new ArrayList<Object>();
+		sAndChrista.addAll(population.getSmiths_christa_berghammer_globcom());
+		sAndChrista.remove(sAndChrista.size() - 1);
+		equals = CompareUtil.equalsUnorderedList(sAndChrista, smith_Christa);
+		assertTrue(equals);
+		List<Object> intersectComp = new ArrayList<Object>();
+		intersectComp.addAll(population.getChrista_berghammer_globcom());
+		intersectComp.remove(intersectComp.size() - 1);
+		equals = CompareUtil.equalsUnorderedList(intersectComp, intersection);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 02 ****************************************/
+		testId = "UNION_02";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Object> j_smith = q.createMatch(Object.class);
+		DomainObjectMatch<Object> sf = q.createMatch(Object.class);
+		
+		q.WHERE(sf.atttribute("name")).EQUALS("San Francisco");
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Object> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Object.class);
+		DomainObjectMatch<Object> j_smith_d_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.TO(Object.class);
+		DomainObjectMatch<Object> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Object.class);
+		DomainObjectMatch<Object> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
+		
+		DomainObjectMatch<Object> j_smith_FilteredPocs =
+				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
+						q.WHERE(j_smith_all_Areas).CONTAINS(sf)
+				);
+		result = q.execute();
+		
+		List<Object> sf_res = result.resultOf(sf);
+		List<Object> j_smith_a = result.resultOf(j_smith_Areas);
+		List<Object> j_smith_d_a = result.resultOf(j_smith_d_Areas);
+		List<Object> j_smith_all = result.resultOf(j_smith_all_Areas);
+		List<Object> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
+		
+		List<Object> pocComp = new ArrayList<Object>();
+		pocComp.add(population.getSchwedenPlatz_32());
+		pocComp.add(population.getStachus_1());
+		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_FilteredPoCsResult);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		return;
 	}
 	
 	@Test
@@ -1859,7 +1984,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		q.OR();
 		q.WHERE(set_2.atttribute("name")).EQUALS("Global Company");
 		
-		// the intersction of both sets
+		// the intersection of both sets
 		q.WHERE(intersection).IN(set_1);
 		q.WHERE(intersection).IN(set_2);
 		

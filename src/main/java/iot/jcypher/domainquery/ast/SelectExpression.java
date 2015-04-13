@@ -63,7 +63,7 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 				if (src != this.start)
 					throw new RuntimeException(
 							"Predicate expressions within a collection expression must express constraints on " +
-							"either the source set or on a set derived from the source set by traversal");
+							"either the source set or on a set directly derived from the source set by traversal");
 				else {
 					if (this.traversalResults == null)
 						this.traversalResults = new ArrayList<DomainObjectMatch<?>>();

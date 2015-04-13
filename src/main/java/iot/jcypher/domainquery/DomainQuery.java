@@ -179,6 +179,26 @@ public class DomainQuery {
 	}
 	
 	/**
+	 * Build the union of the specified sets
+	 * @param set
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> DomainObjectMatch<T> UNION(DomainObjectMatch<T>... set) {
+		return this.union_Intersection(true, set);
+	}
+	
+	/**
+	 * Build the intersection of the specified sets
+	 * @param set
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> DomainObjectMatch<T> INTERSECTION(DomainObjectMatch<T>... set) {
+		return this.union_Intersection(false, set);
+	}
+	
+	/**
 	 * Execute the domain query
 	 * @return a DomainQueryResult
 	 */
@@ -203,6 +223,25 @@ public class DomainQuery {
 		return this.queryExecutor;
 	}
 	
+	@SuppressWarnings("unchecked")
+	private <T> DomainObjectMatch<T> union_Intersection(boolean union, DomainObjectMatch<T>... set) {
+		DomainObjectMatch<T> ret = null;
+		if (set.length > 0) {
+			ret =APIAccess.createDomainObjectMatch(APIAccess.getDomainObjectType(set[0]),
+					this.queryExecutor.getDomainObjectMatches().size(),
+					this.queryExecutor.getMappingInfo());
+			this.queryExecutor.getDomainObjectMatches().add(ret);
+			int idx = 0;
+			for (DomainObjectMatch<T> dom : set) {
+				if (idx > 0 && union)
+					this.OR();
+				this.WHERE(ret).IN(dom);
+				idx++;
+			}
+		}
+		return ret;
+	}
+
 	private IntAccess getIntAccess() {
 		if (this.intAccess == null)
 			this.intAccess = new IntAccess();

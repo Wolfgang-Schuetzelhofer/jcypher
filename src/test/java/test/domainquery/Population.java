@@ -55,6 +55,7 @@ public class Population {
 	private Person john_smith;
 	
 	private List<Object> berghammers;
+	private List<Object> smiths;
 	private List<Object> angelina_smith;
 	private List<Object> john_jery_smith;
 	private List<Object> angie_clark;
@@ -100,6 +101,10 @@ public class Population {
 	
 	public List<Object> getBerghammers() {
 		return berghammers;
+	}
+
+	public List<Object> getSmiths() {
+		return smiths;
 	}
 
 	public List<Object> getAngelina_smith() {
@@ -312,6 +317,12 @@ public class Population {
 		jery_smith.getPointsOfContact().add(smith_address);
 		jery_smith.setMother(caroline_smith);
 		jery_smith.setFather(john_smith);
+		
+		this.smiths = new ArrayList<Object>();
+		this.smiths.add(john_smith);
+		this.smiths.add(caroline_smith);
+		this.smiths.add(angie_smith);
+		this.smiths.add(jery_smith);
 		
 		this.angelina_smith = new ArrayList<Object>();
 		this.angelina_smith.add(angie_smith);
