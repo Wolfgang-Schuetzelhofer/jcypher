@@ -17,8 +17,8 @@
 package iot.jcypher.domainquery.internal;
 
 import iot.jcypher.domain.IDomainAccess;
-import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.internal.CurrentDomain;
+import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.domain.internal.SkipLimitCalc;
 import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
@@ -34,7 +34,6 @@ import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.ast.CollectExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
-import iot.jcypher.domainquery.ast.UnionExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;
@@ -1391,7 +1390,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 					IPredicateHolder ph = px.getLastPredicateHolder();
 					BooleanValue bv = new BooleanValue(false);
 					ph.setPredicate(bv);
-					booleanOp = PFactory.createConcatenator(px.getRoot());
+					booleanOp = PFactory.createConcatenator((iot.jcypher.query.ast.predicate.PredicateExpression) ph)
+							.BR_CLOSE();
 				} else {
 					int idx = 0;
 					for (JcNode n : val_2) {

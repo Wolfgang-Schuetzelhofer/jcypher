@@ -186,13 +186,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		q.WHERE(smithMatch.atttribute("lastName")).EQUALS("Smith");
 		q.WHERE(bergHammerMatch.atttribute("lastName")).EQUALS("Berghammer");
-		//DomainObjectMatch<Subject> unionMatch = q.UNION(smithMatch, bergHammerMatch);
-		DomainObjectMatch<Subject> unionMatch = q.createMatch(Subject.class);
-		//q.BR_OPEN();
-			q.WHERE(unionMatch).IN(smithMatch);
-			q.OR();
-			q.WHERE(unionMatch).IN(bergHammerMatch);
-		//q.BR_CLOSE();
+		DomainObjectMatch<Subject> unionMatch = q.UNION(smithMatch, bergHammerMatch);
 		
 		result = q.execute();
 		
