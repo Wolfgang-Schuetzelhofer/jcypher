@@ -22,6 +22,7 @@ import java.util.List;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.MappingUtil;
+import iot.jcypher.domainquery.ast.UnionExpression;
 import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
@@ -29,6 +30,7 @@ import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcProperty;
 import iot.jcypher.query.values.JcString;
+import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
 
@@ -53,6 +55,7 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	private int pageLength;
 	private boolean pageChanged;
 	private boolean partOfReturn;
+	private UnionExpression unionExpression;
 	
 	DomainObjectMatch(Class<T> targetType, int num,
 			MappingInfo mappingInfo) {
@@ -222,6 +225,14 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		this.traversalSource = traversalSource;
 	}
 
+	UnionExpression getUnionExpression() {
+		return unionExpression;
+	}
+
+	void setUnionExpression(UnionExpression unionExpression) {
+		this.unionExpression = unionExpression;
+	}
+
 	List<DomainObjectMatch<?>> getCollectExpressionOwner() {
 		return collectExpressionOwner;
 	}
@@ -231,6 +242,11 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 			this.collectExpressionOwner = new ArrayList<DomainObjectMatch<?>>();
 		if (!this.collectExpressionOwner.contains(dom))
 			this.collectExpressionOwner.add(dom);
+	}
+	
+	JcValue getCloneOf(JcValue val) {
+		String nm = ValueAccess.getName(val);
+		return checkField_getJcVal(nm, val.getClass());
 	}
 
 	private boolean needsRelation(FieldMapping fm) {

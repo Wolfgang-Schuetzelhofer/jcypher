@@ -27,10 +27,13 @@ public class UnionExpression implements IASTObject {
 	private DomainObjectMatch<?> result;
 	private List<DomainObjectMatch<?>> sources;
 	private boolean union;
+	// the last expression which defines the basic union
+	private IASTObject lastOfUnionBase;
 	
 	public UnionExpression(boolean union) {
 		super();
 		this.union = union;
+		this.sources = new ArrayList<DomainObjectMatch<?>>();
 	}
 	public DomainObjectMatch<?> getResult() {
 		return result;
@@ -39,12 +42,30 @@ public class UnionExpression implements IASTObject {
 		this.result = result;
 	}
 	public List<DomainObjectMatch<?>> getSources() {
-		if (sources == null)
-			sources = new ArrayList<DomainObjectMatch<?>>();
 		return sources;
 	}
 	public DomainObjectMatch<?> getCommonTraversalSource() {
-		return APIAccess.getTraversalSource(result);
+		DomainObjectMatch<?> travSource = null;
+		int idx = 0;
+		for (DomainObjectMatch<?> dom : this.sources) {
+			DomainObjectMatch<?> ts = APIAccess.getTraversalSource(dom);
+			if (idx == 0) {
+				travSource = ts;
+			} else {
+				if (ts != travSource)
+					travSource = null;
+			}
+		}
+		return travSource;
+	}
+	public boolean isUnion() {
+		return union;
+	}
+	public IASTObject getLastOfUnionBase() {
+		return lastOfUnionBase;
+	}
+	public void setLastOfUnionBase(IASTObject lastOfUnionBase) {
+		this.lastOfUnionBase = lastOfUnionBase;
 	}
 	
 }

@@ -18,14 +18,17 @@ package iot.jcypher.domainquery.api;
 
 import java.util.List;
 
+import iot.jcypher.domainquery.DomainQuery.IntAccess;
 import iot.jcypher.domainquery.ast.CollectExpression;
 import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression;
+import iot.jcypher.domainquery.ast.UnionExpression;
 import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
 import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcValue;
 
 public class APIAccess {
 	
@@ -55,8 +58,8 @@ public class APIAccess {
 		return new Traverse(te);
 	}
 	
-	public static <T> Select<T> createSelect(SelectExpression<T> se) {
-		return new Select<T>(se);
+	public static <T> Select<T> createSelect(SelectExpression<T> se, IntAccess ia) {
+		return new Select<T>(se, ia);
 	}
 	
 	public static Collect createCollect(CollectExpression ce) {
@@ -148,5 +151,21 @@ public class APIAccess {
 
 	public static void setPartOfReturn(DomainObjectMatch<?> dom, boolean partOfReturn) {
 		dom.setPartOfReturn(partOfReturn);
+	}
+	
+	public static UnionExpression getUnionExpression(DomainObjectMatch<?> dom) {
+		return dom.getUnionExpression();
+	}
+
+	public static void setUnionExpression(DomainObjectMatch<?> dom, UnionExpression unionExpression) {
+		dom.setUnionExpression(unionExpression);
+	}
+	
+	public static IASTObject getAstObject(APIObject apo) {
+		return apo.getAstObject();
+	}
+	
+	public static JcValue getCloneOf(DomainObjectMatch<?> dom, JcValue val) {
+		return dom.getCloneOf(val);
 	}
 }

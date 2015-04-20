@@ -122,6 +122,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 		this.astObjects.add(astObj);
 	}
 	
+	public List<IASTObject> getAstObjects() {
+		return astObjects;
+	}
+
 	public OrderExpression getOrderFor(DomainObjectMatch<?> dom) {
 		if (this.orders == null)
 			this.orders = new ArrayList<OrderExpression>();
@@ -207,6 +211,11 @@ public class QueryExecutor implements IASTObjectsContainer {
 		if (this.mappingInfo == null)
 			this.mappingInfo = new MappingInfo();
 		return this.mappingInfo;
+	}
+	
+	public List<IASTObject> getExpressionsFor(DomainObjectMatch<?> dom, List<IASTObject> astObjs) {
+		QueryBuilder.ExpressionsPerDOM xpds = new QueryBuilder().buildExpressionsPerDOM(dom, astObjs, 0);
+		return xpds.xPressions;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -1573,92 +1582,94 @@ public class QueryExecutor implements IASTObjectsContainer {
 								// (cloned for this collection expression)
 								TraversalResult travResult = cbContext.getTravResult(cpt.domainObjectMatch, dom, clazz);
 								
-								// add a traversal expression clone only once for each collection expression
-								if (travResult.expressionsPerDOM == null) {
-									// find all expressions within the collection expression
-									// which act on the DomainObjectmatch dom.
-									if (xpd == null) {
-										// without count expressions
-										xpd = buildExpressionsPerDOM(dom, selEx.getAstObjects(), 1);
-									}
-									if (countXpd == null) {
-										// only count expressions
-										countXpd = buildExpressionsPerDOM(dom, selEx.getAstObjects(), 2);
-									}
-									if (countXpd != null && countXpd.xPressions.size() > 0)
-										cpt.startCountSelectXpr = true;
-									// also serves as marker, that the teraversal expression clone has been added
-									travResult.expressionsPerDOM = xpd; 
-									travResult.countExpressionsPerDOM = countXpd;
-									
-									tpd.addAll(travResult.getStartPathMap());
-									int idx2 = 0;
-									for (List<IClause> part : travResult.expressionParts) {
-										if (!part.isEmpty()) {
-											ClausesPerType iCpt = travResult.clausesPerTypeList.get(idx2);
-											
-											if (dom != iCpt.domainObjectMatch)
-												throw new RuntimeException("internal error");
-											
-											// if there are predicate expressions which already
-											// constrain the result set of the traversal expression
-											// these expressions are put within brackets
-											// and so are the predicate expressions added by
-											// the collection expression
-											boolean bracket = false;
-											if (iCpt.concatenator != null) {
-												iCpt.concat = iCpt.concatenator.BR_CLOSE().AND().BR_OPEN();
-												iCpt.concatenator = null;
-												bracket = true;
-											} else
-												iCpt.concat = WHERE.BR_OPEN();
-											
-											// the path is needed, when a predicate expression is
-											// added, expressed on the result of a traversal expression
-											// (then the constraint will be expressed on head(nodes(path)))
-											boolean needPath = false;
+								if (travResult != null) { // null in case of union
+									// add a traversal expression clone only once for each collection expression
+									if (travResult.expressionsPerDOM == null) {
+										// find all expressions within the collection expression
+										// which act on the DomainObjectmatch dom.
+										if (xpd == null) {
 											// without count expressions
-											for (IASTObject ao : xpd.xPressions) {
-												if (ao instanceof PredicateExpression) {
-													needPath = true;
-													PredicateExpression pred = (PredicateExpression)ao;
-													IPredicateOperand1 val1 = pred.getValue_1();
-													if (val1 instanceof ValueElement) {
-														ValueElement ve = (ValueElement)val1;
-														ve = cloneVe(ve, ValueAccess.findFirst(ve), iCpt.node);
-														pred.setValue_1(ve);
+											xpd = buildExpressionsPerDOM(dom, selEx.getAstObjects(), 1);
+										}
+										if (countXpd == null) {
+											// only count expressions
+											countXpd = buildExpressionsPerDOM(dom, selEx.getAstObjects(), 2);
+										}
+										if (countXpd != null && countXpd.xPressions.size() > 0)
+											cpt.startCountSelectXpr = true;
+										// also serves as marker, that the teraversal expression clone has been added
+										travResult.expressionsPerDOM = xpd; 
+										travResult.countExpressionsPerDOM = countXpd;
+										
+										tpd.addAll(travResult.getStartPathMap());
+										int idx2 = 0;
+										for (List<IClause> part : travResult.expressionParts) {
+											if (!part.isEmpty()) {
+												ClausesPerType iCpt = travResult.clausesPerTypeList.get(idx2);
+												
+												if (dom != iCpt.domainObjectMatch)
+													throw new RuntimeException("internal error");
+												
+												// if there are predicate expressions which already
+												// constrain the result set of the traversal expression
+												// these expressions are put within brackets
+												// and so are the predicate expressions added by
+												// the collection expression
+												boolean bracket = false;
+												if (iCpt.concatenator != null) {
+													iCpt.concat = iCpt.concatenator.BR_CLOSE().AND().BR_OPEN();
+													iCpt.concatenator = null;
+													bracket = true;
+												} else
+													iCpt.concat = WHERE.BR_OPEN();
+												
+												// the path is needed, when a predicate expression is
+												// added, expressed on the result of a traversal expression
+												// (then the constraint will be expressed on head(nodes(path)))
+												boolean needPath = false;
+												// without count expressions
+												for (IASTObject ao : xpd.xPressions) {
+													if (ao instanceof PredicateExpression) {
+														needPath = true;
+														PredicateExpression pred = (PredicateExpression)ao;
+														IPredicateOperand1 val1 = pred.getValue_1();
+														if (val1 instanceof ValueElement) {
+															ValueElement ve = (ValueElement)val1;
+															ve = cloneVe(ve, ValueAccess.findFirst(ve), iCpt.node);
+															pred.setValue_1(ve);
+														}
 													}
+													addClause(ao, iCpt, cbContext);
+													if (idx == 0)
+														astObject2TraversalPaths.put(ao, tpd);
 												}
-												addClause(ao, iCpt, cbContext);
-												if (idx == 0)
-													astObject2TraversalPaths.put(ao, tpd);
-											}
-											if (needPath) {
-												JcPath p = new JcPath(pathFromNode(ValueAccess.getName(iCpt.node)));
-												countWithClauses.add(WITH.value(p));
-											}
-											if (bracket)
-												iCpt.concatenator = iCpt.concatenator.BR_CLOSE();
-											idx++;
-											idx2++;
-											selectClauses.addAll(part);
-											if (iCpt.concatenator != null)
-												selectClauses.add(iCpt.concatenator);
-											selectClauses.add(SEPARATE.nextClause());
-											
-											// now the count expressions
-											for (IASTObject ao : countXpd.xPressions) {
-												if (ao instanceof PredicateExpression) {
-													addCountWithClause(iCpt, countWithClauses, selectClauses, cpt);
+												if (needPath) {
+													JcPath p = new JcPath(pathFromNode(ValueAccess.getName(iCpt.node)));
+													countWithClauses.add(WITH.value(p));
+												}
+												if (bracket)
+													iCpt.concatenator = iCpt.concatenator.BR_CLOSE();
+												idx++;
+												idx2++;
+												selectClauses.addAll(part);
+												if (iCpt.concatenator != null)
+													selectClauses.add(iCpt.concatenator);
+												selectClauses.add(SEPARATE.nextClause());
+												
+												// now the count expressions
+												for (IASTObject ao : countXpd.xPressions) {
+													if (ao instanceof PredicateExpression) {
+														addCountWithClause(iCpt, countWithClauses, selectClauses, cpt);
+													}
 												}
 											}
 										}
-									}
-								} else { // mark the IASTObjects which have already been processed
-									tpd.addAll(travResult.getStartPathMap());
-									// without count expressions, count expressions are handled differently
-									for (IASTObject ao : travResult.expressionsPerDOM.xPressions) {
-										astObject2TraversalPaths.put(ao, tpd);
+									} else { // mark the IASTObjects which have already been processed
+										tpd.addAll(travResult.getStartPathMap());
+										// without count expressions, count expressions are handled differently
+										for (IASTObject ao : travResult.expressionsPerDOM.xPressions) {
+											astObject2TraversalPaths.put(ao, tpd);
+										}
 									}
 								}
 							}

@@ -162,6 +162,74 @@ public class DomainQueryTest extends AbstractTestSuite {
 	}
 	
 	@Test
+	public void testDomainQuery_Union_Intersection_02() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_UNION_INTERSECTION_01.txt");
+		
+		Population population = new Population();
+		List<Object> domObjects = population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 04 ****************************************/
+		testId = "UNION_03";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> j_smith = q.createMatch(Subject.class);
+		DomainObjectMatch<Area> sf = q.createMatch(Area.class);
+		
+		q.WHERE(sf.atttribute("name")).EQUALS("San Francisco");
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Address> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Address.class);
+		DomainObjectMatch<Area> j_smith_d_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.TO(Area.class);
+		DomainObjectMatch<Area> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+		DomainObjectMatch<Area> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
+//		q.WHERE(j_smith_all_Areas.atttribute("name")).EQUALS("San Francisco");
+		q.WHERE(j_smith_all_Areas.atttribute("name")).EQUALS("Munich");
+		
+		DomainObjectMatch<Address> j_smith_FilteredPocs =
+				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
+//						q.WHERE(j_smith_d_Areas.atttribute("name")).EQUALS("Munich"),
+//						q.WHERE(j_smith_d_Areas).CONTAINS(sf),
+//						q.OR(),
+//						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Munich"),
+//						q.WHERE(j_smith_Areas).CONTAINS(sf)
+						q.WHERE(j_smith_all_Areas).CONTAINS(sf)
+//						q.WHERE(j_smith_all_Areas.atttribute("name")).EQUALS("San Francisco")
+				);
+		result = q.execute();
+		
+		List<Area> sf_res = result.resultOf(sf);
+		List<Area> j_smith_a = result.resultOf(j_smith_Areas);
+		List<Area> j_smith_d_a = result.resultOf(j_smith_d_Areas);
+		List<Area> j_smith_all = result.resultOf(j_smith_all_Areas);
+		List<Address> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
+		
+		List<Object> pocComp = new ArrayList<Object>();
+		pocComp.add(population.getSchwedenPlatz_32());
+		pocComp.add(population.getStachus_1());
+		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_FilteredPoCsResult);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		return;
+	}
+	
+	@Test
 	public void testDomainQuery_Union_Intersection_01() {
 		IDomainAccess da1;
 		DomainQuery q;
@@ -242,8 +310,29 @@ public class DomainQueryTest extends AbstractTestSuite {
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
 		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
-		/** 02 ****************************************/
+		/** 03 ****************************************/
 		testId = "UNION_02";
+		queriesStream.reset();
+		q = da1.createQuery();
+		smithMatch = q.createMatch(Subject.class);
+		bergHammerMatch = q.createMatch(Subject.class);
+		
+		q.WHERE(smithMatch.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(bergHammerMatch.atttribute("lastName")).EQUALS("Berghammer");
+		unionMatch = q.UNION(smithMatch, bergHammerMatch);
+		q.WHERE(unionMatch.atttribute("firstName")).EQUALS("Angelina");
+		
+		result = q.execute();
+		
+		union = result.resultOf(unionMatch);
+		
+		equals = CompareUtil.equalsUnorderedList(population.getAngelina_smith(), union);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 04 ****************************************/
+		testId = "UNION_03";
 		queriesStream.reset();
 		
 		q = da1.createQuery();

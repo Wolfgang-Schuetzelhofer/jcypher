@@ -29,6 +29,7 @@ import iot.jcypher.domainquery.api.Traverse;
 import iot.jcypher.domainquery.ast.CollectExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
+import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.ast.PredicateExpression;
@@ -149,7 +150,7 @@ public class DomainQuery {
 		SelectExpression<T> se = new SelectExpression<T>(start, this.getIntAccess());
 		this.queryExecutor.addAstObject(se);
 		this.astObjectsContainer = se;
-		Select<T> ret = APIAccess.createSelect(se);
+		Select<T> ret = APIAccess.createSelect(se, getIntAccess());
 		return ret;
 	}
 	
@@ -163,7 +164,7 @@ public class DomainQuery {
 		SelectExpression<T> se = new SelectExpression<T>(start, this.getIntAccess(), true);
 		this.queryExecutor.addAstObject(se);
 		this.astObjectsContainer = se;
-		Select<T> ret = APIAccess.createSelect(se);
+		Select<T> ret = APIAccess.createSelect(se, getIntAccess());
 		return ret;
 	}
 	
@@ -228,34 +229,27 @@ public class DomainQuery {
 	private <T> DomainObjectMatch<T> union_Intersection(boolean union, DomainObjectMatch<T>... set) {
 		DomainObjectMatch<T> ret = null;
 		if (set.length > 0) {
+			IASTObject lastOne = null;
 			UnionExpression ue = new UnionExpression(union);
 			ret =APIAccess.createDomainObjectMatch(APIAccess.getDomainObjectType(set[0]),
 					this.queryExecutor.getDomainObjectMatches().size(),
 					this.queryExecutor.getMappingInfo());
 			this.queryExecutor.getDomainObjectMatches().add(ret);
 			ue.setResult(ret);
-			DomainObjectMatch<?> travSource = null;
+			APIAccess.setUnionExpression(ret, ue);
 			int idx = 0;
 			if (set.length > 1)
 				this.BR_OPEN();
 			for (DomainObjectMatch<T> dom : set) {
-				DomainObjectMatch<?> ts = APIAccess.getTraversalSource(dom);
-				if (idx == 0) {
-					travSource = ts;
-				} else {
-					if (ts != travSource)
-						travSource = null;
-				}
 				ue.getSources().add(dom);
 				if (idx > 0 && union)
 					this.OR();
-				this.WHERE(ret).IN(dom);
+				lastOne = APIAccess.getAstObject(this.WHERE(ret).IN(dom));
 				idx++;
 			}
 			if (set.length > 1)
-				this.BR_CLOSE();
-			if (travSource != null)
-				APIAccess.setTraversalSource(ret, travSource);
+				lastOne = APIAccess.getAstObject(this.BR_CLOSE());
+			ue.setLastOfUnionBase(lastOne);
 		}
 		return ret;
 	}

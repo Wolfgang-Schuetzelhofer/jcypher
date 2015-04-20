@@ -54,12 +54,27 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 	
 	@Override
 	public void addAstObject(IASTObject astObj) {
+		this.astObjectToAdd(astObj);
+		this.astObjects.add(astObj);
+	}
+	
+	public void replaceAstObject(int idx, List<IASTObject> replacements) {
+		this.astObjects.addAll(idx, replacements);
+		this.astObjects.remove(idx + replacements.size());
+		for (IASTObject astObj : replacements) {
+			this.astObjectToAdd(astObj);
+		}
+	}
+	
+	private void astObjectToAdd(IASTObject astObj) {
 		if (astObj instanceof PredicateExpression) {
 			// this must represent either the source set or a set derived from the source set by traversal
 			DomainObjectMatch<?> dom = ((PredicateExpression)astObj).getStartDOM();
 			// must be a derived set
 			if (dom != this.start) {
-				DomainObjectMatch<?> src = APIAccess.getTraversalSource(dom);
+				UnionExpression ue = APIAccess.getUnionExpression(dom);
+				DomainObjectMatch<?> src = ue != null ? ue.getCommonTraversalSource() :
+					APIAccess.getTraversalSource(dom);
 				if (src != this.start)
 					throw new RuntimeException(
 							"Predicate expressions within a collection expression must express constraints on " +
@@ -72,7 +87,6 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 				}
 			}
 		}
-		this.astObjects.add(astObj);
 	}
 	
 	public void setEnd(DomainObjectMatch<T> end) {

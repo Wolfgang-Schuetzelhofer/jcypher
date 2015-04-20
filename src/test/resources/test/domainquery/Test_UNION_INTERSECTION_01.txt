@@ -23,3 +23,13 @@ OPTIONAL MATCH (n_2_1:Person)
 WHERE ((NOT n_0_1 IS NULL AND n_2_1 IN[n_0_1]) AND (NOT n_1_1 IS NULL AND n_2_1 IN[n_1_1]))
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1, id(n_1_1) AS id_1_1, id(n_2_0) AS id_2_0, id(n_2_1) AS id_2_1
 ------------------------------------------------------------
+
+----UNION_02:
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.lastName = 'Smith'
+OPTIONAL MATCH (n_1_1:Person)
+WHERE n_1_1.lastName = 'Berghammer'
+OPTIONAL MATCH (n_2_1:Person)
+WHERE ((NOT n_0_1 IS NULL AND n_2_1 IN[n_0_1]) OR (NOT n_1_1 IS NULL AND n_2_1 IN[n_1_1])) AND n_2_1.firstName = 'Angelina'
+RETURN DISTINCT id(n_0_1) AS id_0_1, id(n_1_1) AS id_1_1, id(n_2_1) AS id_2_1
+------------------------------------------------------------

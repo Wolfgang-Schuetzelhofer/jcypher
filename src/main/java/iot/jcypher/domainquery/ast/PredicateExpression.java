@@ -97,6 +97,10 @@ public class PredicateExpression implements IASTObject {
 		return inCollectionExpression;
 	}
 	
+	public void setInCollectionExpression(boolean inCollectionExpression) {
+		this.inCollectionExpression = inCollectionExpression;
+	}
+
 	public PredicateExpression createCopy() {
 		PredicateExpression ret = new PredicateExpression(this.value_1, this.inCollectionExpression);
 		ret.negationCount = this.negationCount;
