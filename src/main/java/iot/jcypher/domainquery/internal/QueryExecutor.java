@@ -1698,6 +1698,9 @@ public class QueryExecutor implements IASTObjectsContainer {
 				List<IASTObject> pendingBrOpen = new ArrayList<IASTObject>();
 				List<IASTObject> pendingBrClose = new ArrayList<IASTObject>();
 				IASTObject pendingOr = null;
+				// everything after the 'containment in source expression'
+				// are additional constraints and must be within brackets
+				addClause(new ConcatenateExpression(Concatenator.BR_OPEN), cpt, cbContext);
 				for (IASTObject ao : selEx.getAstObjects()) {
 					TraversalPathsPerDOM tpd = astObject2TraversalPaths.get(ao);
 					if (tpd != null) { // constraint defined by a traversal expression
@@ -1771,6 +1774,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				}
 				
 				handleScopeClose(scope, 3, cpt, cbContext, pendingBrClose);
+				addClause(new ConcatenateExpression(Concatenator.BR_CLOSE), cpt, cbContext);
 				
 				cpt.collectionClauses = selectClauses;
 			}

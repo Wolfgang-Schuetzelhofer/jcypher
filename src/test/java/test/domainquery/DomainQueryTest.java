@@ -197,8 +197,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<Area> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
 				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
 		DomainObjectMatch<Area> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
-//		q.WHERE(j_smith_all_Areas.atttribute("name")).EQUALS("San Francisco");
-		q.WHERE(j_smith_all_Areas.atttribute("name")).EQUALS("Munich");
+		q.WHERE(j_smith_all_Areas.atttribute("name")).EQUALS("San Francisco");
 		
 		DomainObjectMatch<Address> j_smith_FilteredPocs =
 				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(

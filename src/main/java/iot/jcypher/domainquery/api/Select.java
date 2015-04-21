@@ -90,10 +90,6 @@ public class Select<T> extends APIObject {
 						List<IASTObject> replacements = new ArrayList<IASTObject>();
 						ConcatenateExpression ce;
 						int idx = 0;
-//						if (ue.getSources().size() > 1) {
-//							ce = new ConcatenateExpression(Concatenator.BR_OPEN);
-//							replacements.add(ce);
-//						}
 						List<IASTObject> astObjs = new ArrayList<IASTObject>();
 						List<IASTObject> complete = this.intAccess.getQueryExecutor().getAstObjects();
 						boolean add = false;
@@ -113,14 +109,14 @@ public class Select<T> extends APIObject {
 								ce = new ConcatenateExpression(Concatenator.OR);
 								replacements.add(ce);
 							}
+							if (xprs.size() > 0)
+								replacements.add(new ConcatenateExpression(Concatenator.BR_OPEN));
 							addAdditionalXprs(xprs, replacements, src, dom);
 							replacements.add(cpe);
+							if (xprs.size() > 0)
+								replacements.add(new ConcatenateExpression(Concatenator.BR_CLOSE));
 							idx++;
 						}
-//						if (ue.getSources().size() > 1) {
-//							ce = new ConcatenateExpression(Concatenator.BR_CLOSE);
-//							replacements.add(ce);
-//						}
 						se.replaceAstObject(i, replacements);
 					}
 				}
