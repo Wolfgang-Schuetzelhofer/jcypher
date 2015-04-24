@@ -156,6 +156,14 @@ public class APIAccess {
 	public static UnionExpression getUnionExpression(DomainObjectMatch<?> dom) {
 		return dom.getUnionExpression();
 	}
+	
+	public static boolean isPartOfUnionExpression(DomainObjectMatch<?> unionDom,
+			DomainObjectMatch<?> part) {
+		UnionExpression ue = unionDom.getUnionExpression();
+		if (ue != null)
+			return ue.getSources().contains(part);
+		return false;
+	}
 
 	public static void setUnionExpression(DomainObjectMatch<?> dom, UnionExpression unionExpression) {
 		dom.setUnionExpression(unionExpression);

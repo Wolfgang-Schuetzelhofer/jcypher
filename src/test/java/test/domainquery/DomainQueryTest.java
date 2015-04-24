@@ -162,7 +162,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 	}
 	
 	@Test
-	public void testDomainQuery_Union_Intersection_02() {
+	public void testDomainQuery_Union_Intersection_05() {
 		IDomainAccess da1;
 		DomainQuery q;
 		DomainQueryResult result = null;
@@ -179,6 +179,176 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		/** 04 ****************************************/
 		testId = "UNION_03";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> j_smith = q.createMatch(Subject.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Address> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Address.class);
+		DomainObjectMatch<Area> j_smith_Areas1 = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, 2).TO(Area.class);
+		DomainObjectMatch<Area> j_smith_Areas2 = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+		DomainObjectMatch<Area> j_smith_all_Areas = q.INTERSECTION(j_smith_Areas1, j_smith_Areas2);
+		
+		DomainObjectMatch<Address> j_smith_FilteredPocs =
+				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
+						q.WHERE(j_smith_all_Areas.COUNT()).EQUALS(2)
+						//q.WHERE(j_smith_Areas.COUNT()).EQUALS(4)
+//						q.WHERE(j_smith_d_Areas.COUNT()).EQUALS(1)
+						
+				);
+		result = q.execute();
+		
+		List<Area> j_smith_a1 = result.resultOf(j_smith_Areas1);
+		List<Area> j_smith_a2 = result.resultOf(j_smith_Areas2);
+		List<Area> j_smith_all = result.resultOf(j_smith_all_Areas);
+		List<Address> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
+		
+//		List<Object> pocComp = new ArrayList<Object>();
+//		pocComp.add(population.getSchwedenPlatz_32());
+//		pocComp.add(population.getStachus_1());
+//		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_FilteredPoCsResult);
+//		assertTrue(equals);
+//		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+//		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		return;
+	}
+	
+	@Test
+	public void testDomainQuery_Union_Intersection_04() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_UNION_INTERSECTION_01.txt");
+		
+		Population population = new Population();
+		List<Object> domObjects = population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "UNION_06";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> j_smith = q.createMatch(Subject.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<PointOfContact> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(PointOfContact.class);
+		DomainObjectMatch<AbstractArea> j_smith_d_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.TO(AbstractArea.class);
+		DomainObjectMatch<AbstractArea> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+		DomainObjectMatch<AbstractArea> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
+		
+		DomainObjectMatch<PointOfContact> j_smith_FilteredPocs =
+				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
+						q.WHERE(j_smith_all_Areas.COUNT()).EQUALS(5)
+				);
+		result = q.execute();
+		
+		List<AbstractArea> j_smith_all = result.resultOf(j_smith_all_Areas);
+		List<PointOfContact> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
+		
+		assertEquals(13, j_smith_all.size());
+		List<Object> pocComp = new ArrayList<Object>();
+		pocComp.add(population.getSchwedenPlatz_32());
+		pocComp.add(population.getMarketStreet_20());
+		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_FilteredPoCsResult);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		return;
+	}
+	
+	@Test
+	public void testDomainQuery_Union_Intersection_03() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_UNION_INTERSECTION_01.txt");
+		
+		Population population = new Population();
+		List<Object> domObjects = population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "UNION_05";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> j_smith = q.createMatch(Subject.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Address> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Address.class);
+		DomainObjectMatch<Area> j_smith_d_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.TO(Area.class);
+		DomainObjectMatch<Area> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+		DomainObjectMatch<Area> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
+		q.WHERE(j_smith_all_Areas.atttribute("name")).EQUALS("San Francisco");
+		
+		DomainObjectMatch<Address> j_smith_FilteredPocs =
+				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
+						q.WHERE(j_smith_all_Areas.COUNT()).EQUALS(1)
+				);
+		result = q.execute();
+		
+		List<Area> j_smith_all = result.resultOf(j_smith_all_Areas);
+		List<Address> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
+		
+		assertEquals(1, j_smith_all.size());
+		equals = CompareUtil.equalsObjects(population.getSanFrancisco(), j_smith_all.get(0));
+		assertTrue(equals);
+		assertEquals(1, j_smith_FilteredPoCsResult.size());
+		equals = CompareUtil.equalsObjects(population.getMarketStreet_20(), j_smith_FilteredPoCsResult.get(0));
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		return;
+	}
+	
+	@Test
+	public void testDomainQuery_Union_Intersection_02() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_UNION_INTERSECTION_01.txt");
+		
+		Population population = new Population();
+		List<Object> domObjects = population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "UNION_04";
 		queriesStream.reset();
 		
 		q = da1.createQuery();
@@ -201,26 +371,18 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		DomainObjectMatch<Address> j_smith_FilteredPocs =
 				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
-//						q.WHERE(j_smith_d_Areas.atttribute("name")).EQUALS("Munich"),
-//						q.WHERE(j_smith_d_Areas).CONTAINS(sf),
-//						q.OR(),
-//						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Munich"),
-//						q.WHERE(j_smith_Areas).CONTAINS(sf)
 						q.WHERE(j_smith_all_Areas).CONTAINS(sf)
-//						q.WHERE(j_smith_all_Areas.atttribute("name")).EQUALS("San Francisco")
 				);
 		result = q.execute();
 		
-		List<Area> sf_res = result.resultOf(sf);
-		List<Area> j_smith_a = result.resultOf(j_smith_Areas);
-		List<Area> j_smith_d_a = result.resultOf(j_smith_d_Areas);
 		List<Area> j_smith_all = result.resultOf(j_smith_all_Areas);
 		List<Address> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
 		
-		List<Object> pocComp = new ArrayList<Object>();
-		pocComp.add(population.getSchwedenPlatz_32());
-		pocComp.add(population.getStachus_1());
-		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_FilteredPoCsResult);
+		assertEquals(1, j_smith_all.size());
+		equals = CompareUtil.equalsObjects(population.getSanFrancisco(), j_smith_all.get(0));
+		assertTrue(equals);
+		assertEquals(1, j_smith_FilteredPoCsResult.size());
+		equals = CompareUtil.equalsObjects(population.getMarketStreet_20(), j_smith_FilteredPoCsResult.get(0));
 		assertTrue(equals);
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
 		assertQuery(testId, qCypher, tdr.getTestData(testId));
@@ -357,16 +519,10 @@ public class DomainQueryTest extends AbstractTestSuite {
 				);
 		result = q.execute();
 		
-		List<Object> sf_res = result.resultOf(sf);
-		List<Object> j_smith_a = result.resultOf(j_smith_Areas);
-		List<Object> j_smith_d_a = result.resultOf(j_smith_d_Areas);
-		List<Object> j_smith_all = result.resultOf(j_smith_all_Areas);
 		List<Object> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
 		
-		List<Object> pocComp = new ArrayList<Object>();
-		pocComp.add(population.getSchwedenPlatz_32());
-		pocComp.add(population.getStachus_1());
-		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_FilteredPoCsResult);
+		assertEquals(1, j_smith_FilteredPoCsResult.size());
+		equals = CompareUtil.equalsObjects(population.getMarketStreet_20(), j_smith_FilteredPoCsResult.get(0));
 		assertTrue(equals);
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
 		assertQuery(testId, qCypher, tdr.getTestData(testId));

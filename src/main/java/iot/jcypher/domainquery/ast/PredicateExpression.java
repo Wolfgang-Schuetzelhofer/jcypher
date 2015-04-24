@@ -34,6 +34,7 @@ public class PredicateExpression implements IASTObject {
 	private Object value_2;
 	private int negationCount;
 	private boolean inCollectionExpression;
+	private boolean partOfCount;
 
 	public PredicateExpression(IPredicateOperand1 value_1,
 			IASTObjectsContainer astObjectsContainer) {
@@ -99,6 +100,14 @@ public class PredicateExpression implements IASTObject {
 	
 	public void setInCollectionExpression(boolean inCollectionExpression) {
 		this.inCollectionExpression = inCollectionExpression;
+	}
+
+	public boolean isPartOfCount() {
+		return partOfCount;
+	}
+
+	public void setPartOfCount(boolean partOfCount) {
+		this.partOfCount = partOfCount;
 	}
 
 	public PredicateExpression createCopy() {

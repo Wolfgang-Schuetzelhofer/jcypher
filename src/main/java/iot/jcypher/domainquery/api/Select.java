@@ -49,11 +49,11 @@ public class Select<T> extends APIObject {
 		// all where expressions have already been added to the astObjects list
 		// of the SelectExpression
 		SelectExpression<T> se = this.getSelectExpression();
-		handleUnionExpressions(se);
 		DomainObjectMatch<T> selDom =APIAccess.createDomainObjectMatch(
 					se.getStart().getDomainObjectType(),
 				se.getQueryExecutor().getDomainObjectMatches().size(),
 				se.getQueryExecutor().getMappingInfo());
+		handleUnionExpressions(se, selDom);
 		se.getQueryExecutor().getDomainObjectMatches().add(selDom);
 		se.resetAstObjectsContainer();
 		se.setEnd(selDom);
@@ -76,7 +76,7 @@ public class Select<T> extends APIObject {
 		return (SelectExpression<T>) this.astObject;
 	}
 	
-	private void handleUnionExpressions(SelectExpression<T> se) {
+	private void handleUnionExpressions(SelectExpression<T> se, DomainObjectMatch<T> selDom) {
 		for (int i = se.getAstObjects().size() - 1; i >= 0; i--) {
 			IASTObject astObj = se.getAstObjects().get(i);
 			if (astObj instanceof PredicateExpression) {
@@ -89,20 +89,11 @@ public class Select<T> extends APIObject {
 						UnionExpression ue = APIAccess.getUnionExpression(dom);
 						List<IASTObject> replacements = new ArrayList<IASTObject>();
 						ConcatenateExpression ce;
+						// collect constraints on the union to be added to each part of the union
+						List<IASTObject> astObjs = collectAdditionalXprs(se, ue);
 						int idx = 0;
-						List<IASTObject> astObjs = new ArrayList<IASTObject>();
-						List<IASTObject> complete = this.intAccess.getQueryExecutor().getAstObjects();
-						boolean add = false;
-						for (IASTObject ao : complete) {
-							if (ao == se)
-								break;
-							if (add)
-								astObjs.add(ao);
-							if (ao == ue.getLastOfUnionBase())
-								add = true;
-						}
+						List<IASTObject> xprs = this.intAccess.getQueryExecutor().getExpressionsFor(dom, astObjs);
 						for (DomainObjectMatch<?> src : ue.getSources()) {
-							List<IASTObject> xprs = this.intAccess.getQueryExecutor().getExpressionsFor(dom, astObjs);
 							PredicateExpression cpe = pe.createCopy();
 							cpe.setValue_1(src);
 							if (idx > 0 && ue.isUnion()) {
@@ -111,7 +102,7 @@ public class Select<T> extends APIObject {
 							}
 							if (xprs.size() > 0)
 								replacements.add(new ConcatenateExpression(Concatenator.BR_OPEN));
-							addAdditionalXprs(xprs, replacements, src, dom);
+							addAdditionalXprs(xprs, replacements, src, dom, false);
 							replacements.add(cpe);
 							if (xprs.size() > 0)
 								replacements.add(new ConcatenateExpression(Concatenator.BR_CLOSE));
@@ -119,18 +110,50 @@ public class Select<T> extends APIObject {
 						}
 						se.replaceAstObject(i, replacements);
 					}
+				} else if (v1 instanceof Count) {
+					DomainObjectMatch<?> dom = APIAccess.getDomainObjectMatch((Count) v1);
+					if (APIAccess.getUnionExpression(dom) != null) {
+						// is a union expression
+						UnionExpression ue = APIAccess.getUnionExpression(dom);
+						// collect constraints on the union to be added to each part of the union
+						List<IASTObject> astObjs = collectAdditionalXprs(se, ue);
+						List<IASTObject> xprs = this.intAccess.getQueryExecutor().getExpressionsFor(dom, astObjs);
+						List<IASTObject> additions = new ArrayList<IASTObject>();
+						for (DomainObjectMatch<?> src : ue.getSources()) {
+							addAdditionalXprs(xprs, additions, src, dom, true);
+							se.addTraversalResult(src);
+						}
+						se.addAstObjects(additions);
+					}
 				}
 			}
 		}
 	}
 	
+	private List<IASTObject> collectAdditionalXprs(SelectExpression<T> se, UnionExpression ue) {
+		List<IASTObject> ret = new ArrayList<IASTObject>();
+		List<IASTObject> complete = this.intAccess.getQueryExecutor().getAstObjects();
+		boolean add = false;
+		// collect constraints on the union to be added to each part of the union
+		for (IASTObject ao : complete) {
+			if (ao == se)
+				break;
+			if (add)
+				ret.add(ao);
+			if (ao == ue.getLastOfUnionBase())
+				add = true;
+		}
+		return ret;
+	}
+	
 	private void addAdditionalXprs(List<IASTObject> xprs, List<IASTObject> addTo,
-			DomainObjectMatch<?> src, DomainObjectMatch<?> old) {
+			DomainObjectMatch<?> src, DomainObjectMatch<?> old, boolean partOfCount) {
 		for (IASTObject astObj : xprs) {
 			IASTObject toAdd = astObj;
 			if (astObj instanceof PredicateExpression) {
 				PredicateExpression pe = (PredicateExpression) astObj;
 				PredicateExpression cpe = pe.createCopy();
+				cpe.setPartOfCount(partOfCount);
 				IPredicateOperand1 v1 = cpe.getValue_1();
 				if (v1 instanceof JcValue) {
 					JcValue v = APIAccess.getCloneOf(src, (JcValue) v1);

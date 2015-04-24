@@ -44,6 +44,7 @@ import iot.jcypher.domainquery.ast.PredicateExpression.Operator;
 import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression.Step;
+import iot.jcypher.domainquery.ast.UnionExpression;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.APIObject;
@@ -749,7 +750,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 			StateContext context = new StateContext(baseNodeName);
 			for (int i = 0; i < astObjs.size(); i++) {
 				IASTObject astObj = astObjs.get(i);
-				testXpressionFor(baseNodeName, astObj, context, mode);
+				testXpressionFor(dom, baseNodeName, astObj, context, mode);
 			}
 			if (context.blockCount != 0)
 				throw new RuntimeException("bracket close mismatch");
@@ -860,7 +861,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 		 * @param context
 		 * @param mode 0 ... all expressions, 1 ... no count expressions, 2 ... count expressions only
 		 */
-		private void testXpressionFor(String baseNodeName,
+		private void testXpressionFor(DomainObjectMatch<?> dom, String baseNodeName,
 				IASTObject astObj, StateContext context, int mode) {
 			if (astObj instanceof PredicateExpression) {
 				PredicateExpression pred = (PredicateExpression)astObj;
@@ -870,6 +871,13 @@ public class QueryExecutor implements IASTObjectsContainer {
 				int orRemoveState = 0;
 				boolean isCount = val1 instanceof Count;
 				if (mode == 0 || (isCount && mode == 2) || (!isCount && mode == 1)) {
+					if (isCount) {
+						DomainObjectMatch<?> udom = APIAccess.getDomainObjectMatch((Count)val1);
+						if (APIAccess.isPartOfUnionExpression(udom, dom)) {
+							nodeName_1 = APIAccess.getBaseNodeName(dom);
+						}
+					}
+					
 					if (nodeName_1 != null) {
 						if (nodeName_1.indexOf(baseNodeName) == 0) {
 							if (context.orToAdd != null) // add pending or
@@ -1698,22 +1706,28 @@ public class QueryExecutor implements IASTObjectsContainer {
 				List<IASTObject> pendingBrOpen = new ArrayList<IASTObject>();
 				List<IASTObject> pendingBrClose = new ArrayList<IASTObject>();
 				IASTObject pendingOr = null;
-				// everything after the 'containment in source expression'
-				// are additional constraints and must be within brackets
-				addClause(new ConcatenateExpression(Concatenator.BR_OPEN), cpt, cbContext);
+				if (selEx.getAstObjects().size() > 1) {
+					// everything after the 'containment in source expression'
+					// are additional constraints and if more than one must be within brackets
+					addClause(new ConcatenateExpression(Concatenator.BR_OPEN), cpt, cbContext);
+				}
 				for (IASTObject ao : selEx.getAstObjects()) {
 					TraversalPathsPerDOM tpd = astObject2TraversalPaths.get(ao);
 					if (tpd != null) { // constraint defined by a traversal expression
-						if (!tpd.consumed) {
-							tpd.consumed = true;
-							// force a scope change
-							int oldScope = (scope == 0) ? 4 : scope;
-							scope = handleScopeClose(oldScope, 0, cpt, cbContext, pendingBrClose);
-							pendingOr = handleScopeOpen(oldScope, 0, cpt, cbContext, pendingBrOpen, pendingOr);
-							// add clauses for the traversals (match path start)
-							// as head(nodes(path))
-							addTraversalConstraints2Select(tpd, nds, cpt);
-							// brClose done by handleScopeClose()
+						// test if it was not additionally created as part of a count expression
+						// because in that case the constraint is expressed in form of the count
+						if (!(ao instanceof PredicateExpression && ((PredicateExpression)ao).isPartOfCount())) {
+							if (!tpd.consumed) {
+								tpd.consumed = true;
+								// force a scope change
+								int oldScope = (scope == 0) ? 4 : scope;
+								scope = handleScopeClose(oldScope, 0, cpt, cbContext, pendingBrClose);
+								pendingOr = handleScopeOpen(oldScope, 0, cpt, cbContext, pendingBrOpen, pendingOr);
+								// add clauses for the traversals (match path start)
+								// as head(nodes(path))
+								addTraversalConstraints2Select(tpd, nds, cpt);
+								// brClose done by handleScopeClose()
+							}
 						}
 					} else {
 						// count expressions are handled differently
@@ -1774,7 +1788,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 				}
 				
 				handleScopeClose(scope, 3, cpt, cbContext, pendingBrClose);
-				addClause(new ConcatenateExpression(Concatenator.BR_CLOSE), cpt, cbContext);
+				if (selEx.getAstObjects().size() > 1)
+					addClause(new ConcatenateExpression(Concatenator.BR_CLOSE), cpt, cbContext);
 				
 				cpt.collectionClauses = selectClauses;
 			}
@@ -2325,7 +2340,18 @@ public class QueryExecutor implements IASTObjectsContainer {
 			
 			private List<JcNode> getCountsFor(DomainObjectMatch<?> collOwner, DomainObjectMatch<?> travOwner,
 					String startNodeName) {
-				TraversalResultPerTypes travResPerTypes = this.getTraversalResultPerTypes(collOwner, travOwner, false);
+				UnionExpression ue;
+				TraversalResultPerTypes travResPerTypes;
+				if ((ue = APIAccess.getUnionExpression(travOwner)) != null) {
+					List<JcNode> ret = new ArrayList<JcNode>();
+					for (DomainObjectMatch<?> dom : ue.getSources()) {
+						travResPerTypes = this.getTraversalResultPerTypes(collOwner, dom, false);
+						if (travResPerTypes != null)
+							ret.addAll(travResPerTypes.getCountsFor(startNodeName));
+					}
+					return ret;
+				}
+				travResPerTypes = this.getTraversalResultPerTypes(collOwner, travOwner, false);
 				if (travResPerTypes != null)
 					return travResPerTypes.getCountsFor(startNodeName);
 				return null;

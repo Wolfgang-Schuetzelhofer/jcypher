@@ -8,7 +8,7 @@ OPTIONAL MATCH (n_2_0)-[:area]->()-[:partOf*]->(n_3_0:Area)
 OPTIONAL MATCH p_3_0_cn_4 = (n_2_0)-[:area]->()-[:partOf*]->(n_3_0_cn_4:Area)
 WHERE n_3_0_cn_4.name = 'Austria' OR n_3_0_cn_4.name = 'USA'
 OPTIONAL MATCH (n_4_0:Address)
-WHERE (NOT n_2_0 IS NULL AND n_4_0 IN[n_2_0]) AND (n_4_0 = head(nodes(p_3_0_cn_4))) AND (n_4_0.number = 32 OR n_4_0.number = 20)
+WHERE (NOT n_2_0 IS NULL AND n_4_0 IN[n_2_0]) AND ((n_4_0 = head(nodes(p_3_0_cn_4))) AND (n_4_0.number = 32 OR n_4_0.number = 20))
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_2_0) AS id_2_0, id(n_3_0) AS id_3_0, id(n_4_0) AS id_4_0
 ------------------------------------------------------------
 
@@ -56,9 +56,9 @@ WHERE n_2_1_cn_3_t6.name = 'Austria' OR n_2_1_cn_3_t6.region = 'region_1'
 OPTIONAL MATCH p_2_1_cn_3_t7 = (n_1_1)-[:area]->()-[:partOf*]->(n_2_1_cn_3_t7:EArea)
 WHERE n_2_1_cn_3_t7.name = 'Austria' OR n_2_1_cn_3_t7.region = 'region_1'
 OPTIONAL MATCH (n_3_0:Address)
-WHERE (NOT n_1_0 IS NULL AND n_3_0 IN[n_1_0]) AND (n_3_0 = head(nodes(p_2_0_cn_3_t2)) OR n_3_0 = head(nodes(p_2_1_cn_3_t6)))
+WHERE (NOT n_1_0 IS NULL AND n_3_0 IN[n_1_0]) AND ((n_3_0 = head(nodes(p_2_0_cn_3_t2)) OR n_3_0 = head(nodes(p_2_1_cn_3_t6))))
 OPTIONAL MATCH (n_3_1:EContact)
-WHERE (NOT n_1_1 IS NULL AND n_3_1 IN[n_1_1]) AND (n_3_1 = head(nodes(p_2_0_cn_3_t3)) OR n_3_1 = head(nodes(p_2_1_cn_3_t7)))
+WHERE (NOT n_1_1 IS NULL AND n_3_1 IN[n_1_1]) AND ((n_3_1 = head(nodes(p_2_0_cn_3_t3)) OR n_3_1 = head(nodes(p_2_1_cn_3_t7))))
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_1_1) AS id_1_1, id(n_2_0) AS id_2_0, id(n_2_1) AS id_2_1, id(n_3_0) AS id_3_0, id(n_3_1) AS id_3_1
 ------------------------------------------------------------
 
@@ -84,9 +84,9 @@ WHERE n_2_6_cn_3_t6.name = 'Austria' OR n_2_6_cn_3_t6.region = 'region_1'
 OPTIONAL MATCH p_2_6_cn_3_t7 = (n_1_7)-[:area]->()-[:partOf*]->(n_2_6_cn_3_t7:EArea)
 WHERE n_2_6_cn_3_t7.name = 'Austria' OR n_2_6_cn_3_t7.region = 'region_1'
 OPTIONAL MATCH (n_3_1:Address)
-WHERE (NOT n_1_1 IS NULL AND n_3_1 IN[n_1_1]) AND (n_3_1 = head(nodes(p_2_3_cn_3_t2)) OR n_3_1 = head(nodes(p_2_6_cn_3_t6)))
+WHERE (NOT n_1_1 IS NULL AND n_3_1 IN[n_1_1]) AND ((n_3_1 = head(nodes(p_2_3_cn_3_t2)) OR n_3_1 = head(nodes(p_2_6_cn_3_t6))))
 OPTIONAL MATCH (n_3_7:EContact)
-WHERE (NOT n_1_7 IS NULL AND n_3_7 IN[n_1_7]) AND (n_3_7 = head(nodes(p_2_3_cn_3_t3)) OR n_3_7 = head(nodes(p_2_6_cn_3_t7)))
+WHERE (NOT n_1_7 IS NULL AND n_3_7 IN[n_1_7]) AND ((n_3_7 = head(nodes(p_2_3_cn_3_t3)) OR n_3_7 = head(nodes(p_2_6_cn_3_t7))))
 RETURN DISTINCT id(n_0_9) AS id_0_9, id(n_1_1) AS id_1_1, id(n_1_7) AS id_1_7, id(n_2_3) AS id_2_3, id(n_2_6) AS id_2_6, id(n_3_1) AS id_3_1, id(n_3_7) AS id_3_7
 ------------------------------------------------------------
 
@@ -112,9 +112,9 @@ WHERE (n_2_6_cn_3_t6.name = 'Austria' OR n_2_6_cn_3_t6.region = 'region_1') AND 
 OPTIONAL MATCH p_2_6_cn_3_t7 = (n_1_7)-[:area]->()-[:partOf*]->(n_2_6_cn_3_t7:EArea)
 WHERE (n_2_6_cn_3_t7.name = 'Austria' OR n_2_6_cn_3_t7.region = 'region_1') AND (n_2_6_cn_3_t7.name = 'Austria' OR n_2_6_cn_3_t7.areaType = 'ELECTRONIC' OR n_2_6_cn_3_t7.name = 'USA')
 OPTIONAL MATCH (n_3_1:Address)
-WHERE (NOT n_1_1 IS NULL AND n_3_1 IN[n_1_1]) AND (n_3_1 = head(nodes(p_2_3_cn_3_t2)) OR n_3_1 = head(nodes(p_2_6_cn_3_t6)))
+WHERE (NOT n_1_1 IS NULL AND n_3_1 IN[n_1_1]) AND ((n_3_1 = head(nodes(p_2_3_cn_3_t2)) OR n_3_1 = head(nodes(p_2_6_cn_3_t6))))
 OPTIONAL MATCH (n_3_7:EContact)
-WHERE (NOT n_1_7 IS NULL AND n_3_7 IN[n_1_7]) AND (n_3_7 = head(nodes(p_2_3_cn_3_t3)) OR n_3_7 = head(nodes(p_2_6_cn_3_t7)))
+WHERE (NOT n_1_7 IS NULL AND n_3_7 IN[n_1_7]) AND ((n_3_7 = head(nodes(p_2_3_cn_3_t3)) OR n_3_7 = head(nodes(p_2_6_cn_3_t7))))
 RETURN DISTINCT id(n_0_9) AS id_0_9, id(n_1_1) AS id_1_1, id(n_1_7) AS id_1_7, id(n_2_3) AS id_2_3, id(n_2_6) AS id_2_6, id(n_3_1) AS id_3_1, id(n_3_7) AS id_3_7
 ------------------------------------------------------------
 
@@ -140,9 +140,9 @@ WHERE (n_2_6_cn_3_t6.name = 'Austria' OR n_2_6_cn_3_t6.region = 'region_1') AND 
 OPTIONAL MATCH p_2_6_cn_3_t7 = (n_1_7)-[:area]->()-[:partOf*]->(n_2_6_cn_3_t7:EArea)
 WHERE (n_2_6_cn_3_t7.name = 'Austria' OR n_2_6_cn_3_t7.region = 'region_1') AND (n_2_6_cn_3_t7.name = 'Austria' OR n_2_6_cn_3_t7.areaType = 'ELECTRONIC' OR n_2_6_cn_3_t7.name = 'USA')
 OPTIONAL MATCH (n_3_1:Address)
-WHERE (NOT n_1_1 IS NULL AND n_3_1 IN[n_1_1]) AND (n_3_1 = head(nodes(p_2_3_cn_3_t2)) OR n_3_1 = head(nodes(p_2_6_cn_3_t6))) AND (n_3_1.number = 32 OR n_3_1.type = 'EMAIL')
+WHERE (NOT n_1_1 IS NULL AND n_3_1 IN[n_1_1]) AND ((n_3_1 = head(nodes(p_2_3_cn_3_t2)) OR n_3_1 = head(nodes(p_2_6_cn_3_t6)))) AND (n_3_1.number = 32 OR n_3_1.type = 'EMAIL')
 OPTIONAL MATCH (n_3_7:EContact)
-WHERE (NOT n_1_7 IS NULL AND n_3_7 IN[n_1_7]) AND (n_3_7 = head(nodes(p_2_3_cn_3_t3)) OR n_3_7 = head(nodes(p_2_6_cn_3_t7))) AND (n_3_7.number = 32 OR n_3_7.type = 'EMAIL')
+WHERE (NOT n_1_7 IS NULL AND n_3_7 IN[n_1_7]) AND ((n_3_7 = head(nodes(p_2_3_cn_3_t3)) OR n_3_7 = head(nodes(p_2_6_cn_3_t7)))) AND (n_3_7.number = 32 OR n_3_7.type = 'EMAIL')
 RETURN DISTINCT id(n_0_9) AS id_0_9, id(n_1_1) AS id_1_1, id(n_1_7) AS id_1_7, id(n_2_3) AS id_2_3, id(n_2_6) AS id_2_6, id(n_3_1) AS id_3_1, id(n_3_7) AS id_3_7
 ------------------------------------------------------------
 
@@ -176,9 +176,9 @@ WHERE (NOT n_1_3 IS NULL AND n_3_3_cn_4_t2 IN[n_1_3])
 OPTIONAL MATCH p_3_3_cn_4_t3 = (n_2_7)-[:area]->()-[:partOf*]->(n_3_3_cn_4_t3:Area)
 WHERE (NOT n_1_3 IS NULL AND n_3_3_cn_4_t3 IN[n_1_3])
 OPTIONAL MATCH p_3_6_cn_4_t6 = (n_2_1)-[:area]->()-[:partOf*]->(n_3_6_cn_4_t6:EArea)
-WHERE ((false))
+WHERE (false)
 OPTIONAL MATCH p_3_6_cn_4_t7 = (n_2_7)-[:area]->()-[:partOf*]->(n_3_6_cn_4_t7:EArea)
-WHERE ((false))
+WHERE (false)
 OPTIONAL MATCH (n_4_1:Address)
 WHERE (NOT n_2_1 IS NULL AND n_4_1 IN[n_2_1]) AND (n_4_1 = head(nodes(p_3_3_cn_4_t2)) OR n_4_1 = head(nodes(p_3_6_cn_4_t6)))
 OPTIONAL MATCH (n_4_7:EContact)
@@ -270,9 +270,9 @@ WHERE (NOT n_1_3 IS NULL AND n_3_0_cn_4_t2 IN[n_1_3])
 OPTIONAL MATCH p_3_0_cn_4_t3 = (n_0_1)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_3_0_cn_4_t3:Area)
 WHERE (NOT n_1_3 IS NULL AND n_3_0_cn_4_t3 IN[n_1_3])
 OPTIONAL MATCH (n_4_0:Company)
-WHERE (NOT n_0_0 IS NULL AND n_4_0 IN[n_0_0]) AND (n_2_1_cn_4_t2_cnt + n_2_7_cn_4_t6_cnt = 4) AND (n_4_0 = head(nodes(p_3_0_cn_4_t2)))
+WHERE (NOT n_0_0 IS NULL AND n_4_0 IN[n_0_0]) AND ((n_2_1_cn_4_t2_cnt + n_2_7_cn_4_t6_cnt = 4) AND (n_4_0 = head(nodes(p_3_0_cn_4_t2))))
 OPTIONAL MATCH (n_4_1:Person)
-WHERE (NOT n_0_1 IS NULL AND n_4_1 IN[n_0_1]) AND (n_2_1_cn_4_t3_cnt + n_2_7_cn_4_t7_cnt = 4) AND (n_4_1 = head(nodes(p_3_0_cn_4_t3)))
+WHERE (NOT n_0_1 IS NULL AND n_4_1 IN[n_0_1]) AND ((n_2_1_cn_4_t3_cnt + n_2_7_cn_4_t7_cnt = 4) AND (n_4_1 = head(nodes(p_3_0_cn_4_t3))))
 RETURN DISTINCT id(n_4_0) AS id_4_0, id(n_4_1) AS id_4_1
 ------------------------------------------------------------
 
@@ -315,13 +315,13 @@ WHERE (NOT n_1_0 IS NULL AND n_3_3_cn_4_t2 IN[n_1_0])
 OPTIONAL MATCH p_3_3_cn_4_t3 = (n_0_1)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_3_3_cn_4_t3:Area)
 WHERE (NOT n_1_0 IS NULL AND n_3_3_cn_4_t3 IN[n_1_0])
 OPTIONAL MATCH p_3_6_cn_4_t6 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_3_6_cn_4_t6:EArea)
-WHERE ((false))
+WHERE (false)
 OPTIONAL MATCH p_3_6_cn_4_t7 = (n_0_1)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_3_6_cn_4_t7:EArea)
-WHERE ((false))
+WHERE (false)
 OPTIONAL MATCH (n_4_0:Company)
-WHERE (NOT n_0_0 IS NULL AND n_4_0 IN[n_0_0]) AND (n_2_1_cn_4_t2_cnt + n_2_7_cn_4_t6_cnt = 4) AND (n_4_0 = head(nodes(p_3_3_cn_4_t2)) OR n_4_0 = head(nodes(p_3_6_cn_4_t6)))
+WHERE (NOT n_0_0 IS NULL AND n_4_0 IN[n_0_0]) AND ((n_2_1_cn_4_t2_cnt + n_2_7_cn_4_t6_cnt = 4) AND (n_4_0 = head(nodes(p_3_3_cn_4_t2)) OR n_4_0 = head(nodes(p_3_6_cn_4_t6))))
 OPTIONAL MATCH (n_4_1:Person)
-WHERE (NOT n_0_1 IS NULL AND n_4_1 IN[n_0_1]) AND (n_2_1_cn_4_t3_cnt + n_2_7_cn_4_t7_cnt = 4) AND (n_4_1 = head(nodes(p_3_3_cn_4_t3)) OR n_4_1 = head(nodes(p_3_6_cn_4_t7)))
+WHERE (NOT n_0_1 IS NULL AND n_4_1 IN[n_0_1]) AND ((n_2_1_cn_4_t3_cnt + n_2_7_cn_4_t7_cnt = 4) AND (n_4_1 = head(nodes(p_3_3_cn_4_t3)) OR n_4_1 = head(nodes(p_3_6_cn_4_t7))))
 RETURN DISTINCT id(n_4_0) AS id_4_0, id(n_4_1) AS id_4_1
 ------------------------------------------------------------
 
@@ -346,7 +346,7 @@ WITH count(DISTINCT n_4_0_cn_5) AS n_4_0_cn_5_cnt, n_3_7_cn_5_cnt, n_3_1_cn_5_cn
 OPTIONAL MATCH p_4_1_cn_5 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_4_1_cn_5:EArea)
 WITH count(DISTINCT n_4_1_cn_5) AS n_4_1_cn_5_cnt, n_4_0_cn_5_cnt, n_3_7_cn_5_cnt, n_3_1_cn_5_cnt, n_0_0
 OPTIONAL MATCH (n_5_0:Person)
-WHERE (NOT n_0_0 IS NULL AND n_5_0 IN[n_0_0]) AND (n_3_1_cn_5_cnt + n_3_7_cn_5_cnt = 4 AND n_4_0_cn_5_cnt + n_4_1_cn_5_cnt = 9)
+WHERE (NOT n_0_0 IS NULL AND n_5_0 IN[n_0_0]) AND ((n_3_1_cn_5_cnt + n_3_7_cn_5_cnt = 4 AND n_4_0_cn_5_cnt + n_4_1_cn_5_cnt = 9))
 RETURN DISTINCT id(n_5_0) AS id_5_0
 ------------------------------------------------------------
 
@@ -363,7 +363,7 @@ WHERE n_2_1_cn_4.number = 20
 OPTIONAL MATCH p_2_7_cn_4 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_2_7_cn_4:EContact)
 WHERE n_2_7_cn_4.number = 20
 OPTIONAL MATCH (n_4_0:Person)
-WHERE (NOT n_0_0 IS NULL AND n_4_0 IN[n_0_0]) AND (n_4_0 = head(nodes(p_2_1_cn_4)) OR n_4_0 = head(nodes(p_2_7_cn_4))) AND (n_4_0.firstName = 'Jeremy')
+WHERE (NOT n_0_0 IS NULL AND n_4_0 IN[n_0_0]) AND ((n_4_0 = head(nodes(p_2_1_cn_4)) OR n_4_0 = head(nodes(p_2_7_cn_4))) AND (n_4_0.firstName = 'Jeremy'))
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_2_1) AS id_2_1, id(n_2_7) AS id_2_7, id(n_3_0) AS id_3_0, id(n_3_1) AS id_3_1, id(n_4_0) AS id_4_0
 ------------------------------------------------------------
 
@@ -382,7 +382,7 @@ WHERE n_2_0_cn_3.name = 'Europe'
 OPTIONAL MATCH p_2_1_cn_3 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_2_1_cn_3:EArea)
 WHERE n_2_1_cn_3.name = 'Europe'
 OPTIONAL MATCH (n_3_0:Person)
-WHERE (NOT n_0_0 IS NULL AND n_3_0 IN[n_0_0]) AND (n_3_0 = head(nodes(p_1_1_cn_3)) OR n_3_0 = head(nodes(p_1_7_cn_3))) OR (n_3_0 = head(nodes(p_2_0_cn_3)) OR n_3_0 = head(nodes(p_2_1_cn_3)))
+WHERE (NOT n_0_0 IS NULL AND n_3_0 IN[n_0_0]) AND ((n_3_0 = head(nodes(p_1_1_cn_3)) OR n_3_0 = head(nodes(p_1_7_cn_3))) OR (n_3_0 = head(nodes(p_2_0_cn_3)) OR n_3_0 = head(nodes(p_2_1_cn_3))))
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_1) AS id_1_1, id(n_1_7) AS id_1_7, id(n_2_0) AS id_2_0, id(n_2_1) AS id_2_1, id(n_3_0) AS id_3_0
 ------------------------------------------------------------
 
@@ -401,7 +401,7 @@ WHERE n_2_0_cn_3.name = 'Europe'
 OPTIONAL MATCH p_2_1_cn_3 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_2_1_cn_3:EArea)
 WHERE n_2_1_cn_3.name = 'Europe'
 OPTIONAL MATCH (n_3_0:Person)
-WHERE (NOT n_0_0 IS NULL AND n_3_0 IN[n_0_0]) AND (n_3_0 = head(nodes(p_1_1_cn_3)) OR n_3_0 = head(nodes(p_1_7_cn_3))) AND (n_3_0 = head(nodes(p_2_0_cn_3)) OR n_3_0 = head(nodes(p_2_1_cn_3)))
+WHERE (NOT n_0_0 IS NULL AND n_3_0 IN[n_0_0]) AND ((n_3_0 = head(nodes(p_1_1_cn_3)) OR n_3_0 = head(nodes(p_1_7_cn_3))) AND (n_3_0 = head(nodes(p_2_0_cn_3)) OR n_3_0 = head(nodes(p_2_1_cn_3))))
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_1) AS id_1_1, id(n_1_7) AS id_1_7, id(n_2_0) AS id_2_0, id(n_2_1) AS id_2_1, id(n_3_0) AS id_3_0
 ------------------------------------------------------------
 
@@ -422,7 +422,7 @@ WITH count(DISTINCT n_2_0_cn_3) AS n_2_0_cn_3_cnt, n_1_7_cn_3_cnt, n_1_1_cn_3_cn
 OPTIONAL MATCH p_2_1_cn_3 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_2_1_cn_3:EArea)
 WITH count(DISTINCT n_2_1_cn_3) AS n_2_1_cn_3_cnt, n_2_0_cn_3_cnt, n_1_7_cn_3_cnt, n_1_1_cn_3_cnt, n_0_0
 OPTIONAL MATCH (n_3_0:Person)
-WHERE (NOT n_0_0 IS NULL AND n_3_0 IN[n_0_0]) AND (n_3_0.lastName = 'Smith') AND (n_1_1_cn_3_cnt + n_1_7_cn_3_cnt = 4 OR n_2_0_cn_3_cnt + n_2_1_cn_3_cnt = 9)
+WHERE (NOT n_0_0 IS NULL AND n_3_0 IN[n_0_0]) AND ((n_3_0.lastName = 'Smith') AND (n_1_1_cn_3_cnt + n_1_7_cn_3_cnt = 4 OR n_2_0_cn_3_cnt + n_2_1_cn_3_cnt = 9))
 RETURN DISTINCT id(n_3_0) AS id_3_0
 ------------------------------------------------------------
 
@@ -456,9 +456,9 @@ WHERE (NOT n_1_3 IS NULL AND n_4_3_cn_5_t2 IN[n_1_3])
 OPTIONAL MATCH p_4_3_cn_5_t3 = (n_3_7)-[:area]->()-[:partOf*]->(n_4_3_cn_5_t3:Area)
 WHERE (NOT n_1_3 IS NULL AND n_4_3_cn_5_t3 IN[n_1_3])
 OPTIONAL MATCH p_4_6_cn_5_t6 = (n_3_1)-[:area]->()-[:partOf*]->(n_4_6_cn_5_t6:EArea)
-WHERE ((false))
+WHERE (false)
 OPTIONAL MATCH p_4_6_cn_5_t7 = (n_3_7)-[:area]->()-[:partOf*]->(n_4_6_cn_5_t7:EArea)
-WHERE ((false))
+WHERE (false)
 OPTIONAL MATCH (n_5_1:Address)
 WHERE (NOT n_3_1 IS NULL AND n_5_1 IN[n_3_1]) AND (n_5_1 = head(nodes(p_4_3_cn_5_t2)) OR n_5_1 = head(nodes(p_4_6_cn_5_t6)))
 OPTIONAL MATCH (n_5_7:EContact)
