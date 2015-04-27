@@ -91,6 +91,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import com.sun.org.apache.bcel.internal.generic.CPInstruction;
+
 public class QueryExecutor implements IASTObjectsContainer {
 
 	private static final String idPrefix = "id_";
@@ -1574,6 +1576,9 @@ public class QueryExecutor implements IASTObjectsContainer {
 				Map<IASTObject, TraversalPathsPerDOM> astObject2TraversalPaths =
 						new HashMap<IASTObject, TraversalPathsPerDOM>();
 				List<IClause> countWithClauses = new ArrayList<IClause>();
+				Map<Class<?>, CountIntersectsPerType> countIntersectsPerType = null;
+				// needed for intersection in count
+				List<IClause> selfWithClauses = new ArrayList<IClause>();
 				if (travDOMs != null) {
 					for (DomainObjectMatch<?> dom : travDOMs) {
 						int idx = 0;
@@ -1590,9 +1595,25 @@ public class QueryExecutor implements IASTObjectsContainer {
 								// (cloned for this collection expression)
 								TraversalResult travResult = cbContext.getTravResult(cpt.domainObjectMatch, dom, clazz);
 								
-								if (travResult != null) { // null in case of union
+								if (travResult == null) { // null in case of union
+									UnionExpression ue = APIAccess.getUnionExpression(dom);
+									if (!ue.isUnion()) { // intersection needs special handling
+										if (countIntersectsPerType == null)
+											countIntersectsPerType = new HashMap<Class<?>, CountIntersectsPerType>();
+										CountIntersectsPerType cipt = countIntersectsPerType.get(clazz);
+										if (cipt == null) {
+											cipt = new CountIntersectsPerType();
+											countIntersectsPerType.put(clazz, cipt);
+										}
+										cipt.intersection = ue;
+										cipt.buildIntersection = new ArrayList<ClausesPerType>();
+										cipt.intersectionDom = dom;
+										cipt.countNodes = new ArrayList<JcNode>();
+									}
+								} else {
 									// add a traversal expression clone only once for each collection expression
 									if (travResult.expressionsPerDOM == null) {
+										travResult.countIntersectsPerType = countIntersectsPerType;
 										// find all expressions within the collection expression
 										// which act on the DomainObjectmatch dom.
 										if (xpd == null) {
@@ -1603,8 +1624,11 @@ public class QueryExecutor implements IASTObjectsContainer {
 											// only count expressions
 											countXpd = buildExpressionsPerDOM(dom, selEx.getAstObjects(), 2);
 										}
-										if (countXpd != null && countXpd.xPressions.size() > 0)
+										boolean isCount = false;
+										if (countXpd != null && countXpd.xPressions.size() > 0) {
 											cpt.startCountSelectXpr = true;
+											isCount = true;
+										}
 										// also serves as marker, that the teraversal expression clone has been added
 										travResult.expressionsPerDOM = xpd; 
 										travResult.countExpressionsPerDOM = countXpd;
@@ -1667,12 +1691,29 @@ public class QueryExecutor implements IASTObjectsContainer {
 												// now the count expressions
 												for (IASTObject ao : countXpd.xPressions) {
 													if (ao instanceof PredicateExpression) {
-														addCountWithClause(iCpt, countWithClauses, selectClauses, cpt);
+														boolean c_i = isCount &&
+																countIntersectsPerType != null && countIntersectsPerType.get(clazz) != null;
+														if (c_i)
+															countIntersectsPerType.get(clazz).buildIntersection.add(iCpt);
+														addCountWithClause(iCpt.node, countWithClauses,
+																selfWithClauses, selectClauses, cpt,
+																c_i);
 													}
 												}
 											}
 										}
+										// handle intersection in count expression
+										CountIntersectsPerType cipt =
+												countIntersectsPerType != null ? countIntersectsPerType.get(clazz) : null;
+										if (isCount && cipt != null) {
+											if (cipt.intersection.isLastOfSources(dom)) {
+												// need to add intersection
+												cipt.countNodes = addIntersectionInCount(cipt.intersectionDom, clazz, selectClauses,
+														cipt.buildIntersection, countWithClauses, cpt, cipt.countNodes);
+											}
+										}
 									} else { // mark the IASTObjects which have already been processed
+										countIntersectsPerType = travResult.countIntersectsPerType;
 										tpd.addAll(travResult.getStartPathMap());
 										// without count expressions, count expressions are handled differently
 										for (IASTObject ao : travResult.expressionsPerDOM.xPressions) {
@@ -1733,8 +1774,14 @@ public class QueryExecutor implements IASTObjectsContainer {
 						// count expressions are handled differently
 						if (ao instanceof PredicateExpression &&
 								((PredicateExpression)ao).getValue_1() instanceof Count) {
-							List<JcNode> countNodes = cbContext.getCountsFor(cpt.domainObjectMatch,
-									((PredicateExpression)ao).getStartDOM(), ValueAccess.getName(nd));
+							List<JcNode> countNodes = null;
+							CountIntersectsPerType cipt =
+									countIntersectsPerType != null ? countIntersectsPerType.get(cpt.domainObjectType) : null;
+							if (cipt != null)
+								countNodes = cipt.countNodes;
+							if (countNodes == null)
+								countNodes = cbContext.getCountsFor(cpt.domainObjectMatch,
+										((PredicateExpression)ao).getStartDOM(), ValueAccess.getName(nd));
 							int oldScope = scope;
 							scope = handleScopeClose(scope, 2, cpt, cbContext, pendingBrClose);
 							pendingOr = handleScopeOpen(oldScope, 2, cpt, cbContext, pendingBrOpen, pendingOr);
@@ -1742,19 +1789,29 @@ public class QueryExecutor implements IASTObjectsContainer {
 								addClause(pendingOr, cpt, cbContext);
 								pendingOr = null;
 							}
-							JcNumber prevNum = null;
-							for (JcNode n : countNodes) {
-								String alias = ValueAccess.getName(n).concat(countXprPostPrefix);
-								JcNumber num = new JcNumber(alias);
-								if (prevNum != null)
-									prevNum = prevNum.plus(num);
-								else
-									prevNum = num;
+							if (countNodes.size() > 0) {
+								JcNumber prevNum = null;
+								for (JcNode n : countNodes) {
+									String alias = ValueAccess.getName(n).concat(countXprPostPrefix);
+									JcNumber num = new JcNumber(alias);
+									if (prevNum != null)
+										prevNum = prevNum.plus(num);
+									else
+										prevNum = num;
+								}
+								PredicateExpression newPred = ((PredicateExpression)ao).createCopy();
+								newPred.setValue_1(prevNum);
+								addClause(newPred, cpt, cbContext);
+								// brClose done by handleScopeClose()
+							} else {
+								cpt.concat = cpt.concat.BR_OPEN();
+								iot.jcypher.query.ast.predicate.PredicateExpression px =
+										(iot.jcypher.query.ast.predicate.PredicateExpression)APIObjectAccess.getAstNode(cpt.concat);
+								BooleanValue bv = new BooleanValue(false);
+								px.setPredicate(bv);
+								cpt.concatenator = PFactory.createConcatenator(px)
+										.BR_CLOSE();
 							}
-							PredicateExpression newPred = ((PredicateExpression)ao).createCopy();
-							newPred.setValue_1(prevNum);
-							addClause(newPred, cpt, cbContext);
-							// brClose done by handleScopeClose()
 						} else {
 							if (ao instanceof ConcatenateExpression) {
 								if (((ConcatenateExpression)ao).getConcatenator() == Concatenator.OR) {
@@ -1792,6 +1849,34 @@ public class QueryExecutor implements IASTObjectsContainer {
 					addClause(new ConcatenateExpression(Concatenator.BR_CLOSE), cpt, cbContext);
 				
 				cpt.collectionClauses = selectClauses;
+			}
+			
+			private List<JcNode> addIntersectionInCount(DomainObjectMatch<?> intersectionDom,
+					Class<?> clazz, List<IClause> clauses, List<ClausesPerType> buildIntersection,
+					List<IClause> countWithClauses, ClausesPerType cpt, List<JcNode> counNodes) {
+				List<JcNode> ret = counNodes;
+				int idx3 = 0;
+				iot.jcypher.query.api.predicate.Concatenator booleanOp = null;
+				JcNode nd = APIAccess.getNodeForType(intersectionDom, clazz);
+				String nnm = ValueAccess.getName(nd).concat(collNodePostPrefix)
+						.concat(APIAccess.getBaseNodeName(cpt.domainObjectMatch));
+				nd = new JcNode(nnm);
+				if (ret == null)
+					ret = new ArrayList<JcNode>();
+				ret.add(nd);
+				clauses.add(OPTIONAL_MATCH.node(nd));
+				for (ClausesPerType intCpt : buildIntersection) {
+					JcNode n = intCpt.node;
+					if (idx3 == 0)
+						booleanOp = WHERE.BR_OPEN().NOT().valueOf(n).IS_NULL().AND().valueOf(nd).IN_list(n).BR_CLOSE();
+					else
+						booleanOp = booleanOp.AND().BR_OPEN().NOT().valueOf(n).IS_NULL().AND().valueOf(nd).IN_list(n).BR_CLOSE();
+					idx3++;
+				}
+				//booleanOp = booleanOp.BR_CLOSE();
+				clauses.add(booleanOp);
+				addCountWithClause(nd, countWithClauses, null, clauses, cpt, false);
+				return ret;
 			}
 			
 			private void handleBrackets(ClausesPerType cpt,
@@ -1833,17 +1918,24 @@ public class QueryExecutor implements IASTObjectsContainer {
 					return pendingOr;
 			}
 
-			private void addCountWithClause(ClausesPerType iCpt, List<IClause> countWithClauses,
-					List<IClause> selectClauses, ClausesPerType cpt) {
-				String nnm = ValueAccess.getName(iCpt.node);
+			private void addCountWithClause(JcNode n, List<IClause> countWithClauses,
+					List<IClause> selfWithClauses, List<IClause> selectClauses, ClausesPerType cpt,
+					boolean addSelf) {
+				String nnm = ValueAccess.getName(n);
 				String alias = nnm.concat(countXprPostPrefix);
 				JcNumber num = new JcNumber(alias);
-				selectClauses.add(WITH.count().DISTINCT().value(iCpt.node).AS(num));
+				selectClauses.add(WITH.count().DISTINCT().value(n).AS(num));
+				if (addSelf)
+					selectClauses.add(WITH.value(n));
 				selectClauses.addAll(countWithClauses);
+				if (addSelf)
+					selectClauses.addAll(selfWithClauses);
 				if (cpt.withClausesAddIdxs == null)
 					cpt.withClausesAddIdxs = new ArrayList<Integer>();
 				cpt.withClausesAddIdxs.add(0, selectClauses.size());
 				countWithClauses.add(0, WITH.value(num));
+				if (addSelf)
+					selfWithClauses.add(WITH.value(n));
 			}
 
 			private void addTraversalConstraints2Select(TraversalPathsPerDOM tpd,
@@ -1904,6 +1996,14 @@ public class QueryExecutor implements IASTObjectsContainer {
 			}
 			
 			/***************************/
+			private class CountIntersectsPerType {
+				private UnionExpression intersection;
+				private List<ClausesPerType> buildIntersection;
+				private DomainObjectMatch<?> intersectionDom;
+				private List<JcNode> countNodes;
+			}
+			
+			/***************************/
 			private class TraversalPathsPerDOM {
 				// key is the start node name
 				private Map<String, List<JcPath>> pathMap;
@@ -1947,6 +2047,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				private List<ClausesPerType> clausesPerTypeList;
 				private ExpressionsPerDOM expressionsPerDOM;
 				private ExpressionsPerDOM countExpressionsPerDOM;
+				private Map<Class<?>, CountIntersectsPerType> countIntersectsPerType;
 				
 				private List<IClause> getAllClauses() {
 					List<IClause> ret = new ArrayList<IClause>();

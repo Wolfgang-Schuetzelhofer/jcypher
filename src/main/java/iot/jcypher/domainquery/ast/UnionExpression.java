@@ -68,4 +68,8 @@ public class UnionExpression implements IASTObject {
 		this.lastOfUnionBase = lastOfUnionBase;
 	}
 	
+	public boolean isLastOfSources(DomainObjectMatch<?> dom) {
+		int sz = this.sources.size();
+		return sz > 0 && dom.equals(this.sources.get(sz - 1));
+	}
 }

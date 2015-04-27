@@ -59,6 +59,7 @@ import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
 import test.domainquery.model.DateHolder;
 import test.domainquery.model.EContact;
+import test.domainquery.model.Gender;
 import test.domainquery.model.NumberHolder;
 import test.domainquery.model.SubNumberHolder;
 import test.domainquery.model.EContact.EContactType;
@@ -128,22 +129,22 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-//		errors = da.store(storedDomainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		errors = da.store(nhs);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		errors = da.store(storedDomainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		errors = da.store(nhs);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 	}
 	
 	@AfterClass
@@ -170,6 +171,8 @@ public class DomainQueryTest extends AbstractTestSuite {
 		String testId;
 		String qCypher;
 		
+		List<Object> added = addPersons();
+		
 		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_UNION_INTERSECTION_01.txt");
 		
 		Population population = new Population();
@@ -177,49 +180,122 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
-		/** 04 ****************************************/
-		testId = "UNION_03";
+		/** 01 ****************************************/
+		testId = "INTERSECTION_02";
 		queriesStream.reset();
 		
 		q = da1.createQuery();
-		DomainObjectMatch<Subject> j_smith = q.createMatch(Subject.class);
+		DomainObjectMatch<Person> personsMatch = q.createMatch(Person.class);
 
-		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
-		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		DomainObjectMatch<Person> m_childrenMatch = q.TRAVERSE_FROM(personsMatch).FORTH("mother")
+				.BACK("mother").TO(Person.class);
+		DomainObjectMatch<Person> f_childrenMatch = q.TRAVERSE_FROM(personsMatch).FORTH("father")
+				.BACK("father").TO(Person.class);
+		DomainObjectMatch<Person> siblingsMath = q.INTERSECTION(m_childrenMatch, f_childrenMatch);
 		
-		DomainObjectMatch<Address> j_smith_Addresses =
-				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Address.class);
-		DomainObjectMatch<Area> j_smith_Areas1 = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, 2).TO(Area.class);
-		DomainObjectMatch<Area> j_smith_Areas2 = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
-		DomainObjectMatch<Area> j_smith_all_Areas = q.INTERSECTION(j_smith_Areas1, j_smith_Areas2);
-		
-		DomainObjectMatch<Address> j_smith_FilteredPocs =
-				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
-						q.WHERE(j_smith_all_Areas.COUNT()).EQUALS(2)
-						//q.WHERE(j_smith_Areas.COUNT()).EQUALS(4)
-//						q.WHERE(j_smith_d_Areas.COUNT()).EQUALS(1)
-						
-				);
+		DomainObjectMatch<Person> siblings2Match = q.SELECT_FROM(personsMatch).ELEMENTS(
+				q.WHERE(siblingsMath.COUNT()).GTE(2)
+		);
 		result = q.execute();
 		
-		List<Area> j_smith_a1 = result.resultOf(j_smith_Areas1);
-		List<Area> j_smith_a2 = result.resultOf(j_smith_Areas2);
-		List<Area> j_smith_all = result.resultOf(j_smith_all_Areas);
-		List<Address> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
+		List<Person> siblings2 = result.resultOf(siblings2Match);
 		
-//		List<Object> pocComp = new ArrayList<Object>();
-//		pocComp.add(population.getSchwedenPlatz_32());
-//		pocComp.add(population.getStachus_1());
-//		equals = CompareUtil.equalsUnorderedList(pocComp, j_smith_FilteredPoCsResult);
-//		assertTrue(equals);
-//		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
-//		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		List<Object> comp = new ArrayList<Object>();
+		comp.add(population.getChrista_berghammer_globcom().get(0));
+		comp.addAll(added);
+		equals = CompareUtil.equalsUnorderedList(comp, siblings2);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
+		
+		/** 02 ****************************************/
+		testId = "INTERSECTION_03";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> personsMatch1 = q.createMatch(Subject.class);
+
+		DomainObjectMatch<Subject> m_childrenMatch1 = q.TRAVERSE_FROM(personsMatch1).FORTH("mother")
+				.BACK("mother").TO(Subject.class);
+		DomainObjectMatch<Subject> f_childrenMatch1 = q.TRAVERSE_FROM(personsMatch1).FORTH("father")
+				.BACK("father").TO(Subject.class);
+		DomainObjectMatch<Subject> siblingsMath1 = q.INTERSECTION(m_childrenMatch1, f_childrenMatch1);
+		
+		DomainObjectMatch<Subject> siblings2Match1 = q.SELECT_FROM(personsMatch1).ELEMENTS(
+				q.WHERE(siblingsMath1.COUNT()).GTE(2)
+		);
+		result = q.execute();
+		
+		List<Subject> siblings21 = result.resultOf(siblings2Match1);
+		
+		equals = CompareUtil.equalsUnorderedList(comp, siblings21);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		// reset
+		before();
 		return;
 	}
 	
+	/**
+	 * @return some of the newly created objects
+	 */
+	List<Object> addPersons() {
+		List<Object> ret = new ArrayList<Object>();
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		DomainQuery q = da1.createQuery();
+		
+		DomainObjectMatch<Person> gerda_berghammerMatch = q.createMatch(Person.class);
+		DomainObjectMatch<Person> hans_berghammerMatch = q.createMatch(Person.class);
+		DomainObjectMatch<Person> herbert_maierMatch = q.createMatch(Person.class);
+		q.WHERE(gerda_berghammerMatch.atttribute("firstName")).EQUALS("Gerda");
+		q.WHERE(gerda_berghammerMatch.atttribute("lastName")).EQUALS("Berghammer");
+		q.WHERE(hans_berghammerMatch.atttribute("firstName")).EQUALS("Hans");
+		q.WHERE(hans_berghammerMatch.atttribute("lastName")).EQUALS("Berghammer");
+		q.WHERE(herbert_maierMatch.atttribute("firstName")).EQUALS("Herbert");
+		q.WHERE(herbert_maierMatch.atttribute("lastName")).EQUALS("Maier");
+		
+		DomainQueryResult result = q.execute();
+		
+		Person gerda_berghammer = result.resultOf(gerda_berghammerMatch).get(0);
+		Person hans_berghammer = result.resultOf(hans_berghammerMatch).get(0);
+		Person herbert_maier = result.resultOf(herbert_maierMatch).get(0);
+		
+		List<Object> toStore = new ArrayList<Object>();
+		
+		Person fritz_berhammer = new Person("Fritz", "Berghammer", Gender.MALE);
+		fritz_berhammer.setMatchString("berghammer");
+		fritz_berhammer.getPointsOfContact().add(gerda_berghammer.getPointsOfContact().get(0));
+		fritz_berhammer.setMother(gerda_berghammer);
+		fritz_berhammer.setFather(herbert_maier);
+		toStore.add(fritz_berhammer);
+		
+		Person hannah_berhammer = new Person("Hannah", "Berghammer", Gender.FEMALE);
+		hannah_berhammer.setMatchString("berghammer");
+		hannah_berhammer.getPointsOfContact().add(gerda_berghammer.getPointsOfContact().get(0));
+		hannah_berhammer.setMother(gerda_berghammer);
+		hannah_berhammer.setFather(hans_berghammer);
+		toStore.add(hannah_berhammer);
+		ret.add(hannah_berhammer);
+		
+		Person max_berhammer = new Person("Max", "Berghammer", Gender.MALE);
+		max_berhammer.setMatchString("berghammer");
+		max_berhammer.getPointsOfContact().add(gerda_berghammer.getPointsOfContact().get(0));
+		max_berhammer.setMother(gerda_berghammer);
+		max_berhammer.setFather(hans_berghammer);
+		toStore.add(max_berhammer);
+		ret.add(max_berhammer);
+		
+		List<JcError> errors = da1.store(toStore);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		return ret;
+	}
+
 	@Test
 	public void testDomainQuery_Union_Intersection_04() {
 		IDomainAccess da1;

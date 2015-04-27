@@ -188,3 +188,51 @@ OPTIONAL MATCH (n_5_1:EContact)
 WHERE (NOT n_1_1 IS NULL AND n_5_1 IN[n_1_1]) AND (n_2_1_cn_5_cnt + n_3_0_cn_5_t3_cnt + n_3_1_cn_5_t7_cnt = 5)
 RETURN DISTINCT id(n_5_0) AS id_5_0, id(n_5_1) AS id_5_1
 ------------------------------------------------------------
+
+----INTERSECTION_02:
+OPTIONAL MATCH (n_0_0:Person)
+OPTIONAL MATCH (n_0_0)-[:mother]->()<-[:mother]-(n_1_0:Person)
+OPTIONAL MATCH (n_0_0)-[:father]->()<-[:father]-(n_2_0:Person)
+OPTIONAL MATCH (n_3_0:Person)
+WHERE ((NOT n_1_0 IS NULL AND n_3_0 IN[n_1_0]) AND (NOT n_2_0 IS NULL AND n_3_0 IN[n_2_0]))
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_2_0) AS id_2_0, id(n_3_0) AS id_3_0
+#--------------------
+OPTIONAL MATCH (n_0_0:Person)
+OPTIONAL MATCH p_1_0_cn_4 = (n_0_0)-[:mother]->()<-[:mother]-(n_1_0_cn_4:Person)
+WITH count(DISTINCT n_1_0_cn_4) AS n_1_0_cn_4_cnt, n_1_0_cn_4, n_0_0
+OPTIONAL MATCH p_2_0_cn_4 = (n_0_0)-[:father]->()<-[:father]-(n_2_0_cn_4:Person)
+WITH count(DISTINCT n_2_0_cn_4) AS n_2_0_cn_4_cnt, n_2_0_cn_4, n_1_0_cn_4_cnt, n_1_0_cn_4, n_0_0
+OPTIONAL MATCH (n_3_0_cn_4)
+WHERE (NOT n_1_0_cn_4 IS NULL AND n_3_0_cn_4 IN[n_1_0_cn_4]) AND (NOT n_2_0_cn_4 IS NULL AND n_3_0_cn_4 IN[n_2_0_cn_4])
+WITH count(DISTINCT n_3_0_cn_4) AS n_3_0_cn_4_cnt, n_2_0_cn_4_cnt, n_1_0_cn_4_cnt, n_0_0
+OPTIONAL MATCH (n_4_0:Person)
+WHERE (NOT n_0_0 IS NULL AND n_4_0 IN[n_0_0]) AND (n_3_0_cn_4_cnt >= 2)
+RETURN DISTINCT id(n_4_0) AS id_4_0
+------------------------------------------------------------
+
+----INTERSECTION_03:
+OPTIONAL MATCH (n_0_0:Company)
+OPTIONAL MATCH (n_0_1:Person)
+OPTIONAL MATCH (n_0_1)-[:mother]->()<-[:mother]-(n_1_1:Person)
+OPTIONAL MATCH (n_0_1)-[:father]->()<-[:father]-(n_2_1:Person)
+OPTIONAL MATCH (n_3_0:Company)
+WHERE ((false) AND (false))
+OPTIONAL MATCH (n_3_1:Person)
+WHERE ((NOT n_1_1 IS NULL AND n_3_1 IN[n_1_1]) AND (NOT n_2_1 IS NULL AND n_3_1 IN[n_2_1]))
+RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1, id(n_1_1) AS id_1_1, id(n_2_1) AS id_2_1, id(n_3_0) AS id_3_0, id(n_3_1) AS id_3_1
+#--------------------
+OPTIONAL MATCH (n_0_0:Company)
+OPTIONAL MATCH (n_0_1:Person)
+OPTIONAL MATCH p_1_1_cn_4 = (n_0_1)-[:mother]->()<-[:mother]-(n_1_1_cn_4:Person)
+WITH count(DISTINCT n_1_1_cn_4) AS n_1_1_cn_4_cnt, n_1_1_cn_4, n_0_1, n_0_0
+OPTIONAL MATCH p_2_1_cn_4 = (n_0_1)-[:father]->()<-[:father]-(n_2_1_cn_4:Person)
+WITH count(DISTINCT n_2_1_cn_4) AS n_2_1_cn_4_cnt, n_2_1_cn_4, n_1_1_cn_4_cnt, n_1_1_cn_4, n_0_1, n_0_0
+OPTIONAL MATCH (n_3_1_cn_4)
+WHERE (NOT n_1_1_cn_4 IS NULL AND n_3_1_cn_4 IN[n_1_1_cn_4]) AND (NOT n_2_1_cn_4 IS NULL AND n_3_1_cn_4 IN[n_2_1_cn_4])
+WITH count(DISTINCT n_3_1_cn_4) AS n_3_1_cn_4_cnt, n_2_1_cn_4_cnt, n_1_1_cn_4_cnt, n_0_1, n_0_0
+OPTIONAL MATCH (n_4_0:Company)
+WHERE (NOT n_0_0 IS NULL AND n_4_0 IN[n_0_0]) AND ((false))
+OPTIONAL MATCH (n_4_1:Person)
+WHERE (NOT n_0_1 IS NULL AND n_4_1 IN[n_0_1]) AND (n_3_1_cn_4_cnt >= 2)
+RETURN DISTINCT id(n_4_0) AS id_4_0, id(n_4_1) AS id_4_1
+------------------------------------------------------------
