@@ -19,7 +19,7 @@ WITH count(DISTINCT n_4_0_cn_5) AS n_4_0_cn_5_cnt, n_3_7_cn_5_cnt, n_3_1_cn_5_cn
 OPTIONAL MATCH p_4_1_cn_5 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_4_1_cn_5:EArea)
 WITH count(DISTINCT n_4_1_cn_5) AS n_4_1_cn_5_cnt, n_4_0_cn_5_cnt, n_3_7_cn_5_cnt, n_3_1_cn_5_cnt, n_0_0
 OPTIONAL MATCH (n_5_0:Person)
-WHERE (NOT n_0_0 IS NULL AND n_5_0 IN[n_0_0]) AND (n_3_1_cn_5_cnt + n_3_7_cn_5_cnt = 4 AND n_4_0_cn_5_cnt + n_4_1_cn_5_cnt = 9)
+WHERE (NOT n_0_0 IS NULL AND n_5_0 IN[n_0_0]) AND ((n_3_1_cn_5_cnt + n_3_7_cn_5_cnt = 4 AND n_4_0_cn_5_cnt + n_4_1_cn_5_cnt = 9))
 RETURN DISTINCT id(n_5_0) AS id_5_0
 ------------------------------------------------------------
 
@@ -44,7 +44,7 @@ WITH count(DISTINCT n_4_0_cn_5) AS n_4_0_cn_5_cnt, n_3_7_cn_5_cnt, n_3_1_cn_5_cn
 OPTIONAL MATCH p_4_1_cn_5 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_4_1_cn_5:EArea:QTEST_DOMAIN_2)
 WITH count(DISTINCT n_4_1_cn_5) AS n_4_1_cn_5_cnt, n_4_0_cn_5_cnt, n_3_7_cn_5_cnt, n_3_1_cn_5_cnt, n_0_0
 OPTIONAL MATCH (n_5_0:Person:QTEST_DOMAIN_2)
-WHERE (NOT n_0_0 IS NULL AND n_5_0 IN[n_0_0]) AND (n_3_1_cn_5_cnt + n_3_7_cn_5_cnt = 4 AND n_4_0_cn_5_cnt + n_4_1_cn_5_cnt = 9)
+WHERE (NOT n_0_0 IS NULL AND n_5_0 IN[n_0_0]) AND ((n_3_1_cn_5_cnt + n_3_7_cn_5_cnt = 4 AND n_4_0_cn_5_cnt + n_4_1_cn_5_cnt = 9))
 RETURN DISTINCT id(n_5_0) AS id_5_0
 ------------------------------------------------------------
 
@@ -69,6 +69,6 @@ WITH count(DISTINCT n_4_0_cn_5) AS n_4_0_cn_5_cnt, n_3_7_cn_5_cnt, n_3_1_cn_5_cn
 OPTIONAL MATCH p_4_1_cn_5 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_4_1_cn_5:EArea:QTEST_DOMAIN)
 WITH count(DISTINCT n_4_1_cn_5) AS n_4_1_cn_5_cnt, n_4_0_cn_5_cnt, n_3_7_cn_5_cnt, n_3_1_cn_5_cnt, n_0_0
 OPTIONAL MATCH (n_5_0:Person:QTEST_DOMAIN)
-WHERE (NOT n_0_0 IS NULL AND n_5_0 IN[n_0_0]) AND (n_3_1_cn_5_cnt + n_3_7_cn_5_cnt = 4 AND n_4_0_cn_5_cnt + n_4_1_cn_5_cnt = 9)
+WHERE (NOT n_0_0 IS NULL AND n_5_0 IN[n_0_0]) AND ((n_3_1_cn_5_cnt + n_3_7_cn_5_cnt = 4 AND n_4_0_cn_5_cnt + n_4_1_cn_5_cnt = 9))
 RETURN DISTINCT id(n_5_0) AS id_5_0
 ------------------------------------------------------------

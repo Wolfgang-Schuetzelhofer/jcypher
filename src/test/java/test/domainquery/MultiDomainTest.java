@@ -78,7 +78,7 @@ public class MultiDomainTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		
 		QueriesPrintObserver.addOutputStream(System.out);
 		queriesStream = new ByteArrayOutputStream();

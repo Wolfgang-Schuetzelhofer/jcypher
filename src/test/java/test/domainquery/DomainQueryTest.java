@@ -28,10 +28,20 @@ import iot.jcypher.domainquery.CountQueryResult;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.query.JcQuery;
+import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.factories.clause.MATCH;
+import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.factories.clause.START;
+import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
+import iot.jcypher.query.values.JcNode;
+import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
+import iot.jcypher.util.Util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -86,7 +96,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		
 		// init db
 		Population population = new Population();
@@ -191,10 +201,10 @@ public class DomainQueryTest extends AbstractTestSuite {
 				.BACK("mother").TO(Person.class);
 		DomainObjectMatch<Person> f_childrenMatch = q.TRAVERSE_FROM(personsMatch).FORTH("father")
 				.BACK("father").TO(Person.class);
-		DomainObjectMatch<Person> siblingsMath = q.INTERSECTION(m_childrenMatch, f_childrenMatch);
+		DomainObjectMatch<Person> siblingsMatch = q.INTERSECTION(m_childrenMatch, f_childrenMatch);
 		
 		DomainObjectMatch<Person> siblings2Match = q.SELECT_FROM(personsMatch).ELEMENTS(
-				q.WHERE(siblingsMath.COUNT()).GTE(2)
+				q.WHERE(siblingsMatch.COUNT()).GTE(2)
 		);
 		result = q.execute();
 		
