@@ -1,6 +1,11 @@
 Release Notes
 =======
 
+## 2.4.0
+**New**
+- Domain Queries Part 3 (Collection Expressions - UNION, INTERSECTION) added.
+- Improved support for multiple domains in a single database.
+
 ## 2.3.0
 **New**
 - Domain Queries Part 3 (Collection Expressions - SELECT, REJECT, COLLECT) added.
