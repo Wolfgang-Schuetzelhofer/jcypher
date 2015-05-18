@@ -248,6 +248,11 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		String nm = ValueAccess.getName(val);
 		return checkField_getJcVal(nm, val.getClass());
 	}
+	
+	DomainObjectMatch<T> create(int num, MappingInfo mappingInf) {
+		return new DomainObjectMatch<T>(this.domainObjectType,
+				num, mappingInf);
+	}
 
 	private boolean needsRelation(FieldMapping fm) {
 		boolean ret;

@@ -35,6 +35,7 @@ import iot.jcypher.domainquery.api.IPredicateOperand1;
 import iot.jcypher.domainquery.ast.CollectExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
+import iot.jcypher.domainquery.ast.FromPreviousQueryExpression;
 import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.OrderExpression.OrderBy;
@@ -90,8 +91,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
-
-import com.sun.org.apache.bcel.internal.generic.CPInstruction;
 
 public class QueryExecutor implements IASTObjectsContainer {
 
@@ -279,6 +278,29 @@ public class QueryExecutor implements IASTObjectsContainer {
 		return res;
 	}
 	
+	private List<Long> getIdsFor(DomainObjectMatch<?> match, Class<?> type) {
+		if (APIAccess.isPageChanged(match)) // need to execute the query
+			execute();
+		if (this.queryResult == null)
+			throw new RuntimeException("query was not executed, call execute() on DomainQuery");
+		List<QueryContext.ResultsPerType> resPerTypeList = this.queryResult.resultsMap.get(match);
+		if (resPerTypeList == null)
+			throw new RuntimeException("DomainObjectMatch was not defined in this query");
+		List<Long> allIds = new ArrayList<Long>();
+		for (QueryContext.ResultsPerType resPerType : resPerTypeList) {
+			if (resPerType.type == type && resPerType.jcPrimitive == null) {
+				// not a primitive
+				allIds.addAll(resPerType.ids);
+				break;
+			}
+		}
+		return allIds;
+	}
+	
+	public QueryContext getQueryResult() {
+		return queryResult;
+	}
+
 	private QueryContext loadCountResultIfNeeded() {
 		if (this.countResult == null) {
 			executeCount();
@@ -960,6 +982,12 @@ public class QueryExecutor implements IASTObjectsContainer {
 					bName = APIAccess.getBaseNodeName(ce.getStartDOM());
 					context.addDependency(bName);
 				}
+			} else if (astObj instanceof FromPreviousQueryExpression) {
+				FromPreviousQueryExpression fpe = (FromPreviousQueryExpression)astObj;
+				if (fpe.getActualMatch() == dom) {
+					context.candidates.add(astObj);
+					context.state = State.HAS_XPRESSION;
+				}
 			}
 		}
 
@@ -1241,6 +1269,9 @@ public class QueryExecutor implements IASTObjectsContainer {
 					createAddSelectClauses(clausePerType, (SelectExpression<?>) astObj, cbContext);
 				} else if (astObj instanceof CollectExpression) {
 					createCollectClauses(clausePerType, (CollectExpression) astObj, cbContext);
+				} else if (astObj instanceof FromPreviousQueryExpression) {
+					createFromPrevQueryClauses(clausePerType, (FromPreviousQueryExpression)astObj,
+							cbContext);
 				}
 			}
 			
@@ -1512,6 +1543,24 @@ public class QueryExecutor implements IASTObjectsContainer {
 //							"in domain object type(s): " + inValidTypes);
 				}
 				return ret;
+			}
+			
+			private void createFromPrevQueryClauses(ClausesPerType cpt, FromPreviousQueryExpression fpe,
+					ClauseBuilderContext cbContext) {
+				// this will always be the first expression for a DomainObjectMatch
+				// or a ClausePerType respectively
+				List<Long> ids = null;
+				if (fpe.getPreviousMatch() != null) {
+					DomainObjectMatch<?> prev = fpe.getPreviousMatch();
+					QueryExecutor qexec = APIAccess.getMappingInfo(prev).getQueryExecutor();
+					QueryContext qContext = qexec.getQueryResult();
+					if (qContext == null) { // not yet executed
+						qexec.execute();
+					}
+					ids = qexec.getIdsFor(prev, cpt.domainObjectType);
+				}
+				
+				cpt.startIds = ids;
 			}
 			
 			@SuppressWarnings("unchecked")
@@ -2608,6 +2657,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 			private iot.jcypher.query.api.predicate.Concatenator concatenator = null;
 			private List<IClause> traversalClauses;
 			private List<IClause> collectionClauses;
+			private List<Long> startIds;
 			private boolean lastIsWith;
 			private boolean isCollectExpression;
 			private boolean startCountSelectXpr;
@@ -2891,6 +2941,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 		public Class<?> getClassForLabel(String label) {
 			return ((IIntDomainAccess)domainAccess).getInternalDomainAccess()
 					.getClassForLabel(label);
+		}
+		
+		public QueryExecutor getQueryExecutor() {
+			return QueryExecutor.this;
 		}
 		
 		public InternalDomainAccess getInternalDomainAccess() {

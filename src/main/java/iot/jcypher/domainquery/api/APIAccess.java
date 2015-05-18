@@ -54,6 +54,11 @@ public class APIAccess {
 		return new DomainObjectMatch<T>(domainObjectType, num, mappingInfo);
 	}
 	
+	public static <T> DomainObjectMatch<T> createDomainObjectMatch(DomainObjectMatch<T> domainObjectMatch,
+			int num, MappingInfo mappingInfo) {
+		return domainObjectMatch.create(num, mappingInfo);
+	}
+	
 	public static Traverse createTraverse(TraversalExpression te) {
 		return new Traverse(te);
 	}

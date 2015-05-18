@@ -16,6 +16,8 @@
 
 package iot.jcypher.domainquery;
 
+import java.util.List;
+
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.BooleanOperation;
@@ -29,6 +31,7 @@ import iot.jcypher.domainquery.api.Traverse;
 import iot.jcypher.domainquery.ast.CollectExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
+import iot.jcypher.domainquery.ast.FromPreviousQueryExpression;
 import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;
 import iot.jcypher.domainquery.ast.Parameter;
@@ -63,6 +66,40 @@ public class DomainQuery {
 				this.queryExecutor.getMappingInfo());
 		this.queryExecutor.getDomainObjectMatches().add(ret);
 		return ret;
+	}
+	
+	/**
+	 * Create a match from a DomainObjectMatch specified in the context of another query
+	 * @param domainObjectMatch a match specified in the context of another query
+	 * @return a DomainObjectMatch
+	 */
+	public <T> DomainObjectMatch<T> createMatchFrom(DomainObjectMatch<T> domainObjectMatch) {
+		DomainObjectMatch<T> ret = APIAccess.createDomainObjectMatch(domainObjectMatch,
+				this.queryExecutor.getDomainObjectMatches().size(),
+				this.queryExecutor.getMappingInfo());
+		this.queryExecutor.getDomainObjectMatches().add(ret);
+		FromPreviousQueryExpression pqe = new FromPreviousQueryExpression(
+				ret, domainObjectMatch);
+		this.queryExecutor.addAstObject(pqe);
+		return ret;
+	}
+	
+	/**
+	 * Create a match for a domain object which was retrieved by another query
+	 * @param domainObject a domain object which was retrieved by another query
+	 * @return a DomainObjectMatch
+	 */
+	public <T> DomainObjectMatch<T> createMatchFor(T domainObject) {
+		return null;
+	}
+	
+	/**
+	 * Create a match for a list of domain objects which were retrieved by another query
+	 * @param domainObjects a list of domain objects which were retrieved by another query
+	 * @return a DomainObjectMatch
+	 */
+	public <T> DomainObjectMatch<T> createMatchFor(List<T> domainObjects) {
+		return null;
 	}
 	
 	/**
