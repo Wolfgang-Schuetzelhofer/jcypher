@@ -64,6 +64,7 @@ import iot.jcypher.query.ast.returns.ReturnExpression;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
+import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.factories.clause.WITH;
 import iot.jcypher.query.factories.xpression.C;
@@ -2717,9 +2718,19 @@ public class QueryExecutor implements IASTObjectsContainer {
 							}
 						} else {
 							String nodeLabel = getMappingInfo().getLabelForClass(this.domainObjectType);
-							this.clauses.add(
-								OPTIONAL_MATCH.node(this.node).label(nodeLabel)
-							);
+							if (this.startIds != null) {
+								long[] sids = new long[this.startIds.size()];
+								for (int i = 0; i < this.startIds.size(); i++) {
+									sids[i] = this.startIds.get(i).longValue();
+								}
+								this.clauses.add(
+									START.node(this.node).byId(sids)
+								);
+							} else {
+								this.clauses.add(
+									OPTIONAL_MATCH.node(this.node).label(nodeLabel)
+								);
+							}
 						}
 						if (this.concatenator != null)
 							this.clauses.add(this.closeBracket ? this.concatenator.BR_CLOSE() :
