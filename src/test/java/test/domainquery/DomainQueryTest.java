@@ -176,7 +176,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 	public void testDomainQuery_Concatenation_01() {
 		IDomainAccess da1;
 		DomainQuery q, q1;
-		DomainQueryResult result = null;
+		DomainQueryResult result, result1;
 		boolean equals;
 		String testId;
 		String qCypher;
@@ -193,17 +193,20 @@ public class DomainQueryTest extends AbstractTestSuite {
 		queriesStream.reset();
 		
 		q = da1.createQuery();
-		DomainObjectMatch<Person> j_smith = q.createMatch(Person.class);
+		DomainObjectMatch<Person> smith = q.createMatch(Person.class);
 		
-		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(smith.atttribute("lastName")).EQUALS("Smith");
 		//q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		result = q.execute();
 		
 		q1 = da1.createQuery();
-		DomainObjectMatch<Person> j_smith_2 = q1.createMatchFrom(j_smith);
+		DomainObjectMatch<Person> j_smith = q1.createMatchFrom(smith);
+		q1.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
 		
-		result = q1.execute();
+		result1 = q1.execute();
 		
-		List<Person> j_smith_2Result = result.resultOf(j_smith_2);
+		List<Person> smithResult = result.resultOf(smith);
+		List<Person> j_smithResult = result1.resultOf(j_smith);
 		
 		return;
 	}

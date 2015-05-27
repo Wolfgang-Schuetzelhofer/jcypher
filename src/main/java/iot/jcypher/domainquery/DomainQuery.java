@@ -99,6 +99,12 @@ public class DomainQuery {
 	 * @return a DomainObjectMatch
 	 */
 	public <T> DomainObjectMatch<T> createMatchFor(List<T> domainObjects) {
+//		DomainObjectMatch<T> ret = APIAccess.createDomainObjectMatch(domainObjectMatch,
+//				this.queryExecutor.getDomainObjectMatches().size(),
+//				this.queryExecutor.getMappingInfo());
+//		this.queryExecutor.getDomainObjectMatches().add(ret);
+//		FromPreviousQueryExpression pqe = new FromPreviousQueryExpression(
+//				ret, domainObjects);
 		return null;
 	}
 	

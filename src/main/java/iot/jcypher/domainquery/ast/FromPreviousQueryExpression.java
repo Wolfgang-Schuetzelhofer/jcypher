@@ -16,12 +16,15 @@
 
 package iot.jcypher.domainquery.ast;
 
+import java.util.List;
+
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 
 public class FromPreviousQueryExpression implements IASTObject {
 
 	private DomainObjectMatch<?> actualMatch;
 	private DomainObjectMatch<?> previousMatch;
+	private List<?> previousObjects;
 
 	public FromPreviousQueryExpression(
 			DomainObjectMatch<?> actualMatch,
@@ -29,6 +32,14 @@ public class FromPreviousQueryExpression implements IASTObject {
 		super();
 		this.actualMatch = actualMatch;
 		this.previousMatch = previousMatch;
+	}
+	
+	public FromPreviousQueryExpression(
+			DomainObjectMatch<?> actualMatch,
+			List<?> previousObjects) {
+		super();
+		this.actualMatch = actualMatch;
+		this.previousObjects = previousObjects;
 	}
 
 	public DomainObjectMatch<?> getActualMatch() {
