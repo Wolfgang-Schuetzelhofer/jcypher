@@ -49,4 +49,8 @@ public class FromPreviousQueryExpression implements IASTObject {
 	public DomainObjectMatch<?> getPreviousMatch() {
 		return previousMatch;
 	}
+
+	public List<?> getPreviousObjects() {
+		return previousObjects;
+	}
 }

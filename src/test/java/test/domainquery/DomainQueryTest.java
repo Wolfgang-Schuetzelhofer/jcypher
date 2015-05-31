@@ -173,7 +173,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 	}
 	
 	@Test
-	public void testDomainQuery_Concatenation_01() {
+	public void testDomainQuery_Concatenation_02() {
 		IDomainAccess da1;
 		DomainQuery q, q1;
 		DomainQueryResult result, result1;
@@ -199,13 +199,53 @@ public class DomainQueryTest extends AbstractTestSuite {
 		//q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
 		result = q.execute();
 		
+		List<Person> smithResult = result.resultOf(smith);
+		
+		q1 = da1.createQuery();
+		DomainObjectMatch<Person> j_smith = q1.createMatchFor(smithResult, Person.class);
+		q1.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		result1 = q1.execute();
+		
+		List<Person> j_smithResult = result1.resultOf(j_smith);
+		
+		return;
+	}
+	
+	@Test
+	public void testDomainQuery_Concatenation_01() {
+		IDomainAccess da1;
+		DomainQuery q, q1;
+		DomainQueryResult result, result1;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_SELECT_01.txt");
+		
+		Population population = new Population();
+		population.createPopulation();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "CONCAT_01";
+		queriesStream.reset();
+		
+		q = da1.createQuery();
+		DomainObjectMatch<Person> smith = q.createMatch(Person.class);
+		
+		q.WHERE(smith.atttribute("lastName")).EQUALS("Smith");
+		//q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		//result = q.execute();
+		
 		q1 = da1.createQuery();
 		DomainObjectMatch<Person> j_smith = q1.createMatchFrom(smith);
 		q1.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
 		
 		result1 = q1.execute();
 		
-		List<Person> smithResult = result.resultOf(smith);
+		//List<Person> smithResult = result.resultOf(smith);
 		List<Person> j_smithResult = result1.resultOf(j_smith);
 		
 		return;

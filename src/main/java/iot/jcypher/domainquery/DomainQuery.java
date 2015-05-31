@@ -16,6 +16,11 @@
 
 package iot.jcypher.domainquery;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.lang.reflect.TypeVariable;
+import java.util.ArrayList;
 import java.util.List;
 
 import iot.jcypher.domain.IDomainAccess;
@@ -89,23 +94,28 @@ public class DomainQuery {
 	 * @param domainObject a domain object which was retrieved by another query
 	 * @return a DomainObjectMatch
 	 */
+	@SuppressWarnings("unchecked")
 	public <T> DomainObjectMatch<T> createMatchFor(T domainObject) {
-		return null;
+		List<T> source = new ArrayList<T>();
+		return this.createMatchFor(source, (Class<T>)domainObject.getClass());
 	}
 	
 	/**
 	 * Create a match for a list of domain objects which were retrieved by another query
 	 * @param domainObjects a list of domain objects which were retrieved by another query
+	 * @param domainObjectType the type of those domain objects
 	 * @return a DomainObjectMatch
 	 */
-	public <T> DomainObjectMatch<T> createMatchFor(List<T> domainObjects) {
-//		DomainObjectMatch<T> ret = APIAccess.createDomainObjectMatch(domainObjectMatch,
-//				this.queryExecutor.getDomainObjectMatches().size(),
-//				this.queryExecutor.getMappingInfo());
-//		this.queryExecutor.getDomainObjectMatches().add(ret);
-//		FromPreviousQueryExpression pqe = new FromPreviousQueryExpression(
-//				ret, domainObjects);
-		return null;
+	public <T> DomainObjectMatch<T> createMatchFor(List<T> domainObjects,
+			Class<T> domainObjectType) {
+		DomainObjectMatch<T> ret = APIAccess.createDomainObjectMatch(domainObjectType,
+				this.queryExecutor.getDomainObjectMatches().size(),
+				this.queryExecutor.getMappingInfo());
+		this.queryExecutor.getDomainObjectMatches().add(ret);
+		FromPreviousQueryExpression pqe = new FromPreviousQueryExpression(
+				ret, domainObjects);
+		this.queryExecutor.addAstObject(pqe);
+		return ret;
 	}
 	
 	/**

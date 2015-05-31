@@ -17,6 +17,7 @@
 package iot.jcypher.domainquery.internal;
 
 import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domain.SyncInfo;
 import iot.jcypher.domain.internal.CurrentDomain;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.internal.IIntDomainAccess;
@@ -1551,14 +1552,25 @@ public class QueryExecutor implements IASTObjectsContainer {
 				// this will always be the first expression for a DomainObjectMatch
 				// or a ClausePerType respectively
 				List<Long> ids = null;
-				if (fpe.getPreviousMatch() != null) {
-					DomainObjectMatch<?> prev = fpe.getPreviousMatch();
+				DomainObjectMatch<?> prev = fpe.getPreviousMatch();
+				@SuppressWarnings("unchecked")
+				List<Object> prevobjs = (List<Object>) fpe.getPreviousObjects();
+				if (prev != null) {
 					QueryExecutor qexec = APIAccess.getMappingInfo(prev).getQueryExecutor();
 					QueryContext qContext = qexec.getQueryResult();
 					if (qContext == null) { // not yet executed
 						qexec.execute();
 					}
 					ids = qexec.getIdsFor(prev, cpt.domainObjectType);
+				} else if (prevobjs != null) {
+					List<SyncInfo> syInfos = domainAccess.getSyncInfos(prevobjs);
+					ids = new ArrayList<Long>();
+					for (SyncInfo si : syInfos) {
+						long id = si.getId();
+						if (id == -1)
+							throw new RuntimeException("Object was not retrieved by the underlying IDomainAccess");
+						ids.add(id);
+					}
 				}
 				
 				cpt.startIds = ids;
