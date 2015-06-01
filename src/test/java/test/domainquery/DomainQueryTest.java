@@ -181,7 +181,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		String testId;
 		String qCypher;
 		
-		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_SELECT_01.txt");
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_CONCAT_01.txt");
 		
 		Population population = new Population();
 		population.createPopulation();
@@ -189,8 +189,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
 		/** 01 ****************************************/
-		testId = "CONCAT_01";
-		queriesStream.reset();
+		testId = "CONCAT_02";
 		
 		q = da1.createQuery();
 		DomainObjectMatch<Person> smith = q.createMatch(Person.class);
@@ -201,6 +200,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		List<Person> smithResult = result.resultOf(smith);
 		
+		queriesStream.reset();
 		q1 = da1.createQuery();
 		DomainObjectMatch<Person> j_smith = q1.createMatchFor(smithResult, Person.class);
 		q1.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
@@ -208,6 +208,71 @@ public class DomainQueryTest extends AbstractTestSuite {
 		result1 = q1.execute();
 		
 		List<Person> j_smithResult = result1.resultOf(j_smith);
+		assertEquals(1, j_smithResult.size());
+		equals = CompareUtil.equalsObjects(population.getJohn_smith(), j_smithResult.get(0));
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 02 ****************************************/
+		testId = "CONCAT_03";
+		
+		q = da1.createQuery();
+		smith = q.createMatch(Person.class);
+		
+		q.WHERE(smith.atttribute("lastName")).EQUALS("Smith");
+		//q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		result = q.execute();
+		
+		smithResult = result.resultOf(smith);
+		
+		queriesStream.reset();
+		q1 = da1.createQuery();
+		DomainObjectMatch<Person> smith_2 = q1.createMatchFor(smithResult, Person.class);
+		q1.ORDER(smith_2).BY("firstName");
+		
+		result1 = q1.execute();
+		
+		List<Person> smith_2Result = result1.resultOf(smith_2);
+		List<Object> orderedSmiths = new ArrayList<Object>();
+		orderedSmiths.addAll(population.getSmiths());
+		Collections.sort(orderedSmiths, new Comparator<Object>() {
+			@Override
+			public int compare(Object o1, Object o2) {
+				return ((Person)o1).getFirstName().compareTo(((Person)o2).getFirstName());
+			}
+		});
+		equals = CompareUtil.equalsList(orderedSmiths, smith_2Result);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 03 ****************************************/
+		testId = "CONCAT_04";
+		
+		q = da1.createQuery();
+		smith = q.createMatch(Person.class);
+		
+		q.WHERE(smith.atttribute("lastName")).EQUALS("Smith");
+		//q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		result = q.execute();
+		
+		smithResult = result.resultOf(smith);
+		
+		queriesStream.reset();
+		q1 = da1.createQuery();
+		DomainObjectMatch<Person> smith_3 = q1.createMatchFor(smithResult, Person.class);
+		q1.ORDER(smith_3).BY("firstName");
+		smith_3.setPage(2, 2);
+		
+		result1 = q1.execute();
+		
+		List<Person> smith_3Result = result1.resultOf(smith_3);
+		List<Object> orderedSmiths2 = orderedSmiths.subList(2, 4);
+		equals = CompareUtil.equalsList(orderedSmiths2, smith_3Result);
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
 		return;
 	}
@@ -221,7 +286,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		String testId;
 		String qCypher;
 		
-		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_SELECT_01.txt");
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_CONCAT_01.txt");
 		
 		Population population = new Population();
 		population.createPopulation();
@@ -247,6 +312,11 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		//List<Person> smithResult = result.resultOf(smith);
 		List<Person> j_smithResult = result1.resultOf(j_smith);
+		assertEquals(1, j_smithResult.size());
+		equals = CompareUtil.equalsObjects(population.getJohn_smith(), j_smithResult.get(0));
+		assertTrue(equals);
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
 		
 		return;
 	}
