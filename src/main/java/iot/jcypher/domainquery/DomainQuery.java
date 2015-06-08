@@ -97,6 +97,7 @@ public class DomainQuery {
 	@SuppressWarnings("unchecked")
 	public <T> DomainObjectMatch<T> createMatchFor(T domainObject) {
 		List<T> source = new ArrayList<T>();
+		source.add(domainObject);
 		return this.createMatchFor(source, (Class<T>)domainObject.getClass());
 	}
 	
