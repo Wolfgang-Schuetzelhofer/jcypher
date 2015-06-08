@@ -17,9 +17,14 @@
 package test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
+import java.io.CharArrayReader;
+import java.io.IOException;
+import java.io.LineNumberReader;
 import java.util.List;
 
+import util.TestDataReader;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
@@ -48,6 +53,32 @@ public class AbstractTestSuite {
 		if (this.doAssert) {
 			assertEquals(testId, testData, query);
 		}
+	}
+	
+	protected void assertQueryByLines(String testId, String query, String testData) {
+		if (this.doAssert) {
+			LineNumberReader lrq = new LineNumberReader(new CharArrayReader(query.toCharArray()));
+			LineNumberReader lrt = new LineNumberReader(new CharArrayReader(testData.toCharArray()));
+			String tLine;
+			while ((tLine = this.readLine(lrt)) != null) {
+				String qLine = this.readLine(lrq);
+				assertNotNull(qLine);
+				if (!tLine.startsWith(TestDataReader.TEST_IGNORE_LINE)) {
+					if (!tLine.equals(qLine))
+						assertEquals(testId, testData, query);
+				}
+			}
+		}
+	}
+	
+	private String readLine(LineNumberReader lnr) {
+		String ret;
+		try {
+			ret = lnr.readLine();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return ret;
 	}
 
 	protected String print(IClause iclause, Format pretty) {

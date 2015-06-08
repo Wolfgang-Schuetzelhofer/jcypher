@@ -28,27 +28,16 @@ import iot.jcypher.domainquery.CountQueryResult;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
-import iot.jcypher.query.JcQuery;
-import iot.jcypher.query.api.IClause;
-import iot.jcypher.query.factories.clause.MATCH;
-import iot.jcypher.query.factories.clause.RETURN;
-import iot.jcypher.query.factories.clause.START;
-import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
-import iot.jcypher.query.values.JcNode;
-import iot.jcypher.query.values.JcRelation;
-import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
-import iot.jcypher.util.Util;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -58,7 +47,6 @@ import java.util.Properties;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
@@ -69,12 +57,12 @@ import test.domainquery.model.AreaType;
 import test.domainquery.model.Company;
 import test.domainquery.model.DateHolder;
 import test.domainquery.model.EContact;
+import test.domainquery.model.EContact.EContactType;
 import test.domainquery.model.Gender;
 import test.domainquery.model.NumberHolder;
-import test.domainquery.model.SubNumberHolder;
-import test.domainquery.model.EContact.EContactType;
 import test.domainquery.model.Person;
 import test.domainquery.model.PointOfContact;
+import test.domainquery.model.SubNumberHolder;
 import test.domainquery.model.Subject;
 import test.domainquery.util.CompareUtil;
 import util.TestDataReader;
@@ -96,7 +84,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		
 		// init db
 		Population population = new Population();
@@ -139,22 +127,22 @@ public class DomainQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-//		errors = da.store(storedDomainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		errors = da.store(nhs);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		errors = da.store(storedDomainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		errors = da.store(nhs);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 	}
 	
 	@AfterClass
@@ -212,7 +200,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		equals = CompareUtil.equalsObjects(population.getJohn_smith(), j_smithResult.get(0));
 		assertTrue(equals);
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
-		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		assertQueryByLines(testId, qCypher, tdr.getTestData(testId));
 		
 		/** 02 ****************************************/
 		testId = "CONCAT_03";
@@ -245,7 +233,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		equals = CompareUtil.equalsList(orderedSmiths, smith_2Result);
 		assertTrue(equals);
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
-		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		assertQueryByLines(testId, qCypher, tdr.getTestData(testId));
 		
 		/** 03 ****************************************/
 		testId = "CONCAT_04";
@@ -272,7 +260,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		equals = CompareUtil.equalsList(orderedSmiths2, smith_3Result);
 		assertTrue(equals);
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
-		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		assertQueryByLines(testId, qCypher, tdr.getTestData(testId));
 		
 		return;
 	}
@@ -316,7 +304,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		equals = CompareUtil.equalsObjects(population.getJohn_smith(), j_smithResult.get(0));
 		assertTrue(equals);
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
-		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		assertQueryByLines(testId, qCypher, tdr.getTestData(testId));
 		
 		return;
 	}
