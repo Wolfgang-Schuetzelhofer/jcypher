@@ -1,6 +1,13 @@
 Release Notes
 =======
 
+## 2.5.0
+**New**
+- Domain Queries - Query Concatenation.
+
+**Fixed**
+- Problem with list parameters in embedded database access.
+
 ## 2.4.0
 **New**
 - Domain Queries Part 3 (Collection Expressions - UNION, INTERSECTION) added.
