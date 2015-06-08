@@ -210,7 +210,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 	}
 	
 	private Object convertVal(Object val) {
-		if (!(val instanceof Number) && !(val instanceof Boolean))
+		if (!(val instanceof Number) && !(val instanceof Boolean) && !(val instanceof List<?>))
 			return val.toString();
 		return val;
 	}
