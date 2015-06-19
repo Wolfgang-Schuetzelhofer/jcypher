@@ -1,4 +1,5 @@
 ----UNION_01:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_1:Person)
 WHERE n_0_1.lastName = 'Smith'
 OPTIONAL MATCH (n_1_1:Person)
@@ -11,6 +12,7 @@ RETURN DISTINCT id(n_0_1) AS id_0_1, id(n_1_1) AS id_1_1, id(n_2_0) AS id_2_0, i
 ------------------------------------------------------------
 
 ----INTERSECTION_01:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Company)
 WHERE n_0_0.lastName = 'Smith' OR (n_0_0.lastName = 'Berghammer' AND n_0_0.firstName = 'Christa')
 OPTIONAL MATCH (n_0_1:Person)
@@ -25,6 +27,7 @@ RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1, id(n_1_1) AS id_1_1, i
 ------------------------------------------------------------
 
 ----UNION_02:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_1:Person)
 WHERE n_0_1.lastName = 'Smith'
 OPTIONAL MATCH (n_1_1:Person)
@@ -35,6 +38,7 @@ RETURN DISTINCT id(n_0_1) AS id_0_1, id(n_1_1) AS id_1_1, id(n_2_1) AS id_2_1
 ------------------------------------------------------------
 
 ----UNION_03:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_9:Person)
 WHERE n_0_9.lastName = 'Smith' AND n_0_9.firstName = 'John'
 OPTIONAL MATCH (n_1_2:Addressee)
@@ -103,6 +107,7 @@ RETURN DISTINCT id(n_0_9) AS id_0_9, id(n_1_2) AS id_1_2, id(n_1_3) AS id_1_3, i
 ------------------------------------------------------------
 
 ----UNION_04:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_1:Person)
 WHERE n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John'
 OPTIONAL MATCH (n_1_0:Area)
@@ -122,6 +127,7 @@ RETURN DISTINCT id(n_0_1) AS id_0_1, id(n_1_0) AS id_1_0, id(n_2_0) AS id_2_0, i
 ------------------------------------------------------------
 
 ----UNION_05:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_1:Person)
 WHERE n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John'
 OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_0:Address)
@@ -131,6 +137,7 @@ OPTIONAL MATCH (n_4_0:Area)
 WHERE ((NOT n_2_0 IS NULL AND n_4_0 IN[n_2_0]) OR (NOT n_3_0 IS NULL AND n_4_0 IN[n_3_0])) AND n_4_0.name = 'San Francisco'
 RETURN DISTINCT id(n_0_1) AS id_0_1, id(n_1_0) AS id_1_0, id(n_2_0) AS id_2_0, id(n_3_0) AS id_3_0, id(n_4_0) AS id_4_0
 #--------------------
+_OPTIONAL_
 OPTIONAL MATCH (n_0_1:Person)
 WHERE n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John'
 OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_0:Address)
@@ -146,6 +153,7 @@ RETURN DISTINCT id(n_5_0) AS id_5_0
 ------------------------------------------------------------
 
 ----UNION_06:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_1:Person)
 WHERE n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John'
 OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_0:Address)
@@ -166,6 +174,7 @@ OPTIONAL MATCH (n_4_1:EArea)
 WHERE ((NOT n_2_1 IS NULL AND n_4_1 IN[n_2_1]) OR (NOT n_3_1 IS NULL AND n_4_1 IN[n_3_1]))
 RETURN DISTINCT id(n_0_1) AS id_0_1, id(n_1_0) AS id_1_0, id(n_1_1) AS id_1_1, id(n_2_0) AS id_2_0, id(n_2_1) AS id_2_1, id(n_3_0) AS id_3_0, id(n_3_1) AS id_3_1, id(n_4_0) AS id_4_0, id(n_4_1) AS id_4_1
 #--------------------------
+_OPTIONAL_
 OPTIONAL MATCH (n_0_1:Person)
 WHERE n_0_1.lastName = 'Smith' AND n_0_1.firstName = 'John'
 OPTIONAL MATCH (n_0_1)-[:pointsOfContact]->()-[:c_content]->(n_1_0:Address)
@@ -190,6 +199,7 @@ RETURN DISTINCT id(n_5_0) AS id_5_0, id(n_5_1) AS id_5_1
 ------------------------------------------------------------
 
 ----INTERSECTION_02:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person)
 OPTIONAL MATCH (n_0_0)-[:mother]->()<-[:mother]-(n_1_0:Person)
 OPTIONAL MATCH (n_0_0)-[:father]->()<-[:father]-(n_2_0:Person)
@@ -197,6 +207,7 @@ OPTIONAL MATCH (n_3_0:Person)
 WHERE ((NOT n_1_0 IS NULL AND n_3_0 IN[n_1_0]) AND (NOT n_2_0 IS NULL AND n_3_0 IN[n_2_0]))
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_2_0) AS id_2_0, id(n_3_0) AS id_3_0
 #--------------------
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person)
 OPTIONAL MATCH p_1_0_cn_4 = (n_0_0)-[:mother]->()<-[:mother]-(n_1_0_cn_4:Person)
 WITH count(DISTINCT n_1_0_cn_4) AS n_1_0_cn_4_cnt, n_1_0_cn_4, n_0_0
@@ -211,6 +222,7 @@ RETURN DISTINCT id(n_4_0) AS id_4_0
 ------------------------------------------------------------
 
 ----INTERSECTION_03:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Company)
 OPTIONAL MATCH (n_0_1:Person)
 OPTIONAL MATCH (n_0_1)-[:mother]->()<-[:mother]-(n_1_1:Person)
@@ -221,6 +233,7 @@ OPTIONAL MATCH (n_3_1:Person)
 WHERE ((NOT n_1_1 IS NULL AND n_3_1 IN[n_1_1]) AND (NOT n_2_1 IS NULL AND n_3_1 IN[n_2_1]))
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1, id(n_1_1) AS id_1_1, id(n_2_1) AS id_2_1, id(n_3_0) AS id_3_0, id(n_3_1) AS id_3_1
 #--------------------
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Company)
 OPTIONAL MATCH (n_0_1:Person)
 OPTIONAL MATCH p_1_1_cn_4 = (n_0_1)-[:mother]->()<-[:mother]-(n_1_1_cn_4:Person)

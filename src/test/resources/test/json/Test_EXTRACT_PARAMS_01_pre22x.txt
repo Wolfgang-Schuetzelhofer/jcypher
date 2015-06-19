@@ -1,7 +1,7 @@
 ----EXTRACT_01:
 
 {
-    "query":"CYPHER planner=rule CREATE (n:Person{props_0})",
+    "query":"CREATE (n:Person{props_0})",
     "params":{
         "props_0":{
             "name":"Andres",
@@ -14,7 +14,7 @@
 ----EXTRACT_02:
 
 {
-    "query":"CYPHER planner=rule CREATE (n:Person{name:{param_0}, title: a.title})",
+    "query":"CREATE (n:Person{name:{param_0}, title: a.title})",
     "params":{
         "param_0":"Andres"
     }
@@ -24,7 +24,7 @@
 ----EXTRACT_03:
 
 {
-    "query":"CYPHER planner=rule CREATE (n:Person{props_0})",
+    "query":"CREATE (n:Person{props_0})",
     "params":{
         "props_0":{
             "name":"Andres",
@@ -38,7 +38,7 @@
 ----EXTRACT_04:
 
 {
-    "query":"CYPHER planner=rule CREATE (n:Person{name:{param_0}, age:{param_1}, amount: a.amount})",
+    "query":"CREATE (n:Person{name:{param_0}, age:{param_1}, amount: a.amount})",
     "params":{
         "param_0":"Andres",
         "param_1":21
@@ -49,7 +49,7 @@
 ----EXTRACT_05:
 
 {
-    "query":"CYPHER planner=rule CREATE (n:Person{name:{param_0}, age:{param_1}, amount: a.amount})-[r:LINK{props_0}]->(a{city:{param_2}})",
+    "query":"CREATE (n:Person{name:{param_0}, age:{param_1}, amount: a.amount})-[r:LINK{props_0}]->(a{city:{param_2}})",
     "params":{
         "param_0":"Andres",
         "param_1":21,
@@ -65,7 +65,7 @@
 ----EXTRACT_06:
 
 {
-    "query":"CYPHER planner=rule MATCH (x{name:{param_0}})-[r]-(friend) WHERE friend.name = {param_1} RETURN type(r)",
+    "query":"MATCH (x{name:{param_0}})-[r]-(friend) WHERE friend.name = {param_1} RETURN type(r)",
     "params":{
         "param_0":"I",
         "param_1":"you"
@@ -76,7 +76,7 @@
 ----EXTRACT_07:
 
 {
-    "query":"CYPHER planner=rule START n = node:Persons(name = {param_0})",
+    "query":"START n = node:Persons(name = {param_0})",
     "params":{
         "param_0":"Tobias"
     }
@@ -86,7 +86,7 @@
 ----EXTRACT_08:
 
 {
-    "query":"CYPHER planner=rule START n = node:Persons({param_0})",
+    "query":"START n = node:Persons({param_0})",
     "params":{
         "param_0":"name:A"
     }
@@ -96,7 +96,7 @@
 ----EXTRACT_09:
 
 {
-    "query":"CYPHER planner=rule START n = node({param_0})",
+    "query":"START n = node({param_0})",
     "params":{
         "param_0":0
     }
@@ -106,7 +106,7 @@
 ----EXTRACT_10:
 
 {
-    "query":"CYPHER planner=rule START r = relationship({param_0})",
+    "query":"START r = relationship({param_0})",
     "params":{
         "param_0":[
             2,
@@ -119,7 +119,7 @@
 ----EXTRACT_11:
 
 {
-    "query":"CYPHER planner=rule RETURN n SKIP {param_0} LIMIT {param_1}",
+    "query":"RETURN n SKIP {param_0} LIMIT {param_1}",
     "params":{
         "param_0":1,
         "param_1":3
@@ -130,7 +130,7 @@
 ----EXTRACT_12:
 
 {
-    "query":"CYPHER planner=rule SET n.surname = {param_0}",
+    "query":"SET n.surname = {param_0}",
     "params":{
         "param_0":"Taylor"
     }
@@ -140,7 +140,7 @@
 ----EXTRACT_133:
 
 {
-    "query":"CYPHER planner=rule CREATE (n:Person{numbers:{param_0}})",
+    "query":"CREATE (n:Person{numbers:{param_0}})",
     "params":{
         "param_0":[
             "A",
@@ -154,7 +154,7 @@
 ----EXTRACT_13:
 
 {
-    "query":"CYPHER planner=rule CREATE (n:Person{numbers:['A', 'B', 'C']})",
+    "query":"CREATE (n:Person{numbers:['A', 'B', 'C']})",
     "params":{
     }
 }

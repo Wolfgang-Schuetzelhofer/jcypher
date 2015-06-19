@@ -27,6 +27,7 @@ import java.util.Map;
 public class TestDataReader {
 	
 	public static final String TEST_IGNORE_LINE = "_IGNORE_";
+	public static final String TEST_OPTIONAL_LINE = "_OPTIONAL_";
 	private static final String TEST_START = "----";
 	private static final String COMMENT = "#";
 	private static final String TEST_END = "--------------------";

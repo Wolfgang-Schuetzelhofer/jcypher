@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,8 +30,8 @@ public interface DBProperties {
 	public static final String DATABASE_DIR = "database_dir";
 	
 	/******************** properties for embedded and in memory database access *********************/
-	/** OPTIONAL  e.g. "10M" */
-	public static final String NODESTORE_MAPPED_MAMORY_SIZE = "nodestore_mapped_memory_size";
+	/** OPTIONAL  e.g. "512M" */
+	public static final String PAGECACHE_MEMORY = "pagecache_memory";
 	/** OPTIONAL  e.g. "60" */
 	public static final String STRING_BLOCK_SIZE = "string_block_size";
 	/** OPTIONAL  e.g. "300" */

@@ -1,14 +1,14 @@
 ----JSON_01:
 
 {
-    "query":"CYPHER planner=rule CREATE (shakespeare{firstname:'William', lastname:'Shakespeare'}), (juliusCaesar{title:'Julius Caesar'})"
+    "query":"CREATE (shakespeare{firstname:'William', lastname:'Shakespeare'}), (juliusCaesar{title:'Julius Caesar'})"
 }
 ------------------------------------------------------------
 
 ----JSON_02:
 
 {
-    "query":"CYPHER planner=rule CREATE (shakespeare{props_0}), (juliusCaesar{title:{param_0}})",
+    "query":"CREATE (shakespeare{props_0}), (juliusCaesar{title:{param_0}})",
     "params":{
         "props_0":{
             "firstname":"William",

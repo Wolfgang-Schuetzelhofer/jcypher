@@ -1,20 +1,24 @@
 ----CONCAT_01:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person)
 WHERE n_0_0.lastName = 'Smith'
 RETURN DISTINCT id(n_0_0) AS id_0_0
 
+_OPTIONAL_
 _IGNORE_ START n_0_0 = node(321, 339, 341, 343)
 WHERE n_0_0.firstName = 'John'
 RETURN DISTINCT id(n_0_0) AS id_0_0
 ------------------------------------------------------------
 
 ----CONCAT_02:
+_OPTIONAL_
 _IGNORE_ START n_0_0 = node(321, 339, 341, 343)
 WHERE n_0_0.firstName = 'John'
 RETURN DISTINCT id(n_0_0) AS id_0_0
 ------------------------------------------------------------
 
 ----CONCAT_03:
+_OPTIONAL_
 _IGNORE_ START n_0_0 = node(321, 339, 341, 343)
 WITH n_0_0
 ORDER BY n_0_0.firstName
@@ -22,6 +26,7 @@ RETURN DISTINCT id(n_0_0) AS id_0_0
 ------------------------------------------------------------
 
 ----CONCAT_04:
+_OPTIONAL_
 _IGNORE_ START n_0_0 = node(321, 339, 341, 343)
 WITH n_0_0
 ORDER BY n_0_0.firstName

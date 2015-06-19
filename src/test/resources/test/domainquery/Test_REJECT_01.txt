@@ -1,4 +1,5 @@
 ----REJECT_01:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person)
 WHERE n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John'
 OPTIONAL MATCH (n_1_0:Area)
@@ -25,6 +26,7 @@ RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_2_0) AS id_2_0, i
 ------------------------------------------------------------
 
 ----REJECT_02:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_9:Person)
 WHERE n_0_9.lastName = 'Smith' AND n_0_9.firstName = 'John'
 OPTIONAL MATCH (n_1_2:Addressee)

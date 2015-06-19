@@ -40,15 +40,13 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
-import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.Result;
 import org.neo4j.graphdb.Transaction;
 
 import scala.collection.convert.Wrappers.SeqWrapper;
@@ -57,7 +55,6 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 
 	protected Properties properties;
 	private GraphDatabaseService graphDb;
-	private ExecutionEngine executionEngine;
 	private Thread shutdownHook;
 
 	@Override
@@ -82,13 +79,13 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		JsonBuilderContext builderContext = new JsonBuilderContext();
     	initJsonBuilderContext(builderContext);
     	Throwable exception = null;
-    	ExecutionEngine engine = null;
+    	GraphDatabaseService engine = null;
     	try {
-    		engine = getExecutionEngine();
+    		engine = getGraphDB();
     	} catch(Throwable e) {
     		exception = e;
     	}
-		ExecutionResult result = null;
+    	Result result = null;
 		Transaction tx = null;
 		Throwable dbException = null;
 		if (engine != null) {
@@ -103,10 +100,9 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			    	addInnerResultsAndDataArray(builderContext);
 					List<String> cols = result.columns();
 					addColumns(builderContext, cols);
-					ResourceIterator<Map<String, Object>> iter = result.iterator();
-					while(iter.hasNext()) {
+					while(result.hasNext()) {
 						// that is one row
-						Map<String, Object> row = iter.next();
+						Map<String, Object> row = result.next();
 						addRow(builderContext, row, cols);
 					}
 				}
@@ -169,7 +165,6 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			}
 			this.graphDb = null;
 		}
-		this.executionEngine = null;
 	}
 
 	private void addDBError(JsonBuilderContext builderContext,
@@ -245,12 +240,6 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			this.shutdownHook = registerShutdownHook(this.graphDb);
 		}
 		return this.graphDb;
-	}
-	
-	private synchronized ExecutionEngine getExecutionEngine() {
-		if (this.executionEngine == null)
-			this.executionEngine = new ExecutionEngine(getGraphDB());
-		return this.executionEngine;
 	}
 	
 	private void initJsonBuilderContext(JsonBuilderContext builderContext) {

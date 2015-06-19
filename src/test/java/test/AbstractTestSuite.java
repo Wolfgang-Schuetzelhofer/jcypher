@@ -50,19 +50,29 @@ public class AbstractTestSuite {
 	}
 
 	protected void assertQuery(String testId, String query, String testData) {
-		if (this.doAssert) {
-			assertEquals(testId, testData, query);
-		}
+		assertQueryByLines(testId, query, testData);
 	}
 	
 	protected void assertQueryByLines(String testId, String query, String testData) {
 		if (this.doAssert) {
 			LineNumberReader lrq = new LineNumberReader(new CharArrayReader(query.toCharArray()));
 			LineNumberReader lrt = new LineNumberReader(new CharArrayReader(testData.toCharArray()));
+			boolean opt = false;
 			String tLine;
+			String qLine = "";
 			while ((tLine = this.readLine(lrt)) != null) {
-				String qLine = this.readLine(lrq);
+				if (opt) {
+					opt = false;
+					if (tLine.equals(qLine)) { // optional line is not there
+						continue;
+					}
+				}
+				qLine = this.readLine(lrq);
 				assertNotNull(qLine);
+				if (tLine.startsWith(TestDataReader.TEST_OPTIONAL_LINE)) {
+					opt = true;
+					continue;
+				}
 				if (!tLine.startsWith(TestDataReader.TEST_IGNORE_LINE)) {
 					if (!tLine.equals(qLine))
 						assertEquals(testId, testData, query);

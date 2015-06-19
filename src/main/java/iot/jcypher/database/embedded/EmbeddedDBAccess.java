@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package iot.jcypher.database.embedded;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 
+import java.io.File;
 import java.util.Properties;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -46,20 +47,24 @@ public class EmbeddedDBAccess extends AbstractEmbeddedDBAccess {
 
 	@Override
 	protected GraphDatabaseService createGraphDB() {
-		GraphDatabaseBuilder builder = new GraphDatabaseFactory()
-				.newEmbeddedDatabaseBuilder(this.properties
+		File dbDir = new File(this.properties
 						.getProperty(DBProperties.DATABASE_DIR));
+		GraphDatabaseBuilder builder = new GraphDatabaseFactory()
+				.newEmbeddedDatabaseBuilder(dbDir);
 		if (this.properties
-				.getProperty(DBProperties.NODESTORE_MAPPED_MAMORY_SIZE) != null)
+				.getProperty(DBProperties.PAGECACHE_MEMORY) != null)
 			builder.setConfig(
-					GraphDatabaseSettings.nodestore_mapped_memory_size,
-					DBProperties.NODESTORE_MAPPED_MAMORY_SIZE);
+					GraphDatabaseSettings.pagecache_memory,
+					DBProperties.PAGECACHE_MEMORY);
 		if (this.properties.getProperty(DBProperties.STRING_BLOCK_SIZE) != null)
 			builder.setConfig(GraphDatabaseSettings.string_block_size,
 					DBProperties.ARRAY_BLOCK_SIZE);
 		if (this.properties.getProperty(DBProperties.STRING_BLOCK_SIZE) != null)
 			builder.setConfig(GraphDatabaseSettings.array_block_size,
 					DBProperties.ARRAY_BLOCK_SIZE);
+		
+//		builder.setConfig(GraphDatabaseSettings.cypher_planner, "RULE");
+		
 		return builder.newGraphDatabase();
 	}
 }

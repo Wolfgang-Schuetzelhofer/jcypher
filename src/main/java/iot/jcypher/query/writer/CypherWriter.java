@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.writer;
 
+import iot.jcypher.domainquery.internal.Settings;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.api.APIObject;
 import iot.jcypher.query.api.APIObjectAccess;
@@ -91,6 +92,11 @@ public class CypherWriter {
 	private static final boolean CORRECT_FOR_LIST_WITH_PARAMS = true;
 	
 	public static void toCypherExpression(JcQuery query, WriterContext context) {
+		if (Settings.plannerStrategy != null) {
+			context.buffer.append("CYPHER planner=");
+			context.buffer.append(Settings.plannerStrategy.name().toLowerCase());
+			Pretty.writePreClauseSeparator(context, context.buffer);
+		}
 		toCypherExpression(query.getClauses(), 0, context);
 	}
 	

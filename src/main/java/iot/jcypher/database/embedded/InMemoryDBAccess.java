@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,10 +43,10 @@ public class InMemoryDBAccess extends AbstractEmbeddedDBAccess {
 		GraphDatabaseBuilder builder = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder();
 		if (this.properties != null) {
 			if (this.properties
-					.getProperty(DBProperties.NODESTORE_MAPPED_MAMORY_SIZE) != null)
+					.getProperty(DBProperties.PAGECACHE_MEMORY) != null)
 				builder.setConfig(
-						GraphDatabaseSettings.nodestore_mapped_memory_size,
-						DBProperties.NODESTORE_MAPPED_MAMORY_SIZE);
+						GraphDatabaseSettings.pagecache_memory,
+						DBProperties.PAGECACHE_MEMORY);
 			if (this.properties.getProperty(DBProperties.STRING_BLOCK_SIZE) != null)
 				builder.setConfig(GraphDatabaseSettings.string_block_size,
 						DBProperties.ARRAY_BLOCK_SIZE);
@@ -54,6 +54,9 @@ public class InMemoryDBAccess extends AbstractEmbeddedDBAccess {
 				builder.setConfig(GraphDatabaseSettings.array_block_size,
 						DBProperties.ARRAY_BLOCK_SIZE);
 		}
+		
+//		builder.setConfig(GraphDatabaseSettings.cypher_planner, "RULE");
+		
 		return builder.newGraphDatabase();
 	}
 }

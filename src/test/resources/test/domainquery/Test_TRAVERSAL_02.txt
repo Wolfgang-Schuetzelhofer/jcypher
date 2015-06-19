@@ -1,4 +1,5 @@
 ----BACK_01:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Address)
 WHERE n_0_0.street = 'Market Street' AND n_0_0.number = 20
 OPTIONAL MATCH (n_0_0)<-[:pointsOfContact]-(n_1_2:Addressee)
@@ -8,6 +9,7 @@ RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_2) AS id_1_2, id(n_1_4) AS id_1_4, i
 ------------------------------------------------------------
 
 ----BACK_02:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Area)
 WHERE n_0_0.name = 'Europe'
 OPTIONAL MATCH (n_1_0:Area)
@@ -24,6 +26,7 @@ RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_3_0) AS id_3_0, i
 ------------------------------------------------------------
 
 ----BACK_03:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person)
 WHERE n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John'
 OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()<-[:c_content]-()<-[:pointsOfContact]-(n_1_0:Person)

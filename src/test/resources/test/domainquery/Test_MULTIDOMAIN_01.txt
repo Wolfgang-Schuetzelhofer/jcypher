@@ -1,4 +1,5 @@
 ----MULTIDOM_01:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person)
 OPTIONAL MATCH (n_1_0:Area)
 WHERE n_1_0.name = 'Europe'
@@ -9,6 +10,7 @@ OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_3_7:EContact)
 OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_4_0:Area)
 OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_4_1:EArea)
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_2_0) AS id_2_0, id(n_3_1) AS id_3_1, id(n_3_7) AS id_3_7, id(n_4_0) AS id_4_0, id(n_4_1) AS id_4_1
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person)
 OPTIONAL MATCH p_3_1_cn_5 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_3_1_cn_5:Address)
 WITH count(DISTINCT n_3_1_cn_5) AS n_3_1_cn_5_cnt, n_0_0
@@ -24,6 +26,7 @@ RETURN DISTINCT id(n_5_0) AS id_5_0
 ------------------------------------------------------------
 
 ----MULTIDOM_02:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person:QTEST_DOMAIN_2)
 OPTIONAL MATCH (n_1_0:Area:QTEST_DOMAIN_2)
 WHERE n_1_0.name = 'Europe'
@@ -34,6 +37,7 @@ OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_3_7:EContact:QTES
 OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_4_0:Area:QTEST_DOMAIN_2)
 OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_4_1:EArea:QTEST_DOMAIN_2)
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_2_0) AS id_2_0, id(n_3_1) AS id_3_1, id(n_3_7) AS id_3_7, id(n_4_0) AS id_4_0, id(n_4_1) AS id_4_1
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person:QTEST_DOMAIN_2)
 OPTIONAL MATCH p_3_1_cn_5 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_3_1_cn_5:Address:QTEST_DOMAIN_2)
 WITH count(DISTINCT n_3_1_cn_5) AS n_3_1_cn_5_cnt, n_0_0
@@ -49,6 +53,7 @@ RETURN DISTINCT id(n_5_0) AS id_5_0
 ------------------------------------------------------------
 
 ----MULTIDOM_03:
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person:QTEST_DOMAIN)
 OPTIONAL MATCH (n_1_0:Area:QTEST_DOMAIN)
 WHERE n_1_0.name = 'Europe'
@@ -59,6 +64,7 @@ OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_3_7:EContact:QTES
 OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_4_0:Area:QTEST_DOMAIN)
 OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_4_1:EArea:QTEST_DOMAIN)
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_2_0) AS id_2_0, id(n_3_1) AS id_3_1, id(n_3_7) AS id_3_7, id(n_4_0) AS id_4_0, id(n_4_1) AS id_4_1
+_OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person:QTEST_DOMAIN)
 OPTIONAL MATCH p_3_1_cn_5 = (n_0_0)-[:pointsOfContact]->()-[:c_content]->(n_3_1_cn_5:Address:QTEST_DOMAIN)
 WITH count(DISTINCT n_3_1_cn_5) AS n_3_1_cn_5_cnt, n_0_0
