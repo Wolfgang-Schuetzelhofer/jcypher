@@ -27,10 +27,13 @@ import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.util.Util;
 
+import java.util.List;
 import java.util.Properties;
 
 import org.junit.AfterClass;
@@ -54,6 +57,12 @@ public class DBAccessTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
 		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 	}
 	
 	@AfterClass
@@ -157,7 +166,7 @@ public class DBAccessTest extends AbstractTestSuite {
 		resultString = Util.writePretty(result.getJsonResult());
 		print(resultString);
 		testId = "ACCESS_02";
-//		assertQuery(testId, resultString, tdr.getTestData(testId));
+		assertQuery(testId, resultString, tdr.getTestData(testId));
 		
 		return;
 	}
