@@ -64,4 +64,21 @@ public class DBAccessFactory {
 		}
 		return dbAccess;
 	}
+	
+	/**
+	 * create an IDBAccess (an accessor) for a specific database,
+	 * supports authentication and authorization. 
+	 * @param dbType the type of database to access. Can be
+	 * <br/>DBType.REMOTE or DBType.EMBEDDED or DBType.IN_MEMORY
+	 * @param properties to configure the database connection.
+	 * <br/>The appropriate database access class will pick the properties it needs.
+	 * <br/>See also: DBProperties interface for required and optional properties.
+	 * @param userId
+	 * @param password
+	 * @return an instance of IDBAccess
+	 */
+	public static IDBAccess createDBAccess(DBType dbType, Properties properties,
+			String userId, String password) {
+		return null;
+	}
 }
