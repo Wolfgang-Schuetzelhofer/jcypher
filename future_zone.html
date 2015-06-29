@@ -1,0 +1,71 @@
+<html>
+<head>
+    <link rel="stylesheet" type="text/css" href="style.css">
+	<title></title>
+</head>
+<body>
+<table class="jc_table_home">
+	<tbody>
+		<tr>
+			<td>&nbsp;</td>
+			<td class="jc_center" style="width: 40%"><img alt="" src="jcypher_logo_3_long.png" /></td>
+			<td class="jc_center" style="width: 40%"><a href="http://www.iot-solutions.net/">
+                <span class="jc_by_iot">by&nbsp;</span>
+                <img alt="" src="l1_xhdpi.png"/></a></td>
+			<td>&nbsp;</td>
+		</tr>
+		<tr>
+			<td>&nbsp;</td>
+			<td class="jc_header_statement_4" colspan="2">Future Zone</td>
+			<td>&nbsp;</td>
+		</tr>
+        <tr>
+			<td>&nbsp;</td>
+			<td class="jc_header_statement_3" colspan="2">Presents ideas for future development directions of JCypher and other graph database related ideas
+            <br/>(this section is ment to evolve over time)</td>
+			<td>&nbsp;</td>
+		</tr>
+        <tr>
+            <td></td>
+			<td class="jc_header_end" colspan="2">&nbsp;</td>
+            <td></td>
+		</tr>
+	</tbody>
+</table>
+    
+<table style="width: 100%">
+    <col/>
+    <col class="jc-td-center" />
+    <col/>
+	<tbody>
+		<tr>
+			<td valign="top" class="jc_nav">
+                <br/><a class="btn" href="index.html">Home</a>
+            </td>
+			<td class="jc-content">
+                <div>
+                    Some general ideas concerning graph databases: 
+After some time working with Neo4j, I am convinced that graph databases are not only the best solution for storing and of course for retrieving highly connected data, but also for storing and querying many of today's application's data. I would even add a plus for the schema free approach. Usually, in solutions with relational databases as backend, constraints and business rules are split between schema definitions on the database and constraints implemented in the application code. I would prefer having all those constraints and rules in a single place.
+
+My feeling is that graph databases have the potential to substantially change the way how we architect, design, and implement our applications in the future (maybe also how we model them). 
+I think e.g. about relations or relationships as first class citizens in our design of application models.
+
+Let's construct a simple example about Person(s) and Address(es): 
+In one application domain we could be interested in relationships between Person(s) and Address(es) (e.g. a sales application (relationship: shipTo)). 
+In another application domain we could be interested in relationships between different Persons (e.g. a social media application (relationship: friends)). 
+In common approaches that we apply today, reusing Person across different domains would be very difficult (if not impossible). 
+Why?: 
+For domain 1 (sales application) we would design a method getShippingAddress() in class Person, whereas for domain 2 (social media application) we would design a method getFriends() in class Person. 
+In that way we end up 'enriching' class Person with a lot of navigation methods, of which we are only interested in a small number in the context of a single domain. 
+Alternatively, viewing relationships as first class citizens of a domain (relationships actually structure a domain), we could end up with domain specific relationship classes such as SalesApp and SocialApp. These classes then would implement domain specific navigation methods: e.g. SalesApp.getShippingAddress(Person aPerson); SocialApp.getFriends(Person aPerson), thus allowing us to easily reuse class (or entity) Person across different domains (without polluting it with navigation methods of many different domains). 
+This idea is strongly impacted by chapter 'Cross-Domain Models' of the book 'Graph Databases'. 
+This shall be seen as just one example of how graph databases might influence (change) the way we design our applications.
+                </div>
+            </td>
+            <td class="jc_nav_right"></td>
+		</tr>
+	</tbody>
+</table>
+    
+</body>
+</html>

@@ -39,6 +39,14 @@ body{
     font-style: italic;
 }
 
+.jc_header_statement_3 {
+    padding-top: 1em;
+    padding-bottom: 1em;
+    color: #444444;
+    text-align: center;
+    font-size: 1.2em;
+}
+
 .jc_header_end {
     border-top-style: groove;
     border-top-width: 3px;
@@ -54,9 +62,11 @@ body{
     border-right-width: 3px;
     padding-left: 1em;
     padding-right: 2em;
-    width: 9em;
+    text-align: right;
 }
 .btn {
+  float: right;
+  width: 8em;
   background: #3498db;
   background-image: -webkit-linear-gradient(top, #3498db, #2980b9);
   background-image: -moz-linear-gradient(top, #3498db, #2980b9);
@@ -69,7 +79,8 @@ body{
   font-family: Arial;
   color: #ffffff;
   font-size: 1em;
-  padding: 10px 20px 10px 20px;
+  padding: 0.6em 1.2em 0.6em 1.2em;
+  text-align: center;
   text-decoration: none;
 }
 
@@ -81,4 +92,33 @@ body{
   background-image: -o-linear-gradient(top, #3cb0fd, #3498db);
   background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
   text-decoration: none;
+}
+
+.jc-td-center {
+   width: 60%; 
+}
+
+.jc_nav_right {
+    border-left-style: groove;
+    border-left-width: 3px;
+    padding-right: 1em;
+    padding-left: 2em;
+    text-align: left;
+    width: 20%;
+}
+
+.jc_header_statement_4 {
+    padding-top: 0.5em;
+    color: #444444;
+    text-align: center;
+    font-size: 2em;
+}
+
+.jc-content {
+    background-color: rgba(255, 255, 255, 0.5);
+    -webkit-border-radius: 0.5em;
+    -moz-border-radius: 0.5em;
+    border-radius: 0.5em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
 }
