@@ -77,8 +77,41 @@ public class DBAccessFactory {
 	 * @param password
 	 * @return an instance of IDBAccess
 	 */
+	@SuppressWarnings("unchecked")
 	public static IDBAccess createDBAccess(DBType dbType, Properties properties,
 			String userId, String password) {
-		return null;
+		Class<? extends IDBAccess> dbAccessClass = null;
+		IDBAccess dbAccess = null;
+		try {
+			if (dbType == DBType.REMOTE) {
+				dbAccessClass =
+						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.RemoteDBAccess");
+			} else if (dbType == DBType.EMBEDDED) {
+				dbAccessClass =
+						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.embedded.EmbeddedDBAccess");
+			} else if (dbType == DBType.IN_MEMORY) {
+				dbAccessClass =
+						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.embedded.InMemoryDBAccess");
+			}
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
+		}
+		
+		if (dbAccessClass != null) {
+			try {
+				Method init = dbAccessClass.getDeclaredMethod("initialize", new Class[] {Properties.class});
+				dbAccess = dbAccessClass.newInstance();
+				init.invoke(dbAccess, new Object[] {properties});
+				if (dbType == DBType.REMOTE) { // authentication only applies to remote db access
+					if (userId != null && password != null) {
+						Method setAuth = dbAccessClass.getDeclaredMethod("setAuth", new Class[] {String.class, String.class});
+						setAuth.invoke(dbAccess, new Object[] {userId, password});
+					}
+				}
+			} catch (Throwable e) {
+				throw new RuntimeException(e);
+			}
+		}
+		return dbAccess;
 	}
 }

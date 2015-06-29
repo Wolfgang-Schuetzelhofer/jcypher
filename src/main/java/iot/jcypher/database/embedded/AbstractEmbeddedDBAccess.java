@@ -167,6 +167,11 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		}
 	}
 
+	@Override
+	public void setAuth(String userId, String password) {
+		// nop
+	}
+
 	private void addDBError(JsonBuilderContext builderContext,
 			Throwable exception) {
 		String code = exception.getClass().getSimpleName();

@@ -85,6 +85,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
 		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+//		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
 		
 		// init db
 		Population population = new Population();
@@ -269,7 +270,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 	public void testDomainQuery_Concatenation_01() {
 		IDomainAccess da1;
 		DomainQuery q, q1;
-		DomainQueryResult result, result1;
+		DomainQueryResult result1;
 		boolean equals;
 		String testId;
 		String qCypher;
@@ -323,7 +324,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_UNION_INTERSECTION_01.txt");
 		
 		Population population = new Population();
-		List<Object> domObjects = population.createPopulation();
+		population.createPopulation();
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
@@ -1510,7 +1511,6 @@ public class DomainQueryTest extends AbstractTestSuite {
 		return;
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testDomainQuery_Select_01() {
 		IDomainAccess da1;

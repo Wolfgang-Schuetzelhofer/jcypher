@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,12 +14,14 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domainquery.internal;
+package iot.jcypher.database;
 
-import iot.jcypher.database.internal.PlannerStrategy;
+public class DBVersion {
 
-public class Settings {
-
-	public static boolean strict = true;
-	public static final PlannerStrategy plannerStrategy = PlannerStrategy.RULE;
+	/**
+	 * possible values:
+	 * <br/>'2.1.x' .. to work with remote neo4j databases of versions: 2.1.6 or 2.1.7.
+	 * <br/>'2.2.x' .. to work with remote neo4j databases of version: 2.2.2.
+	 */
+	public static final String Neo4j_Version = "2.2.x";
 }

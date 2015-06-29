@@ -26,6 +26,7 @@ import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.writer.ContextAccess;
 import iot.jcypher.query.writer.JSONWriter;
 import iot.jcypher.query.writer.WriterContext;
+import iot.jcypher.util.Base64CD;
 
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -48,8 +49,11 @@ import javax.ws.rs.core.Response.StatusType;
 public class RemoteDBAccess implements IDBAccessInit {
 
 	private static final String transactionalURLPostfix = "db/data/transaction/commit";
+	private static final String authHeader = "Authorization";
+	private static final String authBasic = "Basic";
 	
 	private Properties properties;
+	private String auth;
 	private Client restClient;
 	private WebTarget transactionalTarget;
 	private Invocation.Builder invocationBuilder;
@@ -149,6 +153,24 @@ public class RemoteDBAccess implements IDBAccessInit {
 		this.invocationBuilder = null;
 	}
 
+	@Override
+	public void setAuth(String userId, String password) {
+		try {
+			StringBuilder sb = new StringBuilder();
+			sb.append(userId);
+			sb.append(':');
+			sb.append(password);
+			byte[] bytes = sb.toString().getBytes("UTF-8");
+			sb = new StringBuilder();
+			sb.append(authBasic);
+			sb.append(' ');
+			sb.append(new String(Base64CD.encode(bytes)));
+			this.auth = sb.toString();
+		} catch (Throwable e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	private synchronized Client getRestClient() {
 		if (this.restClient == null) {
 			this.restClient = ClientBuilder.newClient();
@@ -169,6 +191,8 @@ public class RemoteDBAccess implements IDBAccessInit {
 	private synchronized Invocation.Builder getInvocationBuilder() {
 		if (this.invocationBuilder == null) {
 			this.invocationBuilder = getTransactionalTarget().request(MediaType.APPLICATION_JSON_TYPE);
+			if (this.auth != null)
+				this.invocationBuilder = this.invocationBuilder.header(authHeader, this.auth);
 		}
 		return this.invocationBuilder;
 	}

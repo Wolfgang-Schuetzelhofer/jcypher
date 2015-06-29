@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,5 +22,16 @@ import java.util.Properties;
 
 public interface IDBAccessInit extends IDBAccess {
 
+	/**
+	 * set initialization properties
+	 * @param properties
+	 */
 	public void initialize(Properties properties);
+	
+	/**
+	 * set user id and password for authentication
+	 * @param userId
+	 * @param password
+	 */
+	public void setAuth(String userId, String password);
 }
