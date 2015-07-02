@@ -13,7 +13,7 @@ Starting top-down:
    You do not need to modify your domain object classes in any way. You even do not add annotations.
    Moreover JCypher provides a default mapping so you don't have to write a single line of mapping code or of mapping configuration.
 
-- At this level **'Domain Queries'** provide the power and expressiveness of queries on a graph database,
+- At the same level of abstraction **'Domain Queries'** provide the power and expressiveness of queries on a graph database,
    while being formulated on **domain objects** or on types of domain objects respectively.
    The true power of Domain Queries comes from the fact, that the graph of domain objects is backed by a graph database.
 
