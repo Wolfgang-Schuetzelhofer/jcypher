@@ -91,10 +91,10 @@ public class CypherWriter {
 	// can set CORRECT_FOR_LIST_WITH_PARAMS to false and the workaround
 	// will be removed
 	private static final boolean CORRECT_FOR_LIST_WITH_PARAMS = true;
-	private static final String dBVersion_22x = "2.2.x";
+	private static final String dBVersion_21x = "2.1.x";
 	
 	public static void toCypherExpression(JcQuery query, WriterContext context) {
-		if (DBVersion.Neo4j_Version.equals(dBVersion_22x)) {
+		if (!DBVersion.Neo4j_Version.equals(dBVersion_21x)) {
 			context.buffer.append("CYPHER planner=");
 			context.buffer.append(Settings.plannerStrategy.name().toLowerCase());
 			Pretty.writePreClauseSeparator(context, context.buffer);
