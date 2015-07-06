@@ -1,6 +1,10 @@
 Release Notes
 =======
 
+## 2.6.0
+**New**
+- Works with Neo4j 2.2.2
+
 ## 2.5.0
 **New**
 - Domain Queries - Query Concatenation.
