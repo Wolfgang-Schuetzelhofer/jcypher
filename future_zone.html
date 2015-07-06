@@ -71,6 +71,7 @@
                             <div class="fz-paragraph">As a simple example think of an instance of a class Person which contains a list addresses, holding objects of type Address. To query a person for its addresses is straight forward. But given you have an Address and you want to know all Persons who live at this Address, a traditional approach is of high complexity and mostly of poor performance. You would have to iterate over all Persons and test each one if it is related to the specific Address in order to collect those Persons.</div>
 
                             <div class="fz-paragraph">Now when your business domain is backed by a graph database, the link between Person and Address is explicitly stored as a relationship and can easily be traversed in both directions. No need for joins (which often bear performance problems) as with relational databases. The more traversals you want to do in your query, the more advantage you gain when having your domain backed by a graph database. JCypher provides (will provide) a powerful 'Domain Query Language', which strongly inherits from the graph query language 'CYPHER' or JCypher's 'Query-DSL' respectivley. But in contrast it allows to formulate queries on the domain objects or their types respectively (instead of formulating queries on nodes and relations of a graph).</div>
+                            <hr/>
                             <div class="fz-when">June 2014</div>
                         <div class="fz-header">Future development directions for JCypher</div>
                         <div class="fz-paragraph">
@@ -99,6 +100,7 @@
                                 </li>
                             </ul>
                         </div>
+                            <hr/>
                             <div class="fz-when">Mai 2014</div>
                         <div class="fz-header">Some general ideas concerning graph databases</div>
                         <div class="fz-paragraph">After some time working with Neo4j, I am convinced that graph databases are not only the best solution for storing and of course for retrieving highly connected data, but also for storing and querying many of today's application's data.</div>
