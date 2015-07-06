@@ -58,6 +58,7 @@ public class AbstractTestSuite {
 			LineNumberReader lrq = new LineNumberReader(new CharArrayReader(query.toCharArray()));
 			LineNumberReader lrt = new LineNumberReader(new CharArrayReader(testData.toCharArray()));
 			boolean opt = false;
+			boolean optPlusOne = false;
 			String tLine;
 			String qLine = "";
 			while ((tLine = this.readLine(lrt)) != null) {
@@ -66,6 +67,16 @@ public class AbstractTestSuite {
 					if (tLine.equals(qLine)) { // optional line is not there
 						continue;
 					}
+					if (tLine.startsWith(TestDataReader.TEST_IGNORE_LINE)) {
+						qLine = this.readLine(lrq);
+						optPlusOne = true;
+						continue;
+					}
+				}
+				if (optPlusOne) {
+					optPlusOne = false;
+					if (tLine.equals(qLine))
+						continue;
 				}
 				qLine = this.readLine(lrq);
 				assertNotNull(qLine);
@@ -74,8 +85,9 @@ public class AbstractTestSuite {
 					continue;
 				}
 				if (!tLine.startsWith(TestDataReader.TEST_IGNORE_LINE)) {
-					if (!tLine.equals(qLine))
+					if (!tLine.equals(qLine)) {
 						assertEquals(testId, testData, query);
+					}
 				}
 			}
 		}
