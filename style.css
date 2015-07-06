@@ -122,3 +122,39 @@ body{
     padding-left: 0.5em;
     padding-right: 0.5em;
 }
+
+.fz-header {
+    font-size: 1.5em;
+    padding-bottom: 0.5em;
+    padding-top: 0.2em;
+    font-style: italic
+}
+
+.fz-paragraph {
+    text-align: justify;
+    line-height: 1.4em;
+    font-style: italic;
+    padding-top: 0.3em;
+    padding-left: 2em;
+    padding-right: 2em;
+}
+
+.fz-note-td {
+    border-style: groove;
+    border-width: 3px;
+    padding: 0.5em;
+    line-height: 1.4em;
+}
+
+.fz-note-table {
+    padding-left: 4em;
+    padding-right: 4em;
+    padding-top: 2em;
+}
+
+.fz-when {
+    font-size: 1.2em;
+    padding-top: 0.5em;
+    font-style: italic
+    
+}
