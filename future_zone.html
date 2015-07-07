@@ -54,11 +54,28 @@
                             <table class="fz-note-table">
                                 <tr>
                                     <td class="fz-note-td">Content of this section will not be removed in the future, even if ideas have already been implemented in JCypher, or have been discarded. This will allow to trace ideas and how they evolve (have evolved) over time.
-                                    <br/>The content is presented in descending chronological order.</td>
+                                        <br/>The content is presented in descending chronological order.</td>
                                 </tr>
                             </table>
-                        </div><br/>
+                        </div>
+                        <br/>
                         <div>
+                            <div class="fz-when">July 2015</div>
+                            <div class="fz-header">Generic- (Dynamic-) Domain Model</div>
+                            <div class="fz-paragraph">The domain model, i.e. the model of a domain graph (graph of Java objects) which is stored to / retrieved from a Neo4j graph database by means of JCypher 'Domain Mapping' or JCypher 'Domain Queries' respectively, is specified by those object's classes.</div>
+                            <div class="fz-paragraph">If you don't have access to these Java classes, a generic- (or maybe better a dynamic-) domain model comes in handy.
+                                <br/>Here are some scenarios, which would highly profit from such a dynamic domain model:
+                                <ul>
+                                    <li>Tools for accessing domain graphs usually want to explore a domain graph or a domain model in a reflective kind of way. They want to be able to explore without having access to the domain model's classes.</li>
+                                </ul>
+                                <ul>
+                                    <li>If you have access to a graph database with a stored domain graph, but you don't have access to the domain model classes, you still want to be able to work with the domain graph or the domain model respectively.</li>
+                                </ul>
+                                <ul>
+                                    <li>If you want to open JCypher for access from other languages and / or for remote access e.g. via a REST-API.</li>
+                                </ul>
+                            </div>
+                            <hr/>
                             <div class="fz-when">Dec 2014</div>
                             <div class="fz-header">Domain Queries - A powerful approach to analyse and query business domains</div>
                             <div class="fz-paragraph">(Was started with JCypher release 2.1.0 and extended step by step in the following releases).</div>
@@ -73,44 +90,44 @@
                             <div class="fz-paragraph">Now when your business domain is backed by a graph database, the link between Person and Address is explicitly stored as a relationship and can easily be traversed in both directions. No need for joins (which often bear performance problems) as with relational databases. The more traversals you want to do in your query, the more advantage you gain when having your domain backed by a graph database. JCypher provides (will provide) a powerful 'Domain Query Language', which strongly inherits from the graph query language 'CYPHER' or JCypher's 'Query-DSL' respectivley. But in contrast it allows to formulate queries on the domain objects or their types respectively (instead of formulating queries on nodes and relations of a graph).</div>
                             <hr/>
                             <div class="fz-when">June 2014</div>
-                        <div class="fz-header">Future development directions for JCypher</div>
-                        <div class="fz-paragraph">
-                            <ul>
-                                <li>
-                                    Provide access to graph databases at a 'higher level of abstraction'. The idea is to map complex business domains in form of Java object graphs to graph databases.
-                                    <br/>*** Firstly by providing a default generic mapping, which allows to store and retrieve object graphs without the need of any additional configuration.
-                                    <br/>*** Secondly by providing a means to configure how to map a Java object graph to nodes and relations of a property graph by means of a fluent Java API (i.e. an additional 'Native Java DSL' actually).
-                                    <br/>What is the advantage of the secondly mentioned approach?
-                                    <div class="fz-paragraph"></div>While common mapping mechanisms (e.g. Spring Data Neo4J) utilize annotations to define the mapping of objects, attributes, and relationships, the targeted approach uses a 'Native Java DSL' to specify the mapping. On the one hand this allows for specifying the mapping in an intuitive and IDE-tool supported way (just like the JCypher-Query-DSL). On the other hand it is completely non-invasive for the domain objects (not even annotations invading the domain objects). The plan is to develop a specific 'Native Java DSL' which utilizes the 'JCypher-Query-DSL' in order to define the mapping(s) in form of 'mapping expressions'. These 'mapping expressions' will be contained in 'configuration classes' which are separate from the business model classes. This allows to map the same graph to different models as well as to map the same model to different graphs (all done completely non-invasive for the model classes).
-                                </li>
-                            </ul>
-                            <ul>
-                                <li>
-                                    Encapsulate complex graph algorithms. The idea is to provide simple interfaces to hide the complexity of advanced graph algorithms.
-                                </li>
-                            </ul>
-                            <ul>
-                                <li>
-                                    Multi-Domain-Approach. The idea is to reuse 'Entities' across multiple business domains. This requires new design approaches, as well as concepts about how JCypher could support it.
-                                </li>
-                            </ul>
-                            <ul>
-                                <li>
-                                    Using graphs to express constraints on other graphs. The idea is to design a 'meta model' which itself is stored as a property graph, and which expresses constraints (business rules) on other graphs.
-                                </li>
-                            </ul>
-                        </div>
+                            <div class="fz-header">Future development directions for JCypher</div>
+                            <div class="fz-paragraph">
+                                <ul>
+                                    <li>
+                                        Provide access to graph databases at a 'higher level of abstraction'. The idea is to map complex business domains in form of Java object graphs to graph databases.
+                                        <br/>*** Firstly by providing a default generic mapping, which allows to store and retrieve object graphs without the need of any additional configuration.
+                                        <br/>*** Secondly by providing a means to configure how to map a Java object graph to nodes and relations of a property graph by means of a fluent Java API (i.e. an additional 'Native Java DSL' actually).
+                                        <br/>What is the advantage of the secondly mentioned approach?
+                                        <div class="fz-paragraph"></div>While common mapping mechanisms (e.g. Spring Data Neo4J) utilize annotations to define the mapping of objects, attributes, and relationships, the targeted approach uses a 'Native Java DSL' to specify the mapping. On the one hand this allows for specifying the mapping in an intuitive and IDE-tool supported way (just like the JCypher-Query-DSL). On the other hand it is completely non-invasive for the domain objects (not even annotations invading the domain objects). The plan is to develop a specific 'Native Java DSL' which utilizes the 'JCypher-Query-DSL' in order to define the mapping(s) in form of 'mapping expressions'. These 'mapping expressions' will be contained in 'configuration classes' which are separate from the business model classes. This allows to map the same graph to different models as well as to map the same model to different graphs (all done completely non-invasive for the model classes).
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        Encapsulate complex graph algorithms. The idea is to provide simple interfaces to hide the complexity of advanced graph algorithms.
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        Multi-Domain-Approach. The idea is to reuse 'Entities' across multiple business domains. This requires new design approaches, as well as concepts about how JCypher could support it.
+                                    </li>
+                                </ul>
+                                <ul>
+                                    <li>
+                                        Using graphs to express constraints on other graphs. The idea is to design a 'meta model' which itself is stored as a property graph, and which expresses constraints (business rules) on other graphs.
+                                    </li>
+                                </ul>
+                            </div>
                             <hr/>
-                            <div class="fz-when">Mai 2014</div>
-                        <div class="fz-header">Some general ideas concerning graph databases</div>
-                        <div class="fz-paragraph">After some time working with Neo4j, I am convinced that graph databases are not only the best solution for storing and of course for retrieving highly connected data, but also for storing and querying many of today's application's data.</div>
-                        <div class="fz-paragraph">I would even add a plus for the schema free approach. Usually, in solutions with relational databases as backend, constraints and business rules are split between schema definitions on the database and constraints implemented in the application code. I would prefer having all those constraints and rules in a single place.</div>
-                        <div class="fz-paragraph">My feeling is, that graph databases have the potential to substantially change the way how we architect, design, and implement our applications in the future (maybe also how we model them). I think e.g. about relations or relationships as first class citizens in our design of application models.</div>
+                            <div class="fz-when">May 2014</div>
+                            <div class="fz-header">Some general ideas concerning graph databases</div>
+                            <div class="fz-paragraph">After some time working with Neo4j, I am convinced that graph databases are not only the best solution for storing and of course for retrieving highly connected data, but also for storing and querying many of today's application's data.</div>
+                            <div class="fz-paragraph">I would even add a plus for the schema free approach. Usually, in solutions with relational databases as backend, constraints and business rules are split between schema definitions on the database and constraints implemented in the application code. I would prefer having all those constraints and rules in a single place.</div>
+                            <div class="fz-paragraph">My feeling is, that graph databases have the potential to substantially change the way how we architect, design, and implement our applications in the future (maybe also how we model them). I think e.g. about relations or relationships as first class citizens in our design of application models.</div>
 
-                        <div class="fz-paragraph">Let's construct a simple example about Person(s) and Address(es): In one application domain we could be interested in relationships between Person(s) and Address(es) (e.g. a sales application (relationship: shipTo)). In another application domain we could be interested in relationships between different Persons (e.g. a social media application (relationship: friends)). In common approaches that we apply today, reusing Person across different domains would be very difficult (if not impossible). Why?: For domain 1 (sales application) we would design a method getShippingAddress() in class Person, whereas for domain 2 (social media application) we would design a method getFriends() in class Person.</div>
-                        <div class="fz-paragraph">In that way we end up 'enriching' class Person with a lot of navigation methods, of which we are only interested in a small number in the context of a single domain.
-                            <br/>Alternatively, viewing relationships as first class citizens of a domain (relationships actually structure a domain), we could end up with domain specific relationship classes such as SalesApp and SocialApp. These classes then would implement domain specific navigation methods: e.g. SalesApp.getShippingAddress(Person aPerson); SocialApp.getFriends(Person aPerson), thus allowing us to easily reuse class (or entity) Person across different domains (without polluting it with navigation methods of many different domains). This idea is strongly impacted by chapter 'Cross-Domain Models' of the book 'Graph Databases'. This shall be seen as just one example of how graph databases might influence (change) the way we design our applications.</div>
-                    </div>
+                            <div class="fz-paragraph">Let's construct a simple example about Person(s) and Address(es): In one application domain we could be interested in relationships between Person(s) and Address(es) (e.g. a sales application (relationship: shipTo)). In another application domain we could be interested in relationships between different Persons (e.g. a social media application (relationship: friends)). In common approaches that we apply today, reusing Person across different domains would be very difficult (if not impossible). Why?: For domain 1 (sales application) we would design a method getShippingAddress() in class Person, whereas for domain 2 (social media application) we would design a method getFriends() in class Person.</div>
+                            <div class="fz-paragraph">In that way we end up 'enriching' class Person with a lot of navigation methods, of which we are only interested in a small number in the context of a single domain.
+                                <br/>Alternatively, viewing relationships as first class citizens of a domain (relationships actually structure a domain), we could end up with domain specific relationship classes such as SalesApp and SocialApp. These classes then would implement domain specific navigation methods: e.g. SalesApp.getShippingAddress(Person aPerson); SocialApp.getFriends(Person aPerson), thus allowing us to easily reuse class (or entity) Person across different domains (without polluting it with navigation methods of many different domains). This idea is strongly impacted by chapter 'Cross-Domain Models' of the book 'Graph Databases'. This shall be seen as just one example of how graph databases might influence (change) the way we design our applications.</div><hr/>
+                        </div>
                 </td>
                 <td class="jc_nav_right"></td>
             </tr>
