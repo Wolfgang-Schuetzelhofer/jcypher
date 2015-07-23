@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,6 +21,7 @@ import java.util.List;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.result.JcError;
+import iot.jcypher.transaction.ITransaction;
 
 /**
  * Provides access to a graph database.
@@ -47,6 +48,12 @@ public interface IDBAccess {
 	 * @return a list of errors which is empty if no errors occurred
 	 */
 	public List<JcError> clearDatabase();
+	
+	/**
+	 * create a transaction
+	 * @return an instance of ITransaction
+	 */
+	public ITransaction createTransaction();
 	
 	/**
 	 * @return true if not a single node or relation is contained in the graph database

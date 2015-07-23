@@ -26,6 +26,7 @@ import iot.jcypher.query.writer.IQueryParam;
 import iot.jcypher.query.writer.QueryParam;
 import iot.jcypher.query.writer.QueryParamSet;
 import iot.jcypher.query.writer.WriterContext;
+import iot.jcypher.transaction.ITransaction;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -53,6 +54,8 @@ import scala.collection.convert.Wrappers.SeqWrapper;
 
 public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 
+	private ITransaction activeTransaction;
+	private List<ITransaction> transactions;
 	protected Properties properties;
 	private GraphDatabaseService graphDb;
 	private Thread shutdownHook;
@@ -143,6 +146,16 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 	@Override
 	public List<JcError> clearDatabase() {
 		return DBUtil.clearDatabase(this);
+	}
+	
+	@Override
+	public ITransaction createTransaction() {
+		ETransactionImpl tx = new ETransactionImpl(this);
+		if (this.transactions == null)
+			this.transactions = new ArrayList<ITransaction>();
+		this.transactions.add(tx);
+		this.activeTransaction = tx;
+		return tx;
 	}
 
 	@Override

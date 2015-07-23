@@ -18,6 +18,7 @@ package iot.jcypher.domain;
 
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.query.result.JcError;
+import iot.jcypher.transaction.ITransaction;
 
 import java.util.List;
 
@@ -133,6 +134,12 @@ public interface IDomainAccess {
 	 * @return a DomainQuery
 	 */
 	public DomainQuery createQuery();
+	
+	/**
+	 * create a transaction
+	 * @return an instance of ITransaction
+	 */
+	public ITransaction createTransaction();
 	
 	public enum DomainLabelUse {
 		AUTO, ALWAYS, NEVER

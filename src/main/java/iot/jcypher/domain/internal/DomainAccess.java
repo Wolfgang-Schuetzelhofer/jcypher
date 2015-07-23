@@ -76,6 +76,7 @@ import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.transaction.ITransaction;
 import iot.jcypher.util.Util;
 
 import java.lang.reflect.Constructor;
@@ -205,6 +206,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.internalDomainAccess = new InternalDomainAccess();
 		return this.internalDomainAccess;
 	}
+
+	@Override
+	public ITransaction createTransaction() {
+		return this.domainAccessHandler.dbAccess.createTransaction();
+	}
+
 
 	/**********************************************************************/
 	private class DomainAccessHandler {
@@ -1297,6 +1304,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			@Override
 			public boolean isDatabaseEmpty() {
 				return this.delegate.isDatabaseEmpty();
+			}
+
+			@Override
+			public ITransaction createTransaction() {
+				return this.delegate.createTransaction();
 			}
 
 			@Override

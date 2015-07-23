@@ -26,6 +26,7 @@ import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.writer.ContextAccess;
 import iot.jcypher.query.writer.JSONWriter;
 import iot.jcypher.query.writer.WriterContext;
+import iot.jcypher.transaction.ITransaction;
 import iot.jcypher.util.Base64CD;
 
 import java.io.StringReader;
@@ -52,6 +53,8 @@ public class RemoteDBAccess implements IDBAccessInit {
 	private static final String authHeader = "Authorization";
 	private static final String authBasic = "Basic";
 	
+	private ITransaction activeTransaction;
+	private List<ITransaction> transactions;
 	private Properties properties;
 	private String auth;
 	private Client restClient;
@@ -126,6 +129,16 @@ public class RemoteDBAccess implements IDBAccessInit {
 	@Override
 	public List<JcError> clearDatabase() {
 		return DBUtil.clearDatabase(this);
+	}
+
+	@Override
+	public ITransaction createTransaction() {
+		RTransactionImpl tx = new RTransactionImpl(this);
+		if (this.transactions == null)
+			this.transactions = new ArrayList<ITransaction>();
+		this.transactions.add(tx);
+		this.activeTransaction = tx;
+		return tx;
 	}
 
 	@Override
