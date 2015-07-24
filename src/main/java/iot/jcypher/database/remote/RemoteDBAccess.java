@@ -53,8 +53,7 @@ public class RemoteDBAccess implements IDBAccessInit {
 	private static final String authHeader = "Authorization";
 	private static final String authBasic = "Basic";
 	
-	private ITransaction activeTransaction;
-	private List<ITransaction> transactions;
+	private ThreadLocal<RTransactionImpl> transaction = new ThreadLocal<RTransactionImpl>();
 	private Properties properties;
 	private String auth;
 	private Client restClient;
@@ -132,12 +131,12 @@ public class RemoteDBAccess implements IDBAccessInit {
 	}
 
 	@Override
-	public ITransaction createTransaction() {
-		RTransactionImpl tx = new RTransactionImpl(this);
-		if (this.transactions == null)
-			this.transactions = new ArrayList<ITransaction>();
-		this.transactions.add(tx);
-		this.activeTransaction = tx;
+	public ITransaction beginTX() {
+		RTransactionImpl tx = this.transaction.get();
+		if (tx == null) {
+			tx = new RTransactionImpl(this);
+			this.transaction.set(tx);
+		}
 		return tx;
 	}
 

@@ -208,8 +208,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	}
 
 	@Override
-	public ITransaction createTransaction() {
-		return this.domainAccessHandler.dbAccess.createTransaction();
+	public ITransaction beginTX() {
+		return this.domainAccessHandler.dbAccess.beginTX();
 	}
 
 
@@ -1307,8 +1307,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 
 			@Override
-			public ITransaction createTransaction() {
-				return this.delegate.createTransaction();
+			public ITransaction beginTX() {
+				return this.delegate.beginTX();
 			}
 
 			@Override

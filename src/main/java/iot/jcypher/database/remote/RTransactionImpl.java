@@ -16,20 +16,18 @@
 
 package iot.jcypher.database.remote;
 
-import iot.jcypher.transaction.ITransaction;
-import iot.jcypher.transaction.internal.TXState;
+import iot.jcypher.transaction.internal.AbstractTransaction;
 
-public class RTransactionImpl implements ITransaction {
-
-	private RemoteDBAccess dbAccess;
-	private TXState state;
+public class RTransactionImpl extends AbstractTransaction {
 
 	/**
 	 * @param dbAccess
 	 */
 	public RTransactionImpl(RemoteDBAccess dbAccess) {
-		super();
-		this.dbAccess = dbAccess;
-		this.state = TXState.CREATED;
+		super(dbAccess);
+	}
+	
+	private RemoteDBAccess getRDBAccess() {
+		return (RemoteDBAccess)getDBAccess();
 	}
 }

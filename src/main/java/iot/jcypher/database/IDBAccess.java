@@ -53,7 +53,7 @@ public interface IDBAccess {
 	 * create a transaction
 	 * @return an instance of ITransaction
 	 */
-	public ITransaction createTransaction();
+	public ITransaction beginTX();
 	
 	/**
 	 * @return true if not a single node or relation is contained in the graph database

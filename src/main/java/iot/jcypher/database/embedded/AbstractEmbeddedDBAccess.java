@@ -54,8 +54,7 @@ import scala.collection.convert.Wrappers.SeqWrapper;
 
 public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 
-	private ITransaction activeTransaction;
-	private List<ITransaction> transactions;
+	private ThreadLocal<ETransactionImpl> transaction = new ThreadLocal<ETransactionImpl>();
 	protected Properties properties;
 	private GraphDatabaseService graphDb;
 	private Thread shutdownHook;
@@ -149,12 +148,12 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 	}
 	
 	@Override
-	public ITransaction createTransaction() {
-		ETransactionImpl tx = new ETransactionImpl(this);
-		if (this.transactions == null)
-			this.transactions = new ArrayList<ITransaction>();
-		this.transactions.add(tx);
-		this.activeTransaction = tx;
+	public ITransaction beginTX() {
+		ETransactionImpl tx = this.transaction.get();
+		if (tx == null) {
+			tx = new ETransactionImpl(this);
+			this.transaction.set(tx);
+		}
 		return tx;
 	}
 

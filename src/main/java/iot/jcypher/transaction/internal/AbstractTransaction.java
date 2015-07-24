@@ -14,20 +14,23 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.database.embedded;
+package iot.jcypher.transaction.internal;
 
-import iot.jcypher.transaction.internal.AbstractTransaction;
+import iot.jcypher.database.IDBAccess;
+import iot.jcypher.transaction.ITransaction;
 
-public class ETransactionImpl extends AbstractTransaction {
+public abstract class AbstractTransaction implements ITransaction {
 
-	/**
-	 * @param dbAccess
-	 */
-	public ETransactionImpl(AbstractEmbeddedDBAccess dbAccess) {
-		super(dbAccess);
+	private IDBAccess dbAccess;
+	protected TXState state;
+
+	public AbstractTransaction(IDBAccess dbAccess) {
+		super();
+		this.dbAccess = dbAccess;
+		this.state = TXState.CREATED;
 	}
-	
-	private AbstractEmbeddedDBAccess getEDBAccess() {
-		return (AbstractEmbeddedDBAccess)getDBAccess();
+
+	protected IDBAccess getDBAccess() {
+		return dbAccess;
 	}
 }

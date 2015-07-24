@@ -139,7 +139,7 @@ public interface IDomainAccess {
 	 * create a transaction
 	 * @return an instance of ITransaction
 	 */
-	public ITransaction createTransaction();
+	public ITransaction beginTX();
 	
 	public enum DomainLabelUse {
 		AUTO, ALWAYS, NEVER
