@@ -16,6 +16,9 @@
 
 package iot.jcypher.database.embedded;
 
+import java.util.List;
+
+import iot.jcypher.query.result.JcError;
 import iot.jcypher.transaction.internal.AbstractTransaction;
 
 public class ETransactionImpl extends AbstractTransaction {
@@ -25,6 +28,11 @@ public class ETransactionImpl extends AbstractTransaction {
 	 */
 	public ETransactionImpl(AbstractEmbeddedDBAccess dbAccess) {
 		super(dbAccess);
+	}
+	
+	@Override
+	public List<JcError> close() {
+		return null;
 	}
 	
 	private AbstractEmbeddedDBAccess getEDBAccess() {

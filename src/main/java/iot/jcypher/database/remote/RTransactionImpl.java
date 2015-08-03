@@ -16,10 +16,29 @@
 
 package iot.jcypher.database.remote;
 
+import java.util.List;
+
+import iot.jcypher.database.internal.DBUtil;
+import iot.jcypher.query.result.JcError;
 import iot.jcypher.transaction.internal.AbstractTransaction;
+
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.client.Invocation.Builder;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 
 public class RTransactionImpl extends AbstractTransaction {
 
+	private static final String transactionalURLPostfix = "db/data/transaction";
+	private static final String txCommit = "/commit";
+	private static final String emptyJSON = "{\"statements\" : [ ]}";
+	private Invocation.Builder invocationBuilder_open;
+	private Invocation.Builder invocationBuilder_next;
+	private String txLocation;
+	
 	/**
 	 * @param dbAccess
 	 */
@@ -27,7 +46,72 @@ public class RTransactionImpl extends AbstractTransaction {
 		super(dbAccess);
 	}
 	
+	@Override
+	public List<JcError> close() {
+		Builder iBuilder;
+		if (failed) {
+			iBuilder = createNextInvocationBuilder();
+		} else {
+			RemoteDBAccess rdba = getRDBAccess();
+			WebTarget serverRootTarget = rdba.getRestClient().target(rdba.getServerRootUri());
+			WebTarget transactionalTarget = serverRootTarget.path(this.txLocation.concat(txCommit));
+			iBuilder = transactionalTarget.request(MediaType.APPLICATION_JSON_TYPE);
+			if (rdba.getAuth() != null)
+				iBuilder = iBuilder.header(RemoteDBAccess.authHeader, rdba.getAuth());
+		}
+		
+		Response response = null;
+		Throwable exception = null;
+		try {
+			if (failed)
+				response = iBuilder.delete();
+			else
+				response = iBuilder.post(Entity.entity(emptyJSON, MediaType.APPLICATION_JSON_TYPE));
+		} catch(Throwable e) {
+			exception = e;
+		}
+		
+		return DBUtil.buildErrorList(response, exception);
+	}
+	
 	private RemoteDBAccess getRDBAccess() {
 		return (RemoteDBAccess)getDBAccess();
+	}
+	
+	public synchronized Invocation.Builder getInvocationBuilder() {
+		Invocation.Builder ret;
+		RemoteDBAccess rdba = getRDBAccess();
+		if (this.invocationBuilder_open == null) {
+			WebTarget serverRootTarget = rdba.getRestClient().target(rdba.getServerRootUri());
+			WebTarget transactionalTarget = serverRootTarget.path(transactionalURLPostfix);
+			this.invocationBuilder_open = transactionalTarget.request(MediaType.APPLICATION_JSON_TYPE);
+			if (rdba.getAuth() != null)
+				this.invocationBuilder_open = this.invocationBuilder_open.header(RemoteDBAccess.authHeader, rdba.getAuth());
+			ret = this.invocationBuilder_open;
+		} else if (this.invocationBuilder_next == null) {
+			this.invocationBuilder_next = createNextInvocationBuilder();
+			ret = this.invocationBuilder_next;
+		} else {
+			ret = this.invocationBuilder_next;
+		}
+		return ret;
+	}
+
+	public void setTxLocation(String txLoc) {
+		if (this.txLocation == null) {
+			int idx = txLoc.indexOf(transactionalURLPostfix);
+			this.txLocation = txLoc.substring(idx);
+		}
+	}
+	
+	private Invocation.Builder createNextInvocationBuilder() {
+		Invocation.Builder ret;
+		RemoteDBAccess rdba = getRDBAccess();
+		WebTarget serverRootTarget = rdba.getRestClient().target(rdba.getServerRootUri());
+		WebTarget transactionalTarget = serverRootTarget.path(this.txLocation);
+		ret = transactionalTarget.request(MediaType.APPLICATION_JSON_TYPE);
+		if (rdba.getAuth() != null)
+			ret = ret.header(RemoteDBAccess.authHeader, rdba.getAuth());
+		return ret;
 	}
 }

@@ -91,10 +91,19 @@ public class Population {
 		
 		createPlaces();
 		createSmithFamily(domainObjects);
-		createBerghammers(domainObjects);
+		createBerghammers(domainObjects, false);
 		createMore(domainObjects);
 		createCompanies(domainObjects);
 		createAddressees(domainObjects);
+		
+		return domainObjects;
+	}
+	
+	public List<Object> createBerghammerFamily() {
+		List<Object> domainObjects = new ArrayList<Object>();
+		
+		createPlaces();
+		createBerghammers(domainObjects, true);
 		
 		return domainObjects;
 	}
@@ -374,7 +383,7 @@ public class Population {
 		domainObjects.add(jery_smith);
 	}
 
-	private void createBerghammers(List<Object> domainObjects) {
+	private void createBerghammers(List<Object> domainObjects, boolean bhOnly) {
 		Address berghammer_address = new Address("Hochstrasse", 4);
 		berghammer_address.setArea(munich);
 		this.all_PointsOfContact.add(berghammer_address);
@@ -382,34 +391,36 @@ public class Population {
 		Person hans_berghammer = new Person("Hans", "Berghammer", Gender.MALE);
 		hans_berghammer.setMatchString("berghammer");
 		hans_berghammer.getPointsOfContact().add(berghammer_address);
-		Person gerda_berhammer = new Person("Gerda", "Berghammer", Gender.FEMALE);
-		gerda_berhammer.setMatchString("berghammer");
-		gerda_berhammer.getPointsOfContact().add(berghammer_address);
-		Person christa_berhammer = new Person("Christa", "Berghammer", Gender.FEMALE);
-		christa_berhammer.setMatchString("berghammer");
-		christa_berhammer.getPointsOfContact().add(berghammer_address);
-		christa_berhammer.setMother(gerda_berhammer);
-		christa_berhammer.setFather(hans_berghammer);
+		Person gerda_berghammer = new Person("Gerda", "Berghammer", Gender.FEMALE);
+		gerda_berghammer.setMatchString("berghammer");
+		gerda_berghammer.getPointsOfContact().add(berghammer_address);
+		Person christa_berghammer = new Person("Christa", "Berghammer", Gender.FEMALE);
+		christa_berghammer.setMatchString("berghammer");
+		christa_berghammer.getPointsOfContact().add(berghammer_address);
+		christa_berghammer.setMother(gerda_berghammer);
+		christa_berghammer.setFather(hans_berghammer);
 		
 		this.berghammers = new ArrayList<Object>();
 		this.berghammers.add(hans_berghammer);
-		this.berghammers.add(gerda_berhammer);
-		this.berghammers.add(christa_berhammer);
-		this.smiths_christa_berghammer_globcom.add(christa_berhammer);
-		this.berghammers_globcom = new ArrayList<Object>();
-		this.berghammers_globcom.add(hans_berghammer);
-		this.berghammers_globcom.add(gerda_berhammer);
-		this.berghammers_globcom.add(christa_berhammer);
-		this.christa_berghammer_globcom = new ArrayList<Object>();
-		this.christa_berghammer_globcom.add(christa_berhammer);
-		
-		this.subjectsInEurope.add(hans_berghammer);
-		this.subjectsInEurope.add(gerda_berhammer);
-		this.subjectsInEurope.add(christa_berhammer);
+		this.berghammers.add(gerda_berghammer);
+		this.berghammers.add(christa_berghammer);
+		if (!bhOnly) {
+			this.smiths_christa_berghammer_globcom.add(christa_berghammer);
+			this.berghammers_globcom = new ArrayList<Object>();
+			this.berghammers_globcom.add(hans_berghammer);
+			this.berghammers_globcom.add(gerda_berghammer);
+			this.berghammers_globcom.add(christa_berghammer);
+			this.christa_berghammer_globcom = new ArrayList<Object>();
+			this.christa_berghammer_globcom.add(christa_berghammer);
+			
+			this.subjectsInEurope.add(hans_berghammer);
+			this.subjectsInEurope.add(gerda_berghammer);
+			this.subjectsInEurope.add(christa_berghammer);
+		}
 		
 		domainObjects.add(hans_berghammer);
-		domainObjects.add(gerda_berhammer);
-		domainObjects.add(christa_berhammer);
+		domainObjects.add(gerda_berghammer);
+		domainObjects.add(christa_berghammer);
 	}
 	
 	private void createMore(List<Object> domainObjects) {

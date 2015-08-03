@@ -50,7 +50,8 @@ import javax.ws.rs.core.Response.StatusType;
 public class RemoteDBAccess implements IDBAccessInit {
 
 	private static final String transactionalURLPostfix = "db/data/transaction/commit";
-	private static final String authHeader = "Authorization";
+	private static final String locationHeader = "Location";
+	static final String authHeader = "Authorization";
 	private static final String authBasic = "Basic";
 	
 	private ThreadLocal<RTransactionImpl> transaction = new ThreadLocal<RTransactionImpl>();
@@ -89,11 +90,23 @@ public class RemoteDBAccess implements IDBAccessInit {
 
 		Response response = null;
 		Throwable exception = null;
+		Builder iBuilder;
+		RTransactionImpl tx = null;
+		if ((tx = this.transaction.get()) != null) {
+			iBuilder = tx.getInvocationBuilder();
+		} else {
+			iBuilder = getInvocationBuilder();
+		}
 		try {
-			Builder iBuilder = getInvocationBuilder();
 			response = iBuilder.post(Entity.entity(json, MediaType.APPLICATION_JSON_TYPE));
 		} catch(Throwable e) {
 			exception = e;
+			tx = null;
+		}
+		
+		if (tx != null) {
+			String txLocation = response.getHeaderString(locationHeader);
+			tx.setTxLocation(txLocation);
 		}
 		
 		JsonObject jsonResult = null;
@@ -182,13 +195,21 @@ public class RemoteDBAccess implements IDBAccessInit {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	String getAuth() {
+		return this.auth;
+	}
 
-	private synchronized Client getRestClient() {
+	synchronized Client getRestClient() {
 		if (this.restClient == null) {
 			this.restClient = ClientBuilder.newClient();
 			this.shutdownHook = registerShutdownHook(this.restClient);
 		}
 		return this.restClient;
+	}
+	
+	String getServerRootUri() {
+		return this.properties.getProperty(DBProperties.SERVER_ROOT_URI);
 	}
 	
 	private synchronized WebTarget getTransactionalTarget() {

@@ -16,6 +16,21 @@
 
 package iot.jcypher.transaction;
 
+import iot.jcypher.query.result.JcError;
+
+import java.util.List;
+
 public interface ITransaction {
 
+	/**
+	 * Mark the transaction as failed. This will lead to a rollback of the transaction.
+	 */
+	public void failed();
+	
+	/**
+	 * Close the transaction. If it was marked as failed, a rollback is performed,
+	 * else the transaction is committed.
+	 * @return a possibly empty list of errors.
+	 */
+	public List<JcError> close();
 }

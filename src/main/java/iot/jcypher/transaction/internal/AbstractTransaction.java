@@ -22,14 +22,19 @@ import iot.jcypher.transaction.ITransaction;
 public abstract class AbstractTransaction implements ITransaction {
 
 	private IDBAccess dbAccess;
-	protected TXState state;
+	protected boolean failed;
 
 	public AbstractTransaction(IDBAccess dbAccess) {
 		super();
 		this.dbAccess = dbAccess;
-		this.state = TXState.CREATED;
+		this.failed = false;
 	}
-
+	
+	@Override
+	public void failed() {
+		this.failed = true;
+	}
+	
 	protected IDBAccess getDBAccess() {
 		return dbAccess;
 	}

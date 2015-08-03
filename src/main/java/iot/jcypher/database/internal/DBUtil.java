@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,7 +36,11 @@ import iot.jcypher.util.Util;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.io.UnsupportedEncodingException;
+import java.util.ArrayList;
 import java.util.List;
+
+import javax.ws.rs.core.Response;
+import javax.ws.rs.core.Response.StatusType;
 
 public class DBUtil {
 
@@ -93,5 +97,24 @@ public class DBUtil {
 		}
 		ps.close();
 		return ret;
+	}
+	
+	public static List<JcError> buildErrorList(Response response, Throwable exception) {
+		List<JcError> errors = new ArrayList<JcError>();
+		
+		if (exception == null) {
+			StatusType status = response.getStatusInfo();
+			if (status != null && status.getStatusCode() >= 400) {
+				String code = String.valueOf(status.getStatusCode());
+				String msg = status.getReasonPhrase();
+				errors.add(new JcError(code, msg, null));
+			}
+		} else {
+			String typ = exception.getClass().getSimpleName();
+			String msg = exception.getLocalizedMessage();
+			errors.add(new JcError(typ, msg, DBUtil.getStacktrace(exception)));
+		}
+		
+		return errors;
 	}
 }
