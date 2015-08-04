@@ -31,11 +31,25 @@ public abstract class AbstractTransaction implements ITransaction {
 	}
 	
 	@Override
-	public void failed() {
+	public void failure() {
 		this.failed = true;
 	}
 	
 	protected IDBAccess getDBAccess() {
 		return dbAccess;
+	}
+	
+	/**
+	 * answer true if the method is called from the same thread
+	 * this transaction was created in. 
+	 * @return
+	 */
+	protected boolean isMyThread() {
+		return getDBAccess().getTX() == this;
+	}
+	
+	@Override
+	public boolean isClosed() {
+		return getDBAccess().getTX() == null;
 	}
 }

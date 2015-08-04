@@ -158,6 +158,11 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 	}
 
 	@Override
+	public ITransaction getTX() {
+		return this.transaction.get();
+	}
+
+	@Override
 	public boolean isDatabaseEmpty() {
 		return DBUtil.isDatabaseEmpty(this);
 	}

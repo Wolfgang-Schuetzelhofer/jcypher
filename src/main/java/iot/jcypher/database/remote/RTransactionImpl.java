@@ -16,17 +16,16 @@
 
 package iot.jcypher.database.remote;
 
-import java.util.List;
-
 import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.transaction.internal.AbstractTransaction;
 
-import javax.ws.rs.client.Client;
+import java.util.List;
+
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.client.Invocation.Builder;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 
@@ -48,11 +47,17 @@ public class RTransactionImpl extends AbstractTransaction {
 	
 	@Override
 	public List<JcError> close() {
+		if (isClosed())
+			throw new RuntimeException("transaction has already been closed");
+		if (!isMyThread())
+			throw new RuntimeException("close() must be called from within the same thread which created this transaction");
+		
+		RemoteDBAccess rdba = getRDBAccess();
+		rdba.removeTx();
 		Builder iBuilder;
 		if (failed) {
 			iBuilder = createNextInvocationBuilder();
 		} else {
-			RemoteDBAccess rdba = getRDBAccess();
 			WebTarget serverRootTarget = rdba.getRestClient().target(rdba.getServerRootUri());
 			WebTarget transactionalTarget = serverRootTarget.path(this.txLocation.concat(txCommit));
 			iBuilder = transactionalTarget.request(MediaType.APPLICATION_JSON_TYPE);
@@ -114,4 +119,5 @@ public class RTransactionImpl extends AbstractTransaction {
 			ret = ret.header(RemoteDBAccess.authHeader, rdba.getAuth());
 		return ret;
 	}
+	
 }

@@ -56,6 +56,13 @@ public interface IDBAccess {
 	public ITransaction beginTX();
 	
 	/**
+	 * Answer the transaction which was opened in the context of the current thread.
+	 * Answer null if currently there is no open transaction for the current thread.
+	 * @return
+	 */
+	public ITransaction getTX();
+	
+	/**
 	 * @return true if not a single node or relation is contained in the graph database
 	 */
 	public boolean isDatabaseEmpty();

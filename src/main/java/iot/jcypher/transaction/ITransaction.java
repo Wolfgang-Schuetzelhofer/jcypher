@@ -23,9 +23,10 @@ import java.util.List;
 public interface ITransaction {
 
 	/**
-	 * Mark the transaction as failed. This will lead to a rollback of the transaction.
-	 */
-	public void failed();
+     * Marks this transaction as failed, which means that it will
+     * unconditionally be rolled back when close() is called.
+     */
+	public void failure();
 	
 	/**
 	 * Close the transaction. If it was marked as failed, a rollback is performed,
@@ -33,4 +34,10 @@ public interface ITransaction {
 	 * @return a possibly empty list of errors.
 	 */
 	public List<JcError> close();
+	
+	/**
+	 * answer true if this transaction has been closed
+	 * @return
+	 */
+	public boolean isClosed();
 }

@@ -1312,6 +1312,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 
 			@Override
+			public ITransaction getTX() {
+				return this.delegate.getTX();
+			}
+
+			@Override
 			public DBType getDBType() {
 				return this.delegate.getDBType();
 			}

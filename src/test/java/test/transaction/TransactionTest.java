@@ -43,6 +43,7 @@ import org.junit.Test;
 
 import test.AbstractTestSuite;
 import test.domainquery.Population;
+import test.domainquery.model.Company;
 import test.domainquery.model.Person;
 
 public class TransactionTest extends AbstractTestSuite {
@@ -69,12 +70,6 @@ public class TransactionTest extends AbstractTestSuite {
 		
 		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
-		
-		List<JcError> errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
 	}
 	
 	@AfterClass
@@ -98,30 +93,37 @@ public class TransactionTest extends AbstractTestSuite {
 		DomainQueryResult result = null;
 		List<JcError> errors;
 		
+		errors = dbAccess.clearDatabase();
+		assertEquals(0, errors.size());
 		da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
 		Population population = new Population();
-		List<Object> domObjects = population.createBerghammerFamily();
+		List<Object> domObjects;
 		
 		/** 01 ****************************************/
 		ITransaction tx = da.beginTX();
+		domObjects = population.createBerghammerFamily();
+		errors = da.store(domObjects);
+		assertEquals(0, errors.size());
+		domObjects = population.createCompanies();
 		errors = da.store(domObjects);
 		assertEquals(0, errors.size());
 		
-		tx.failed();
+		tx.failure();
 		errors = tx.close();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
+		assertEquals(0, errors.size());
 		
-//		q = da.createQuery();
-//		DomainObjectMatch<Person> bergammerMatch = q.createMatch(Person.class);
-//		q.WHERE(bergammerMatch.atttribute("lastName")).EQUALS("Berghammer");
-//		
-//		result = q.execute();
+		q = da.createQuery();
+		DomainObjectMatch<Person> bergammerMatch = q.createMatch(Person.class);
+		DomainObjectMatch<Company> companiesMatch = q.createMatch(Company.class);
+		q.WHERE(bergammerMatch.atttribute("lastName")).EQUALS("Berghammer");
 		
-//		List<Person> berghammer = result.resultOf(bergammerMatch);
+		result = q.execute();
+		
+		List<Person> berghammer = result.resultOf(bergammerMatch);
+		List<Company> companies = result.resultOf(companiesMatch);
+		assertEquals(0, berghammer.size());
+		assertEquals(0, companies.size());
 		
 		return;
 	}
@@ -133,29 +135,36 @@ public class TransactionTest extends AbstractTestSuite {
 		DomainQueryResult result = null;
 		List<JcError> errors;
 		
+		errors = dbAccess.clearDatabase();
+		assertEquals(0, errors.size());
 		da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
 		Population population = new Population();
-		List<Object> domObjects = population.createBerghammerFamily();
+		List<Object> domObjects;
 		
 		/** 01 ****************************************/
 		ITransaction tx = da.beginTX();
+		domObjects = population.createBerghammerFamily();
+		errors = da.store(domObjects);
+		assertEquals(0, errors.size());
+		domObjects = population.createCompanies();
 		errors = da.store(domObjects);
 		assertEquals(0, errors.size());
 		
 		errors = tx.close();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
+		assertEquals(0, errors.size());
 		
-//		q = da.createQuery();
-//		DomainObjectMatch<Person> bergammerMatch = q.createMatch(Person.class);
-//		q.WHERE(bergammerMatch.atttribute("lastName")).EQUALS("Berghammer");
-//		
-//		result = q.execute();
+		q = da.createQuery();
+		DomainObjectMatch<Person> bergammerMatch = q.createMatch(Person.class);
+		DomainObjectMatch<Company> companiesMatch = q.createMatch(Company.class);
+		q.WHERE(bergammerMatch.atttribute("lastName")).EQUALS("Berghammer");
 		
-//		List<Person> berghammer = result.resultOf(bergammerMatch);
+		result = q.execute();
+		
+		List<Person> berghammer = result.resultOf(bergammerMatch);
+		List<Company> companies = result.resultOf(companiesMatch);
+		assertEquals(3, berghammer.size());
+		assertEquals(2, companies.size());
 		
 		return;
 	}

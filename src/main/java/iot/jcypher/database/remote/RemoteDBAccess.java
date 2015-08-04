@@ -154,6 +154,11 @@ public class RemoteDBAccess implements IDBAccessInit {
 	}
 
 	@Override
+	public ITransaction getTX() {
+		return this.transaction.get();
+	}
+
+	@Override
 	public DBType getDBType() {
 		return DBType.REMOTE;
 	}
@@ -210,6 +215,10 @@ public class RemoteDBAccess implements IDBAccessInit {
 	
 	String getServerRootUri() {
 		return this.properties.getProperty(DBProperties.SERVER_ROOT_URI);
+	}
+	
+	void removeTx() {
+		this.transaction.remove();
 	}
 	
 	private synchronized WebTarget getTransactionalTarget() {

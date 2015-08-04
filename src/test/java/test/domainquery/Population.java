@@ -93,7 +93,7 @@ public class Population {
 		createSmithFamily(domainObjects);
 		createBerghammers(domainObjects, false);
 		createMore(domainObjects);
-		createCompanies(domainObjects);
+		createCompanies(domainObjects, false);
 		createAddressees(domainObjects);
 		
 		return domainObjects;
@@ -104,6 +104,16 @@ public class Population {
 		
 		createPlaces();
 		createBerghammers(domainObjects, true);
+		
+		return domainObjects;
+	}
+	
+	public List<Object> createCompanies() {
+		List<Object> domainObjects = new ArrayList<Object>();
+		
+		if (earth == null)
+			createPlaces();
+		createCompanies(domainObjects, true);
 		
 		return domainObjects;
 	}
@@ -470,12 +480,14 @@ public class Population {
 		domainObjects.add(sarah_maier);
 	}
 	
-	private void createCompanies(List<Object> domainObjects) {
+	private void createCompanies(List<Object> domainObjects, boolean compsOnly) {
 		Address globCom_address = new Address("Kearny Street", 29);
 		globCom_address.setArea(sanFrancisco);
 		EContact globCom_phone = new EContact(EContactType.TELEPHONE, "12345");
-		this.all_PointsOfContact.add(globCom_address);
-		this.all_PointsOfContact.add(globCom_phone);
+		if (!compsOnly) {
+			this.all_PointsOfContact.add(globCom_address);
+			this.all_PointsOfContact.add(globCom_phone);
+		}
 		
 		Company globCom = new Company();
 		globCom.setMatchString("match_1");
@@ -485,24 +497,27 @@ public class Population {
 		
 		Address smallCom_address = new Address("Schiller Strasse", 15);
 		smallCom_address.setArea(munich);
-		this.all_PointsOfContact.add(smallCom_address);
+		if (!compsOnly)
+			this.all_PointsOfContact.add(smallCom_address);
 		
 		Company smallCom = new Company();
 		smallCom.setMatchString("match_5");
 		smallCom.setName("Small Company");
 		smallCom.getPointsOfContact().add(smallCom_address);
 		
-		this.watson_company.add(globCom);
-		this.smiths_christa_berghammer_globcom.add(globCom);
-		this.berghammers_globcom.add(globCom);
-		this.christa_berghammer_globcom.add(globCom);
-		
-		this.john_smith_globcom.add(0, globCom);
-		this.john_smith_globcom_contacts.add(1, globCom_address);
-		this.john_smith_globcom_contacts.add(globCom_phone);
-		
-		this.subjectsInEurope.add(smallCom);
-		this.subjectsInUsa.add(globCom);
+		if (!compsOnly) {
+			this.watson_company.add(globCom);
+			this.smiths_christa_berghammer_globcom.add(globCom);
+			this.berghammers_globcom.add(globCom);
+			this.christa_berghammer_globcom.add(globCom);
+			
+			this.john_smith_globcom.add(0, globCom);
+			this.john_smith_globcom_contacts.add(1, globCom_address);
+			this.john_smith_globcom_contacts.add(globCom_phone);
+			
+			this.subjectsInEurope.add(smallCom);
+			this.subjectsInUsa.add(globCom);
+		}
 		
 		domainObjects.add(globCom);
 		domainObjects.add(smallCom);
