@@ -17,6 +17,7 @@
 package test.transaction;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -51,6 +52,7 @@ public class TransactionTest extends AbstractTestSuite {
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static ByteArrayOutputStream queriesStream;
+	private boolean threadDone;
 	
 	@BeforeClass
 	public static void before() {
@@ -166,6 +168,76 @@ public class TransactionTest extends AbstractTestSuite {
 		assertEquals(3, berghammer.size());
 		assertEquals(2, companies.size());
 		
+		return;
+	}
+	
+	@Test
+	public void testFailure() {
+		DomainQuery q;
+		DomainQueryResult result = null;
+		List<JcError> errors;
+		
+		errors = dbAccess.clearDatabase();
+		assertEquals(0, errors.size());
+		final IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		Population population = new Population();
+		List<Object> domObjects;
+		
+		/** 01 ****************************************/
+		ITransaction tx = da.beginTX();
+		domObjects = population.createBerghammerFamily();
+		errors = da.store(domObjects);
+		assertEquals(0, errors.size());
+		domObjects = population.createCompanies();
+		errors = da.store(domObjects);
+		assertEquals(0, errors.size());
+		
+		tx.failure();
+		errors = tx.close();
+		assertEquals(0, errors.size());
+		Throwable ex = null;
+		try {
+			errors = tx.close();
+		} catch (Throwable e) {
+			ex = e;
+			assertEquals("transaction has already been closed", e.getMessage());
+		}
+		assertTrue(ex != null);
+		
+		/** 02 ****************************************/
+		this.threadDone = false;
+		final ITransaction[] txs = new ITransaction[1];
+		Runnable r = new Runnable() {
+			@Override
+			public void run() {
+				txs[0] = da.beginTX();
+				synchronized (TransactionTest.this) {
+					threadDone = true;
+				}
+				return;
+			}
+		};
+		new Thread(r).start();
+		boolean goOn = false;
+		while(!goOn) {
+			try {
+				Thread.sleep(50);
+			} catch (InterruptedException e) {
+			}
+			synchronized (TransactionTest.this) {
+				goOn = threadDone;
+			}
+		}
+		
+		ex = null;
+		try {
+			errors = txs[0].close();
+		} catch (Throwable e) {
+			ex = e;
+			assertEquals("close() must be called from within the same thread which created this transaction", e.getMessage());
+		}
+		assertTrue(ex != null);
 		return;
 	}
 }

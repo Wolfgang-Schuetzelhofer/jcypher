@@ -32,6 +32,7 @@ public interface ITransaction {
 	 * Close the transaction. If it was marked as failed, a rollback is performed,
 	 * else the transaction is committed.
 	 * @return a possibly empty list of errors.
+	 * @throws RuntimeException
 	 */
 	public List<JcError> close();
 	

@@ -48,10 +48,11 @@ public class RTransactionImpl extends AbstractTransaction {
 	@Override
 	public List<JcError> close() {
 		if (isClosed())
-			throw new RuntimeException("transaction has already been closed");
+			throw new RuntimeException(ERR_CLOSED);
 		if (!isMyThread())
-			throw new RuntimeException("close() must be called from within the same thread which created this transaction");
+			throw new RuntimeException(ERR_THREAD);
 		
+		setClosed();
 		RemoteDBAccess rdba = getRDBAccess();
 		rdba.removeTx();
 		Builder iBuilder;

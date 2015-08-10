@@ -20,14 +20,19 @@ import iot.jcypher.database.IDBAccess;
 import iot.jcypher.transaction.ITransaction;
 
 public abstract class AbstractTransaction implements ITransaction {
+	
+	protected static final String ERR_CLOSED = "transaction has already been closed"; 
+	protected static final String ERR_THREAD = "close() must be called from within the same thread which created this transaction";
 
 	private IDBAccess dbAccess;
+	private boolean closed;
 	protected boolean failed;
 
 	public AbstractTransaction(IDBAccess dbAccess) {
 		super();
 		this.dbAccess = dbAccess;
 		this.failed = false;
+		this.closed = false;
 	}
 	
 	@Override
@@ -48,8 +53,12 @@ public abstract class AbstractTransaction implements ITransaction {
 		return getDBAccess().getTX() == this;
 	}
 	
+	protected void setClosed() {
+		this.closed = true;
+	}
+
 	@Override
 	public boolean isClosed() {
-		return getDBAccess().getTX() == null;
+		return this.closed;
 	}
 }
