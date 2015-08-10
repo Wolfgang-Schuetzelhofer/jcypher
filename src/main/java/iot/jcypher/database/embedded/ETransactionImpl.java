@@ -18,10 +18,14 @@ package iot.jcypher.database.embedded;
 
 import java.util.List;
 
+import org.neo4j.graphdb.Transaction;
+
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.transaction.internal.AbstractTransaction;
 
 public class ETransactionImpl extends AbstractTransaction {
+	
+	private Transaction transaction;
 
 	/**
 	 * @param dbAccess
@@ -32,7 +36,36 @@ public class ETransactionImpl extends AbstractTransaction {
 	
 	@Override
 	public List<JcError> close() {
+		if (isClosed())
+			throw new RuntimeException(ERR_CLOSED);
+		if (!isMyThread())
+			throw new RuntimeException(ERR_THREAD);
+		
+		setClosed();
+		AbstractEmbeddedDBAccess edba = getEDBAccess();
+		edba.removeTx();
+		Transaction tx = getTransaction();
+		if (failed)
+			tx.failure();
+		else
+			tx.success();
+		
+		Throwable dbException = null;
+		try {
+			tx.close();
+		} catch(Throwable e) {
+			dbException = e;
+		}
+		
 		return null;
+	}
+	
+	public Transaction getTransaction() {
+		if (this.transaction == null) {
+			AbstractEmbeddedDBAccess edba = getEDBAccess();
+			this.transaction = edba.getGraphDB().beginTx();
+		}
+		return this.transaction;
 	}
 	
 	private AbstractEmbeddedDBAccess getEDBAccess() {

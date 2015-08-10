@@ -91,8 +91,12 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		Transaction tx = null;
 		Throwable dbException = null;
 		if (engine != null) {
-			try {
+			ETransactionImpl etx = null;
+			if ((etx = this.transaction.get()) != null)
+				tx = etx.getTransaction();
+			else
 				tx = getGraphDB().beginTx();
+			try {
 				for (Statement statement : statements) {
 					if (statement.parameterMap != null)
 						result = engine.execute(statement.cypher, statement.parameterMap);
@@ -114,7 +118,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 				if (tx != null)
 					tx.failure();
 			} finally {
-				if (tx != null) {
+				if (etx == null && tx != null) {
 					try {
 						tx.close();
 					} catch(Throwable e1) {
@@ -256,7 +260,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 
 	protected abstract GraphDatabaseService createGraphDB();
 
-	protected synchronized GraphDatabaseService getGraphDB() {
+	public synchronized GraphDatabaseService getGraphDB() {
 		if (this.graphDb == null) {
 			this.graphDb = createGraphDB();
 			this.shutdownHook = registerShutdownHook(this.graphDb);
@@ -440,6 +444,10 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 				nodes.add(nh);
 			}
 		}
+	}
+	
+	void removeTx() {
+		this.transaction.remove();
 	}
 	
 	private static Thread registerShutdownHook(final GraphDatabaseService gDb) {
