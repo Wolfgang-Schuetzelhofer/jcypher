@@ -20,6 +20,7 @@ import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.transaction.internal.AbstractTransaction;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.ws.rs.client.Entity;
@@ -47,6 +48,7 @@ public class RTransactionImpl extends AbstractTransaction {
 	
 	@Override
 	public List<JcError> close() {
+		List<JcError> errors;
 		if (isClosed())
 			throw new RuntimeException(ERR_CLOSED);
 		if (!isMyThread())
@@ -55,29 +57,33 @@ public class RTransactionImpl extends AbstractTransaction {
 		setClosed();
 		RemoteDBAccess rdba = getRDBAccess();
 		rdba.removeTx();
-		Builder iBuilder;
-		if (failed) {
-			iBuilder = createNextInvocationBuilder();
-		} else {
-			WebTarget serverRootTarget = rdba.getRestClient().target(rdba.getServerRootUri());
-			WebTarget transactionalTarget = serverRootTarget.path(this.txLocation.concat(txCommit));
-			iBuilder = transactionalTarget.request(MediaType.APPLICATION_JSON_TYPE);
-			if (rdba.getAuth() != null)
-				iBuilder = iBuilder.header(RemoteDBAccess.authHeader, rdba.getAuth());
-		}
-		
-		Response response = null;
-		Throwable exception = null;
-		try {
-			if (failed)
-				response = iBuilder.delete();
-			else
-				response = iBuilder.post(Entity.entity(emptyJSON, MediaType.APPLICATION_JSON_TYPE));
-		} catch(Throwable e) {
-			exception = e;
-		}
-		
-		return DBUtil.buildErrorList(response, exception);
+		if (this.invocationBuilder_open != null) {
+			Builder iBuilder;
+			if (failed) {
+				iBuilder = createNextInvocationBuilder();
+			} else {
+				WebTarget serverRootTarget = rdba.getRestClient().target(rdba.getServerRootUri());
+				WebTarget transactionalTarget = serverRootTarget.path(this.txLocation.concat(txCommit));
+				iBuilder = transactionalTarget.request(MediaType.APPLICATION_JSON_TYPE);
+				if (rdba.getAuth() != null)
+					iBuilder = iBuilder.header(RemoteDBAccess.authHeader, rdba.getAuth());
+			}
+			
+			Response response = null;
+			Throwable exception = null;
+			try {
+				if (failed)
+					response = iBuilder.delete();
+				else
+					response = iBuilder.post(Entity.entity(emptyJSON, MediaType.APPLICATION_JSON_TYPE));
+			} catch(Throwable e) {
+				exception = e;
+			}
+			
+			errors = DBUtil.buildErrorList(response, exception);
+		} else
+			errors = new ArrayList<JcError>();
+		return errors;
 	}
 	
 	private RemoteDBAccess getRDBAccess() {

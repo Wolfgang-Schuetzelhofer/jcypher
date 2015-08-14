@@ -112,7 +112,8 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 						addRow(builderContext, row, cols);
 					}
 				}
-				tx.success();
+				if (etx == null)
+					tx.success();
 			} catch (Throwable e) {
 				dbException = e;
 				if (tx != null)

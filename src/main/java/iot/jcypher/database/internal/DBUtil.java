@@ -103,11 +103,13 @@ public class DBUtil {
 		List<JcError> errors = new ArrayList<JcError>();
 		
 		if (exception == null) {
-			StatusType status = response.getStatusInfo();
-			if (status != null && status.getStatusCode() >= 400) {
-				String code = String.valueOf(status.getStatusCode());
-				String msg = status.getReasonPhrase();
-				errors.add(new JcError(code, msg, null));
+			if (response != null) {
+				StatusType status = response.getStatusInfo();
+				if (status != null && status.getStatusCode() >= 400) {
+					String code = String.valueOf(status.getStatusCode());
+					String msg = status.getReasonPhrase();
+					errors.add(new JcError(code, msg, null));
+				}
 			}
 		} else {
 			String typ = exception.getClass().getSimpleName();

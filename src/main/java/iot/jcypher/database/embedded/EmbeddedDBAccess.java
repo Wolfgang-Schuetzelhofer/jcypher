@@ -19,7 +19,6 @@ package iot.jcypher.database.embedded;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 
-import java.io.File;
 import java.util.Properties;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -47,10 +46,15 @@ public class EmbeddedDBAccess extends AbstractEmbeddedDBAccess {
 
 	@Override
 	protected GraphDatabaseService createGraphDB() {
-		File dbDir = new File(this.properties
-						.getProperty(DBProperties.DATABASE_DIR));
+		// TODO the following applies to version 2.3.0 and above
+//		File dbDir = new File(this.properties
+//						.getProperty(DBProperties.DATABASE_DIR));
+//		GraphDatabaseBuilder builder = new GraphDatabaseFactory()
+//				.newEmbeddedDatabaseBuilder(dbDir);
+		
 		GraphDatabaseBuilder builder = new GraphDatabaseFactory()
-				.newEmbeddedDatabaseBuilder(dbDir);
+				.newEmbeddedDatabaseBuilder(this.properties
+						.getProperty(DBProperties.DATABASE_DIR));
 		if (this.properties
 				.getProperty(DBProperties.PAGECACHE_MEMORY) != null)
 			builder.setConfig(
