@@ -67,8 +67,8 @@
                                     "Movie"
                                 ],
                                 "properties":{
-                                    "year":"2003-10-27",
-                                    "title":"The Matrix Revolutions"
+                                    "title":"The Matrix Revolutions",
+                                    "year":"2003-10-27"
                                 }
                             },
                             {
@@ -114,8 +114,8 @@
                                     "Movie"
                                 ],
                                 "properties":{
-                                    "year":"2003-05-07",
-                                    "title":"The Matrix Reloaded"
+                                    "title":"The Matrix Reloaded",
+                                    "year":"2003-05-07"
                                 }
                             },
                             {
@@ -208,8 +208,8 @@
                                     "Movie"
                                 ],
                                 "properties":{
-                                    "year":"2003-10-27",
-                                    "title":"The Matrix Revolutions"
+                                    "title":"The Matrix Revolutions",
+                                    "year":"2003-10-27"
                                 }
                             },
                             {
@@ -255,8 +255,8 @@
                                     "Movie"
                                 ],
                                 "properties":{
-                                    "year":"2003-05-07",
-                                    "title":"The Matrix Reloaded"
+                                    "title":"The Matrix Reloaded",
+                                    "year":"2003-05-07"
                                 }
                             },
                             {
@@ -349,8 +349,8 @@
                                     "Movie"
                                 ],
                                 "properties":{
-                                    "year":"2003-10-27",
-                                    "title":"The Matrix Revolutions"
+                                    "title":"The Matrix Revolutions",
+                                    "year":"2003-10-27"
                                 }
                             },
                             {
@@ -396,8 +396,8 @@
                                     "Movie"
                                 ],
                                 "properties":{
-                                    "year":"2003-05-07",
-                                    "title":"The Matrix Reloaded"
+                                    "title":"The Matrix Reloaded",
+                                    "year":"2003-05-07"
                                 }
                             },
                             {

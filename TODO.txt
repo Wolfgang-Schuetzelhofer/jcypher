@@ -9,8 +9,6 @@ domain labels with index search
 ---done--- constraints on traversal results in select expressions may only be expressed on direct traversals from the expressions source set
 -> do a validation
 
-problem with unconstraint optional matches
-
 ---done--- test for contains and count if direct traversals
 
 ---done--- check traversal query "BACK_02" for optimization on IN clause
