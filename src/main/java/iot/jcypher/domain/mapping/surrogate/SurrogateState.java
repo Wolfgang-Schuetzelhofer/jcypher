@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,6 +32,20 @@ public class SurrogateState {
 	public SurrogateState() {
 		super();
 		this.map2SurrogateMap = new HashMap<Surrogate_Key, ReferredSurrogate<?>>();
+	}
+	
+	public SurrogateState createCopy() {
+		SurrogateState ret = new SurrogateState();
+		Iterator<Entry<Surrogate_Key, ReferredSurrogate<?>>> it = this.map2SurrogateMap.entrySet().iterator();
+		while(it.hasNext()) {
+			Entry<Surrogate_Key, ReferredSurrogate<?>> entry = it.next();
+			ReferredSurrogate<?> rs = entry.getValue();
+			ReferredSurrogate<?> nrs = new ReferredSurrogate<>(rs.surrogate);
+//			ret.map2SurrogateMap.put(new Surrogate_Key(entry.getKey().original),
+//					value)
+		}
+		
+		return ret;
 	}
 
 	private <T extends AbstractSurrogate> void addOriginal2ReferredSurrogate(Object original, ReferredSurrogate<T> refMap) {

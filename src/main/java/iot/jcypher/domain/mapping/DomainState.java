@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,8 +22,10 @@ import iot.jcypher.domain.mapping.surrogate.SurrogateState;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public class DomainState {
 
@@ -46,6 +48,60 @@ public class DomainState {
 		this.objectField2KeyedRelationsMap = new HashMap<SourceField2TargetKey, List<KeyedRelation>>();
 		this.multiRelationsMap = new HashMap<SourceFieldKey, List<KeyedRelation>>();
 		this.surrogateState = new SurrogateState();
+	}
+	
+	public DomainState createCopy() {
+		DomainState ret = new DomainState();
+		Iterator<Entry<Object, LoadInfo>> it_1 = this.object2IdMap.entrySet().iterator();
+		while(it_1.hasNext()) {
+			Entry<Object, LoadInfo> entry = it_1.next();
+			ret.object2IdMap.put(entry.getKey(), entry.getValue().createCopy());
+		}
+		Iterator<Entry<IRelation, Long>> it_2 = this.relation2IdMap.entrySet().iterator();
+		while(it_2.hasNext()) {
+			Entry<IRelation, Long> entry = it_2.next();
+			ret.relation2IdMap.put(entry.getKey().createCopy(this), entry.getValue());
+		}
+		Iterator<Entry<Long, Object>> it_3 = this.id2ObjectMap.entrySet().iterator();
+		while(it_3.hasNext()) {
+			Entry<Long, Object> entry = it_3.next();
+			ret.id2ObjectMap.put(entry.getKey(), entry.getValue());
+		}
+		Iterator<Entry<Object, List<IRelation>>> it_4 = this.object2RelationsMap.entrySet().iterator();
+		while(it_4.hasNext()) {
+			Entry<Object, List<IRelation>> entry = it_4.next();
+			ret.object2RelationsMap.put(entry.getKey(), copyRelationsList(entry.getValue()));
+		}
+		Iterator<Entry<SourceField2TargetKey, List<KeyedRelation>>> it_5 = this.objectField2KeyedRelationsMap.entrySet().iterator();
+		while(it_5.hasNext()) {
+			Entry<SourceField2TargetKey, List<KeyedRelation>> entry = it_5.next();
+			SourceField2TargetKey sftk = entry.getKey();
+			SourceFieldKey sfk = sftk.getSourceFieldKey();
+			ret.objectField2KeyedRelationsMap.put(
+					new SourceField2TargetKey(sfk.getSource(), sfk.getFieldName(), sftk.getTarget()),
+					copyRelationsList(entry.getValue()));
+		}
+		Iterator<Entry<SourceFieldKey, List<KeyedRelation>>> it_6 = this.multiRelationsMap.entrySet().iterator();
+		while(it_6.hasNext()) {
+			Entry<SourceFieldKey, List<KeyedRelation>> entry = it_6.next();
+			SourceFieldKey sfk = entry.getKey();
+			ret.multiRelationsMap.put(new SourceFieldKey(sfk.getSource(), sfk.getFieldName()),
+					copyRelationsList(entry.getValue()));
+		}
+		
+		return ret;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T extends IRelation> List<T> copyRelationsList(List<T> toCopy) {
+		List<T> ret = null;
+		if (toCopy != null) {
+			ret = new ArrayList<T>();
+			for (T rel : toCopy) {
+				ret.add((T)rel.createCopy(this));
+			}
+		}
+		return ret;
 	}
 	
 	private void addTo_Object2IdMap(Object key, Long value, ResolutionDepth resolutionDepth) {
@@ -219,6 +275,7 @@ public class DomainState {
 		public Object getEnd();
 		public void setDomainState(DomainState domainState);
 		public void setId(long id);
+		public IRelation createCopy(DomainState ds);
 		
 		/**
 		 * @return true if start and / or end is an InnerClassSurrogate
@@ -258,6 +315,14 @@ public class DomainState {
 		}
 
 		@Override
+		public IRelation createCopy(DomainState ds) {
+			Relation ret = new Relation(this.type,	this.start, this.end);
+			ret.domainState = ds;
+			ret.id = this.id;
+			return ret;
+		}
+
+		@Override
 		public String getType() {
 			return type;
 		}
@@ -286,6 +351,10 @@ public class DomainState {
 		@Override
 		public void setId(long id) {
 			this.id = id;
+		}
+		
+		protected long getId() {
+			return this.id;
 		}
 
 		@Override
@@ -365,6 +434,14 @@ public class DomainState {
 			this.key = key;
 		}
 		
+		@Override
+		public IRelation createCopy(DomainState ds) {
+			KeyedRelation ret = new KeyedRelation(getType(), this.key, getStart(), getEnd());
+			ret.setDomainState(ds);
+			ret.setId(getId());
+			return ret;
+		}
+		
 		public Object getKey() {
 			return this.key;
 		}
@@ -424,6 +501,14 @@ public class DomainState {
 			super();
 			this.existingOne = existingOne;
 			this.newOne = newOne;
+		}
+
+		@Override
+		public IRelation createCopy(DomainState ds) {
+			KeyedRelationToChange ret = new KeyedRelationToChange(
+					(KeyedRelation)this.existingOne.createCopy(ds),
+					(KeyedRelation)this.newOne.createCopy(ds));
+			return ret;
 		}
 
 		@Override
@@ -488,7 +573,7 @@ public class DomainState {
 		}
 
 		public Object getTarget() {
-			return target;
+			return this.target;
 		}
 
 		public SourceFieldKey getSourceFieldKey() {
@@ -595,6 +680,12 @@ public class DomainState {
 		private Long id;
 		private ResolutionDepth resolutionDepth;
 		
+		private LoadInfo createCopy() {
+			LoadInfo ret = new LoadInfo();
+			ret.id = this.id;
+			ret.resolutionDepth = this.resolutionDepth;
+			return ret;
+		}
 		public Long getId() {
 			return id;
 		}
