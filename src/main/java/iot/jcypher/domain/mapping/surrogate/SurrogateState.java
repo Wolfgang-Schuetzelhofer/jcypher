@@ -16,10 +16,12 @@
 
 package iot.jcypher.domain.mapping.surrogate;
 
+import iot.jcypher.domain.mapping.DomainState;
 import iot.jcypher.domain.mapping.DomainState.IRelation;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -34,17 +36,57 @@ public class SurrogateState {
 		this.map2SurrogateMap = new HashMap<Surrogate_Key, ReferredSurrogate<?>>();
 	}
 	
-	public SurrogateState createCopy() {
+	public SurrogateState createCopy(Map<IRelation, IRelation> copiedRels,
+			DomainState ds) {
 		SurrogateState ret = new SurrogateState();
+		
+		Map<Surrogate_Key, Surrogate_Key> copiedSurrks = new IdentityHashMap<Surrogate_Key, Surrogate_Key>();
+		Map<ReferredSurrogate<?>, ReferredSurrogate<?>> copiedRefSurrs =
+				new IdentityHashMap<ReferredSurrogate<?>, ReferredSurrogate<?>>();
 		Iterator<Entry<Surrogate_Key, ReferredSurrogate<?>>> it = this.map2SurrogateMap.entrySet().iterator();
 		while(it.hasNext()) {
 			Entry<Surrogate_Key, ReferredSurrogate<?>> entry = it.next();
-			ReferredSurrogate<?> rs = entry.getValue();
-			ReferredSurrogate<?> nrs = new ReferredSurrogate<>(rs.surrogate);
-//			ret.map2SurrogateMap.put(new Surrogate_Key(entry.getKey().original),
-//					value)
+			ret.map2SurrogateMap.put(copySurrks(entry.getKey(), copiedSurrks),
+					copyRefSurr(entry.getValue(), copiedRefSurrs, copiedRels, ds));
 		}
 		
+		return ret;
+	}
+	
+	private ReferredSurrogate<?> copyRefSurr(ReferredSurrogate<?> toCopy,
+			Map<ReferredSurrogate<?>, ReferredSurrogate<?>> copiedRefSurrs,
+			Map<IRelation, IRelation> copiedRels,
+			DomainState ds) {
+		ReferredSurrogate<?> ret = copiedRefSurrs.get(toCopy);
+		if (ret == null) {
+			ret = new ReferredSurrogate<>(toCopy.surrogate);
+			for (IRelation rel : toCopy.references) {
+				IRelation crel = copyRelation(rel, copiedRels, ds);
+				ret.references.add(crel);
+			}
+			copiedRefSurrs.put(toCopy, ret);
+		}
+		return ret;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T extends IRelation> T copyRelation(T toCopy, Map<IRelation, IRelation> copiedRels,
+			DomainState ds) {
+		T crel = (T) copiedRels.get(toCopy);
+		if (crel == null) {
+			crel = (T) toCopy.createCopy(ds);
+			copiedRels.put(toCopy, crel);
+		}
+		return crel;
+	}
+	
+	private Surrogate_Key copySurrks(Surrogate_Key toCopy,
+			Map<Surrogate_Key, Surrogate_Key> copiedSurrks) {
+		Surrogate_Key ret = copiedSurrks.get(toCopy);
+		if (ret == null) {
+			ret = new Surrogate_Key(toCopy.original);
+			copiedSurrks.put(toCopy, ret);
+		}
 		return ret;
 	}
 

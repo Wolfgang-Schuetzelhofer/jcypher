@@ -22,6 +22,7 @@ import iot.jcypher.domain.mapping.surrogate.SurrogateState;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -57,10 +58,13 @@ public class DomainState {
 			Entry<Object, LoadInfo> entry = it_1.next();
 			ret.object2IdMap.put(entry.getKey(), entry.getValue().createCopy());
 		}
+		
+		Map<IRelation, IRelation> copiedRels = new IdentityHashMap<IRelation, IRelation>();
+		
 		Iterator<Entry<IRelation, Long>> it_2 = this.relation2IdMap.entrySet().iterator();
 		while(it_2.hasNext()) {
 			Entry<IRelation, Long> entry = it_2.next();
-			ret.relation2IdMap.put(entry.getKey().createCopy(this), entry.getValue());
+			ret.relation2IdMap.put(copyRelation(entry.getKey(), copiedRels), entry.getValue());
 		}
 		Iterator<Entry<Long, Object>> it_3 = this.id2ObjectMap.entrySet().iterator();
 		while(it_3.hasNext()) {
@@ -70,35 +74,70 @@ public class DomainState {
 		Iterator<Entry<Object, List<IRelation>>> it_4 = this.object2RelationsMap.entrySet().iterator();
 		while(it_4.hasNext()) {
 			Entry<Object, List<IRelation>> entry = it_4.next();
-			ret.object2RelationsMap.put(entry.getKey(), copyRelationsList(entry.getValue()));
+			ret.object2RelationsMap.put(entry.getKey(), copyRelationsList(entry.getValue(), copiedRels));
 		}
+		
+		Map<SourceField2TargetKey, SourceField2TargetKey> copiedSftks =
+				new IdentityHashMap<SourceField2TargetKey, SourceField2TargetKey>();
 		Iterator<Entry<SourceField2TargetKey, List<KeyedRelation>>> it_5 = this.objectField2KeyedRelationsMap.entrySet().iterator();
 		while(it_5.hasNext()) {
 			Entry<SourceField2TargetKey, List<KeyedRelation>> entry = it_5.next();
-			SourceField2TargetKey sftk = entry.getKey();
-			SourceFieldKey sfk = sftk.getSourceFieldKey();
 			ret.objectField2KeyedRelationsMap.put(
-					new SourceField2TargetKey(sfk.getSource(), sfk.getFieldName(), sftk.getTarget()),
-					copyRelationsList(entry.getValue()));
+					copySftks(entry.getKey(), copiedSftks),
+					copyRelationsList(entry.getValue(), copiedRels));
 		}
+		
+		Map<SourceFieldKey, SourceFieldKey> copiedSfks =
+				new IdentityHashMap<SourceFieldKey, SourceFieldKey>();
 		Iterator<Entry<SourceFieldKey, List<KeyedRelation>>> it_6 = this.multiRelationsMap.entrySet().iterator();
 		while(it_6.hasNext()) {
 			Entry<SourceFieldKey, List<KeyedRelation>> entry = it_6.next();
-			SourceFieldKey sfk = entry.getKey();
-			ret.multiRelationsMap.put(new SourceFieldKey(sfk.getSource(), sfk.getFieldName()),
-					copyRelationsList(entry.getValue()));
+			ret.multiRelationsMap.put(copySfks(entry.getKey(), copiedSfks),
+					copyRelationsList(entry.getValue(), copiedRels));
 		}
 		
 		return ret;
 	}
 	
+	private SourceFieldKey copySfks(SourceFieldKey toCopy,
+			Map<SourceFieldKey, SourceFieldKey> copiedSfks) {
+		SourceFieldKey ret = copiedSfks.get(toCopy);
+		if (ret == null) {
+			ret = new SourceFieldKey(toCopy.getSource(), toCopy.getFieldName());
+			copiedSfks.put(toCopy, ret);
+		}
+		return ret;
+	}
+	
+	private SourceField2TargetKey copySftks(SourceField2TargetKey toCopy,
+			Map<SourceField2TargetKey, SourceField2TargetKey> copiedSftks) {
+		SourceField2TargetKey ret = copiedSftks.get(toCopy);
+		if (ret == null) {
+			SourceFieldKey sfk = toCopy.getSourceFieldKey();
+			ret = new SourceField2TargetKey(sfk.getSource(), sfk.getFieldName(), toCopy.getTarget());
+			copiedSftks.put(toCopy, ret);
+		}
+		return ret;
+	}
+	
 	@SuppressWarnings("unchecked")
-	private <T extends IRelation> List<T> copyRelationsList(List<T> toCopy) {
+	private <T extends IRelation> T copyRelation(T toCopy, Map<IRelation, IRelation> copiedRels) {
+		T crel = (T) copiedRels.get(toCopy);
+		if (crel == null) {
+			crel = (T) toCopy.createCopy(this);
+			copiedRels.put(toCopy, crel);
+		}
+		return crel;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T extends IRelation> List<T> copyRelationsList(List<T> toCopy,
+			Map<IRelation, IRelation> copiedRels) {
 		List<T> ret = null;
 		if (toCopy != null) {
 			ret = new ArrayList<T>();
 			for (T rel : toCopy) {
-				ret.add((T)rel.createCopy(this));
+				ret.add(copyRelation(rel, copiedRels));
 			}
 		}
 		return ret;
