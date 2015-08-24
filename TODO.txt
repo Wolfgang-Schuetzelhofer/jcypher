@@ -1,6 +1,6 @@
-comment additional config properties for embedded db access
+---done--- comment additional config properties for embedded db access
 
-ad dependency in docu for: neo4j-io
+---done--- ad dependency in docu for: neo4j-io
 
 check createContains for same bug as in createWhereIn
 

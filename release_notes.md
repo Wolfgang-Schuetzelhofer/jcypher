@@ -1,6 +1,10 @@
 Release Notes
 =======
 
+## 2.7.0
+**New**
+- Transaction API.
+
 ## 2.6.0
 **New**
 - Works with Neo4j 2.2.2.
