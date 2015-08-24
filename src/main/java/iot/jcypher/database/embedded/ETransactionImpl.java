@@ -44,7 +44,6 @@ public class ETransactionImpl extends AbstractTransaction {
 		if (!isMyThread())
 			throw new RuntimeException(ERR_THREAD);
 		
-		setClosed();
 		AbstractEmbeddedDBAccess edba = getEDBAccess();
 		edba.removeTx();
 		if (this.transaction != null) {
@@ -63,6 +62,10 @@ public class ETransactionImpl extends AbstractTransaction {
 			errors = DBUtil.buildErrorList(null, dbException);
 		} else 
 			errors = new ArrayList<JcError>();
+		
+		if (errors.size() > 0)
+			failure();
+		setClosed();
 		
 		return errors;
 	}

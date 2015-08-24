@@ -130,7 +130,6 @@ public class DomainState {
 		return crel;
 	}
 	
-	@SuppressWarnings("unchecked")
 	private <T extends IRelation> List<T> copyRelationsList(List<T> toCopy,
 			Map<IRelation, IRelation> copiedRels) {
 		List<T> ret = null;

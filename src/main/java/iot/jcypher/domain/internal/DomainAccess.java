@@ -77,6 +77,7 @@ import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.transaction.ITransaction;
+import iot.jcypher.transaction.internal.AbstractTransaction;
 import iot.jcypher.util.Util;
 
 import java.lang.reflect.Constructor;
@@ -209,7 +210,13 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 	@Override
 	public ITransaction beginTX() {
-		return this.domainAccessHandler.dbAccess.beginTX();
+		ITransaction ret = this.domainAccessHandler.dbAccess.beginTX();
+		((AbstractTransaction)ret).setIntDomainAccess(this);
+		synchronized (this.domainAccessHandler) {
+			DomainState ds = this.domainAccessHandler.domainState.createCopy();
+			this.domainAccessHandler.transactionState.set(ds);
+		}
+		return ret;
 	}
 
 
@@ -238,6 +245,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private int maxPathSize = 2;
 		private IDBAccess dbAccess;
 		private DomainState domainState;
+		private ThreadLocal<DomainState> transactionState;
 		private Map<Class<?>, ObjectMapping> mappings;
 		
 		// for a root level type in a query, all possible variants (subclasses) must be considered
@@ -256,6 +264,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.domainState = new DomainState();
 			this.mappings = new HashMap<Class<?>, ObjectMapping>();
 			this.type2CompoundTypeMap = new HashMap<Class<?>, CompoundObjectType>();
+			this.transactionState = new ThreadLocal<DomainState>();
 		}
 		
 		@SuppressWarnings("unchecked")
@@ -306,7 +315,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 			resultList = new ArrayList<T>(ids.length);
 			for (long id : ids) {
-				resultList.add((T)domainState.getFrom_Id2ObjectMap(id));
+				resultList.add((T)getDomainState().getFrom_Id2ObjectMap(id));
 			}
 			return resultList;
 		}
@@ -445,7 +454,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			List<IdAndDepth> idList = new ArrayList<IdAndDepth>(objectsNotResolvedDeep.size());
 			for (int i = 0; i < objectsNotResolvedDeep.size(); i++) {
 				FillModelContext.ResolvedDepth resDepth = objectsNotResolvedDeep.get(i);
-				idList.add(new IdAndDepth(this.domainState.getLoadInfoFrom_Object2IdMap(
+				idList.add(new IdAndDepth(this.getDomainState().getLoadInfoFrom_Object2IdMap(
 						resDepth.domainObject).getId(),
 						resDepth.resolvedDepth));
 			}
@@ -490,19 +499,20 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 			
 			List<JcError> errors = context.graph.store();
+			DomainState ds = getDomainState();
 			if (errors.isEmpty()) {
 				for (IRelation relat : context.relationsToRemove) {
-					domainState.removeRelation(relat);
+					ds.removeRelation(relat);
 				}
 				
 				Iterator<Entry<Object, GrNode>> it = context.domObj2Node.entrySet().iterator();
 				while(it.hasNext()) {
 					Entry<Object, GrNode> entry = it.next();
-					this.domainState.add_Id2Object(entry.getKey(), entry.getValue().getId(), ResolutionDepth.DEEP);
+					ds.add_Id2Object(entry.getKey(), entry.getValue().getId(), ResolutionDepth.DEEP);
 				}
 				
 				for (DomRelation2ResultRelation d2r : context.domRelation2Relations) {
-					this.domainState.add_Id2Relation(d2r.domRelation, d2r.resultRelation.getId());
+					ds.add_Id2Relation(d2r.domRelation, d2r.resultRelation.getId());
 				}
 			}
 			return errors;
@@ -511,7 +521,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		List<SyncInfo> getSyncInfos(List<Object> domainObjects) {
 			List<SyncInfo> ret = new ArrayList<SyncInfo>(domainObjects.size());
 			for (Object obj : domainObjects) {
-				LoadInfo li = this.domainState.getLoadInfoFrom_Object2IdMap(obj);
+				LoadInfo li = this.getDomainState().getLoadInfoFrom_Object2IdMap(obj);
 				if (li != null)
 					ret.add(new SyncInfo(li.getId(), li.getResolutionDepth()));
 				else
@@ -566,6 +576,13 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 			
 			return resultList;
+		}
+		
+		private synchronized DomainState getDomainState() {
+			DomainState ds = this.transactionState.get();
+			if (ds == null)
+				ds = this.domainState;
+			return ds;
 		}
 		
 		private Map<Class<?>, List<Long>> queryConcreteTypes(long[] ids) {
@@ -627,9 +644,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			List<IClause> clauses = null;
 			List<IClause> removeStartClauses = null;
 			List<IClause> removeClauses = null;
+			DomainState ds = this.getDomainState();
 			for (int i = 0; i < context.domainObjects.size(); i++) {
 				domainObject = context.domainObjects.get(i);
-				Long id = this.domainState.getIdFrom_Object2IdMap(domainObject);
+				Long id = ds.getIdFrom_Object2IdMap(domainObject);
 				if (id != null) { // object exists in graphdb
 					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
 					QueryNode2ResultNode n2n = new QueryNode2ResultNode();
@@ -646,7 +664,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			Map<Integer, QueryRelation2ResultRelation> relationIndexMap = null;
 			for (int i = 0; i < context.relations.size(); i++) {
 				IRelation relat = context.relations.get(i);
-				Long id = this.domainState.getFrom_Relation2IdMap(relat);
+				Long id = ds.getFrom_Relation2IdMap(relat);
 				if (id != null) { // relation exists in graphdb
 					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
 					QueryRelation2ResultRelation r2r = new QueryRelation2ResultRelation();
@@ -665,7 +683,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				for (int i = 0; i < context.relationsToRemove.size(); i++) {
 					IRelation relat = context.relationsToRemove.get(i);
 					// relation must exist in db
-					Long id = this.domainState.getFrom_Relation2IdMap(relat);
+					Long id = ds.getFrom_Relation2IdMap(relat);
 					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
 					removeStartClauses.add(START.relation(r).byId(id.longValue()));
 					removeClauses.add(DO.DELETE(r));
@@ -681,7 +699,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				for (int i = 0; i < context.domainObjectsToRemove.size(); i++) {
 					Object dobj = context.domainObjectsToRemove.get(i);
 					// relation must exist in db
-					Long id = this.domainState.getIdFrom_Object2IdMap(dobj);
+					Long id = ds.getIdFrom_Object2IdMap(dobj);
 					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
 					removeStartClauses.add(START.node(n).byId(id.longValue()));
 					removeClauses.add(DO.DELETE(n));
@@ -916,10 +934,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			List<IClause> clauses = new ArrayList<IClause>();
 			Map<Long, JcNode> id2QueryNode = new HashMap<Long, JcNode>();
 			Map<Long, T> id2Object = new HashMap<Long, T>();
+			DomainState ds = this.getDomainState();
 			for (int i = 0; i < idList.size(); i++) {
 				long id = idList.get(i).id;
 				// check if domain objects have already been loaded
-				T obj = (T) this.domainState.getFrom_Id2ObjectMap(id);
+				T obj = (T) ds.getFrom_Id2ObjectMap(id);
 				if (obj != null)
 					id2Object.put(id, obj);
 
@@ -948,9 +967,9 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				GrNode rNode = result.resultOf(id2QueryNode.get(id)).get(0);
 				T resObj = createIfNeeded_MapProperties(domainObjectClass, rNode, obj);
 				if (obj == null)
-					this.domainState.add_Id2Object(resObj, id, ResolutionDepth.DEEP);
+					ds.add_Id2Object(resObj, id, ResolutionDepth.DEEP);
 				else
-					this.domainState.getLoadInfoFrom_Object2IdMap(obj)
+					ds.getLoadInfoFrom_Object2IdMap(obj)
 						.setResolutionDepth(ResolutionDepth.DEEP);
 				resultList.add(resObj);
 			}
@@ -1361,7 +1380,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						// we have to set the returned node id
 						JcNumber nid = new JcNumber("NID");
 						BigDecimal rNid = result.resultOf(nid).get(0);
-						DomainAccessHandler.this.domainInfo.nodeId = rNid.longValue();
+						DomainAccessHandler.this.domainInfo.setNodeId(rNid.longValue());
 					}
 				}
 				
@@ -1524,7 +1543,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 								removeObjectsIfNeeded(fm, context, mapEntriesToRemove);
 							} else {
 								// remove just a single relation if it exists
-								IRelation relat = domainAccessHandler.domainState.findRelation(domainObject,
+								IRelation relat = domainAccessHandler.getDomainState().findRelation(domainObject,
 										fm.getPropertyOrRelationName());
 								if (relat != null) {
 									context.relationsToRemove.add(relat);
@@ -1551,29 +1570,24 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			MappingUtil.internalDomainAccess.get()
 				.addConcreteFieldType(classField, map.getClass());
 			boolean containsMapTerm = false;
+			DomainState ds = domainAccessHandler.getDomainState();
 			Iterator<Entry<Object, Object>> it = map.entrySet().iterator();
 			while(it.hasNext()) {
 				Entry<Object, Object> entry = it.next();
 				Object val = entry.getValue();
 				if (val instanceof Map<?, ?>)
-					val = domainAccessHandler.domainState
-						.getSurrogateState().getCreateSurrogateFor(val, iot.jcypher.domain.mapping.surrogate.Map.class);
+					val = ds.getSurrogateState().getCreateSurrogateFor(val, iot.jcypher.domain.mapping.surrogate.Map.class);
 				else if (val instanceof Collection<?>)
-					val = domainAccessHandler.domainState
-					.getSurrogateState().getCreateSurrogateFor(val, iot.jcypher.domain.mapping.surrogate.Collection.class);
+					val = ds.getSurrogateState().getCreateSurrogateFor(val, iot.jcypher.domain.mapping.surrogate.Collection.class);
 				else if (val.getClass().isArray())
-					val = domainAccessHandler.domainState
-					.getSurrogateState().getCreateSurrogateFor(val, iot.jcypher.domain.mapping.surrogate.Array.class);
+					val = ds.getSurrogateState().getCreateSurrogateFor(val, iot.jcypher.domain.mapping.surrogate.Array.class);
 				Object key = entry.getKey();
 				if (key instanceof Collection<?>)
-					key = domainAccessHandler.domainState
-						.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Collection.class);
+					key = ds.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Collection.class);
 				else if (key.getClass().isArray())
-					key = domainAccessHandler.domainState
-					.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Array.class);
+					key = ds.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Array.class);
 				else if (key instanceof Map<?, ?>)
-					key = domainAccessHandler.domainState
-					.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Map.class);
+					key = ds.getSurrogateState().getCreateSurrogateFor(key, iot.jcypher.domain.mapping.surrogate.Map.class);
 				boolean keyMapsToProperty = MappingUtil.mapsToProperty(key.getClass());
 				boolean valMapsToProperty = MappingUtil.mapsToProperty(val.getClass());
 				Object target;
@@ -1651,19 +1665,17 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 			int idx = 0;
 			Iterator<?> it = toIterate.iterator();
+			DomainState ds = domainAccessHandler.getDomainState();
 			while(it.hasNext()) {
 				Object elem = it.next();
 				if (elem instanceof Collection<?>)
-					elem = domainAccessHandler.domainState
-							.getSurrogateState().getCreateSurrogateFor(elem,
+					elem = ds.getSurrogateState().getCreateSurrogateFor(elem,
 									iot.jcypher.domain.mapping.surrogate.Collection.class);
 				else if (elem.getClass().isArray())
-					elem = domainAccessHandler.domainState
-							.getSurrogateState().getCreateSurrogateFor(elem,
+					elem = ds.getSurrogateState().getCreateSurrogateFor(elem,
 									iot.jcypher.domain.mapping.surrogate.Array.class);
 				else if (elem instanceof Map<?, ?>)
-					elem = domainAccessHandler.domainState
-							.getSurrogateState().getCreateSurrogateFor(elem,
+					elem = ds.getSurrogateState().getCreateSurrogateFor(elem,
 									iot.jcypher.domain.mapping.surrogate.Map.class);
 				SourceField2TargetKey key =
 						new SourceField2TargetKey(domainObject, fm.getFieldName(), elem);
@@ -1693,14 +1705,15 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private void handleObjectInClosureCalc(Object relatedObject, Object domainObject,
 				UpdateContext context, FieldMapping fm) {
 			IRelation relat = new Relation(fm.getPropertyOrRelationName(), domainObject, relatedObject);
+			DomainState ds = domainAccessHandler.getDomainState();
 			if (relatedObject instanceof AbstractSurrogate)
 				context.surrogateChangeLog.added.add(relat);
-			if (!domainAccessHandler.domainState.existsRelation(relat)) {
+			if (!ds.existsRelation(relat)) {
 				context.relations.add(relat); // relation not in db
 				
 				// check if an old relation (for the same field but to another object, which is now replaced
 				// by the new relation) needs to be removed.
-				relat = domainAccessHandler.domainState.findRelation(domainObject,
+				relat = ds.findRelation(domainObject,
 						fm.getPropertyOrRelationName());
 				if (relat != null) {
 					context.relationsToRemove.add(relat);
@@ -1716,7 +1729,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private List<IMapEntry> handleKeyedRelationsModification(Map<SourceField2TargetKey, List<KeyedRelation>> keyedRelations,
 				UpdateContext context, SourceFieldKey fieldKey, boolean containsMapTerm) {
 			List<KeyedRelation> allExistingRels = new ArrayList<KeyedRelation>();
-			List<KeyedRelation> allExist = domainAccessHandler.domainState.getKeyedRelations(fieldKey);
+			DomainState ds = domainAccessHandler.getDomainState();
+			List<KeyedRelation> allExist = ds.getKeyedRelations(fieldKey);
 			if (allExist != null)
 				allExistingRels.addAll(allExist);
 			
@@ -1725,7 +1739,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				while(it.hasNext()) {
 					Entry<SourceField2TargetKey, List<KeyedRelation>> entry = it.next();
 					List<KeyedRelation> existingRels =
-							domainAccessHandler.domainState.getKeyedRelations(entry.getKey());
+							ds.getKeyedRelations(entry.getKey());
 					RelationsToModify toModify = calculateKeyedRelationsToModify(entry.getValue(), existingRels, allExistingRels);
 					context.relations.addAll(toModify.toChange);
 					context.relations.addAll(toModify.toCreate);
@@ -1846,6 +1860,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			@SuppressWarnings("unchecked")
 			private <T> void fillModel(FillModelContext<T> context, FieldMapping fm,
 					String nodeName, String relationName, GrNode parentNode) {
+				DomainState ds = domainAccessHandler.getDomainState();
 				boolean resetInnerClassResolution = false;
 				int prevClauseRepetitionNumber = context.clauseRepetitionNumber;
 				boolean isRoot = fm == null;
@@ -1935,7 +1950,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 								boolean performMapping = false;
 								boolean mapProperties = true;
 								// check if a domain object has already been mapped to this node
-								domainObject = domainAccessHandler.domainState.getFrom_Id2ObjectMap(actNode.getId());
+								domainObject = ds.getFrom_Id2ObjectMap(actNode.getId());
 								
 								if (domainObject == null) {
 									Class<?> clazz = domainAccessHandler.findClassToInstantiateFor(actNode);
@@ -1944,8 +1959,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 									else
 										domainObject = domainAccessHandler.createInstance(clazz);
 									if (domainObject instanceof Array)
-										((Array)domainObject).setSurrogateState(domainAccessHandler.domainState.getSurrogateState());
-									domainAccessHandler.domainState.add_Id2Object(domainObject, actNode.getId(),
+										((Array)domainObject).setSurrogateState(ds.getSurrogateState());
+									ds.add_Id2Object(domainObject, actNode.getId(),
 											resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
 									if (domainObject instanceof InnerClassSurrogate) {
 										((InnerClassSurrogate)domainObject).setId2ObjectMapper(getInternalDomainAccess());
@@ -1967,7 +1982,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 									}
 								} else {
 									// domainObject has at least been shallowly mapped
-									if (domainAccessHandler.domainState.getResolutionDepth(domainObject) !=
+									if (ds.getResolutionDepth(domainObject) !=
 												ResolutionDepth.DEEP) {
 										boolean removed = false;
 										if (maxDepthReached) {
@@ -1977,7 +1992,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 										if (resolveDeep) {
 											performMapping = true;
 											mapProperties = false; // properties have already been mapped
-											domainAccessHandler.domainState.getLoadInfoFrom_Object2IdMap(domainObject)
+											ds.getLoadInfoFrom_Object2IdMap(domainObject)
 												.setResolutionDepth(ResolutionDepth.DEEP);
 											if (!removed)
 												context.removeRecursionExitObject(domainObject);
@@ -2085,7 +2100,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 										context.removeRecursionExitObject(domainObject);
 										removed = true;
 										// domainObject needs no further resolution
-										domainAccessHandler.domainState.getLoadInfoFrom_Object2IdMap(domainObject)
+										ds.getLoadInfoFrom_Object2IdMap(domainObject)
 											.setResolutionDepth(ResolutionDepth.DEEP);
 									}
 									if (maxDepthReached && !removed)
@@ -2136,7 +2151,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 								Relation relat = new Relation(fm.getPropertyOrRelationName(),
 										context.parentObject,
 										domainObject);
-								domainAccessHandler.domainState.add_Id2Relation(
+								ds.add_Id2Relation(
 										relat, rel.getId());
 								if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Map)
 									context.surrogateChangeLog.added.add(relat);
@@ -2171,6 +2186,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			private <T> SurrogateContent checkForSurrogates(FillModelContext<T> context, FieldMapping fm,
 					FieldKind fieldKind, CompoundObjectType compoundType) {
 				SurrogateContent ret = new SurrogateContent();
+				DomainState ds = domainAccessHandler.getDomainState();
 				if (fieldKind == FieldKind.COLLECTION) {
 					if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
 						ret.collection = ((iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject).getContent();
@@ -2187,7 +2203,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
 							((iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject)
 								.setContent(ret.collection);
-							domainAccessHandler.domainState.getSurrogateState()
+							ds.getSurrogateState()
 								.addOriginal2Surrogate(ret.collection,
 										(iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject);
 						}
@@ -2222,7 +2238,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
 							((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject)
 								.setContent(ret.map);
-							domainAccessHandler.domainState.getSurrogateState()
+							ds.getSurrogateState()
 								.addOriginal2Surrogate(ret.map, (iot.jcypher.domain.mapping.surrogate.Map)context.parentObject);
 						}
 					}
@@ -2238,9 +2254,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				ListEntriesUpdater listUpdater = null;
 				long prevIndex = -1;
 				boolean needResort = false;
+				DomainState ds = null;
 				while(rit.hasNext()) {
+					if (ds == null)
+						ds = domainAccessHandler.getDomainState();
 					GrRelation rel = rit.next();
-					Object domainObject = domainAccessHandler.domainState.getFrom_Id2ObjectMap(
+					Object domainObject = ds.getFrom_Id2ObjectMap(
 							rel.getEndNode().getId());
 					GrProperty prop = rel.getProperty(DomainAccessHandler.KeyProperty);
 					int idx = (Integer)MappingUtil.convertFromProperty(prop.getValue(), Integer.class);
@@ -2248,7 +2267,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						needResort = true;
 					prevIndex = idx;
 					KeyedRelation irel = new KeyedRelation(relType, idx, context.parentObject, domainObject);
-					domainAccessHandler.domainState.add_Id2Relation(irel, rel.getId());
+					ds.add_Id2Relation(irel, rel.getId());
 					boolean fillList = true;
 					if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.AbstractSurrogate) {
 						if (listUpdater == null) {
@@ -2289,12 +2308,15 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					Object start = context.parentObject;
 					Map<Long, Boolean> handledRelations = new HashMap<Long, Boolean>();
 					Iterator<GrRelation> rit = relList.iterator();
+					DomainState ds = null;
 					while(rit.hasNext()) {
+						if (ds == null)
+							ds = domainAccessHandler.getDomainState();
 						GrRelation rel = rit.next();
 						long relId = rel.getId();
 						if (handledRelations.get(relId) == null) {
 							handledRelations.put(relId, Boolean.TRUE);
-							Object end = domainAccessHandler.domainState.getFrom_Id2ObjectMap(
+							Object end = ds.getFrom_Id2ObjectMap(
 									rel.getEndNode().getId());
 							GrProperty prop = rel.getProperty(DomainAccessHandler.KeyProperty);
 							GrProperty typeProp = rel.getProperty(DomainAccessHandler.KeyTypeProperty);
@@ -2309,7 +2331,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 										Class.forName(typeProp.getValue().toString()));
 								irel.setValue(val);
 							}
-							domainAccessHandler.domainState.add_Id2Relation(irel, relId);
+							ds.add_Id2Relation(irel, relId);
 							
 							boolean fillMap = true;
 							if (end instanceof MapEntry) {
@@ -2853,11 +2875,25 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 		}
 		
+		private void setNodeId(long nodeId) {
+			if (this.nodeId == -1) {
+				ITransaction tx = domainAccessHandler.dbAccess.getTX();
+				if (tx != null)
+					((AbstractTransaction)tx).setNoInfoNodeId();
+			}
+			this.nodeId = nodeId;
+		}
+
 		private boolean isChanged() {
 			return changed;
 		}
 		
 		private void graphUdated() {
+			if (this.changed) {
+				ITransaction tx = domainAccessHandler.dbAccess.getTX();
+				if (tx != null)
+					((AbstractTransaction)tx).setDomainInfoChanged();
+			}
 			this.changed = false;
 		}
 		
@@ -3045,15 +3081,16 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		
 		private void applyChanges() {
 			removed.removeAll(added);
+			DomainState ds = domainAccessHandler.getDomainState();
 			for (IRelation rel : added) {
-				domainAccessHandler.domainState.getSurrogateState()
+				ds.getSurrogateState()
 					.addReference(rel);
 			}
 			for (IRelation rel : removed) {
-				domainAccessHandler.domainState.getSurrogateState()
+				ds.getSurrogateState()
 					.removeReference(rel);
 			}
-			domainAccessHandler.domainState.getSurrogateState().removeUnreferenced();
+			ds.getSurrogateState().removeUnreferenced();
 		}
 	}
 	
@@ -3090,7 +3127,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		}
 		
 		public DomainState getDomainState() {
-			return domainAccessHandler.domainState;
+			return domainAccessHandler.getDomainState();
 		}
 		
 		public ObjectMapping getObjectMappingFor(Class<?> domainObjectType) {
@@ -3183,11 +3220,30 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		
 		public void replace_Id2Object(InnerClassSurrogate surrogate, Object domainObject,
 				long nodeId) {
-			domainAccessHandler.domainState.replace_Id2Object(surrogate, domainObject, nodeId);
+			domainAccessHandler.getDomainState().replace_Id2Object(surrogate, domainObject, nodeId);
 		}
 		
 		public String setDomainLabel() {
 			return domainAccessHandler.setDomainLabel();
+		}
+		
+		public void transactionClosed(boolean failed, boolean domainInfoChanged,
+				boolean noInfoNodeId) {
+			synchronized (domainAccessHandler) {
+				DomainState ds = domainAccessHandler.transactionState.get();
+				if (ds != null) {
+					domainAccessHandler.transactionState.remove();
+					if (!failed) {
+						domainAccessHandler.domainState = ds;
+					} else { // failed (rollBack)
+						if (domainInfoChanged) {
+							domainAccessHandler.domainInfo.changed = true;
+							if (noInfoNodeId)
+								domainAccessHandler.domainInfo.nodeId = -1;
+						}
+					}
+				}
+			}
 		}
 	}
 }

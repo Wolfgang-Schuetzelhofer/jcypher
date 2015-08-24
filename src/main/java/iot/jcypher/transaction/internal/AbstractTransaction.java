@@ -17,6 +17,7 @@
 package iot.jcypher.transaction.internal;
 
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.transaction.ITransaction;
 
 public abstract class AbstractTransaction implements ITransaction {
@@ -27,12 +28,17 @@ public abstract class AbstractTransaction implements ITransaction {
 	private IDBAccess dbAccess;
 	private boolean closed;
 	protected boolean failed;
+	private IIntDomainAccess intDomainAccess;
+	private boolean domainInfoChanged;
+	private boolean noInfoNodeId;
 
 	public AbstractTransaction(IDBAccess dbAccess) {
 		super();
 		this.dbAccess = dbAccess;
 		this.failed = false;
 		this.closed = false;
+		this.domainInfoChanged = false;
+		this.noInfoNodeId = false;
 	}
 	
 	@Override
@@ -55,10 +61,26 @@ public abstract class AbstractTransaction implements ITransaction {
 	
 	protected void setClosed() {
 		this.closed = true;
+		this.intDomainAccess.getInternalDomainAccess().transactionClosed(this.failed,
+				this.domainInfoChanged, this.noInfoNodeId);
+		this.intDomainAccess = null;
+		this.dbAccess = null;
 	}
 
 	@Override
 	public boolean isClosed() {
 		return this.closed;
+	}
+
+	public void setIntDomainAccess(IIntDomainAccess intDomainAccess) {
+		this.intDomainAccess = intDomainAccess;
+	}
+	
+	public void setDomainInfoChanged() {
+		this.domainInfoChanged = true;
+	}
+	
+	public void setNoInfoNodeId() {
+		this.noInfoNodeId = true;
 	}
 }

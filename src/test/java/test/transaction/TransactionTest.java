@@ -240,4 +240,69 @@ public class TransactionTest extends AbstractTestSuite {
 		assertTrue(ex != null);
 		return;
 	}
+	
+	@Test
+	public void testRollback_Commit() {
+		IDomainAccess da;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		List<JcError> errors;
+		
+		errors = dbAccess.clearDatabase();
+		assertEquals(0, errors.size());
+		da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		Population population = new Population();
+		List<Object> domObjects_1;
+		List<Object> domObjects_2;
+		
+		/** 01 ****************************************/
+		ITransaction tx = da.beginTX();
+		domObjects_1 = population.createBerghammerFamily();
+		errors = da.store(domObjects_1);
+		assertEquals(0, errors.size());
+		domObjects_2 = population.createCompanies();
+		errors = da.store(domObjects_2);
+		assertEquals(0, errors.size());
+		
+		tx.failure();
+		errors = tx.close();
+		assertEquals(0, errors.size());
+		
+		q = da.createQuery();
+		DomainObjectMatch<Person> bergammerMatch = q.createMatch(Person.class);
+		DomainObjectMatch<Company> companiesMatch = q.createMatch(Company.class);
+		q.WHERE(bergammerMatch.atttribute("lastName")).EQUALS("Berghammer");
+		
+		result = q.execute();
+		
+		List<Person> berghammer = result.resultOf(bergammerMatch);
+		List<Company> companies = result.resultOf(companiesMatch);
+		assertEquals(0, berghammer.size());
+		assertEquals(0, companies.size());
+		
+		/** 02 ****************************************/
+		tx = da.beginTX();
+		errors = da.store(domObjects_1);
+		assertEquals(0, errors.size());
+		errors = da.store(domObjects_2);
+		assertEquals(0, errors.size());
+		
+		errors = tx.close();
+		assertEquals(0, errors.size());
+		
+		q = da.createQuery();
+		bergammerMatch = q.createMatch(Person.class);
+		companiesMatch = q.createMatch(Company.class);
+		q.WHERE(bergammerMatch.atttribute("lastName")).EQUALS("Berghammer");
+		
+		result = q.execute();
+		
+		berghammer = result.resultOf(bergammerMatch);
+		companies = result.resultOf(companiesMatch);
+		assertEquals(3, berghammer.size());
+		assertEquals(2, companies.size());
+		
+		return;
+	}
 }
