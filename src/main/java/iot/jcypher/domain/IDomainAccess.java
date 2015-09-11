@@ -141,6 +141,12 @@ public interface IDomainAccess {
 	 */
 	public ITransaction beginTX();
 	
+	/**
+	 * Answer a domain access object which works with a generic domain model.
+	 * @return an IGenericDomainAccess.
+	 */
+	public IGenericDomainAccess getGenericDomainAccess();
+	
 	public enum DomainLabelUse {
 		AUTO, ALWAYS, NEVER
 	}

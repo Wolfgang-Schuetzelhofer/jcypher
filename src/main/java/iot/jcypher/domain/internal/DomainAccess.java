@@ -19,8 +19,10 @@ package iot.jcypher.domain.internal;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.ResolutionDepth;
 import iot.jcypher.domain.SyncInfo;
+import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
 import iot.jcypher.domain.mapping.CompoundObjectMapping;
 import iot.jcypher.domain.mapping.CompoundObjectType;
@@ -100,6 +102,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	
 	private DomainAccessHandler domainAccessHandler;
 	private InternalDomainAccess internalDomainAccess;
+	private GenericDomainAccess genericDomainAccess;
 
 	/**
 	 * @param dbAccess the graph database connection
@@ -218,7 +221,44 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		}
 		return ret;
 	}
+	
+	@Override
+	public IGenericDomainAccess getGenericDomainAccess() {
+		if (this.genericDomainAccess == null)
+			this.genericDomainAccess = new GenericDomainAccess();
+		return this.genericDomainAccess;
+	}
 
+	/**********************************************************************/
+	public class GenericDomainAccess implements IGenericDomainAccess {
+
+		@Override
+		public List<DomainObject> loadByIds(String domainObjectClassName,
+				int resolutionDepth, long... ids) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public DomainObject loadById(String domainObjectClassName,
+				int resolutionDepth, long id) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public List<DomainObject> loadByType(String domainObjectClassName,
+				int resolutionDepth, int offset, int count) {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public IDomainAccess getDomainAccess() {
+			return DomainAccess.this;
+		}
+		
+	}
 
 	/**********************************************************************/
 	private class DomainAccessHandler {

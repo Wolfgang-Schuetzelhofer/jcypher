@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 package iot.jcypher.domain;
 
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.domain.internal.DomainAccess;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 import iot.jcypher.query.JcQuery;
@@ -100,7 +101,8 @@ public class DomainInformation {
 	}
 	
 	/**
-	 * answer the raw types (Java classes) of the list of DomainObjectTypes
+	 * answer the raw types (Java classes) of the list of DomainObjectTypes.
+	 * <br/>Note: this may raise a ClassNotFoundException
 	 * @param types list of DomainObjectTypes
 	 * @return list of raw types (Java classes)
 	 */
@@ -121,6 +123,15 @@ public class DomainInformation {
 			this.domainAccess = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		}
 		return this.domainAccess;
+	}
+	
+	/**
+	 * answer a domain access object (IGenericDomainAccess) to access (store, retrieve domain objects) this domain.
+	 * The returned domain access object works with a generic domain model.
+	 * @return a domain access object (IDomainAccess)
+	 */
+	public IGenericDomainAccess getGenericDomainAccess() {
+		return getDomainAccess().getGenericDomainAccess();
 	}
 	
 	private GrNode loadDomainInfoNode() {

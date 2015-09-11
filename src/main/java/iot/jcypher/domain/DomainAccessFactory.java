@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,6 +27,7 @@ import iot.jcypher.domain.internal.DomainAccess;
 public class DomainAccessFactory {
 
 	/**
+	 * Create a domain accessor.
 	 * @param dbAccess the graph database connection
 	 * @param domainName
 	 * @return
@@ -36,6 +37,7 @@ public class DomainAccessFactory {
 	}
 	
 	/**
+	 * Create a domain accessor.
 	 * @param dbAccess the graph database connection
 	 * @param domainName
 	 * @param domainLabelUse --<b>Note:</b> Consistency may be corrupted, if you change domainLabelUse
@@ -45,5 +47,28 @@ public class DomainAccessFactory {
 	public static IDomainAccess createDomainAccess(IDBAccess dbAccess, String domainName,
 			DomainLabelUse domainLabelUse) {
 		return new DomainAccess(dbAccess, domainName, domainLabelUse);
+	}
+	
+	/**
+	 * Create a domain accessor which works with a generic domain model.
+	 * @param dbAccess the graph database connection
+	 * @param domainName
+	 * @return
+	 */
+	public static IGenericDomainAccess createGenericDomainAccess(IDBAccess dbAccess, String domainName) {
+		return new DomainAccess(dbAccess, domainName, DomainLabelUse.AUTO).getGenericDomainAccess();
+	}
+	
+	/**
+	 * Create a domain accessor which works with a generic domain model.
+	 * @param dbAccess the graph database connection
+	 * @param domainName
+	 * @param domainLabelUse --<b>Note:</b> Consistency may be corrupted, if you change domainLabelUse
+	 * on different creations of DomainAccess to the same domain.
+	 * @return
+	 */
+	public static IGenericDomainAccess createGenericDomainAccess(IDBAccess dbAccess, String domainName,
+			DomainLabelUse domainLabelUse) {
+		return new DomainAccess(dbAccess, domainName, domainLabelUse).getGenericDomainAccess();
 	}
 }
