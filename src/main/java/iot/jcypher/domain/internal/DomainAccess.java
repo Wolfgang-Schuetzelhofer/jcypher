@@ -22,6 +22,7 @@ import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.ResolutionDepth;
 import iot.jcypher.domain.SyncInfo;
+import iot.jcypher.domain.genericmodel.DomainModel;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
 import iot.jcypher.domain.mapping.CompoundObjectMapping;
@@ -103,6 +104,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	private DomainAccessHandler domainAccessHandler;
 	private InternalDomainAccess internalDomainAccess;
 	private GenericDomainAccess genericDomainAccess;
+	private boolean useGeneric;
 
 	/**
 	 * @param dbAccess the graph database connection
@@ -112,6 +114,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	public DomainAccess(IDBAccess dbAccess, String domainName, DomainLabelUse domainLabelUse) {
 		super();
 		this.domainAccessHandler = new DomainAccessHandler(dbAccess, domainName, domainLabelUse);
+		this.useGeneric = false;
 	}
 
 	@Override
@@ -235,6 +238,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		@Override
 		public List<DomainObject> loadByIds(String domainObjectClassName,
 				int resolutionDepth, long... ids) {
+			useGeneric = true;
 			// TODO Auto-generated method stub
 			return null;
 		}
@@ -242,14 +246,16 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		@Override
 		public DomainObject loadById(String domainObjectClassName,
 				int resolutionDepth, long id) {
-			// TODO Auto-generated method stub
-			return null;
+			long[] ids = new long[] {id};
+			List<DomainObject> ret = this.loadByIds(domainObjectClassName, resolutionDepth, ids);
+			return ret.get(0);
 		}
 
 		@Override
 		public List<DomainObject> loadByType(String domainObjectClassName,
 				int resolutionDepth, int offset, int count) {
-			// TODO Auto-generated method stub
+			useGeneric = true;
+			domainAccessHandler.updateMappingsIfNeeded();
 			return null;
 		}
 
@@ -294,6 +300,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		// of the object that has actually been stored in the graph.
 		private Map<Class<?>, CompoundObjectType> type2CompoundTypeMap;
 		private DomainInfo domainInfo;
+		private DomainModel domainModel;
 		private DomainLabelUse domainLabelUse;
 
 		private DomainAccessHandler(IDBAccess dbAccess, String domainName, DomainLabelUse du) {
@@ -1136,7 +1143,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			try {
 				internalAccess = MappingUtil.internalDomainAccess.get();
 				MappingUtil.internalDomainAccess.set(getInternalDomainAccess());
-				ret = DefaultObjectMappingCreator.createObjectMapping(clazz);
+				ret = DefaultObjectMappingCreator.createObjectMapping(clazz, this.domainModel);
 			} finally {
 				if (internalAccess != null)
 					MappingUtil.internalDomainAccess.set(internalAccess);
@@ -2838,23 +2845,36 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 			
 			prop = rInfo.getProperty(DomainAccessHandler.DomainInfoLabel2ClassProperty);
-			if (prop != null) {
-				List<String> val = (List<String>) prop.getValue();
-				for (String str : val) {
+			List<String> c2l_list = null;
+			if (prop != null)
+				c2l_list = (List<String>) prop.getValue();
+			prop = rInfo.getProperty(DomainAccessHandler.DomainInfoFieldComponentTypeProperty);
+			List<String> compType_list = null;
+			if (prop != null)
+				compType_list = (List<String>) prop.getValue();
+			prop = rInfo.getProperty(DomainAccessHandler.DomainInfoConcreteFieldTypeProperty);
+			List<String> concType_list = null;
+			if (prop != null)
+				concType_list = (List<String>) prop.getValue();
+			
+			if (c2l_list != null) {
+				for (String str : c2l_list) {
 					String[] c2l = str.split("=");
-					try {
-						Class<?> clazz = Class.forName(c2l[1]);
-						this.addClassLabel(clazz, c2l[0]);
-					} catch (ClassNotFoundException e) {
-						throw new RuntimeException(e);
+					if (useGeneric) {
+						
+					} else {
+						try {
+							Class<?> clazz = Class.forName(c2l[1]);
+							this.addClassLabel(clazz, c2l[0]);
+						} catch (ClassNotFoundException e) {
+							throw new RuntimeException(e);
+						}
 					}
 				}
 			}
 			
-			prop = rInfo.getProperty(DomainAccessHandler.DomainInfoFieldComponentTypeProperty);
-			if (prop != null) {
-				List<String> val = (List<String>) prop.getValue();
-				for (String str : val) {
+			if (compType_list != null) {
+				for (String str : compType_list) {
 					String[] c2l = str.split("=");
 					String[] classes = c2l[1].split(CompoundObjectType.SEPARATOR);
 					for (String cls : classes) {
@@ -2868,10 +2888,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				}
 			}
 			
-			prop = rInfo.getProperty(DomainAccessHandler.DomainInfoConcreteFieldTypeProperty);
-			if (prop != null) {
-				List<String> val = (List<String>) prop.getValue();
-				for (String str : val) {
+			if (concType_list != null) {
+				for (String str : concType_list) {
 					String[] c2l = str.split("=");
 					String[] classes = c2l[1].split(CompoundObjectType.SEPARATOR);
 					for (String cls : classes) {

@@ -16,6 +16,7 @@
 
 package iot.jcypher.domain.mapping;
 
+import iot.jcypher.domain.genericmodel.DomainModel;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.mapping.FieldMapping.FieldKind;
 import iot.jcypher.domain.mapping.surrogate.Array;
@@ -31,7 +32,7 @@ public class DefaultObjectMappingCreator {
 
 	private static final String ValueField = "value";
 	
-	public static ObjectMapping createObjectMapping(Class<?> toMap) {
+	public static ObjectMapping createObjectMapping(Class<?> toMap, DomainModel dm) {
 		SimpleObjectMapping objectMapping = new SimpleObjectMapping();
 		
 		NodeLabelMapping labelMapping = DefaultObjectMappingCreator.createLabelMapping(toMap);

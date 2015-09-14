@@ -58,7 +58,7 @@ public class GenericModelTest extends AbstractTestSuite {
 	
 	@BeforeClass
 	public static void before() {
-		domainName = "QTEST-DOMAIN";
+		domainName = "PEOPLE-DOMAIN"; // "QTEST-DOMAIN";
 		Properties props = new Properties();
 		
 		// properties for remote access and for embedded access
@@ -70,26 +70,26 @@ public class GenericModelTest extends AbstractTestSuite {
 //		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
 		
 		// init db
-		Population population = new Population();
-		
-		storedDomainObjects = population.createPopulation();
-		
-		QueriesPrintObserver.addOutputStream(System.out);
-		
-		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
-		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
-		
-		List<JcError> errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		errors = da.store(storedDomainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
+//		Population population = new Population();
+//		
+//		storedDomainObjects = population.createPopulation();
+//		
+//		QueriesPrintObserver.addOutputStream(System.out);
+//		
+//		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
+//		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
+//		
+//		List<JcError> errors = dbAccess.clearDatabase();
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+//		errors = da.store(storedDomainObjects);
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
 	}
 	
 	@Test
@@ -100,7 +100,7 @@ public class GenericModelTest extends AbstractTestSuite {
 		List<DomainObjectType> types = di.getDomainObjectTypes();
 		DomainObjectType type = null;
 		for (DomainObjectType t : types) {
-			if (t.getTypeName().equals(Person.class.getName())) {
+			if (t.getTypeName().equals("iot.jcypher.samples.domain.people.model.Person")) {
 				type = t;
 				break;
 			}
