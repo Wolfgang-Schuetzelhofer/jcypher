@@ -69,6 +69,9 @@ public class GenericModelTest extends AbstractTestSuite {
 		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 //		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
 		
+		QueriesPrintObserver.addOutputStream(System.out);
+		QueriesPrintObserver.addToEnabledQueries("DOMAIN INFO", ContentToObserve.CYPHER);
+		
 		// init db
 //		Population population = new Population();
 //		

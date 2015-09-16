@@ -79,6 +79,7 @@ import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.writer.Format;
 import iot.jcypher.transaction.ITransaction;
 import iot.jcypher.transaction.internal.AbstractTransaction;
 import iot.jcypher.util.Util;
@@ -312,6 +313,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.mappings = new HashMap<Class<?>, ObjectMapping>();
 			this.type2CompoundTypeMap = new HashMap<Class<?>, CompoundObjectType>();
 			this.transactionState = new ThreadLocal<DomainState>();
+			this.domainModel = new DomainModel(getDomainLabel());
 		}
 		
 		@SuppressWarnings("unchecked")
@@ -1176,6 +1178,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private DomainInfo loadDomainInfoIfNeeded() {
 			if (this.domainInfo == null) {
 				JcQuery query = ((DBAccessWrapper)this.dbAccess).createDomainInfoSyncQuery();
+				Util.printQuery(query, "DOMAIN INFO", Format.PRETTY_1);
 				JcQueryResult result = ((DBAccessWrapper)this.dbAccess)
 						.delegate.execute(query);
 				List<JcError> errors = Util.collectErrors(result);
@@ -1394,6 +1397,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 			private void updateDomainInfo(JcQueryResult result) {
 				if (DomainAccessHandler.this.domainInfo == null) { // initial load
+					JcNode mdl = new JcNode("mdl");
+					List<GrNode> mdlInfos = result.resultOf(mdl);
+					domainModel.loadFrom(mdlInfos);
+					
 					JcNode info = new JcNode("info");
 					List<GrNode> rInfos = result.resultOf(info);
 					DomainInfo dInfo;
@@ -1455,6 +1462,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				if (DomainAccessHandler.this.domainInfo == null) { // initial load
 					JcNode info = new JcNode("info");
 					JcNode infos = new JcNode("infs");
+					JcNode mdl = new JcNode("mdl");
 					query = new JcQuery();
 					String pLab = CurrentDomain.label.get();
 					CurrentDomain.setDomainLabel(null);
@@ -1464,7 +1472,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 								WHERE.valueOf(info.property(DomainInfoNameProperty))
 									.EQUALS(DomainAccessHandler.this.domainName),
 								OPTIONAL_MATCH.node(infos).label(DomainInfoNodeLabel),
+								SEPARATE.nextClause(),
+								OPTIONAL_MATCH.node(mdl).label(domainModel.getTypeNodeName()),
 								RETURN.value(info),
+								RETURN.value(mdl),
 								RETURN.count().value(infos).AS(new JcNumber("infos"))
 						});
 					} finally {

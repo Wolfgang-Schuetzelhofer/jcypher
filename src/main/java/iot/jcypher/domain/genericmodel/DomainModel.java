@@ -16,6 +16,73 @@
 
 package iot.jcypher.domain.genericmodel;
 
-public class DomainModel {
+import iot.jcypher.graph.GrNode;
+import iot.jcypher.graph.GrProperty;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+public class DomainModel {
+	
+	private static final String PackagePrefix = "i_o_t";
+	private static final String TypeNodePostfix = "_mdl";
+	private static final String typeName = "typeName";
+	private static final String superTypeName = "superTypeName";
+	private static final String fields = "fields";
+	
+	private String domainName;
+	private String typeNodeName;
+	private Map<String, DOType> doTypes;
+	private List<DOType> unsaved;
+
+	public DomainModel(String domainName) {
+		super();
+		this.domainName = domainName;
+		this.typeNodeName = domainName.concat(TypeNodePostfix);
+		this.doTypes = new HashMap<String, DOType>();
+		this.unsaved = new ArrayList<DOType>();
+	}
+
+	public boolean needCreateModel(Class<?> clazz) {
+		String name = clazz.getName();
+		if (!name.startsWith(PackagePrefix)) {
+			return this.doTypes.get(name) == null;
+		}
+		return false;
+	}
+	
+	public void addDOType(DOType doType) {
+		this.doTypes.put(doType.getName(), doType);
+		if (doType.getNodeId() == -1) {
+			this.unsaved.add(doType);
+		}
+	}
+	
+	public DOType getDOType(String typeName) {
+		return this.doTypes.get(typeName);
+	}
+	
+	public String getDomainName() {
+		return domainName;
+	}
+
+	public String getTypeNodeName() {
+		return this.typeNodeName;
+	}
+	
+	public void loadFrom(List<GrNode> mdlInfos) {
+		for(GrNode nd : mdlInfos) {
+			if (nd != null) {
+				GrProperty typ = nd.getProperty(typeName);
+				GrProperty superTyp = nd.getProperty(superTypeName);
+				GrProperty flds = nd.getProperty(fields);
+			}
+		}
+	}
+	
+	public boolean hasChanges() {
+		return this.unsaved.size() > 0;
+	}
 }

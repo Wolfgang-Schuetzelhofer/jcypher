@@ -16,46 +16,23 @@
 
 package iot.jcypher.domain.genericmodel;
 
-import java.util.ArrayList;
-import java.util.List;
-
-public class DOType {
-
-	private long nodeId;
+public class DOField {
 	
 	private String name;
-	private DOType superType;
-	private List<DOField> fields;
-
-	public DOType(String name) {
+	private String type;
+	
+	public DOField(String name, String type) {
 		super();
 		this.name = name;
-		this.fields = new ArrayList<DOField>();
-		this.nodeId = -1;
+		this.type = type;
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public List<DOField> getFields() {
-		return fields;
+	public String getType() {
+		return type;
 	}
 
-	public DOType getSuperType() {
-		return superType;
-	}
-
-	public void setSuperType(DOType superType) {
-		this.superType = superType;
-	}
-
-	public long getNodeId() {
-		return nodeId;
-	}
-
-	public void setNodeId(long nodeId) {
-		this.nodeId = nodeId;
-	}
-	
 }
