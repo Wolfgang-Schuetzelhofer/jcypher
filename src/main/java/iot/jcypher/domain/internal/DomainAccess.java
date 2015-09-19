@@ -82,6 +82,7 @@ import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.transaction.ITransaction;
 import iot.jcypher.transaction.internal.AbstractTransaction;
+import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 import iot.jcypher.util.Util;
 
 import java.lang.reflect.Constructor;
@@ -105,7 +106,6 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	private DomainAccessHandler domainAccessHandler;
 	private InternalDomainAccess internalDomainAccess;
 	private GenericDomainAccess genericDomainAccess;
-	private boolean useGeneric;
 
 	/**
 	 * @param dbAccess the graph database connection
@@ -115,7 +115,6 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	public DomainAccess(IDBAccess dbAccess, String domainName, DomainLabelUse domainLabelUse) {
 		super();
 		this.domainAccessHandler = new DomainAccessHandler(dbAccess, domainName, domainLabelUse);
-		this.useGeneric = false;
 	}
 
 	@Override
@@ -239,7 +238,6 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		@Override
 		public List<DomainObject> loadByIds(String domainObjectClassName,
 				int resolutionDepth, long... ids) {
-			useGeneric = true;
 			// TODO Auto-generated method stub
 			return null;
 		}
@@ -255,7 +253,6 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		@Override
 		public List<DomainObject> loadByType(String domainObjectClassName,
 				int resolutionDepth, int offset, int count) {
-			useGeneric = true;
 			domainAccessHandler.updateMappingsIfNeeded();
 			return null;
 		}
@@ -1178,7 +1175,6 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private DomainInfo loadDomainInfoIfNeeded() {
 			if (this.domainInfo == null) {
 				JcQuery query = ((DBAccessWrapper)this.dbAccess).createDomainInfoSyncQuery();
-				Util.printQuery(query, "DOMAIN INFO", Format.PRETTY_1);
 				JcQueryResult result = ((DBAccessWrapper)this.dbAccess)
 						.delegate.execute(query);
 				List<JcError> errors = Util.collectErrors(result);
@@ -1459,14 +1455,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 			private JcQuery createDomainInfoSyncQuery() {
 				JcQuery query = null;
-				if (DomainAccessHandler.this.domainInfo == null) { // initial load
-					JcNode info = new JcNode("info");
-					JcNode infos = new JcNode("infs");
-					JcNode mdl = new JcNode("mdl");
-					query = new JcQuery();
-					String pLab = CurrentDomain.label.get();
-					CurrentDomain.setDomainLabel(null);
-					try {
+				String pLab = CurrentDomain.label.get();
+				CurrentDomain.setDomainLabel(null);
+				try {
+					if (DomainAccessHandler.this.domainInfo == null) { // initial load
+						JcNode info = new JcNode("info");
+						JcNode infos = new JcNode("infs");
+						JcNode mdl = new JcNode("mdl");
+						query = new JcQuery();
 						query.setClauses(new IClause[] {
 								OPTIONAL_MATCH.node(info).label(DomainInfoNodeLabel),
 								WHERE.valueOf(info.property(DomainInfoNameProperty))
@@ -1478,49 +1474,58 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 								RETURN.value(mdl),
 								RETURN.count().value(infos).AS(new JcNumber("infos"))
 						});
-					} finally {
-						CurrentDomain.setDomainLabel(pLab);
-					}
-				} else if (DomainAccessHandler.this.domainInfo.isChanged()) { // update info to graph
-					List<String> class2LabelList = DomainAccessHandler.this.domainInfo.getLabel2ClassNameStringList();
-					List<String> fieldComponentTypeList =
-							DomainAccessHandler.this.domainInfo.getFieldComponentTypeStringList();
-					List<String> concreteFieldTypeList =
-							DomainAccessHandler.this.domainInfo.getConcreteFieldTypeStringList();
-					JcNode info = new JcNode("info");
-					query = new JcQuery();
-					if (DomainAccessHandler.this.domainInfo.nodeId != -1) { // DominInfo was loaded from graph
-						query.setClauses(new IClause[] {
-								START.node(info).byId(DomainAccessHandler.this.domainInfo.nodeId),
-								DO.SET(info.property(DomainInfoLabel2ClassProperty)).to(class2LabelList),
-								DO.SET(info.property(DomainInfoFieldComponentTypeProperty)).to(fieldComponentTypeList),
-								DO.SET(info.property(DomainInfoConcreteFieldTypeProperty)).to(concreteFieldTypeList),
-								DO.SET(info.property(DomainInfoUseDomainLabelProperty))
-									.to(DomainAccessHandler.this.domainInfo.useDomainLabels)
-						});
-					} else { // new DomainInfo node must be stored in the db
-						JcNumber nid = new JcNumber("NID");
-						String pLab = CurrentDomain.label.get();
-						CurrentDomain.setDomainLabel(null);
-						try {
-							query.setClauses(new IClause[] {
-									CREATE.node(info).label(DomainInfoNodeLabel)
+					} else if (DomainAccessHandler.this.domainInfo.isChanged() ||
+							DomainAccessHandler.this.domainModel.hasChanged()) { // update info to graph
+						IClause diReturn = null;
+						List<IClause> diClauses = null;
+						List<IClause>[] dmClauses = null;
+						if (DomainAccessHandler.this.domainInfo.isChanged()) {
+							List<String> class2LabelList = DomainAccessHandler.this.domainInfo.getLabel2ClassNameStringList();
+							List<String> fieldComponentTypeList =
+									DomainAccessHandler.this.domainInfo.getFieldComponentTypeStringList();
+							List<String> concreteFieldTypeList =
+									DomainAccessHandler.this.domainInfo.getConcreteFieldTypeStringList();
+							JcNode info = new JcNode("info");
+							diClauses = new ArrayList<IClause>();
+							if (DomainAccessHandler.this.domainInfo.nodeId != -1) { // DominInfo was loaded from graph
+									diClauses.add(START.node(info).byId(DomainAccessHandler.this.domainInfo.nodeId));
+									diClauses.add(DO.SET(info.property(DomainInfoLabel2ClassProperty)).to(class2LabelList));
+									diClauses.add(DO.SET(info.property(DomainInfoFieldComponentTypeProperty)).to(fieldComponentTypeList));
+									diClauses.add(DO.SET(info.property(DomainInfoConcreteFieldTypeProperty)).to(concreteFieldTypeList));
+									diClauses.add(DO.SET(info.property(DomainInfoUseDomainLabelProperty))
+										.to(DomainAccessHandler.this.domainInfo.useDomainLabels));
+							} else { // new DomainInfo node must be stored in the db
+								JcNumber nid = new JcNumber("NID");
+								diClauses.add(CREATE.node(info).label(DomainInfoNodeLabel)
 										.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName)
 										.property(DomainInfoLabel2ClassProperty).value(class2LabelList)
 										.property(DomainInfoFieldComponentTypeProperty).value(fieldComponentTypeList)
 										.property(DomainInfoConcreteFieldTypeProperty).value(concreteFieldTypeList)
 										.property(DomainInfoUseDomainLabelProperty)
-											.value(DomainAccessHandler.this.domainInfo.useDomainLabels),
-									RETURN.value(info.id()).AS(nid)
-							});
-						} finally {
-							CurrentDomain.setDomainLabel(pLab);
+											.value(DomainAccessHandler.this.domainInfo.useDomainLabels));
+									diReturn = RETURN.value(info.id()).AS(nid);
+							}
 						}
+						if (DomainAccessHandler.this.domainModel.hasChanged()) {
+							dmClauses = domainModel.getChangeClauses();
+							domainModel.updatedToGraph();
+						}
+						List<IClause> clauses = diClauses != null ? diClauses : new ArrayList<IClause>();
+						if (dmClauses != null)
+							clauses.addAll(dmClauses[0]);
+						if (diReturn != null)
+							clauses.add(diReturn);
+						if (dmClauses != null)
+							clauses.addAll(dmClauses[1]);
+						query = new JcQuery();
+						query.setClauses(clauses.toArray(new IClause[clauses.size()]));
 					}
+				} finally {
+					CurrentDomain.setDomainLabel(pLab);
 				}
-//				if (query != null) {
-//					Util.printQuery(query, "DOMAIN INFO", Format.PRETTY_1);
-//				}
+				if (query != null)
+					Util.printQuery(query, QueryToObserve.DOMAIN_INFO, Format.PRETTY_1);
+
 				return query;
 			}
 		}
@@ -2871,15 +2876,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			if (c2l_list != null) {
 				for (String str : c2l_list) {
 					String[] c2l = str.split("=");
-					if (useGeneric) {
-						
-					} else {
-						try {
-							Class<?> clazz = Class.forName(c2l[1]);
-							this.addClassLabel(clazz, c2l[0]);
-						} catch (ClassNotFoundException e) {
-							throw new RuntimeException(e);
-						}
+					try {
+						Class<?> clazz = Class.forName(c2l[1]);
+						this.addClassLabel(clazz, c2l[0]);
+					} catch (ClassNotFoundException e) {
+						throw new RuntimeException(e);
 					}
 				}
 			}

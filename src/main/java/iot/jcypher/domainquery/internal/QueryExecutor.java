@@ -82,6 +82,7 @@ import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.Util;
+import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -193,7 +194,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 		QueryContext context = new QueryContext(execCount);
 		QueryBuilder qb = new QueryBuilder();
 		List<JcQuery> queries = qb.buildQueries(context);
-		Util.printQueries(queries, execCount ? "COUNT QUERY" : "DOM QUERY", Format.PRETTY_1);
+		Util.printQueries(queries, execCount ? QueryToObserve.COUNT_QUERY : QueryToObserve.DOM_QUERY, Format.PRETTY_1);
 		List<JcQueryResult> results = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().
 														execute(queries);
 		List<JcError> errors = Util.collectErrors(results);

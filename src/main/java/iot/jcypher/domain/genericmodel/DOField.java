@@ -19,20 +19,20 @@ package iot.jcypher.domain.genericmodel;
 public class DOField {
 	
 	private String name;
-	private String type;
+	private String typeName;
 	
 	public DOField(String name, String type) {
 		super();
 		this.name = name;
-		this.type = type;
+		this.typeName = type;
 	}
 
 	public String getName() {
 		return name;
 	}
 
-	public String getType() {
-		return type;
+	public String getTypeName() {
+		return typeName;
 	}
 
 }

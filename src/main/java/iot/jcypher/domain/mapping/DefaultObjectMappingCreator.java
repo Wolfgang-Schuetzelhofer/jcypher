@@ -16,8 +16,6 @@
 
 package iot.jcypher.domain.mapping;
 
-import iot.jcypher.domain.genericmodel.DOField;
-import iot.jcypher.domain.genericmodel.DOType;
 import iot.jcypher.domain.genericmodel.DomainModel;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.mapping.FieldMapping.FieldKind;
@@ -36,47 +34,24 @@ public class DefaultObjectMappingCreator {
 	
 	public static ObjectMapping createObjectMapping(Class<?> toMap, DomainModel dm) {
 		SimpleObjectMapping objectMapping = new SimpleObjectMapping();
-		boolean needCreateModel = dm.needCreateModel(toMap);
 		
 		NodeLabelMapping labelMapping = DefaultObjectMappingCreator.createLabelMapping(toMap);
 		objectMapping.setNodeLabelMapping(labelMapping);
 		
-		DOType doType;
-		DOType doSubType = null;
 		Class<?> clazz = toMap;
 		while(!Object.class.equals(clazz)) {
-			doType = null;
-			if (needCreateModel) {
-				doType = dm.getDOType(clazz.getName());
-				if (doType == null) {
-					doType = new DOType(clazz.getName());
-					dm.addDOType(doType);
-				} else
-					needCreateModel = false;
-				if (doSubType != null)
-					doSubType.setSuperType(doType);
-				if (!needCreateModel)
-					doType = null;
-			}
-
-			addFieldMappings(objectMapping, clazz, dm, needCreateModel, doType);
+			dm.addType(clazz);
+			addFieldMappings(objectMapping, clazz);
 			clazz = clazz.getSuperclass();
-			doSubType = doType;
 		}
 		
 		return objectMapping;
 	}
 	
-	private static void addFieldMappings(SimpleObjectMapping objectMapping, Class<?> clazz,
-			DomainModel dm, boolean needCreateModel, DOType doType) {
+	private static void addFieldMappings(SimpleObjectMapping objectMapping, Class<?> clazz) {
 		Field[] fields = clazz.getDeclaredFields();
 		for (int i = 0;i < fields.length; i++) {
 			if (!Modifier.isTransient(fields[i].getModifiers())) {
-				if (needCreateModel) {
-					DOField doField = new DOField(fields[i].getName(), fields[i].getType().getName());
-					doType.getFields().add(doField);
-				}
-				
 				FieldMapping fieldMapping;
 				IField field;
 				FieldKind fieldKind = FieldMapping.getFieldKind(fields[i].getType());

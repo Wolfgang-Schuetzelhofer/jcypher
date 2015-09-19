@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,6 +24,7 @@ import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.JSONWriter;
 import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
+import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -63,15 +64,15 @@ public class Util {
 	/**
 	 * map to CYPHER statements and map to JSON, print the mapping results to System.out
 	 * @param queries
-	 * @param title
+	 * @param toObserve
 	 * @param format
 	 */
-	public static void printQuery(JcQuery query, String title, Format format) {
+	public static void printQuery(JcQuery query, QueryToObserve toObserve, Format format) {
 		boolean titlePrinted = false;
-		ContentToObserve tob = QueriesPrintObserver.contentToObserve(title);
+		ContentToObserve tob = QueriesPrintObserver.contentToObserve(toObserve);
 		if (tob == ContentToObserve.CYPHER || tob == ContentToObserve.CYPHER_JSON) {
 			titlePrinted = true;
-			QueriesPrintObserver.printStream.println("#QUERY: " + title + " --------------------");
+			QueriesPrintObserver.printStream.println("#QUERY: " + toObserve.getTitle() + " --------------------");
 			// map to Cypher
 			QueriesPrintObserver.printStream.println("#CYPHER --------------------");
 			String cypher = iot.jcypher.util.Util.toCypher(query, format);
@@ -82,7 +83,7 @@ public class Util {
 		if (tob == ContentToObserve.JSON || tob == ContentToObserve.CYPHER_JSON) {
 			// map to JSON
 			if (!titlePrinted)
-				QueriesPrintObserver.printStream.println("#QUERY: " + title + " --------------------");
+				QueriesPrintObserver.printStream.println("#QUERY: " + toObserve.getTitle() + " --------------------");
 			String json = iot.jcypher.util.Util.toJSON(query, format);
 			QueriesPrintObserver.printStream.println("#JSON   --------------------");
 			QueriesPrintObserver.printStream.println(json);
@@ -95,15 +96,15 @@ public class Util {
 	 * map to CYPHER statements and map to JSON, print the mapping results
 	 * to the output streams configured in QueriesPrintObserver
 	 * @param queries
-	 * @param title
+	 * @param toObserve
 	 * @param format
 	 */
-	public static void printQueries(List<JcQuery> queries, String title, Format format) {
+	public static void printQueries(List<JcQuery> queries, QueryToObserve toObserve, Format format) {
 		boolean titlePrinted = false;
-		ContentToObserve tob = QueriesPrintObserver.contentToObserve(title);
+		ContentToObserve tob = QueriesPrintObserver.contentToObserve(toObserve);
 		if (tob == ContentToObserve.CYPHER || tob == ContentToObserve.CYPHER_JSON) {
 			titlePrinted = true;
-			QueriesPrintObserver.printStream.println("#QUERIES: " + title + " --------------------");
+			QueriesPrintObserver.printStream.println("#QUERIES: " + toObserve.getTitle() + " --------------------");
 			// map to Cypher
 			QueriesPrintObserver.printStream.println("#CYPHER --------------------");
 			for(int i = 0; i < queries.size(); i++) {
@@ -116,7 +117,7 @@ public class Util {
 		if (tob == ContentToObserve.JSON || tob == ContentToObserve.CYPHER_JSON) {
 			// map to JSON
 			if (!titlePrinted)
-				QueriesPrintObserver.printStream.println("#QUERIES: " + title + " --------------------");
+				QueriesPrintObserver.printStream.println("#QUERIES: " + toObserve.getTitle() + " --------------------");
 			String json = iot.jcypher.util.Util.toJSON(queries, format);
 			QueriesPrintObserver.printStream.println("#JSON   --------------------");
 			QueriesPrintObserver.printStream.println(json);

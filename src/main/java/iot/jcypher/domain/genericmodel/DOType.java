@@ -24,14 +24,19 @@ public class DOType {
 	private long nodeId;
 	
 	private String name;
+	private Kind kind;
 	private DOType superType;
+	private List<DOType> interfaces;
 	private List<DOField> fields;
+	private boolean buildIn;
 
-	public DOType(String name) {
+	public DOType(String name, boolean bldIn) {
 		super();
 		this.name = name;
 		this.fields = new ArrayList<DOField>();
+		this.interfaces = new ArrayList<DOType>();
 		this.nodeId = -1;
+		this.buildIn = bldIn;
 	}
 
 	public String getName() {
@@ -46,8 +51,20 @@ public class DOType {
 		return superType;
 	}
 
+	public List<DOType> getInterfaces() {
+		return interfaces;
+	}
+
 	public void setSuperType(DOType superType) {
 		this.superType = superType;
+	}
+
+	public Kind getKind() {
+		return kind;
+	}
+
+	public void setKind(Kind kind) {
+		this.kind = kind;
 	}
 
 	public long getNodeId() {
@@ -56,6 +73,15 @@ public class DOType {
 
 	public void setNodeId(long nodeId) {
 		this.nodeId = nodeId;
+	}
+	
+	public boolean isBuildIn() {
+		return buildIn;
+	}
+
+	/******************************/
+	public enum Kind {
+		CLASS, ABSTRACT_CLASS, INTERFACE, ENUM
 	}
 	
 }

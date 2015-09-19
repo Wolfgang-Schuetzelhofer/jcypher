@@ -30,6 +30,7 @@ import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
+import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 
 import java.io.ByteArrayOutputStream;
 import java.sql.Timestamp;
@@ -70,7 +71,7 @@ public class GenericModelTest extends AbstractTestSuite {
 //		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
 		
 		QueriesPrintObserver.addOutputStream(System.out);
-		QueriesPrintObserver.addToEnabledQueries("DOMAIN INFO", ContentToObserve.CYPHER);
+		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO, ContentToObserve.CYPHER);
 		
 		// init db
 //		Population population = new Population();

@@ -27,21 +27,21 @@ public class QueriesPrintObserver {
 	
 	private static Map<String, ContentToObserve> enabledQueries;
 	
-	public static ContentToObserve contentToObserve(String queryTitle) {
+	public static ContentToObserve contentToObserve(QueryToObserve queryTitle) {
 		if (enabledQueries != null)
-			return enabledQueries.get(queryTitle);
+			return enabledQueries.get(queryTitle.getTitle());
 		return null;
 	}
 	
-	public static void addToEnabledQueries(String queryTitle, ContentToObserve cto) {
+	public static void addToEnabledQueries(QueryToObserve queryTitle, ContentToObserve cto) {
 		if (enabledQueries == null)
 			enabledQueries = new HashMap<String, ContentToObserve>();
-		enabledQueries.put(queryTitle, cto);
+		enabledQueries.put(queryTitle.getTitle(), cto);
 	}
 	
-	public static void removeFromEnabledQueries(String queryTitle) {
+	public static void removeFromEnabledQueries(QueryToObserve queryTitle) {
 		if (enabledQueries != null)
-			enabledQueries.remove(queryTitle);
+			enabledQueries.remove(queryTitle.getTitle());
 	}
 	
 	public static void removeAllEnabledQueries() {
@@ -63,5 +63,23 @@ public class QueriesPrintObserver {
 	/************************************/
 	public enum ContentToObserve {
 		CYPHER, JSON, CYPHER_JSON
+	}
+	
+	/************************************/
+	public enum QueryToObserve {
+		DOMAIN_INFO("DOMAIN INFO"),
+		DOM_QUERY("DOM QUERY"),
+		COUNT_QUERY("COUNT QUERY");
+		
+		private String title;
+
+		private QueryToObserve(String title) {
+			this.title = title;
+		}
+
+		public String getTitle() {
+			return title;
+		}
+		
 	}
 }

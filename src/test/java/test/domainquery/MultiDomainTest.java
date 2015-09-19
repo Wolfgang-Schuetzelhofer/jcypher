@@ -32,6 +32,7 @@ import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
+import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -84,8 +85,8 @@ public class MultiDomainTest extends AbstractTestSuite {
 		queriesStream = new ByteArrayOutputStream();
 		QueriesPrintObserver.addOutputStream(queriesStream);
 		
-		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
-		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
+		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.COUNT_QUERY, ContentToObserve.CYPHER);
+		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOM_QUERY, ContentToObserve.CYPHER);
 //		QueriesPrintObserver.addToEnabledQueries("DOMAIN INFO", ContentToObserve.CYPHER);
 		
 		clearDB();
