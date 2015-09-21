@@ -407,7 +407,7 @@ public class FieldMapping {
 		Class<?> clazz = null;
 		if (typeProp != null) {
 			try {
-				clazz = Class.forName(typeProp.getValue().toString());
+				clazz = MappingUtil.internalDomainAccess.get().getClassForName(typeProp.getValue().toString());
 			} catch (ClassNotFoundException e) {
 				throw new RuntimeException(e);
 			}

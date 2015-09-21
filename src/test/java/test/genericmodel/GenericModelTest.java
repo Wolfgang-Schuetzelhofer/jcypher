@@ -16,6 +16,7 @@
 
 package test.genericmodel;
 
+import static org.junit.Assert.assertEquals;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -26,18 +27,13 @@ import iot.jcypher.domain.DomainInformation.DomainObjectType;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 
-import java.io.ByteArrayOutputStream;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Properties;
 
@@ -46,16 +42,13 @@ import org.junit.Test;
 
 import test.AbstractTestSuite;
 import test.domainquery.Population;
-import test.domainquery.model.DateHolder;
-import test.domainquery.model.NumberHolder;
-import test.domainquery.model.Person;
-import test.domainquery.model.SubNumberHolder;
 
 public class GenericModelTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	private static String domainModel;
 	
 	@BeforeClass
 	public static void before() {
@@ -74,15 +67,16 @@ public class GenericModelTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO, ContentToObserve.CYPHER);
 		
 		// init db
-//		Population population = new Population();
-//		
-//		storedDomainObjects = population.createPopulation();
-//		
-//		QueriesPrintObserver.addOutputStream(System.out);
-//		
-//		QueriesPrintObserver.addToEnabledQueries("COUNT QUERY", ContentToObserve.CYPHER);
-//		QueriesPrintObserver.addToEnabledQueries("DOM QUERY", ContentToObserve.CYPHER);
-//		
+		Population population = new Population();
+		
+		storedDomainObjects = population.createPopulation();
+		
+		QueriesPrintObserver.addOutputStream(System.out);
+		
+		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.COUNT_QUERY, ContentToObserve.CYPHER);
+		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOM_QUERY, ContentToObserve.CYPHER);
+		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO, ContentToObserve.CYPHER);
+		
 //		List<JcError> errors = dbAccess.clearDatabase();
 //		if (errors.size() > 0) {
 //			printErrors(errors);
@@ -94,6 +88,17 @@ public class GenericModelTest extends AbstractTestSuite {
 //			printErrors(errors);
 //			throw new JcResultException(errors);
 //		}
+//		domainModel = ((IIntDomainAccess)da).getInternalDomainAccess().domainModelAsString();
+	}
+	
+	@Test
+	public void testGenericModel_01() {
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		((IIntDomainAccess)da).getInternalDomainAccess().loadDomainInfoIfNeeded();
+		String domModel = ((IIntDomainAccess)da).getInternalDomainAccess().domainModelAsString();
+		
+		assertEquals(domainModel, domModel);
+		return;
 	}
 	
 	@Test

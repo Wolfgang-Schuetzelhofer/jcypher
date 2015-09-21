@@ -20,11 +20,13 @@ public class DOField {
 	
 	private String name;
 	private String typeName;
+	private boolean buidInType;
 	
-	public DOField(String name, String type) {
+	public DOField(String name, String type, boolean buildIn) {
 		super();
 		this.name = name;
 		this.typeName = type;
+		this.buidInType = buildIn;
 	}
 
 	public String getName() {
@@ -33,6 +35,22 @@ public class DOField {
 
 	public String getTypeName() {
 		return typeName;
+	}
+
+	public boolean isBuidInType() {
+		return buidInType;
+	}
+	
+	public String asString(String indent) {
+		StringBuilder sb = new StringBuilder();
+		sb.append(indent);
+		sb.append(this.name);
+		sb.append(" : ");
+		sb.append(this.typeName);
+		sb.append(" (buildIn: ");
+		sb.append(this.buidInType);
+		sb.append(')');
+		return sb.toString();
 	}
 
 }

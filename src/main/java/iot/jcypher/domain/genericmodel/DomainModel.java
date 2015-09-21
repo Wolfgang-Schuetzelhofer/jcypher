@@ -30,13 +30,20 @@ import iot.jcypher.query.values.JcNumber;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javassist.ClassPool;
+import javassist.CtClass;
+import javassist.CtField;
+
 public class DomainModel {
 	
 	private static final String JavaPkg = "java.";
+	private static final String[] primitives = new String[] {"int", "boolean", "long", "float", "double"};
 	private static final String EnumVals = "ENUM$VALUES";
 	private static final String TypeNodePostfix = "_mdl";
 	private static final String Colon = ":";
@@ -50,6 +57,7 @@ public class DomainModel {
 	private String typeNodeName;
 	private Map<String, DOType> doTypes;
 	private List<DOType> unsaved;
+	private ClassPool classPool;
 
 	public DomainModel(String domainName) {
 		super();
@@ -102,9 +110,11 @@ public class DomainModel {
 				if (doType.getKind() == Kind.ENUM && fields[i].getName().equals(EnumVals))
 					continue;
 				Class<?> fTyp = fields[i].getType();
-				DOField fld = new DOField(fields[i].getName(), fTyp.getName());
+				String tName = fTyp.getName();
+				boolean buidIn = isBuildIn(tName);
+				DOField fld = new DOField(fields[i].getName(), tName, buidIn);
 				doType.getFields().add(fld);
-				if (fTyp.isEnum())
+				if (!buidIn)
 					addType(fTyp);
 			}
 		}
@@ -144,7 +154,7 @@ public class DomainModel {
 				if (flds instanceof List<?>) {
 					for (Object obj : (List<?>)flds) {
 						String[] fld = obj.toString().split(":");
-						DOField doField = new DOField(fld[0], fld[1]);
+						DOField doField = new DOField(fld[0], fld[1], isBuildIn(fld[1]));
 						doType.getFields().add(doField);
 					}
 				}
@@ -216,10 +226,127 @@ public class DomainModel {
 	}
 	
 	public boolean isBuildIn(String typeName) {
-		return typeName.startsWith(JavaPkg);
+		return typeName.startsWith(JavaPkg) || isPrimitive(typeName);
 	}
 	
+	private boolean isPrimitive(String typeName) {
+		for (String prim : primitives) {
+			if (prim.equals(typeName))
+				return true;
+		}
+		return false;
+	}
+	
+	public List<DOType> getUnsaved() {
+		return unsaved;
+	}
+
 	public void updatedToGraph() {
 		this.unsaved.clear();
+	}
+	
+	public Class<?> getClassForName(String name) throws ClassNotFoundException {
+		Class<?> clazz;
+		try {
+			clazz = Class.forName(name);
+		} catch (ClassNotFoundException e) {
+			DOType doType = getDOType(name);
+			if (doType == null)
+				throw e;
+			try {
+				clazz = doType.getJavaClass();
+				if (clazz == null)
+					createClassFor(doType);
+				clazz = doType.getJavaClass();
+			} catch (Throwable e1) {
+				throw new RuntimeException(e1);
+			}
+		}
+		return clazz;
+	}
+	
+	private void createClassFor(DOType doType) throws Throwable {
+		createCtClassFor(doType, getClassPool());
+		return;
+	}
+	
+	private CtClass createCtClassFor(DOType doType, ClassPool cp) throws Throwable {
+		CtClass cc = cp.getOrNull(doType.getName());
+		if (cc == null) {
+			if (doType.getKind() == Kind.INTERFACE) {
+				cc = cp.makeInterface(doType.getName());
+			} else {
+				cc = cp.makeClass(doType.getName());
+			}
+			DOType doSType = doType.getSuperType();
+			if (doSType != null) {
+				CtClass scc = createCtClassFor(doSType, cp);
+				cc.setSuperclass(scc);
+			}
+			for (DOType ifs : doType.getInterfaces()) {
+				CtClass ifct = createCtClassFor(ifs, cp);
+				cc.addInterface(ifct);
+			}
+			
+			if (doType.getKind() == Kind.ENUM) {
+				String tst = null;
+			} else {
+				for (DOField fld : doType.getFields()) {
+					CtField ctField;
+					String tn = fld.getTypeName();
+					if (!fld.isBuidInType()) {
+						DOType ft = getDOType(tn);
+						if (ft == null)
+							throw new ClassNotFoundException(tn);
+						CtClass ctFt = createCtClassFor(ft, cp);
+						ctField = new CtField(ctFt, fld.getName(), cc);
+					} else {
+						StringBuilder sb = new StringBuilder();
+						sb.append("public ");
+						sb.append(tn);
+						sb.append(' ');
+						sb.append(fld.getName());
+						sb.append(';');
+						ctField = CtField.make(sb.toString(), cc);
+					}
+					cc.addField(ctField);
+				}
+			}
+			Class<? extends CtClass> cls = cc.getClass();
+			doType.setJavaClass(cls); // create the class
+			String nm = cls.getName();
+			Field[] theFields = doType.getJavaClass().getFields();
+			theFields = theFields;
+		}
+
+		return cc;
+	}
+	
+	private ClassPool getClassPool() {
+		if (this.classPool == null)
+			this.classPool = new ClassPool(true);
+		return this.classPool;
+	}
+	
+	public String asString() {
+		String indent = "   ";
+		StringBuilder sb = new StringBuilder();
+		sb.append(this.domainName);
+		sb.append(" {");
+		List<DOType> vals = new ArrayList<DOType>();
+		vals.addAll(this.doTypes.values());
+		Collections.sort(vals, new Comparator<DOType>() {
+			@Override
+			public int compare(DOType o1, DOType o2) {
+				return o1.getName().compareTo(o2.getName());
+			}
+		});
+		for (DOType t : vals) {
+			sb.append('\n');
+			sb.append(t.asString(indent));
+		}
+		sb.append('\n');
+		sb.append('}');
+		return sb.toString();
 	}
 }

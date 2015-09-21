@@ -29,6 +29,7 @@ public class DOType {
 	private List<DOType> interfaces;
 	private List<DOField> fields;
 	private boolean buildIn;
+	private Class<?> javaClass;
 
 	public DOType(String name, boolean bldIn) {
 		super();
@@ -75,8 +76,42 @@ public class DOType {
 		this.nodeId = nodeId;
 	}
 	
+	public Class<?> getJavaClass() {
+		return javaClass;
+	}
+
+	public void setJavaClass(Class<?> javaClass) {
+		this.javaClass = javaClass;
+	}
+
 	public boolean isBuildIn() {
 		return buildIn;
+	}
+	
+	public String asString(String indent) {
+		String indent2 = "".concat(indent).concat(indent);
+		StringBuilder sb = new StringBuilder();
+		sb.append(indent);
+		sb.append(this.name);
+		if (this.superType != null) {
+			sb.append(" extends ");
+			sb.append(this.superType.getName());
+		}
+		if (this.interfaces.size() > 0) {
+			sb.append(" implements");
+			for (DOType t : this.interfaces) {
+				sb.append(' ');
+				sb.append(t.getName());
+			}
+		}
+		sb.append(" {");
+		for (DOField f : this.fields) {
+			sb.append('\n');
+			sb.append(f.asString(indent2));
+		}
+		sb.append(indent);
+		sb.append('}');
+		return sb.toString();
 	}
 
 	/******************************/

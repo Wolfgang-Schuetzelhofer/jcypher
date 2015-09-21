@@ -22,6 +22,7 @@ import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.ResolutionDepth;
 import iot.jcypher.domain.SyncInfo;
+import iot.jcypher.domain.genericmodel.DOType;
 import iot.jcypher.domain.genericmodel.DomainModel;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
@@ -1423,14 +1424,27 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 							DomainAccessHandler.this.domainInfo.changed = true;
 							
 					}
-				} else if (DomainAccessHandler.this.domainInfo.isChanged()) { // update info to graph
-					DomainAccessHandler.this.domainInfo.graphUdated();
-					if (DomainAccessHandler.this.domainInfo.nodeId == -1) {
-						// new DomainInfo node was stored in the db
-						// we have to set the returned node id
-						JcNumber nid = new JcNumber("NID");
-						BigDecimal rNid = result.resultOf(nid).get(0);
-						DomainAccessHandler.this.domainInfo.setNodeId(rNid.longValue());
+				} else if (DomainAccessHandler.this.domainInfo.isChanged() ||
+						DomainAccessHandler.this.domainModel.hasChanged()) { // update info to graph
+					if (DomainAccessHandler.this.domainInfo.isChanged()) {
+						DomainAccessHandler.this.domainInfo.graphUdated();
+						if (DomainAccessHandler.this.domainInfo.nodeId == -1) {
+							// new DomainInfo node was stored in the db
+							// we have to set the returned node id
+							JcNumber nid = new JcNumber("NID");
+							BigDecimal rNid = result.resultOf(nid).get(0);
+							DomainAccessHandler.this.domainInfo.setNodeId(rNid.longValue());
+						}
+					}
+					if (DomainAccessHandler.this.domainModel.hasChanged()) {
+						int idx = 0;
+						for (DOType t : DomainAccessHandler.this.domainModel.getUnsaved()) {
+							JcNumber nid = new JcNumber("nid_".concat(String.valueOf(idx)));
+							BigDecimal rNid = result.resultOf(nid).get(0);
+							t.setNodeId(rNid.longValue());
+							idx++;
+						}
+						domainModel.updatedToGraph();
 					}
 				}
 				
@@ -1508,7 +1522,6 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						}
 						if (DomainAccessHandler.this.domainModel.hasChanged()) {
 							dmClauses = domainModel.getChangeClauses();
-							domainModel.updatedToGraph();
 						}
 						List<IClause> clauses = diClauses != null ? diClauses : new ArrayList<IClause>();
 						if (dmClauses != null)
@@ -2384,14 +2397,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 							GrProperty prop = rel.getProperty(DomainAccessHandler.KeyProperty);
 							GrProperty typeProp = rel.getProperty(DomainAccessHandler.KeyTypeProperty);
 							Object key = MappingUtil.convertFromProperty(prop.getValue(),
-									Class.forName(typeProp.getValue().toString()));
+									domainAccessHandler.domainModel.getClassForName(typeProp.getValue().toString()));
 							KeyedRelation irel = new KeyedRelation(relType, key, start, end);
 							Object val = null;
 							prop = rel.getProperty(DomainAccessHandler.ValueProperty);
 							if (prop != null) {
 								typeProp = rel.getProperty(DomainAccessHandler.ValueTypeProperty);
 								val = MappingUtil.convertFromProperty(prop.getValue(),
-										Class.forName(typeProp.getValue().toString()));
+										domainAccessHandler.domainModel.getClassForName(typeProp.getValue().toString()));
 								irel.setValue(val);
 							}
 							ds.add_Id2Relation(irel, relId);
@@ -2877,7 +2890,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				for (String str : c2l_list) {
 					String[] c2l = str.split("=");
 					try {
-						Class<?> clazz = Class.forName(c2l[1]);
+						Class<?> clazz = domainAccessHandler.domainModel.getClassForName(c2l[1]);
 						this.addClassLabel(clazz, c2l[0]);
 					} catch (ClassNotFoundException e) {
 						throw new RuntimeException(e);
@@ -2891,7 +2904,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					String[] classes = c2l[1].split(CompoundObjectType.SEPARATOR);
 					for (String cls : classes) {
 						try {
-							Class<?> clazz = Class.forName(cls);
+							Class<?> clazz = domainAccessHandler.domainModel.getClassForName(cls);
 							this.addFieldComponentType(c2l[0], clazz);
 						} catch (ClassNotFoundException e) {
 							throw new RuntimeException(e);
@@ -2906,7 +2919,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					String[] classes = c2l[1].split(CompoundObjectType.SEPARATOR);
 					for (String cls : classes) {
 						try {
-							Class<?> clazz = Class.forName(cls);
+							Class<?> clazz = domainAccessHandler.domainModel.getClassForName(cls);
 							this.addConcreteFieldType(c2l[0], clazz);
 						} catch (ClassNotFoundException e) {
 							throw new RuntimeException(e);
@@ -3099,7 +3112,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				super();
 				String[] clField = classField.split(domainAccessHandler.regexClassfieldSep);
 				try {
-					this.sourceClass = Class.forName(clField[0]);
+					this.sourceClass = domainAccessHandler.domainModel.getClassForName(clField[0]);
 				} catch (ClassNotFoundException e) {
 					throw new RuntimeException(e);
 				}
@@ -3314,6 +3327,25 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					}
 				}
 			}
+		}
+		
+		public Class<?> getClassForName(String name) throws ClassNotFoundException {
+			return domainAccessHandler.domainModel.getClassForName(name);
+		}
+		
+		/**
+		 * For Testing
+		 */
+		public void loadDomainInfoIfNeeded() {
+			domainAccessHandler.loadDomainInfoIfNeeded();
+		}
+		
+		/**
+		 * For Testing
+		 * @return
+		 */
+		public String domainModelAsString() {
+			return domainAccessHandler.domainModel.asString();
 		}
 	}
 }
