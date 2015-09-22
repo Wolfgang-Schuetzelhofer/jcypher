@@ -27,7 +27,9 @@ import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 
+import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -39,6 +41,7 @@ import java.util.Map;
 import javassist.ClassPool;
 import javassist.CtClass;
 import javassist.CtField;
+import javassist.CtMethod;
 
 public class DomainModel {
 	
@@ -70,9 +73,9 @@ public class DomainModel {
 	public DOType addType(Class<?> clazz) {
 		if (!AbstractSurrogate.class.isAssignableFrom(clazz)) {
 			String name = clazz.getName();
-			boolean buildIn = isBuildIn(name);
 			DOType doType;
 			if ((doType = this.doTypes.get(name)) == null) {
+				boolean buildIn = isBuildIn(name);
 				doType = new DOType(name, buildIn);
 				this.doTypes.put(name, doType);
 				if (!buildIn) {
@@ -254,10 +257,8 @@ public class DomainModel {
 			if (doType == null)
 				throw e;
 			try {
-				clazz = doType.getJavaClass();
-				if (clazz == null)
-					createClassFor(doType);
-				clazz = doType.getJavaClass();
+				createClassFor(doType);
+				clazz = Class.forName(name);
 			} catch (Throwable e1) {
 				throw new RuntimeException(e1);
 			}
@@ -267,7 +268,6 @@ public class DomainModel {
 	
 	private void createClassFor(DOType doType) throws Throwable {
 		createCtClassFor(doType, getClassPool());
-		return;
 	}
 	
 	private CtClass createCtClassFor(DOType doType, ClassPool cp) throws Throwable {
@@ -289,7 +289,19 @@ public class DomainModel {
 			}
 			
 			if (doType.getKind() == Kind.ENUM) {
-				String tst = null;
+				StringBuilder sb = new StringBuilder();
+				sb.append("private static ");
+				sb.append(doType.getName());
+				sb.append("[] values;");
+				CtField ctField = CtField.make(sb.toString(), cc);
+				cc.addField(ctField);
+				sb = new StringBuilder();
+				sb.append("public static ");
+				sb.append(doType.getName());
+				sb.append("[] ");
+				sb.append("values(){return values;}");
+				CtMethod mthd = CtMethod.make(sb.toString(), cc);
+				cc.addMethod(mthd);
 			} else {
 				for (DOField fld : doType.getFields()) {
 					CtField ctField;
@@ -300,6 +312,7 @@ public class DomainModel {
 							throw new ClassNotFoundException(tn);
 						CtClass ctFt = createCtClassFor(ft, cp);
 						ctField = new CtField(ctFt, fld.getName(), cc);
+						ctField.setModifiers(javassist.Modifier.PUBLIC);
 					} else {
 						StringBuilder sb = new StringBuilder();
 						sb.append("public ");
@@ -312,11 +325,23 @@ public class DomainModel {
 					cc.addField(ctField);
 				}
 			}
-			Class<? extends CtClass> cls = cc.getClass();
-			doType.setJavaClass(cls); // create the class
-			String nm = cls.getName();
-			Field[] theFields = doType.getJavaClass().getFields();
-			theFields = theFields;
+			cc.toClass(); // creates the class and registers it with the class loader
+			if (doType.getKind() == Kind.ENUM) { // add the enum values dynamically
+				Class<?> clazz = Class.forName(doType.getName());
+				Field f = clazz.getDeclaredField("values");
+				for (DOField fld : doType.getFields()) {
+					if (fld.getTypeName().equals(doType.getName())) {
+						Constructor<?>[] cstr = clazz.getConstructors();
+						//Object inst = clazz.newInstance();
+//						Field nmf = clazz.getField("name");
+//						Field ordf = clazz.getField("ordinal");
+					}
+				}
+				Method[] mthds = clazz.getDeclaredMethods();
+				clazz = clazz.getClass();
+				f = clazz.getDeclaredField("enumConstants");
+				f = f;
+			}
 		}
 
 		return cc;

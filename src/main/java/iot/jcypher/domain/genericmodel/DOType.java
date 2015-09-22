@@ -29,7 +29,6 @@ public class DOType {
 	private List<DOType> interfaces;
 	private List<DOField> fields;
 	private boolean buildIn;
-	private Class<?> javaClass;
 
 	public DOType(String name, boolean bldIn) {
 		super();
@@ -76,14 +75,6 @@ public class DOType {
 		this.nodeId = nodeId;
 	}
 	
-	public Class<?> getJavaClass() {
-		return javaClass;
-	}
-
-	public void setJavaClass(Class<?> javaClass) {
-		this.javaClass = javaClass;
-	}
-
 	public boolean isBuildIn() {
 		return buildIn;
 	}
