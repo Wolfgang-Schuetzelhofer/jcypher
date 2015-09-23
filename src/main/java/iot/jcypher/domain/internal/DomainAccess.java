@@ -254,7 +254,18 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		@Override
 		public List<DomainObject> loadByType(String domainObjectClassName,
 				int resolutionDepth, int offset, int count) {
-			domainAccessHandler.updateMappingsIfNeeded();
+			try {
+				domainAccessHandler.updateMappingsIfNeeded();
+				Class<?> clazz = domainAccessHandler.domainModel.getClassForName(domainObjectClassName);
+				List<?> ret = this.getDomainAccess().loadByType(clazz, resolutionDepth, offset, count);
+				ret = ret;
+			} catch(Throwable e) {
+				if (e instanceof RuntimeException)
+					throw (RuntimeException)e;
+				else
+					throw new RuntimeException(e);
+				
+			}
 			return null;
 		}
 

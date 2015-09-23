@@ -29,7 +29,6 @@ import iot.jcypher.query.values.JcNumber;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -40,13 +39,18 @@ import java.util.Map;
 
 import javassist.ClassPool;
 import javassist.CtClass;
+import javassist.CtConstructor;
 import javassist.CtField;
 import javassist.CtMethod;
+import javassist.CtNewConstructor;
+import sun.reflect.ConstructorAccessor;
+import sun.reflect.ReflectionFactory;
 
 public class DomainModel {
-	
+
 	private static final String JavaPkg = "java.";
-	private static final String[] primitives = new String[] {"int", "boolean", "long", "float", "double"};
+	private static final String[] primitives = new String[] { "int", "boolean",
+			"long", "float", "double" };
 	private static final String EnumVals = "ENUM$VALUES";
 	private static final String TypeNodePostfix = "_mdl";
 	private static final String Colon = ":";
@@ -55,7 +59,7 @@ public class DomainModel {
 	private static final String propInterfaceNames = "interfaceNames";
 	private static final String propFields = "fields";
 	private static final String propKind = "kind";
-	
+
 	private String domainName;
 	private String typeNodeName;
 	private Map<String, DOType> doTypes;
@@ -79,9 +83,9 @@ public class DomainModel {
 				doType = new DOType(name, buildIn);
 				this.doTypes.put(name, doType);
 				if (!buildIn) {
-					Kind kind = clazz.isInterface() ? Kind.INTERFACE : 
-						clazz.isEnum() ? Kind.ENUM :
-						Modifier.isAbstract(clazz.getModifiers()) ? Kind.ABSTRACT_CLASS : Kind.CLASS;
+					Kind kind = clazz.isInterface() ? Kind.INTERFACE : clazz
+							.isEnum() ? Kind.ENUM : Modifier.isAbstract(clazz
+							.getModifiers()) ? Kind.ABSTRACT_CLASS : Kind.CLASS;
 					doType.setKind(kind);
 					this.unsaved.add(doType);
 					addFields(doType, clazz);
@@ -105,12 +109,13 @@ public class DomainModel {
 		}
 		return null;
 	}
-	
+
 	private void addFields(DOType doType, Class<?> clazz) {
 		Field[] fields = clazz.getDeclaredFields();
-		for (int i = 0;i < fields.length; i++) {
+		for (int i = 0; i < fields.length; i++) {
 			if (!Modifier.isTransient(fields[i].getModifiers())) {
-				if (doType.getKind() == Kind.ENUM && fields[i].getName().equals(EnumVals))
+				if (doType.getKind() == Kind.ENUM
+						&& fields[i].getName().equals(EnumVals))
 					continue;
 				Class<?> fTyp = fields[i].getType();
 				String tName = fTyp.getName();
@@ -126,7 +131,7 @@ public class DomainModel {
 	public DOType getDOType(String typeName) {
 		return this.doTypes.get(typeName);
 	}
-	
+
 	public String getDomainName() {
 		return domainName;
 	}
@@ -134,47 +139,48 @@ public class DomainModel {
 	public String getTypeNodeName() {
 		return this.typeNodeName;
 	}
-	
+
 	public void loadFrom(List<GrNode> mdlInfos) {
-		for(GrNode nd : mdlInfos) {
+		for (GrNode nd : mdlInfos) {
 			if (nd != null) {
 				GrProperty propTyp = nd.getProperty(propTypeName);
 				GrProperty propSuperTyp = nd.getProperty(propSuperTypeName);
 				GrProperty propFlds = nd.getProperty(propFields);
 				GrProperty propKnd = nd.getProperty(propKind);
 				GrProperty propIfss = nd.getProperty(propInterfaceNames);
-				
+
 				String typNm = propTyp.getValue().toString();
-				
+
 				DOType doType = addType(typNm);
 				doType.setNodeId(nd.getId());
-				
+
 				String sTypNm = propSuperTyp.getValue().toString();
 				if (!sTypNm.isEmpty())
 					doType.setSuperType(addType(sTypNm));
-				
+
 				Object flds = propFlds.getValue();
 				if (flds instanceof List<?>) {
-					for (Object obj : (List<?>)flds) {
+					for (Object obj : (List<?>) flds) {
 						String[] fld = obj.toString().split(":");
-						DOField doField = new DOField(fld[0], fld[1], isBuildIn(fld[1]));
+						DOField doField = new DOField(fld[0], fld[1],
+								isBuildIn(fld[1]));
 						doType.getFields().add(doField);
 					}
 				}
-				
+
 				Object ifss = propIfss.getValue();
 				if (ifss instanceof List<?>) {
-					for (Object obj : (List<?>)ifss) {
+					for (Object obj : (List<?>) ifss) {
 						doType.getInterfaces().add(addType(obj.toString()));
 					}
 				}
-				
+
 				Kind knd = Kind.valueOf(propKnd.getValue().toString());
 				doType.setKind(knd);
 			}
 		}
 	}
-	
+
 	private DOType addType(String typeName) {
 		DOType typ = this.doTypes.get(typeName);
 		if (typ == null) {
@@ -184,11 +190,11 @@ public class DomainModel {
 		}
 		return typ;
 	}
-	
+
 	public boolean hasChanged() {
 		return this.unsaved.size() > 0;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public List<IClause>[] getChangeClauses() {
 		List<IClause> clauses = null;
@@ -200,7 +206,8 @@ public class DomainModel {
 			for (DOType t : this.unsaved) {
 				List<String> flds = new ArrayList<String>();
 				for (DOField f : t.getFields()) {
-					String fd = f.getName().concat(Colon).concat(f.getTypeName());
+					String fd = f.getName().concat(Colon)
+							.concat(f.getTypeName());
 					flds.add(fd);
 				}
 				List<String> ifss = new ArrayList<String>();
@@ -208,7 +215,8 @@ public class DomainModel {
 					String ifName = ifs.getName();
 					ifss.add(ifName);
 				}
-				String sTypeName = t.getSuperType() != null ? t.getSuperType().getName() : "";
+				String sTypeName = t.getSuperType() != null ? t.getSuperType()
+						.getName() : "";
 				String strIdx = String.valueOf(idx);
 				JcNode n = new JcNode("n_".concat(strIdx));
 				JcNumber nid = new JcNumber("nid_".concat(strIdx));
@@ -223,15 +231,15 @@ public class DomainModel {
 				returnClauses.add(RETURN.value(n.id()).AS(nid));
 				idx++;
 			}
-			return new List[] {clauses, returnClauses};
+			return new List[] { clauses, returnClauses };
 		}
 		return null;
 	}
-	
+
 	public boolean isBuildIn(String typeName) {
 		return typeName.startsWith(JavaPkg) || isPrimitive(typeName);
 	}
-	
+
 	private boolean isPrimitive(String typeName) {
 		for (String prim : primitives) {
 			if (prim.equals(typeName))
@@ -239,7 +247,7 @@ public class DomainModel {
 		}
 		return false;
 	}
-	
+
 	public List<DOType> getUnsaved() {
 		return unsaved;
 	}
@@ -247,7 +255,7 @@ public class DomainModel {
 	public void updatedToGraph() {
 		this.unsaved.clear();
 	}
-	
+
 	public Class<?> getClassForName(String name) throws ClassNotFoundException {
 		Class<?> clazz;
 		try {
@@ -265,18 +273,21 @@ public class DomainModel {
 		}
 		return clazz;
 	}
-	
+
 	private void createClassFor(DOType doType) throws Throwable {
 		createCtClassFor(doType, getClassPool());
 	}
-	
-	private CtClass createCtClassFor(DOType doType, ClassPool cp) throws Throwable {
+
+	private CtClass createCtClassFor(DOType doType, ClassPool cp)
+			throws Throwable {
 		CtClass cc = cp.getOrNull(doType.getName());
 		if (cc == null) {
 			if (doType.getKind() == Kind.INTERFACE) {
 				cc = cp.makeInterface(doType.getName());
 			} else {
 				cc = cp.makeClass(doType.getName());
+				if (doType.getKind() == Kind.ENUM) // enum modifier (see java.lang.Class)
+					cc.setModifiers(cc.getModifiers() | javassist.Modifier.ENUM);
 			}
 			DOType doSType = doType.getSuperType();
 			if (doSType != null) {
@@ -287,14 +298,25 @@ public class DomainModel {
 				CtClass ifct = createCtClassFor(ifs, cp);
 				cc.addInterface(ifct);
 			}
-			
+
 			if (doType.getKind() == Kind.ENUM) {
+				int count = 0;
+				for (DOField fld : doType.getFields()) {
+					if (fld.getTypeName().equals(doType.getName()))
+						count++;
+				}
+				// enum values field
 				StringBuilder sb = new StringBuilder();
 				sb.append("private static ");
 				sb.append(doType.getName());
-				sb.append("[] values;");
+				sb.append("[] values = new ");
+				sb.append(doType.getName());
+				sb.append('[');
+				sb.append(count);
+				sb.append("];");
 				CtField ctField = CtField.make(sb.toString(), cc);
 				cc.addField(ctField);
+				// enum values method
 				sb = new StringBuilder();
 				sb.append("public static ");
 				sb.append(doType.getName());
@@ -302,6 +324,16 @@ public class DomainModel {
 				sb.append("values(){return values;}");
 				CtMethod mthd = CtMethod.make(sb.toString(), cc);
 				cc.addMethod(mthd);
+				// enum constructor
+				sb = new StringBuilder();
+				int idx = doType.getName().lastIndexOf('.');
+				String nm = idx >= 0 ? doType.getName().substring(idx + 1)
+						: doType.getName();
+				sb.append("public ");
+				sb.append(nm);
+				sb.append("(String name, int ordinal) {super(name, ordinal);}");
+				CtConstructor constr = CtNewConstructor.make(sb.toString(), cc);
+				cc.addConstructor(constr);
 			} else {
 				for (DOField fld : doType.getFields()) {
 					CtField ctField;
@@ -325,34 +357,39 @@ public class DomainModel {
 					cc.addField(ctField);
 				}
 			}
-			cc.toClass(); // creates the class and registers it with the class loader
-			if (doType.getKind() == Kind.ENUM) { // add the enum values dynamically
+			cc.toClass(); // creates the class and registers it with the class
+							// loader
+			if (doType.getKind() == Kind.ENUM) { // add the enum values
+													// dynamically
 				Class<?> clazz = Class.forName(doType.getName());
 				Field f = clazz.getDeclaredField("values");
+				f.setAccessible(true);
+				Object vals = f.get(clazz);
+				Constructor<?> cstr = clazz.getDeclaredConstructor(
+						String.class, int.class);
+				ConstructorAccessor constr = ReflectionFactory.getReflectionFactory().newConstructorAccessor(cstr);
+				int ord = 0;
 				for (DOField fld : doType.getFields()) {
 					if (fld.getTypeName().equals(doType.getName())) {
-						Constructor<?>[] cstr = clazz.getConstructors();
-						//Object inst = clazz.newInstance();
-//						Field nmf = clazz.getField("name");
-//						Field ordf = clazz.getField("ordinal");
+						Object val = constr.newInstance(new Object[]{fld.getName(), ord});
+						((Object[])vals)[ord] = val;
+						ord++;
 					}
 				}
-				Method[] mthds = clazz.getDeclaredMethods();
-				clazz = clazz.getClass();
-				f = clazz.getDeclaredField("enumConstants");
-				f = f;
+//				Object[] enums=clazz.getEnumConstants();
+//				clazz = clazz;
 			}
 		}
 
 		return cc;
 	}
-	
+
 	private ClassPool getClassPool() {
 		if (this.classPool == null)
 			this.classPool = new ClassPool(true);
 		return this.classPool;
 	}
-	
+
 	public String asString() {
 		String indent = "   ";
 		StringBuilder sb = new StringBuilder();
