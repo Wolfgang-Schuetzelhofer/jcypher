@@ -16,22 +16,9 @@
 
 package iot.jcypher.domain.genericmodel;
 
-public class DomainObject {
+public class InternalAccess {
 
-	private DOType domainObjectType;
-	private Object rawObject;
-
-	public DomainObject(DOType doType) {
-		super();
-		this.domainObjectType = doType;
+	public static void setRawObject(DomainObject dObj, Object rawObject) {
+		dObj.setRawObject(rawObject);
 	}
-
-	public DOType getDomainObjectType() {
-		return domainObjectType;
-	}
-
-	void setRawObject(Object rawObject) {
-		this.rawObject = rawObject;
-	}
-	
 }

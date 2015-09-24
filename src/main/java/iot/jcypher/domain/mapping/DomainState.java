@@ -17,6 +17,7 @@
 package iot.jcypher.domain.mapping;
 
 import iot.jcypher.domain.ResolutionDepth;
+import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.mapping.surrogate.InnerClassSurrogate;
 import iot.jcypher.domain.mapping.surrogate.SurrogateState;
 
@@ -717,11 +718,13 @@ public class DomainState {
 	public static class LoadInfo {
 		private Long id;
 		private ResolutionDepth resolutionDepth;
+		private DomainObject domainObject;
 		
 		private LoadInfo createCopy() {
 			LoadInfo ret = new LoadInfo();
 			ret.id = this.id;
 			ret.resolutionDepth = this.resolutionDepth;
+			ret.domainObject = this.domainObject;
 			return ret;
 		}
 		public Long getId() {
@@ -733,6 +736,11 @@ public class DomainState {
 		public void setResolutionDepth(ResolutionDepth resolutionDepth) {
 			this.resolutionDepth = resolutionDepth;
 		}
-		
+		public DomainObject getDomainObject() {
+			return domainObject;
+		}
+		public void setDomainObject(DomainObject domainObject) {
+			this.domainObject = domainObject;
+		}
 	}
 }

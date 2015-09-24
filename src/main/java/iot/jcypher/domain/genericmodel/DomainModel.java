@@ -43,8 +43,6 @@ import javassist.CtConstructor;
 import javassist.CtField;
 import javassist.CtMethod;
 import javassist.CtNewConstructor;
-import sun.reflect.ConstructorAccessor;
-import sun.reflect.ReflectionFactory;
 
 public class DomainModel {
 
@@ -83,8 +81,8 @@ public class DomainModel {
 				doType = new DOType(name, buildIn);
 				this.doTypes.put(name, doType);
 				if (!buildIn) {
-					Kind kind = clazz.isInterface() ? Kind.INTERFACE : clazz
-							.isEnum() ? Kind.ENUM : Modifier.isAbstract(clazz
+					Kind kind = clazz.isInterface() ? Kind.INTERFACE :
+							Enum.class.isAssignableFrom(clazz) ? Kind.ENUM : Modifier.isAbstract(clazz
 							.getModifiers()) ? Kind.ABSTRACT_CLASS : Kind.CLASS;
 					doType.setKind(kind);
 					this.unsaved.add(doType);
@@ -273,6 +271,16 @@ public class DomainModel {
 		}
 		return clazz;
 	}
+	
+	public DomainObject createDomainObjectFor(Object obj) {
+		String typNm = obj.getClass().getName();
+		DOType typ = getDOType(typNm);
+		if (typ == null)
+			throw new RuntimeException("missing type: [".concat(typNm).concat("] in domain model"));
+		DomainObject dobj = new DomainObject(typ);
+		InternalAccess.setRawObject(dobj, obj);
+		return dobj;
+	}
 
 	private void createClassFor(DOType doType) throws Throwable {
 		createCtClassFor(doType, getClassPool());
@@ -286,8 +294,10 @@ public class DomainModel {
 				cc = cp.makeInterface(doType.getName());
 			} else {
 				cc = cp.makeClass(doType.getName());
-				if (doType.getKind() == Kind.ENUM) // enum modifier (see java.lang.Class)
-					cc.setModifiers(cc.getModifiers() | javassist.Modifier.ENUM);
+				if (doType.getKind() == Kind.ABSTRACT_CLASS)
+					cc.setModifiers(cc.getModifiers() | Modifier.ABSTRACT);
+//				if (doType.getKind() == Kind.ENUM) // enum modifier (see java.lang.Class)
+//					cc.setModifiers(cc.getModifiers() | javassist.Modifier.ENUM);
 			}
 			DOType doSType = doType.getSuperType();
 			if (doSType != null) {
@@ -367,11 +377,12 @@ public class DomainModel {
 				Object vals = f.get(clazz);
 				Constructor<?> cstr = clazz.getDeclaredConstructor(
 						String.class, int.class);
-				ConstructorAccessor constr = ReflectionFactory.getReflectionFactory().newConstructorAccessor(cstr);
+//				ConstructorAccessor constr = ReflectionFactory.getReflectionFactory().newConstructorAccessor(cstr);
 				int ord = 0;
 				for (DOField fld : doType.getFields()) {
 					if (fld.getTypeName().equals(doType.getName())) {
-						Object val = constr.newInstance(new Object[]{fld.getName(), ord});
+//						Object val = constr.newInstance(new Object[]{fld.getName(), ord});
+						Object val = cstr.newInstance(fld.getName(), ord);
 						((Object[])vals)[ord] = val;
 						ord++;
 					}

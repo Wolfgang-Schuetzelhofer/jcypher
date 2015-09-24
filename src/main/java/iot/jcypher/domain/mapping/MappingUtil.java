@@ -23,6 +23,7 @@ import iot.jcypher.query.values.JcPrimitive;
 import iot.jcypher.query.values.JcString;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Method;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.text.ParseException;
@@ -145,7 +146,7 @@ public class MappingUtil {
 			if (Date.class.isAssignableFrom(targetType) && value instanceof Number) {
 				return longToDate(((Number)value).longValue(), targetType);
 			} else if (Enum.class.isAssignableFrom(targetType)) {
-				Object[] enums=targetType.getEnumConstants();
+				Object[] enums=getEnumValues((Class<? extends Enum<?>>) targetType);
 				for (int i = 0; i < enums.length; i++) {
 					if (((Enum<?>)enums[i]).name().equals(value.toString()))
 						return enums[i];
@@ -218,6 +219,32 @@ public class MappingUtil {
 		else if (type.equals(Boolean.class))
 			return new JcBoolean(name);
 		return null;
+	}
+	
+	/**
+	 * finds enum values in normal enum classes and in dynamically created ones.
+	 * @param clazz
+	 * @return
+	 */
+	public static Object[] getEnumValues(Class<? extends Enum<?>> clazz) {
+		Object[] enums=clazz.getEnumConstants();
+		if (enums == null) {
+			Method[] mthds = clazz.getDeclaredMethods();
+			Method mthd = null;
+			for (Method mth : mthds) {
+				if (mth.getName().equals("values")) {
+					mthd = mth;
+					break;
+				}
+			}
+			if (mthd != null)
+				try {
+					enums = (Object[]) mthd.invoke(null);
+				} catch (Throwable e) {
+					throw new RuntimeException(e);
+				}
+		}
+		return enums;
 	}
 	
 	private static Object convertToPrimitive(Object value, Class<?> targetType) {

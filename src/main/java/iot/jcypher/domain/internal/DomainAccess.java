@@ -254,11 +254,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		@Override
 		public List<DomainObject> loadByType(String domainObjectClassName,
 				int resolutionDepth, int offset, int count) {
+			List<DomainObject> ret;
 			try {
 				domainAccessHandler.updateMappingsIfNeeded();
 				Class<?> clazz = domainAccessHandler.domainModel.getClassForName(domainObjectClassName);
-				List<?> ret = this.getDomainAccess().loadByType(clazz, resolutionDepth, offset, count);
-				ret = ret;
+				List<?> objs = this.getDomainAccess().loadByType(clazz, resolutionDepth, offset, count);
+				ret = this.getDomainObjects(objs);
 			} catch(Throwable e) {
 				if (e instanceof RuntimeException)
 					throw (RuntimeException)e;
@@ -266,7 +267,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					throw new RuntimeException(e);
 				
 			}
-			return null;
+			return ret;
 		}
 
 		@Override
@@ -274,6 +275,20 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			return DomainAccess.this;
 		}
 		
+		private List<DomainObject> getDomainObjects(List<?> objects) {
+			List<DomainObject> ret = new ArrayList<>(objects.size());
+			DomainState ds = domainAccessHandler.getDomainState();
+			for (Object obj : objects) {
+				LoadInfo lInfo = ds.getLoadInfoFrom_Object2IdMap(obj);
+				DomainObject dObj = lInfo.getDomainObject();
+				if (dObj == null) {
+					dObj = domainAccessHandler.domainModel.createDomainObjectFor(obj);
+					lInfo.setDomainObject(dObj);
+				}
+				ret.add(dObj);
+			}
+			return ret;
+		}
 	}
 
 	/**********************************************************************/
