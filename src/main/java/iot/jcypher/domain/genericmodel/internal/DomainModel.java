@@ -14,10 +14,18 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domain.genericmodel;
+package iot.jcypher.domain.genericmodel.internal;
 
+import iot.jcypher.domain.genericmodel.DOField;
+import iot.jcypher.domain.genericmodel.DOType;
 import iot.jcypher.domain.genericmodel.DOType.Builder;
+import iot.jcypher.domain.genericmodel.DOType.DOClassBuilder;
+import iot.jcypher.domain.genericmodel.DOType.DOEnumBuilder;
+import iot.jcypher.domain.genericmodel.DOType.DOInterfaceBuilder;
 import iot.jcypher.domain.genericmodel.DOType.Kind;
+import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
+import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.genericmodel.InternalAccess;
 import iot.jcypher.domain.mapping.surrogate.AbstractSurrogate;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
@@ -64,6 +72,7 @@ public class DomainModel {
 	private Map<String, DOType> doTypes;
 	private List<DOType> unsaved;
 	private ClassPool classPool;
+	private TypeBuilderFactory typeBuilderFactory;
 
 	DomainModel(String domName, String domLabel) {
 		super();
@@ -78,7 +87,7 @@ public class DomainModel {
 			String name = clazz.getName();
 			DOType doType;
 			if ((doType = this.doTypes.get(name)) == null) {
-				doType = InternalAccess.createDOType(name);
+				doType = InternalAccess.createDOType(name, this);
 				this.doTypes.put(name, doType);
 				boolean buildIn = doType.isBuildIn();
 				if (!buildIn) {
@@ -119,7 +128,7 @@ public class DomainModel {
 					continue;
 				Class<?> fTyp = fields[i].getType();
 				String tName = fTyp.getName();
-				DOField fld = new DOField(fields[i].getName(), tName);
+				DOField fld = InternalAccess.createDOField(fields[i].getName(), tName, builder.build());
 				builder.build().getFields().add(fld);
 				if (!builder.build().isBuildIn())
 					addType(fTyp);
@@ -151,7 +160,7 @@ public class DomainModel {
 				String typNm = propTyp.getValue().toString();
 
 				DOType doType = addType(typNm);
-				doType.setNodeId(nd.getId());
+				InternalAccess.setNodeId(doType, nd.getId());
 				
 				Kind knd = Kind.valueOf(propKnd.getValue().toString());
 				
@@ -166,7 +175,7 @@ public class DomainModel {
 				if (flds instanceof List<?>) {
 					for (Object obj : (List<?>) flds) {
 						String[] fld = obj.toString().split(":");
-						DOField doField = new DOField(fld[0], fld[1]);
+						DOField doField = InternalAccess.createDOField(fld[0], fld[1], doType);
 						doType.getFields().add(doField);
 					}
 				}
@@ -184,7 +193,7 @@ public class DomainModel {
 	private DOType addType(String typeName) {
 		DOType typ = this.doTypes.get(typeName);
 		if (typ == null) {
-			typ = InternalAccess.createDOType(typeName);
+			typ = InternalAccess.createDOType(typeName, this);
 			this.doTypes.put(typeName, typ);
 		}
 		return typ;
@@ -404,6 +413,20 @@ public class DomainModel {
 			this.classPool = new ClassPool(true);
 		return this.classPool;
 	}
+	
+	void addDOTypeIfNeeded(DOType doType) {
+		if (this.doTypes.get(doType.getName()) == null) {
+			this.doTypes.put(doType.getName(), doType);
+			if (!doType.isBuildIn())
+				this.unsaved.add(doType);
+		}
+	}
+	
+	public DOTypeBuilderFactory getTypeBuilderFactory() {
+		if (this.typeBuilderFactory == null)
+			this.typeBuilderFactory = new TypeBuilderFactory();
+		return this.typeBuilderFactory;
+	}
 
 	public String asString() {
 		String indent = "   ";
@@ -425,5 +448,43 @@ public class DomainModel {
 		sb.append('\n');
 		sb.append('}');
 		return sb.toString();
+	}
+	
+	/********************************************/
+	public class TypeBuilderFactory implements DOTypeBuilderFactory {
+
+		@Override
+		public DOClassBuilder createClassBuilder(String typeName) {
+			DOClassBuilder ret = InternalAccess.createClassBuilder(typeName, DomainModel.this);
+			addDOTypeIfNeeded(ret.build());
+			DOType sType = getDOType("java.lang.Object");
+			if (sType == null) {
+				sType = InternalAccess.createDOType("java.lang.Object", DomainModel.this);
+				addDOTypeIfNeeded(sType);
+			}
+			ret.setSuperType(sType);
+			return ret;
+		}
+
+		@Override
+		public DOInterfaceBuilder createInterfaceBuilder(String typeName) {
+			DOInterfaceBuilder ret = InternalAccess.createInterfaceBuilder(typeName, DomainModel.this);
+			addDOTypeIfNeeded(ret.build());
+			return ret;
+		}
+
+		@Override
+		public DOEnumBuilder createEnumBuilder(String typeName) {
+			DOEnumBuilder ret = InternalAccess.createEnumBuilder(typeName, DomainModel.this);
+			addDOTypeIfNeeded(ret.build());
+			DOType sType = getDOType("java.lang.Enum");
+			if (sType == null) {
+				sType = InternalAccess.createDOType("java.lang.Enum", DomainModel.this);
+				addDOTypeIfNeeded(sType);
+			}
+			ret.setSuperType(sType);
+			return ret;
+		}
+		
 	}
 }

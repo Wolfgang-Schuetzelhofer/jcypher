@@ -16,8 +16,12 @@
 
 package iot.jcypher.domain;
 
+import iot.jcypher.domain.genericmodel.DOType;
+import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
 import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.query.result.JcError;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -26,6 +30,22 @@ import java.util.List;
  *
  */
 public interface IGenericDomainAccess {
+	
+	/**
+	 * Store a domain object. The entire object graph rooted by the domain object
+	 * is mapped to the graph database.
+	 * @param domainObject
+	 * @return a possibly emty list of errors.
+	 */
+	public List<JcError> store(DomainObject domainObject);
+	
+	/**
+	 * Store a list of domain objects. The entire object graphs rooted by the domain objects
+	 * are mapped to the graph database.
+	 * @param domainObjects
+	 * @return a possibly emty list of errors.
+	 */
+	public List<JcError> store(List<DomainObject> domainObjects);
 	
 	/**
 	 * Load a list of generic domain objects from the graph database.
@@ -79,6 +99,22 @@ public interface IGenericDomainAccess {
 	 * @return a list of domain objects.
 	 */
 	public List<DomainObject> loadByType(String domainObjectClassName, int resolutionDepth, int offset, int count);
+	
+	/**
+	 * Answer a factory for retrieving type builders. Type builders are the means to specify domain object types
+	 * <br/>for building a generic domain model.
+	 * @return a DOTypeBuilderFactory
+	 */
+	public DOTypeBuilderFactory getTypeBuilderFactory();
+	
+	/**
+	 * Answer a domain object type for the given typeName.
+	 * <br/>Answer null, if no domain object type for the given typeName exists.
+	 * <br/>In that case you may need to create one using a type builder.
+	 * @param typeName
+	 * @return a DOType or null
+	 */
+	public DOType getDomainObjectType(String typeName);
 	
 	/**
 	 * Answer a domain access object.

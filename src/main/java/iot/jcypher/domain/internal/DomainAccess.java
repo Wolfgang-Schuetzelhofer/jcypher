@@ -23,9 +23,10 @@ import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.ResolutionDepth;
 import iot.jcypher.domain.SyncInfo;
 import iot.jcypher.domain.genericmodel.DOType;
-import iot.jcypher.domain.genericmodel.DomainModel;
+import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.genericmodel.InternalAccess;
+import iot.jcypher.domain.genericmodel.internal.DomainModel;
 import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
 import iot.jcypher.domain.mapping.CompoundObjectMapping;
 import iot.jcypher.domain.mapping.CompoundObjectType;
@@ -238,6 +239,20 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	public class GenericDomainAccess implements IGenericDomainAccess {
 
 		@Override
+		public List<JcError> store(DomainObject domainObject) {
+			return DomainAccess.this.store(InternalAccess.getRawObject(domainObject));
+		}
+		
+		@Override
+		public List<JcError> store(List<DomainObject> domainObjects) {
+			List<Object> domObjs = new ArrayList<Object>(domainObjects.size());
+			for(DomainObject dobj : domainObjects) {
+				domObjs.add(InternalAccess.getRawObject(dobj));
+			}
+			return DomainAccess.this.store(domObjs);
+		}
+		
+		@Override
 		public List<DomainObject> loadByIds(String domainObjectClassName,
 				int resolutionDepth, long... ids) {
 			// TODO Auto-generated method stub
@@ -290,6 +305,16 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 			return ret;
 		}
+
+		@Override
+		public DOTypeBuilderFactory getTypeBuilderFactory() {
+			return domainAccessHandler.domainModel.getTypeBuilderFactory();
+		}
+
+		@Override
+		public DOType getDomainObjectType(String typeName) {
+			return domainAccessHandler.domainModel.getDOType(typeName);
+		}
 	}
 
 	/**********************************************************************/
@@ -338,7 +363,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.mappings = new HashMap<Class<?>, ObjectMapping>();
 			this.type2CompoundTypeMap = new HashMap<Class<?>, CompoundObjectType>();
 			this.transactionState = new ThreadLocal<DomainState>();
-			this.domainModel = InternalAccess.createDomainModel(this.domainName, getDomainLabel());
+			this.domainModel = iot.jcypher.domain.genericmodel.internal.InternalAccess
+					.createDomainModel(this.domainName, getDomainLabel());
 		}
 		
 		@SuppressWarnings("unchecked")
@@ -1261,8 +1287,9 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		}
 		
 		private String getDomainLabel() {
-			if (this.domainLabel == null)
-				this.domainLabel = this.domainName.replace('-', '_');
+			if (this.domainLabel == null) {
+				this.domainLabel = this.domainName.replace('-', '_').replace(' ', '_'); // also replace blanks
+			}
 			return this.domainLabel;
 		}
 		

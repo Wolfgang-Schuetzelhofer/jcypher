@@ -16,6 +16,9 @@
 
 package iot.jcypher.domain.genericmodel;
 
+import iot.jcypher.domain.genericmodel.internal.DomainModel;
+import iot.jcypher.domain.mapping.MappingUtil;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -28,60 +31,36 @@ public class DOType {
 	private DOType superType;
 	private List<DOType> interfaces;
 	private List<DOField> fields;
+	private List<String> fieldNames;
 	private boolean buildIn;
+	private DomainModel domainModel;
 
-	/**
-	 * Create a ClassBuilder which allows to build a generic domain object type representing a <b>Class</b>.
-	 * @param typeName fully qualified name e.g. <b>iot.jcypher.samples.domain.people.model.Person</b>
-	 * @return a DOClassBuilder
-	 */
-	public static DOClassBuilder createClassBuilder(String typeName) {
-		DOType doType = new DOType(typeName);
-		doType.kind = Kind.CLASS;
-		return doType.createClassBuilder();
-	}
-	
-	/**
-	 * Create a ClassBuilder which allows to build a generic domain object type representing an <b>Interface</b>.
-	 * @param typeName fully qualified name e.g. <b>iot.jcypher.samples.domain.people.model.PointOfContact</b>
-	 * @return a DOInterfaceBuilder
-	 */
-	public static DOInterfaceBuilder createInterfaceBuilder(String typeName) {
-		DOType doType = new DOType(typeName);
-		doType.kind = Kind.INTERFACE;
-		return doType.createInterfaceBuilder();
-	}
-	
-	/**
-	 * Create a ClassBuilder which allows to build a generic domain object type representing an <b>Enum</b>.
-	 * @param typeName fully qualified name e.g. <b>iot.jcypher.samples.domain.people.model.Gender</b>
-	 * @return a DOEnumBuilder
-	 */
-	public static DOEnumBuilder createEnumBuilder(String typeName) {
-		DOType doType = new DOType(typeName);
-		doType.kind = Kind.ENUM;
-		return doType.createEnumBuilder();
-	}
-	
 	DOClassBuilder createClassBuilder() {
-		return new DOClassBuilder();
+		DOClassBuilder ret = new DOClassBuilder();
+		ret.setKind(Kind.CLASS);
+		return ret;
 	}
 	
-	private DOInterfaceBuilder createInterfaceBuilder() {
-		return new DOInterfaceBuilder();
+	DOInterfaceBuilder createInterfaceBuilder() {
+		DOInterfaceBuilder ret = new DOInterfaceBuilder();
+		ret.setKind(Kind.INTERFACE);
+		return ret;
 	}
 	
-	private DOEnumBuilder createEnumBuilder() {
-		return new DOEnumBuilder();
+	DOEnumBuilder createEnumBuilder() {
+		DOEnumBuilder ret = new DOEnumBuilder();
+		ret.setKind(Kind.ENUM);
+		return ret;
 	}
 	
-	DOType(String typeName) {
+	DOType(String typeName, DomainModel domainModel) {
 		super();
 		this.name = typeName;
 		this.fields = new ArrayList<DOField>();
 		this.interfaces = new ArrayList<DOType>();
 		this.nodeId = -1;
 		this.buildIn = DomainModel.isBuildIn(typeName);
+		this.domainModel = domainModel;
 	}
 	
 	/**
@@ -92,8 +71,26 @@ public class DOType {
 		return name;
 	}
 
+	/**
+	 * Answer the field- (attribute) definitions for this type.
+	 * @return a list of DOField
+	 */
 	public List<DOField> getFields() {
 		return fields;
+	}
+	
+	/**
+	 * Answer a list of all field names of this type
+	 * @return
+	 */
+	public List<String> getFieldNames() {
+		if (this.fieldNames == null) {
+			this.fieldNames = new ArrayList<String>(this.fields.size());
+			for (DOField f : this.fields) {
+				this.fieldNames.add(f.getName());
+			}
+		}
+		return this.fieldNames;
 	}
 
 	public DOType getSuperType() {
@@ -110,6 +107,39 @@ public class DOType {
 	 */
 	public Kind getKind() {
 		return kind;
+	}
+	
+	/**
+	 * Answer an enum value with the given name.
+	 * @param name
+	 * @return
+	 */
+	public Object getEnumValue(String name) {
+		if (this.kind != Kind.ENUM)
+			throw new RuntimeException("getEnumValue(..) can only be called on an enum");
+		Object[] vals = getEnumValues();
+		if (vals != null) {
+			for (Object val : vals) {
+				if (((Enum<?>)val).name().equals(name))
+					return val;
+			}
+		}
+		return null;
+	}
+	
+	/**
+	 * Answer the list of enum values of this enum.
+	 * @return
+	 */
+	@SuppressWarnings("unchecked")
+	public Object[] getEnumValues() {
+		if (this.kind != Kind.ENUM)
+			throw new RuntimeException("getEnumValues() can only be called on an enum");
+		try {
+			return MappingUtil.getEnumValues((Class<? extends Enum<?>>) getRawType());
+		} catch (ClassNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	long getNodeId() {
@@ -149,6 +179,10 @@ public class DOType {
 		sb.append('}');
 		return sb.toString();
 	}
+	
+	Class<?> getRawType() throws ClassNotFoundException {
+		return this.domainModel.getClassForName(this.name);
+	}
 
 	/******************************/
 	public enum Kind {
@@ -163,7 +197,7 @@ public class DOType {
 		}
 		
 		void setKind(Kind k) {
-			kind = k;
+			DOType.this.kind = k;
 		}
 		
 		void setSuperTypeInternal(DOType superType) {
@@ -195,7 +229,8 @@ public class DOType {
 		 * @param superType
 		 */
 		public void setSuperType(DOType superType) {
-			if (superType.getKind() != Kind.CLASS && superType.getKind() != Kind.ABSTRACT_CLASS)
+			if (superType.getKind() != Kind.CLASS && superType.getKind() != Kind.ABSTRACT_CLASS &&
+					!superType.getName().equals("java.lang.Object"))
 				throw new RuntimeException("super type must be a Class or an Abstract Class");
 			super.setSuperTypeInternal(superType);
 		}
@@ -234,7 +269,7 @@ public class DOType {
 		 * @param typeName qualified type name
 		 */
 		public void addField(String name, String typeName) {
-			getFields().add(new DOField(name, typeName));
+			getFields().add(new DOField(name, typeName, DOType.this));
 		}
 	}
 	
@@ -290,6 +325,14 @@ public class DOType {
 		 */
 		public void setSuperTypeBuilder(DOEnumBuilder superTypeBuilder) {
 			super.setSuperTypeInternal(superTypeBuilder.build());
+		}
+		
+		/**
+		 * Add an enum value to the enum to be constructed.
+		 * @param name
+		 */
+		public void addEnumValue(String name) {
+			getFields().add(new DOField(name, DOType.this.name, DOType.this));
 		}
 	}
 	

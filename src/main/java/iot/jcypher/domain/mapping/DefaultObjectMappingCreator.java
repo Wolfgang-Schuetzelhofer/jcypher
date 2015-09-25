@@ -16,7 +16,7 @@
 
 package iot.jcypher.domain.mapping;
 
-import iot.jcypher.domain.genericmodel.DomainModel;
+import iot.jcypher.domain.genericmodel.internal.DomainModel;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.mapping.FieldMapping.FieldKind;
 import iot.jcypher.domain.mapping.surrogate.Array;
