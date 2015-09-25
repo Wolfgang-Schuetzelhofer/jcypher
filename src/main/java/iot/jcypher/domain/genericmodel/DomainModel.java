@@ -16,6 +16,7 @@
 
 package iot.jcypher.domain.genericmodel;
 
+import iot.jcypher.domain.genericmodel.DOType.Builder;
 import iot.jcypher.domain.genericmodel.DOType.Kind;
 import iot.jcypher.domain.mapping.surrogate.AbstractSurrogate;
 import iot.jcypher.graph.GrNode;
@@ -64,10 +65,10 @@ public class DomainModel {
 	private List<DOType> unsaved;
 	private ClassPool classPool;
 
-	public DomainModel(String domainName) {
+	DomainModel(String domName, String domLabel) {
 		super();
-		this.domainName = domainName;
-		this.typeNodeName = domainName.concat(TypeNodePostfix);
+		this.domainName = domName;
+		this.typeNodeName = domLabel.concat(TypeNodePostfix);
 		this.doTypes = new HashMap<String, DOType>();
 		this.unsaved = new ArrayList<DOType>();
 	}
@@ -77,22 +78,23 @@ public class DomainModel {
 			String name = clazz.getName();
 			DOType doType;
 			if ((doType = this.doTypes.get(name)) == null) {
-				boolean buildIn = isBuildIn(name);
-				doType = new DOType(name, buildIn);
+				doType = InternalAccess.createDOType(name);
 				this.doTypes.put(name, doType);
+				boolean buildIn = doType.isBuildIn();
 				if (!buildIn) {
+					Builder builder = InternalAccess.createBuilder(doType);
 					Kind kind = clazz.isInterface() ? Kind.INTERFACE :
 							Enum.class.isAssignableFrom(clazz) ? Kind.ENUM : Modifier.isAbstract(clazz
 							.getModifiers()) ? Kind.ABSTRACT_CLASS : Kind.CLASS;
-					doType.setKind(kind);
+					InternalAccess.setKind(builder, kind);
 					this.unsaved.add(doType);
-					addFields(doType, clazz);
+					addFields(builder, clazz);
 					Class<?> sClass = clazz.getSuperclass();
 					DOType superType = null;
 					if (sClass != null)
 						superType = addType(sClass);
 					if (superType != null)
-						doType.setSuperType(superType);
+						InternalAccess.setSuperType(builder, superType);
 					Class<?>[] ifss = clazz.getInterfaces();
 					if (ifss != null) {
 						for (Class<?> ifs : ifss) {
@@ -108,19 +110,18 @@ public class DomainModel {
 		return null;
 	}
 
-	private void addFields(DOType doType, Class<?> clazz) {
+	private void addFields(Builder builder, Class<?> clazz) {
 		Field[] fields = clazz.getDeclaredFields();
 		for (int i = 0; i < fields.length; i++) {
 			if (!Modifier.isTransient(fields[i].getModifiers())) {
-				if (doType.getKind() == Kind.ENUM
+				if (builder.build().getKind() == Kind.ENUM
 						&& fields[i].getName().equals(EnumVals))
 					continue;
 				Class<?> fTyp = fields[i].getType();
 				String tName = fTyp.getName();
-				boolean buidIn = isBuildIn(tName);
-				DOField fld = new DOField(fields[i].getName(), tName, buidIn);
-				doType.getFields().add(fld);
-				if (!buidIn)
+				DOField fld = new DOField(fields[i].getName(), tName);
+				builder.build().getFields().add(fld);
+				if (!builder.build().isBuildIn())
 					addType(fTyp);
 			}
 		}
@@ -151,17 +152,21 @@ public class DomainModel {
 
 				DOType doType = addType(typNm);
 				doType.setNodeId(nd.getId());
+				
+				Kind knd = Kind.valueOf(propKnd.getValue().toString());
+				
+				Builder builder = InternalAccess.createBuilder(doType);
+				InternalAccess.setKind(builder, knd);
 
 				String sTypNm = propSuperTyp.getValue().toString();
 				if (!sTypNm.isEmpty())
-					doType.setSuperType(addType(sTypNm));
+					InternalAccess.setSuperType(builder, addType(sTypNm));
 
 				Object flds = propFlds.getValue();
 				if (flds instanceof List<?>) {
 					for (Object obj : (List<?>) flds) {
 						String[] fld = obj.toString().split(":");
-						DOField doField = new DOField(fld[0], fld[1],
-								isBuildIn(fld[1]));
+						DOField doField = new DOField(fld[0], fld[1]);
 						doType.getFields().add(doField);
 					}
 				}
@@ -172,9 +177,6 @@ public class DomainModel {
 						doType.getInterfaces().add(addType(obj.toString()));
 					}
 				}
-
-				Kind knd = Kind.valueOf(propKnd.getValue().toString());
-				doType.setKind(knd);
 			}
 		}
 	}
@@ -182,8 +184,7 @@ public class DomainModel {
 	private DOType addType(String typeName) {
 		DOType typ = this.doTypes.get(typeName);
 		if (typ == null) {
-			boolean buildIn = isBuildIn(typeName);
-			typ = new DOType(typeName, buildIn);
+			typ = InternalAccess.createDOType(typeName);
 			this.doTypes.put(typeName, typ);
 		}
 		return typ;
@@ -234,11 +235,11 @@ public class DomainModel {
 		return null;
 	}
 
-	public boolean isBuildIn(String typeName) {
+	public static boolean isBuildIn(String typeName) {
 		return typeName.startsWith(JavaPkg) || isPrimitive(typeName);
 	}
 
-	private boolean isPrimitive(String typeName) {
+	private static boolean isPrimitive(String typeName) {
 		for (String prim : primitives) {
 			if (prim.equals(typeName))
 				return true;
@@ -266,7 +267,10 @@ public class DomainModel {
 				createClassFor(doType);
 				clazz = Class.forName(name);
 			} catch (Throwable e1) {
-				throw new RuntimeException(e1);
+				if (e1 instanceof ClassNotFoundException)
+					throw (ClassNotFoundException)e1;
+				else
+					throw new RuntimeException(e1);
 			}
 		}
 		return clazz;

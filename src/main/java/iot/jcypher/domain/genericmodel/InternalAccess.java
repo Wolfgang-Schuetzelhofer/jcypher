@@ -16,9 +16,41 @@
 
 package iot.jcypher.domain.genericmodel;
 
+import iot.jcypher.domain.genericmodel.DOType.Builder;
+import iot.jcypher.domain.genericmodel.DOType.Kind;
+
+/**
+ * For internal use only
+ * @author wolfgang
+ *
+ */
 public class InternalAccess {
 
 	public static void setRawObject(DomainObject dObj, Object rawObject) {
 		dObj.setRawObject(rawObject);
+	}
+	
+	public static DOType createDOType(String typeName) {
+		return new DOType(typeName);
+	}
+	
+	public static void setKind(Builder builder, Kind kind) {
+		builder.setKind(kind);
+	}
+	
+	public static Builder createBuilder(DOType doType) {
+		return doType.createClassBuilder();
+	}
+	
+	public static void setSuperType(Builder builder, DOType superType) {
+		builder.setSuperTypeInternal(superType);
+	}
+	
+	public static void setNodeId(DOType doType, long nid) {
+		doType.setNodeId(nid);
+	}
+	
+	public static DomainModel createDomainModel(String domainName, String domainLabel) {
+		return new DomainModel(domainName, domainLabel);
 	}
 }

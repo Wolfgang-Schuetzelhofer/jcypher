@@ -23,6 +23,8 @@ public class DomainObject {
 
 	public DomainObject(DOType doType) {
 		super();
+		if (doType == null)
+			throw new RuntimeException("a domain object must be constructed with a domain object type");
 		this.domainObjectType = doType;
 	}
 

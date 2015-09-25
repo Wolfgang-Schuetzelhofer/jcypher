@@ -25,6 +25,7 @@ import iot.jcypher.domain.SyncInfo;
 import iot.jcypher.domain.genericmodel.DOType;
 import iot.jcypher.domain.genericmodel.DomainModel;
 import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.genericmodel.InternalAccess;
 import iot.jcypher.domain.internal.SkipLimitCalc.SkipsLimits;
 import iot.jcypher.domain.mapping.CompoundObjectMapping;
 import iot.jcypher.domain.mapping.CompoundObjectType;
@@ -337,7 +338,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.mappings = new HashMap<Class<?>, ObjectMapping>();
 			this.type2CompoundTypeMap = new HashMap<Class<?>, CompoundObjectType>();
 			this.transactionState = new ThreadLocal<DomainState>();
-			this.domainModel = new DomainModel(getDomainLabel());
+			this.domainModel = InternalAccess.createDomainModel(this.domainName, getDomainLabel());
 		}
 		
 		@SuppressWarnings("unchecked")
@@ -1467,7 +1468,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						for (DOType t : DomainAccessHandler.this.domainModel.getUnsaved()) {
 							JcNumber nid = new JcNumber("nid_".concat(String.valueOf(idx)));
 							BigDecimal rNid = result.resultOf(nid).get(0);
-							t.setNodeId(rNid.longValue());
+							InternalAccess.setNodeId(t, rNid.longValue());
 							idx++;
 						}
 						domainModel.updatedToGraph();

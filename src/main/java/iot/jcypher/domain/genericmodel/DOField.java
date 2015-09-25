@@ -22,11 +22,16 @@ public class DOField {
 	private String typeName;
 	private boolean buidInType;
 	
-	public DOField(String name, String type, boolean buildIn) {
+	/**
+	 * Create a field i.e. an attribute defined in a domain object type.
+	 * @param name
+	 * @param typeName qualified type name
+	 */
+	DOField(String name, String typeName) {
 		super();
 		this.name = name;
-		this.typeName = type;
-		this.buidInType = buildIn;
+		this.typeName = typeName;
+		this.buidInType = DomainModel.isBuildIn(typeName);
 	}
 
 	public String getName() {
