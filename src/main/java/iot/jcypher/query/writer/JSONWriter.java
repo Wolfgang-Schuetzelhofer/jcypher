@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,6 +189,8 @@ public class JSONWriter {
 				generator.write(key, (Double)val);
 			else if (val instanceof Float)
 				generator.write(key, (Float)val);
+			else if (val instanceof Short)
+				generator.write(key, (Short)val);
 		} else if (val instanceof Boolean)
 			generator.write(key, (Boolean)val);
 		else if (val instanceof List<?>) {
@@ -213,6 +215,8 @@ public class JSONWriter {
 				generator.write((Double)val);
 			else if (val instanceof Float)
 				generator.write((Float)val);
+			else if (val instanceof Short)
+				generator.write((Short)val);
 		} else if (val instanceof Boolean)
 			generator.write((Boolean)val);
 		else if (val != null) // handle everything else as a string
