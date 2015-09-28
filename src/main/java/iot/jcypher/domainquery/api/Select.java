@@ -16,21 +16,18 @@
 
 package iot.jcypher.domainquery.api;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import iot.jcypher.domainquery.DomainQuery;
-import iot.jcypher.domainquery.DomainQuery.IntAccess;
+import iot.jcypher.domainquery.AbstractDomainQuery;
+import iot.jcypher.domainquery.AbstractDomainQuery.IntAccess;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
+import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.UnionExpression;
-import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
-import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcValue;
-import iot.jcypher.query.values.ValueAccess;
-import iot.jcypher.query.values.ValueElement;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class Select<T> extends APIObject {
 
@@ -61,7 +58,7 @@ public class Select<T> extends APIObject {
 			// remove it from the return statement
 			// it is only temporary
 			APIAccess.setPartOfReturn(selDom, false);
-			DomainQuery q = se.getDomainQuery();
+			AbstractDomainQuery q = se.getDomainQuery();
 			DomainObjectMatch<T> rejectDom = q.createMatch(se.getStart().getDomainObjectType());
 			// build complementary set
 			q.WHERE(rejectDom).IN(se.getStart());

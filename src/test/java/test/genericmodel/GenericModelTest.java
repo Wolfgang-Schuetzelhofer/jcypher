@@ -26,6 +26,7 @@ import iot.jcypher.domain.DomainInformation;
 import iot.jcypher.domain.DomainInformation.DomainObjectType;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
+import iot.jcypher.domain.SyncInfo;
 import iot.jcypher.domain.genericmodel.DOType;
 import iot.jcypher.domain.genericmodel.DOType.DOClassBuilder;
 import iot.jcypher.domain.genericmodel.DOType.DOEnumBuilder;
@@ -38,17 +39,20 @@ import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Properties;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
 import test.domainquery.Population;
 
+@Ignore
 public class GenericModelTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
@@ -130,6 +134,24 @@ public class GenericModelTest extends AbstractTestSuite {
 	}
 	
 	@Test
+	public void testLoadGenericModel_02() {
+		IGenericDomainAccess gda;
+		List<JcError> errors;
+		
+		gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		DomainObject object = gda.loadById("iot.jcypher.samples.domain.people.model.Person", -1, 1399);
+		
+		SyncInfo syncInfo = gda.getSyncInfo(object);
+		List<DomainObject> objects = new ArrayList<DomainObject>();
+		objects.add(object);
+		
+		List<SyncInfo> syncInfos = gda.getSyncInfos(objects);
+		
+		
+		return;
+	}
+	
+	@Test
 	public void testCreateGenericModel_01() {
 		IGenericDomainAccess gda;
 		List<JcError> errors;
@@ -169,15 +191,20 @@ public class GenericModelTest extends AbstractTestSuite {
 		aPerson.setFieldValue("subjectType", subjectTypes.getEnumValue("NAT_PERSON"));
 		
 		Object[] enumVals = subjectTypes.getEnumValues();
+		List<DomainObject> persons = new ArrayList<DomainObject>();
+		persons.add(aPerson);
 		
-		errors = gda.store(aPerson);
+//		errors = gda.store(aPerson);
+		errors = gda.store(persons);
 		if (errors.size() > 0) {
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
 		
-		IGenericDomainAccess gda1 = DomainAccessFactory.createGenericDomainAccess(dbAccess, secondDomainName);
 		List<DomainObject> objects = gda.loadByType("mytest.model.Person", -1, 0, -1);
+		
+		IGenericDomainAccess gda1 = DomainAccessFactory.createGenericDomainAccess(dbAccess, secondDomainName);
+		List<DomainObject> objects_2 = gda1.loadByType("mytest.model.Person", -1, 0, -1);
 		
 		/** DomainObject instances should be identic */
 		

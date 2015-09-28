@@ -30,8 +30,8 @@ public class DOType {
 	private Kind kind;
 	private DOType superType;
 	private List<DOType> interfaces;
-	private List<DOField> fields;
-	private List<String> fieldNames;
+	private List<DOField> declaredFields;
+	private List<String> declaredFieldNames;
 	private boolean buildIn;
 	private DomainModel domainModel;
 
@@ -56,7 +56,7 @@ public class DOType {
 	DOType(String typeName, DomainModel domainModel) {
 		super();
 		this.name = typeName;
-		this.fields = new ArrayList<DOField>();
+		this.declaredFields = new ArrayList<DOField>();
 		this.interfaces = new ArrayList<DOType>();
 		this.nodeId = -1;
 		this.buildIn = DomainModel.isBuildIn(typeName);
@@ -72,25 +72,90 @@ public class DOType {
 	}
 
 	/**
-	 * Answer the field- (attribute) definitions for this type.
+	 * Answer the field- (attribute) definitions declared by this type.
 	 * @return a list of DOField
 	 */
-	public List<DOField> getFields() {
-		return fields;
+	public List<DOField> getDeclaredFields() {
+		return declaredFields;
 	}
 	
 	/**
-	 * Answer a list of all field names of this type
+	 * Answer the field- (attribute) definitions declared by this type and all it's super types.
+	 * @return a list of DOField
+	 */
+	public List<DOField> getFields() {
+	List<DOField> ret = new ArrayList<DOField>();
+		DOType typ = this;
+		while(typ != null) {
+			ret.addAll(typ.getDeclaredFields());
+			typ = typ.getSuperType();
+		}
+		return ret;
+	}
+	
+	/**
+	 * Answer a list of all field names declared by this type.
+	 * @return
+	 */
+	public List<String> getDeclaredFieldNames() {
+		if (this.declaredFieldNames == null) {
+			this.declaredFieldNames = new ArrayList<String>(this.declaredFields.size());
+			for (DOField f : this.declaredFields) {
+				this.declaredFieldNames.add(f.getName());
+			}
+		}
+		return this.declaredFieldNames;
+	}
+	
+	/**
+	 * Answer a list of all field names declared by this type and all it's super types.
 	 * @return
 	 */
 	public List<String> getFieldNames() {
-		if (this.fieldNames == null) {
-			this.fieldNames = new ArrayList<String>(this.fields.size());
-			for (DOField f : this.fields) {
-				this.fieldNames.add(f.getName());
-			}
+		List<String> ret = new ArrayList<String>();
+		DOType typ = this;
+		while(typ != null) {
+			ret.addAll(typ.getDeclaredFieldNames());
+			typ = typ.getSuperType();
 		}
-		return this.fieldNames;
+		return ret;
+	}
+	
+	/**
+	 * Answer the field at the given index in the list of all fields.
+	 * @param index
+	 * @return
+	 */
+	public DOField getFieldByIndex(int index) {
+		return this.getFields().get(index);
+	}
+	
+	/**
+	 * Answer the index of the field with the given name within the list of all fields.
+	 * <br/>Answer -1 if a field with the given name does not exist.
+	 * @param fieldName
+	 * @return
+	 */
+	public int getIndexOfField(String fieldName) {
+		List<String> fnms = this.getFieldNames();
+		for (int i = 0; i < fnms.size(); i++) {
+			if (fnms.get(i).equals(fieldName))
+				return i;
+		}
+		return -1;
+	}
+	
+	/**
+	 * Answer the field with the given name.
+	 * <br/>Answer null if a field with the given name does not exist.
+	 * @param fieldName
+	 * @return
+	 */
+	public DOField getFieldByName(String fieldName) {
+		int idx = this.getIndexOfField(fieldName);
+		if (idx != -1)
+			return this.getFieldByIndex(idx);
+		return null;
 	}
 
 	public DOType getSuperType() {
@@ -171,7 +236,7 @@ public class DOType {
 			}
 		}
 		sb.append(" {");
-		for (DOField f : this.fields) {
+		for (DOField f : this.declaredFields) {
 			sb.append('\n');
 			sb.append(f.asString(indent2));
 		}
@@ -269,7 +334,7 @@ public class DOType {
 		 * @param typeName qualified type name
 		 */
 		public void addField(String name, String typeName) {
-			getFields().add(new DOField(name, typeName, DOType.this));
+			getDeclaredFields().add(new DOField(name, typeName, DOType.this));
 		}
 	}
 	
@@ -332,7 +397,7 @@ public class DOType {
 		 * @param name
 		 */
 		public void addEnumValue(String name) {
-			getFields().add(new DOField(name, DOType.this.name, DOType.this));
+			getDeclaredFields().add(new DOField(name, DOType.this.name, DOType.this));
 		}
 	}
 	

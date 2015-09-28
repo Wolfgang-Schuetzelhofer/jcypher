@@ -240,7 +240,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 		@Override
 		public List<JcError> store(DomainObject domainObject) {
-			return DomainAccess.this.store(InternalAccess.getRawObject(domainObject));
+			List<JcError> ret = DomainAccess.this.store(InternalAccess.getRawObject(domainObject));
+			DomainState ds = domainAccessHandler.getDomainState();
+			LoadInfo info = ds.getLoadInfoFrom_Object2IdMap(InternalAccess.getRawObject(domainObject));
+			info.setDomainObject(domainObject);
+			return ret;
 		}
 		
 		@Override
@@ -249,14 +253,21 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			for(DomainObject dobj : domainObjects) {
 				domObjs.add(InternalAccess.getRawObject(dobj));
 			}
-			return DomainAccess.this.store(domObjs);
+			List<JcError> ret = DomainAccess.this.store(domObjs);
+			DomainState ds = domainAccessHandler.getDomainState();
+			for(DomainObject dobj : domainObjects) {
+				LoadInfo info = ds.getLoadInfoFrom_Object2IdMap(InternalAccess.getRawObject(dobj));
+				info.setDomainObject(dobj);
+			}
+			return ret;
 		}
 		
 		@Override
 		public List<DomainObject> loadByIds(String domainObjectClassName,
 				int resolutionDepth, long... ids) {
-			// TODO Auto-generated method stub
-			return null;
+			List<Object> objs = domainAccessHandler.loadByIds(null, null, resolutionDepth, ids);
+			List<DomainObject> ret = this.getDomainObjects(objs);
+			return ret;
 		}
 
 		@Override
@@ -314,6 +325,59 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		@Override
 		public DOType getDomainObjectType(String typeName) {
 			return domainAccessHandler.domainModel.getDOType(typeName);
+		}
+
+		@Override
+		public List<SyncInfo> getSyncInfos(List<DomainObject> domainObjects) {
+			List<Object> dobjs = new ArrayList<Object>(domainObjects.size());
+			for (DomainObject dobj : domainObjects) {
+				dobjs.add(InternalAccess.getRawObject(dobj));
+			}
+			return DomainAccess.this.getSyncInfos(dobjs);
+		}
+
+		@Override
+		public SyncInfo getSyncInfo(DomainObject domainObject) {
+			return DomainAccess.this.getSyncInfo(InternalAccess.getRawObject(domainObject));
+		}
+
+		@Override
+		public long numberOfInstancesOf(String typeName) {
+			try {
+				domainAccessHandler.updateMappingsIfNeeded();
+				Class<?> typ = domainAccessHandler.domainModel.getClassForName(typeName);
+				return DomainAccess.this.numberOfInstancesOf(typ);
+			} catch(Throwable e) {
+				if (e instanceof RuntimeException)
+					throw (RuntimeException)e;
+				else
+					throw new RuntimeException(e);
+				
+			}
+		}
+
+		@Override
+		public List<Long> numberOfInstancesOf(List<String> typeNames) {
+			try {
+				domainAccessHandler.updateMappingsIfNeeded();
+				List<Class<?>> typs = new ArrayList<Class<?>>(typeNames.size());
+				for (String tn : typeNames) {
+					Class<?> typ = domainAccessHandler.domainModel.getClassForName(tn);
+					typs.add(typ);
+				}
+				return DomainAccess.this.numberOfInstancesOf(typs);
+			} catch(Throwable e) {
+				if (e instanceof RuntimeException)
+					throw (RuntimeException)e;
+				else
+					throw new RuntimeException(e);
+				
+			}
+		}
+
+		@Override
+		public ITransaction beginTX() {
+			return DomainAccess.this.beginTX();
 		}
 	}
 
@@ -383,9 +447,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				Iterator<Entry<Class<?>, List<Long>>> it = typeMap.entrySet().iterator();
 				while(it.hasNext()) {
 					Entry<Class<?>, List<Long>> entry = it.next();
-					if (!domainObjectClass.isAssignableFrom(entry.getKey()))
-						throw new RuntimeException("concrete type must be the same or a subtype of: "
-									+ domainObjectClass.getName());
+					if (domainObjectClass != null) { // null when using generic domain model
+						if (!domainObjectClass.isAssignableFrom(entry.getKey()))
+							throw new RuntimeException("concrete type must be the same or a subtype of: "
+										+ domainObjectClass.getName());
+					}
 					ClosureQueryContext context = new ClosureQueryContext(entry.getKey());
 					new ClosureCalculator().calculateClosureQuery(context);
 					boolean repeat = context.matchClauses != null && context.matchClauses.size() > 0;

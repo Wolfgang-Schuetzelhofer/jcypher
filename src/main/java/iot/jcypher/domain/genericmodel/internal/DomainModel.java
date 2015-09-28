@@ -129,7 +129,7 @@ public class DomainModel {
 				Class<?> fTyp = fields[i].getType();
 				String tName = fTyp.getName();
 				DOField fld = InternalAccess.createDOField(fields[i].getName(), tName, builder.build());
-				builder.build().getFields().add(fld);
+				builder.build().getDeclaredFields().add(fld);
 				if (!builder.build().isBuildIn())
 					addType(fTyp);
 			}
@@ -176,7 +176,7 @@ public class DomainModel {
 					for (Object obj : (List<?>) flds) {
 						String[] fld = obj.toString().split(":");
 						DOField doField = InternalAccess.createDOField(fld[0], fld[1], doType);
-						doType.getFields().add(doField);
+						doType.getDeclaredFields().add(doField);
 					}
 				}
 
@@ -213,7 +213,7 @@ public class DomainModel {
 			int idx = 0;
 			for (DOType t : this.unsaved) {
 				List<String> flds = new ArrayList<String>();
-				for (DOField f : t.getFields()) {
+				for (DOField f : t.getDeclaredFields()) {
 					String fd = f.getName().concat(Colon)
 							.concat(f.getTypeName());
 					flds.add(fd);
@@ -324,7 +324,7 @@ public class DomainModel {
 
 			if (doType.getKind() == Kind.ENUM) {
 				int count = 0;
-				for (DOField fld : doType.getFields()) {
+				for (DOField fld : doType.getDeclaredFields()) {
 					if (fld.getTypeName().equals(doType.getName()))
 						count++;
 				}
@@ -358,7 +358,7 @@ public class DomainModel {
 				CtConstructor constr = CtNewConstructor.make(sb.toString(), cc);
 				cc.addConstructor(constr);
 			} else {
-				for (DOField fld : doType.getFields()) {
+				for (DOField fld : doType.getDeclaredFields()) {
 					CtField ctField;
 					String tn = fld.getTypeName();
 					if (!fld.isBuidInType()) {
@@ -392,7 +392,7 @@ public class DomainModel {
 						String.class, int.class);
 //				ConstructorAccessor constr = ReflectionFactory.getReflectionFactory().newConstructorAccessor(cstr);
 				int ord = 0;
-				for (DOField fld : doType.getFields()) {
+				for (DOField fld : doType.getDeclaredFields()) {
 					if (fld.getTypeName().equals(doType.getName())) {
 //						Object val = constr.newInstance(new Object[]{fld.getName(), ord});
 						Object val = cstr.newInstance(fld.getName(), ord);

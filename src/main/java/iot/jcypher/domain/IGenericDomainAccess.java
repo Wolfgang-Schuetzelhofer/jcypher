@@ -20,8 +20,8 @@ import iot.jcypher.domain.genericmodel.DOType;
 import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.query.result.JcError;
+import iot.jcypher.transaction.ITransaction;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -30,6 +30,24 @@ import java.util.List;
  *
  */
 public interface IGenericDomainAccess {
+	
+	/**
+	 * For every domain object stored in the graph database a SyncInfo object can be retrieved.
+	 *  A SyncInfo can be asked for the object's id (i.e. the id of the node in the graph to which the object was mapped).
+	 *  A SyncInfo can be asked for the object's resolution depth, which can be 'SHALLOW' or 'DEEP'.
+	 * @param domainObjects a list of domain objects that have been stored in the domain graph.
+	 * @return a list of SyncInfo objects, one for every object in domainObjects
+	 */
+	public abstract List<SyncInfo> getSyncInfos(List<DomainObject> domainObjects);
+
+	/**
+	 * For every domain object stored in the graph database a SyncInfo object can be retrieved.
+	 *  A SyncInfo can be asked for the object's id (i.e. the id of the node in the graph to which the object was mapped).
+	 *  A SyncInfo can be asked for the object's resolution depth, which can be 'SHALLOW' or 'DEEP'.
+	 * @param domainObject a domain object that has been stored in the domain graph.
+	 * @return a SyncInfo object
+	 */
+	public abstract SyncInfo getSyncInfo(DomainObject domainObject);
 	
 	/**
 	 * Store a domain object. The entire object graph rooted by the domain object
@@ -99,6 +117,26 @@ public interface IGenericDomainAccess {
 	 * @return a list of domain objects.
 	 */
 	public List<DomainObject> loadByType(String domainObjectClassName, int resolutionDepth, int offset, int count);
+	
+	/**
+	 * answer the number of instances of a certain type (specified by type name) and of all of that type's subtypes stored in the domain graph
+	 * @param typeName
+	 * @return the number of instances
+	 */
+	public long numberOfInstancesOf(String typeName);
+	
+	/**
+	 * answer the numbers of instances of the specified types (specified by type names) and of all of these type's subtypes stored in the domain graph
+	 * @param types a list of typeNames
+	 * @return a list containing the instances counts
+	 */
+	public List<Long> numberOfInstancesOf(List<String> typeNames);
+	
+	/**
+	 * create a transaction
+	 * @return an instance of ITransaction
+	 */
+	public ITransaction beginTX();
 	
 	/**
 	 * Answer a factory for retrieving type builders. Type builders are the means to specify domain object types

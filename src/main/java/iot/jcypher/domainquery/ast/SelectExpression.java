@@ -16,8 +16,8 @@
 
 package iot.jcypher.domainquery.ast;
 
-import iot.jcypher.domainquery.DomainQuery;
-import iot.jcypher.domainquery.DomainQuery.IntAccess;
+import iot.jcypher.domainquery.AbstractDomainQuery;
+import iot.jcypher.domainquery.AbstractDomainQuery.IntAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
@@ -122,7 +122,7 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 		return this.domainQueryIntAccess.getQueryExecutor();
 	}
 	
-	public DomainQuery getDomainQuery() {
+	public AbstractDomainQuery getDomainQuery() {
 		return this.domainQueryIntAccess.getDomainQuery();
 	}
 	

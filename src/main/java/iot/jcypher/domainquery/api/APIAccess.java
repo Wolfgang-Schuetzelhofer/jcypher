@@ -16,9 +16,7 @@
 
 package iot.jcypher.domainquery.api;
 
-import java.util.List;
-
-import iot.jcypher.domainquery.DomainQuery.IntAccess;
+import iot.jcypher.domainquery.AbstractDomainQuery.IntAccess;
 import iot.jcypher.domainquery.ast.CollectExpression;
 import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.OrderExpression;
@@ -29,6 +27,8 @@ import iot.jcypher.domainquery.ast.UnionExpression;
 import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcValue;
+
+import java.util.List;
 
 public class APIAccess {
 	
