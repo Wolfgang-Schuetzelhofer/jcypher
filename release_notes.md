@@ -1,6 +1,11 @@
 Release Notes
 =======
 
+## 2.7.1
+**Fixed**
+- Properties of nodes in generic graph model which are of type short were not stored to the graph database (fix in JSONWriter).
+- Changed signature of store(List<Object> ..) to store(List<?> ..) in IDBAccess. Lists of types other than Object were not dispatched correctly.
+
 ## 2.7.0
 **New**
 - Transaction API.
