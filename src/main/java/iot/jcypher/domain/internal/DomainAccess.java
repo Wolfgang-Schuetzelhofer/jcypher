@@ -128,7 +128,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	}
 	
 	@Override
-	public List<JcError> store(List<Object> domainObjects) {
+	public List<JcError> store(List<?> domainObjects) {
 		List<JcError> ret;
 		String pLab = this.domainAccessHandler.setDomainLabel();
 		try {
@@ -584,7 +584,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 		}
 		
-		List<JcError> store(List<Object> domainObjects) {
+		List<JcError> store(List<?> domainObjects) {
 			UpdateContext context;
 			InternalDomainAccess internalAccess = null;
 			try {
@@ -731,7 +731,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 		}
 
-		private UpdateContext updateLocalGraph(List<Object> domainObjects) {
+		private UpdateContext updateLocalGraph(List<?> domainObjects) {
 			UpdateContext context = new UpdateContext();
 			new ClosureCalculator().calculateClosure(domainObjects,
 					context);
@@ -1621,7 +1621,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 		}
 
-		private void calculateClosure(List<Object> domainObjects, UpdateContext context) {
+		private void calculateClosure(List<?> domainObjects, UpdateContext context) {
 			for (Object domainObject : domainObjects) {
 				recursiveCalculateClosure(domainObject, null, context, false); // don't delete
 			}
