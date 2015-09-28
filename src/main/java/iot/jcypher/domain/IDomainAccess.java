@@ -105,7 +105,7 @@ public interface IDomainAccess {
 	 * @param domainObjects
 	 * @return a possibly emty list of errors.
 	 */
-	public abstract List<JcError> store(List<Object> domainObjects);
+	public abstract List<JcError> store(List<?> domainObjects);
 
 	/**
 	 * Store a domain object. The entire object graph rooted by the domain object
