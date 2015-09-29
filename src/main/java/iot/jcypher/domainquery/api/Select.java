@@ -18,6 +18,7 @@ package iot.jcypher.domainquery.api;
 
 import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.AbstractDomainQuery.IntAccess;
+import iot.jcypher.domainquery.InternalAccess;
 import iot.jcypher.domainquery.ast.ConcatenateExpression;
 import iot.jcypher.domainquery.ast.ConcatenateExpression.Concatenator;
 import iot.jcypher.domainquery.ast.IASTObject;
@@ -59,7 +60,7 @@ public class Select<T> extends APIObject {
 			// it is only temporary
 			APIAccess.setPartOfReturn(selDom, false);
 			AbstractDomainQuery q = se.getDomainQuery();
-			DomainObjectMatch<T> rejectDom = q.createMatch(se.getStart().getDomainObjectType());
+			DomainObjectMatch<T> rejectDom = InternalAccess.createMatch(q, se.getStart().getDomainObjectType());
 			// build complementary set
 			q.WHERE(rejectDom).IN(se.getStart());
 			q.WHERE(rejectDom).NOT().IN(selDom);

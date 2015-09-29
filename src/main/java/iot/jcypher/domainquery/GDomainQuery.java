@@ -17,35 +17,44 @@
 package iot.jcypher.domainquery;
 
 import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 
 import java.util.List;
 
-public class DomainQuery extends AbstractDomainQuery {
+/**
+ * Allows to formulate a query against a generic domain model
+ * @author wolfgang
+ *
+ */
+public class GDomainQuery extends AbstractDomainQuery {
 
-	public DomainQuery(IDomainAccess domainAccess) {
+	public GDomainQuery(IDomainAccess domainAccess) {
 		super(domainAccess);
 	}
 	
 	/**
-	 * Create a match for a specific type of domain objects
-	 * @param domainObjectType
+	 * Create a match for a specific type of domain objects.
+	 * <br/>The match is part of a query performed on a generic domain model.
+	 * @param domainObjectTypeName
 	 * @return a DomainObjectMatch for a specific type of domain objects
 	 */
-	public <T> DomainObjectMatch<T> createMatch(Class<T> domainObjectType) {
-		return super.createMatch(domainObjectType);
+	public DomainObjectMatch<DomainObject> createMatch(String domainObjectTypeName) {
+		//return super.createMatch(domainObjectType);
+		return null;
 	}
 	
 	/**
-	 * Create a match for a list of domain objects which were retrieved by another query
+	 * Create a match for a list of domain objects which were retrieved by another query.
+	 * <br/>The match will be part of a query performed on a generic domain model.
 	 * @param domainObjects a list of domain objects which were retrieved by another query
-	 * @param domainObjectType the type of those domain objects
+	 * @param domainObjectTypeName the type name of those domain objects
 	 * @return a DomainObjectMatch
 	 */
-	@Override
-	public <T> DomainObjectMatch<T> createMatchFor(List<T> domainObjects,
-			Class<T> domainObjectType) {
-		return super.createMatchFor(domainObjects, domainObjectType);
+	public DomainObjectMatch<DomainObject> createMatchFor(List<DomainObject> domainObjects,
+			String domainObjectTypeName) {
+		//return super.createMatchFor(domainObjects, domainObjectType);
+		return null;
 	}
 
 }

@@ -61,7 +61,7 @@ public abstract class AbstractDomainQuery {
 	 * @param domainObjectType
 	 * @return a DomainObjectMatch for a specific type of domain objects
 	 */
-	public <T> DomainObjectMatch<T> createMatch(Class<T> domainObjectType) {
+	<T> DomainObjectMatch<T> createMatch(Class<T> domainObjectType) {
 		DomainObjectMatch<T> ret =APIAccess.createDomainObjectMatch(domainObjectType,
 				this.queryExecutor.getDomainObjectMatches().size(),
 				this.queryExecutor.getMappingInfo());
@@ -103,7 +103,7 @@ public abstract class AbstractDomainQuery {
 	 * @param domainObjectType the type of those domain objects
 	 * @return a DomainObjectMatch
 	 */
-	public <T> DomainObjectMatch<T> createMatchFor(List<T> domainObjects,
+	protected <T> DomainObjectMatch<T> createMatchFor(List<T> domainObjects,
 			Class<T> domainObjectType) {
 		DomainObjectMatch<T> ret = APIAccess.createDomainObjectMatch(domainObjectType,
 				this.queryExecutor.getDomainObjectMatches().size(),
