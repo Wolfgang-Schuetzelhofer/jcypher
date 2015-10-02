@@ -33,7 +33,7 @@ public class DomainQuery extends AbstractDomainQuery {
 	 * @return a DomainObjectMatch for a specific type of domain objects
 	 */
 	public <T> DomainObjectMatch<T> createMatch(Class<T> domainObjectType) {
-		return super.createMatch(domainObjectType);
+		return createMatchInternal(domainObjectType);
 	}
 	
 	/**
@@ -42,10 +42,9 @@ public class DomainQuery extends AbstractDomainQuery {
 	 * @param domainObjectType the type of those domain objects
 	 * @return a DomainObjectMatch
 	 */
-	@Override
 	public <T> DomainObjectMatch<T> createMatchFor(List<T> domainObjects,
 			Class<T> domainObjectType) {
-		return super.createMatchFor(domainObjects, domainObjectType);
+		return createMatchForInternal(domainObjects, domainObjectType);
 	}
 
 }

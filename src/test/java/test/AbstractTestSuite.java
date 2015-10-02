@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -166,6 +166,10 @@ public class AbstractTestSuite {
 	}
 	
 	protected String printErrors(JcQueryResult result) {
+		return printErrors(result, this.print);
+	}
+	
+	protected static String printErrors(JcQueryResult result, boolean doPrint) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("---------------General Errors:");
 		appendErrorList(result.getGeneralErrors(), sb);
@@ -173,7 +177,7 @@ public class AbstractTestSuite {
 		appendErrorList(result.getDBErrors(), sb);
 		sb.append("\n---------------end Errors:");
 		String str = sb.toString();
-		if (this.print) {
+		if (doPrint) {
 			System.out.println("");
 			System.out.println(str);
 		}

@@ -17,6 +17,9 @@
 package iot.jcypher.domainquery;
 
 import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.genericmodel.InternalAccess;
+import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.BooleanOperation;
 import iot.jcypher.domainquery.api.Collect;
@@ -46,7 +49,7 @@ import java.util.List;
 
 public abstract class AbstractDomainQuery {
 
-	private QueryExecutor queryExecutor;
+	protected QueryExecutor queryExecutor;
 	private IASTObjectsContainer astObjectsContainer;
 	private IntAccess intAccess;
 	
@@ -61,7 +64,7 @@ public abstract class AbstractDomainQuery {
 	 * @param domainObjectType
 	 * @return a DomainObjectMatch for a specific type of domain objects
 	 */
-	<T> DomainObjectMatch<T> createMatch(Class<T> domainObjectType) {
+	<T> DomainObjectMatch<T> createMatchInternal(Class<T> domainObjectType) {
 		DomainObjectMatch<T> ret =APIAccess.createDomainObjectMatch(domainObjectType,
 				this.queryExecutor.getDomainObjectMatches().size(),
 				this.queryExecutor.getMappingInfo());
@@ -74,13 +77,27 @@ public abstract class AbstractDomainQuery {
 	 * @param domainObjectMatch a match specified in the context of another query
 	 * @return a DomainObjectMatch
 	 */
+	@SuppressWarnings("unchecked")
 	public <T> DomainObjectMatch<T> createMatchFrom(DomainObjectMatch<T> domainObjectMatch) {
-		DomainObjectMatch<T> ret = APIAccess.createDomainObjectMatch(domainObjectMatch,
-				this.queryExecutor.getDomainObjectMatches().size(),
-				this.queryExecutor.getMappingInfo());
-		this.queryExecutor.getDomainObjectMatches().add(ret);
-		FromPreviousQueryExpression pqe = new FromPreviousQueryExpression(
-				ret, domainObjectMatch);
+		DomainObjectMatch<T> ret;
+		FromPreviousQueryExpression pqe;
+		DomainObjectMatch<?> delegate = APIAccess.getDelegate(domainObjectMatch);
+		if (delegate != null) { // generic model
+			DomainObjectMatch<?> newDelegate = APIAccess.createDomainObjectMatch(delegate,
+					this.queryExecutor.getDomainObjectMatches().size(),
+					this.queryExecutor.getMappingInfo());
+			this.queryExecutor.getDomainObjectMatches().add(newDelegate);
+			pqe = new FromPreviousQueryExpression(
+					newDelegate, delegate);
+			ret = (DomainObjectMatch<T>) APIAccess.createDomainObjectMatch(DomainObject.class, newDelegate);
+		} else {
+			ret = APIAccess.createDomainObjectMatch(domainObjectMatch,
+					this.queryExecutor.getDomainObjectMatches().size(),
+					this.queryExecutor.getMappingInfo());
+			this.queryExecutor.getDomainObjectMatches().add(ret);
+			pqe = new FromPreviousQueryExpression(
+					ret, domainObjectMatch);
+		}
 		this.queryExecutor.addAstObject(pqe);
 		return ret;
 	}
@@ -92,9 +109,16 @@ public abstract class AbstractDomainQuery {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> DomainObjectMatch<T> createMatchFor(T domainObject) {
-		List<T> source = new ArrayList<T>();
-		source.add(domainObject);
-		return this.createMatchFor(source, (Class<T>)domainObject.getClass());
+		if (domainObject.getClass().equals(DomainObject.class)) { // generic model
+			List<DomainObject> source = new ArrayList<DomainObject>();
+			source.add((DomainObject) domainObject);
+			String typeName = ((DomainObject)domainObject).getDomainObjectType().getName();
+			return (DomainObjectMatch<T>) createGenMatchForInternal(source, typeName);
+		} else {
+			List<T> source = new ArrayList<T>();
+			source.add(domainObject);
+			return this.createMatchForInternal(source, (Class<T>)domainObject.getClass());
+		}
 	}
 	
 	/**
@@ -103,7 +127,7 @@ public abstract class AbstractDomainQuery {
 	 * @param domainObjectType the type of those domain objects
 	 * @return a DomainObjectMatch
 	 */
-	protected <T> DomainObjectMatch<T> createMatchFor(List<T> domainObjects,
+	protected <T> DomainObjectMatch<T> createMatchForInternal(List<T> domainObjects,
 			Class<T> domainObjectType) {
 		DomainObjectMatch<T> ret = APIAccess.createDomainObjectMatch(domainObjectType,
 				this.queryExecutor.getDomainObjectMatches().size(),
@@ -113,6 +137,36 @@ public abstract class AbstractDomainQuery {
 				ret, domainObjects);
 		this.queryExecutor.addAstObject(pqe);
 		return ret;
+	}
+	
+	/**
+	 * Create a match for a list of domain objects which were retrieved by another query.
+	 * <br/>The match will be part of a query performed on a generic domain model.
+	 * @param domainObjects a list of domain objects which were retrieved by another query
+	 * @param domainObjectTypeName the type name of those domain objects
+	 * @return a DomainObjectMatch
+	 */
+	protected DomainObjectMatch<DomainObject> createGenMatchForInternal(List<DomainObject> domainObjects,
+			String domainObjectTypeName) {
+		InternalDomainAccess iAccess = this.queryExecutor.getMappingInfo().getInternalDomainAccess();
+		try {
+			iAccess.loadDomainInfoIfNeeded();
+			List<Object> dobjs = new ArrayList<Object>();
+			for (DomainObject dobj : domainObjects) {
+				dobjs.add(InternalAccess.getRawObject(dobj));
+			}
+			@SuppressWarnings("rawtypes")
+			Class clazz = iAccess.getClassForName(domainObjectTypeName);
+			@SuppressWarnings("unchecked")
+			DomainObjectMatch<?> delegate = createMatchForInternal(dobjs, clazz);
+			DomainObjectMatch<DomainObject> ret = APIAccess.createDomainObjectMatch(DomainObject.class, delegate);
+			return ret;
+		} catch (Throwable e) {
+			if (e instanceof RuntimeException)
+				throw (RuntimeException)e;
+			else
+				throw new RuntimeException(e);
+		}
 	}
 	
 	/**
@@ -133,7 +187,13 @@ public abstract class AbstractDomainQuery {
 	 * @return
 	 */
 	public BooleanOperation WHERE(IPredicateOperand1 value) {
-		PredicateExpression pe = new PredicateExpression(value, this.astObjectsContainer);
+		IPredicateOperand1 pVal = value;
+		if (value instanceof DomainObjectMatch<?>) {
+			DomainObjectMatch<?> delegate = APIAccess.getDelegate((DomainObjectMatch<?>) value);
+			if (delegate != null) // generic model
+				pVal = delegate;
+		}
+		PredicateExpression pe = new PredicateExpression(pVal, this.astObjectsContainer);
 		this.astObjectsContainer.addAstObject(pe);
 		BooleanOperation ret = APIAccess.createBooleanOperation(pe);
 		return ret;
@@ -174,7 +234,9 @@ public abstract class AbstractDomainQuery {
 	 * @return
 	 */
 	public Order ORDER(DomainObjectMatch<?> toOrder) {
-		OrderExpression oe = this.queryExecutor.getOrderFor(toOrder);
+		DomainObjectMatch<?> delegate = APIAccess.getDelegate(toOrder);
+		DomainObjectMatch<?> match = delegate != null ? delegate : toOrder;
+		OrderExpression oe = this.queryExecutor.getOrderFor(match);
 		Order ret = APIAccess.createOrder(oe);
 		return ret;
 	}
@@ -185,7 +247,9 @@ public abstract class AbstractDomainQuery {
 	 * @return
 	 */
 	public Traverse TRAVERSE_FROM(DomainObjectMatch<?> start) {
-		TraversalExpression te = new TraversalExpression(start, this.queryExecutor);
+		DomainObjectMatch<?> delegate = APIAccess.getDelegate(start);
+		DomainObjectMatch<?> match = delegate != null ? delegate : start;
+		TraversalExpression te = new TraversalExpression(match, this.queryExecutor);
 		this.queryExecutor.addAstObject(te);
 		Traverse ret = APIAccess.createTraverse(te);
 		return ret;
@@ -197,7 +261,10 @@ public abstract class AbstractDomainQuery {
 	 * @return
 	 */
 	public <T> Select<T> SELECT_FROM(DomainObjectMatch<T> start) {
-		SelectExpression<T> se = new SelectExpression<T>(start, this.getIntAccess());
+		DomainObjectMatch<?> delegate = APIAccess.getDelegate(start);
+		DomainObjectMatch<?> match = delegate != null ? delegate : start;
+		SelectExpression<T> se = new SelectExpression<T>(APIAccess.getDomainObjectType(start),
+				match, this.getIntAccess());
 		this.queryExecutor.addAstObject(se);
 		this.astObjectsContainer = se;
 		Select<T> ret = APIAccess.createSelect(se, getIntAccess());
@@ -211,7 +278,10 @@ public abstract class AbstractDomainQuery {
 	 * @return
 	 */
 	public <T> Select<T> REJECT_FROM(DomainObjectMatch<T> start) {
-		SelectExpression<T> se = new SelectExpression<T>(start, this.getIntAccess(), true);
+		DomainObjectMatch<?> delegate = APIAccess.getDelegate(start);
+		DomainObjectMatch<?> match = delegate != null ? delegate : start;
+		SelectExpression<T> se = new SelectExpression<T>(APIAccess.getDomainObjectType(start),
+				match, this.getIntAccess(), true);
 		this.queryExecutor.addAstObject(se);
 		this.astObjectsContainer = se;
 		Select<T> ret = APIAccess.createSelect(se, getIntAccess());
@@ -275,8 +345,31 @@ public abstract class AbstractDomainQuery {
 		return this.queryExecutor;
 	}
 	
-	@SuppressWarnings("unchecked")
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private <T> DomainObjectMatch<T> union_Intersection(boolean union, DomainObjectMatch<T>... set) {
+		DomainObjectMatch<T> ret;
+		DomainObjectMatch[] newSet = set;
+		boolean isGeneric = set.length > 0 && APIAccess.getDelegate(set[0]) != null;
+		if (isGeneric) {
+			newSet = new DomainObjectMatch[set.length];
+			for (int i = 0; i < set.length; i++) {
+				DomainObjectMatch<?> delegate = APIAccess.getDelegate(set[i]);
+				if (delegate != null) // generic model
+					newSet[i] = delegate;
+				else
+					newSet[i] = set[i];
+			}
+		}
+		DomainObjectMatch newMatch = build_union_Intersection(union, newSet);
+		if (isGeneric)
+			ret = (DomainObjectMatch<T>) APIAccess.createDomainObjectMatch(DomainObject.class, newMatch);
+		else
+			ret = newMatch;
+		return ret;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T> DomainObjectMatch<T> build_union_Intersection(boolean union, DomainObjectMatch<T>... set) {
 		DomainObjectMatch<T> ret = null;
 		if (set.length > 0) {
 			IASTObject lastOne = null;

@@ -29,20 +29,22 @@ import java.util.List;
 public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 	
 	private IntAccess domainQueryIntAccess;
-	private DomainObjectMatch<T> start;
-	private DomainObjectMatch<T> end;
+	private DomainObjectMatch<?> start;
+	private Class<T> startType;
+	private DomainObjectMatch<?> end;
 	private List<IASTObject> astObjects;
 	private List<DomainObjectMatch<?>> traversalResults;
 	private boolean reject;
 
-	public SelectExpression(DomainObjectMatch<T> start, IntAccess domainQueryIntAccess) {
-		this(start, domainQueryIntAccess, false);
+	public SelectExpression(Class<T> startType, DomainObjectMatch<?> start, IntAccess domainQueryIntAccess) {
+		this(startType, start, domainQueryIntAccess, false);
 	}
 	
-	public SelectExpression(DomainObjectMatch<T> start, IntAccess domainQueryIntAccess,
+	public SelectExpression(Class<T> startType, DomainObjectMatch<?> start, IntAccess domainQueryIntAccess,
 			boolean reject) {
 		super();
 		this.start = start;
+		this.startType = startType;
 		this.astObjects = new ArrayList<IASTObject>();
 		this.domainQueryIntAccess = domainQueryIntAccess;
 		this.reject = reject;
@@ -100,7 +102,7 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 			this.traversalResults.add(dom);
 	}
 	
-	public void setEnd(DomainObjectMatch<T> end) {
+	public void setEnd(DomainObjectMatch<?> end) {
 		this.end = end;
 		if (this.traversalResults != null) {
 			for (DomainObjectMatch<?> dom : this.traversalResults) {
@@ -110,12 +112,16 @@ public class SelectExpression<T> implements IASTObject, IASTObjectsContainer {
 		}
 	}
 	
-	public DomainObjectMatch<T> getEnd() {
+	public DomainObjectMatch<?> getEnd() {
 		return end;
 	}
 
-	public DomainObjectMatch<T> getStart() {
+	public DomainObjectMatch<?> getStart() {
 		return start;
+	}
+	
+	public Class<T> getStartType() {
+		return this.startType;
 	}
 	
 	public QueryExecutor getQueryExecutor() {

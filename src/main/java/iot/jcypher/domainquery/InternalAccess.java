@@ -26,6 +26,6 @@ import iot.jcypher.domainquery.api.DomainObjectMatch;
 public class InternalAccess {
 
 	public static <T> DomainObjectMatch<T> createMatch(AbstractDomainQuery query, Class<T> domainObjectType) {
-		return query.createMatch(domainObjectType);
+		return query.createMatchInternal(domainObjectType);
 	}
 }

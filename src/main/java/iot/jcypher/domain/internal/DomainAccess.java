@@ -59,6 +59,7 @@ import iot.jcypher.domain.mapping.surrogate.ObservableList;
 import iot.jcypher.domain.mapping.surrogate.Surrogate2ListEntry;
 import iot.jcypher.domain.mapping.surrogate.Surrogate2MapEntry;
 import iot.jcypher.domainquery.DomainQuery;
+import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
@@ -373,6 +374,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					throw new RuntimeException(e);
 				
 			}
+		}
+
+		@Override
+		public GDomainQuery createQuery() {
+			return new GDomainQuery(DomainAccess.this);
 		}
 
 		@Override
@@ -3451,6 +3457,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		
 		public Class<?> getClassForName(String name) throws ClassNotFoundException {
 			return domainAccessHandler.domainModel.getClassForName(name);
+		}
+		
+		public List<DomainObject> getGenericDomainObjects(List<?> objects) {
+			return genericDomainAccess.getDomainObjects(objects);
 		}
 		
 		/**

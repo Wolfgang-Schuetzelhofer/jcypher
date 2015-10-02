@@ -16,6 +16,8 @@
 
 package iot.jcypher.domainquery.api;
 
+import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression.Step;
 
@@ -76,5 +78,28 @@ public class TraversalStep extends APIObject {
 		te.getQueryExecutor().getDomainObjectMatches().add(ret);
 		te.setEnd(ret);
 		return ret;
+	}
+	
+	/**
+	 * End the traversal of the domain object graph matching a specific type of domain objects.
+	 * <b>TO_GENERIC</b> is used when navigating a generic domain model.
+	 * @param domainObjectTypeName
+	 * @return a DomainObjectMatch
+	 */
+	public DomainObjectMatch<DomainObject> TO_GENERIC(String domainObjectTypeName) {
+		try {
+			TraversalExpression te = (TraversalExpression)this.astObject;
+			InternalDomainAccess iAccess = te.getQueryExecutor().getMappingInfo().getInternalDomainAccess();
+			iAccess.loadDomainInfoIfNeeded();
+			Class<?> clazz = iAccess.getClassForName(domainObjectTypeName);
+			DomainObjectMatch<?> delegate = TO(clazz);
+			DomainObjectMatch<DomainObject> ret = APIAccess.createDomainObjectMatch(DomainObject.class, delegate);
+			return ret;
+		} catch (Throwable e) {
+			if (e instanceof RuntimeException)
+				throw (RuntimeException)e;
+			else
+				throw new RuntimeException(e);
+		}
 	}
 }

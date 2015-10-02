@@ -16,9 +16,7 @@
 
 package iot.jcypher.domainquery.api;
 
-import java.util.ArrayList;
-import java.util.List;
-
+import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.MappingUtil;
@@ -34,6 +32,9 @@ import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
 
+import java.util.ArrayList;
+import java.util.List;
+
 
 public class DomainObjectMatch<T> implements IPredicateOperand1 {
 
@@ -41,6 +42,9 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	private static final String msg_1 = "attributes used in WHERE clauses must be of simple type." +
 									" Not true for attribute [";
 	
+	// if delegate != null, this DomainObjectMatch has been constructed for a generic query.
+	// the delegate is the match for the true type.
+	private DomainObjectMatch<?> delegate;
 	private DomainObjectMatch<?> traversalSource;
 	
 	// a collectExpressionOwner is the DomaiObjectMatch which
@@ -69,6 +73,18 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		init(num);
 	}
 	
+	/**
+	 * @param targetType must be DomainObject.class  as this represents a generic DomainObjectMatch
+	 * @param delegate
+	 */
+	DomainObjectMatch(Class<T> targetType, DomainObjectMatch<?> delegate) {
+		super();
+		if (targetType != DomainObject.class)
+			throw new RuntimeException("targetType must be DomainObject.class");
+		this.delegate = delegate;
+		this.domainObjectType = targetType;
+	}
+	
 	private void init(int num) {
 		this.baseNodeName =APIAccess.nodePrefix.concat(String.valueOf(num));
 		this.typeList = this.mappingInfo.getCompoundTypesFor(this.domainObjectType);
@@ -85,6 +101,8 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	 * <br/>e.g. q.SELECT_FROM(persons).ELEMENTS( q.WHERE(addresses.COUNT()).EQUALS(3));
 	 */
 	public Count COUNT() {
+		if (this.delegate != null)
+			return this.delegate.COUNT();
 		return APIAccess.createCount(this);
 	}
 	
@@ -94,6 +112,8 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	 * @return
 	 */
 	public JcProperty atttribute(String name) {
+		if (this.delegate != null)
+			return this.delegate.atttribute(name);
 		return checkField_getJcVal(name, JcProperty.class);
 	}
 	
@@ -103,6 +123,8 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	 * @return a JcString
 	 */
 	public JcString stringAtttribute(String name) {
+		if (this.delegate != null)
+			return this.delegate.stringAtttribute(name);
 		return checkField_getJcVal(name, JcString.class);
 	}
 	
@@ -112,6 +134,8 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	 * @return a JcNumber
 	 */
 	public JcNumber numberAtttribute(String name) {
+		if (this.delegate != null)
+			return this.delegate.numberAtttribute(name);
 		return checkField_getJcVal(name, JcNumber.class);
 	}
 	
@@ -121,6 +145,8 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	 * @return a JcBoolean
 	 */
 	public JcBoolean booleanAtttribute(String name) {
+		if (this.delegate != null)
+			return this.delegate.booleanAtttribute(name);
 		return checkField_getJcVal(name, JcBoolean.class);
 	}
 	
@@ -130,6 +156,8 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	 * @return a JcCollection
 	 */
 	public JcCollection collectionAtttribute(String name) {
+		if (this.delegate != null)
+			return this.delegate.collectionAtttribute(name);
 		return checkField_getJcVal(name, JcCollection.class);
 	}
 	
@@ -140,11 +168,15 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	 * @param length
 	 */
 	public void setPage(int offset, int length) {
-		boolean changed = this.pageOffset != offset || this.pageLength != length;
-		if (changed) {
-			this.pageOffset = offset;
-			this.pageLength = length;
-			this.pageChanged = true;
+		if (this.delegate != null)
+			this.delegate.setPage(offset, length);
+		else {
+			boolean changed = this.pageOffset != offset || this.pageLength != length;
+			if (changed) {
+				this.pageOffset = offset;
+				this.pageLength = length;
+				this.pageChanged = true;
+			}
 		}
 	}
 
@@ -252,6 +284,10 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	DomainObjectMatch<T> create(int num, MappingInfo mappingInf) {
 		return new DomainObjectMatch<T>(this.domainObjectType,
 				num, mappingInf);
+	}
+
+	DomainObjectMatch<?> getDelegate() {
+		return delegate;
 	}
 
 	private boolean needsRelation(FieldMapping fm) {

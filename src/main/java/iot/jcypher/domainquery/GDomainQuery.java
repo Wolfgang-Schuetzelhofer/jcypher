@@ -18,6 +18,8 @@ package iot.jcypher.domainquery;
 
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
+import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 
 import java.util.List;
@@ -40,8 +42,19 @@ public class GDomainQuery extends AbstractDomainQuery {
 	 * @return a DomainObjectMatch for a specific type of domain objects
 	 */
 	public DomainObjectMatch<DomainObject> createMatch(String domainObjectTypeName) {
-		//return super.createMatch(domainObjectType);
-		return null;
+		InternalDomainAccess iAccess = this.queryExecutor.getMappingInfo().getInternalDomainAccess();
+		try {
+			iAccess.loadDomainInfoIfNeeded();
+			Class<?> clazz = iAccess.getClassForName(domainObjectTypeName);
+			DomainObjectMatch<?> delegate = createMatchInternal(clazz);
+			DomainObjectMatch<DomainObject> ret = APIAccess.createDomainObjectMatch(DomainObject.class, delegate);
+			return ret;
+		} catch (Throwable e) {
+			if (e instanceof RuntimeException)
+				throw (RuntimeException)e;
+			else
+				throw new RuntimeException(e);
+		}
 	}
 	
 	/**
@@ -53,8 +66,7 @@ public class GDomainQuery extends AbstractDomainQuery {
 	 */
 	public DomainObjectMatch<DomainObject> createMatchFor(List<DomainObject> domainObjects,
 			String domainObjectTypeName) {
-		//return super.createMatchFor(domainObjects, domainObjectType);
-		return null;
+		return createGenMatchForInternal(domainObjects, domainObjectTypeName);
 	}
 
 }

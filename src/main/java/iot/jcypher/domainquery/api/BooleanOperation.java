@@ -129,8 +129,10 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	public <E> TerminalResult IN(DomainObjectMatch<E> domainObjects) {
+		DomainObjectMatch<?> delegate = APIAccess.getDelegate(domainObjects);
+		DomainObjectMatch<?> match = delegate != null ? delegate : domainObjects;
 		getPredicateExpression().setOperator(Operator.IN);
-		getPredicateExpression().setValue_2(domainObjects);
+		getPredicateExpression().setValue_2(match);
 		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	
@@ -160,8 +162,10 @@ public class BooleanOperation extends APIObject {
 	 * <br/>
 	 */
 	public <E> TerminalResult CONTAINS(DomainObjectMatch<E> domainObjects) {
+		DomainObjectMatch<?> delegate = APIAccess.getDelegate(domainObjects);
+		DomainObjectMatch<?> match = delegate != null ? delegate : domainObjects;
 		getPredicateExpression().setOperator(Operator.CONTAINS);
-		getPredicateExpression().setValue_2(domainObjects);
+		getPredicateExpression().setValue_2(match);
 		return APIAccess.createTerminalResult(this.getPredicateExpression());
 	}
 	

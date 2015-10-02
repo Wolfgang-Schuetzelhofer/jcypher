@@ -54,6 +54,16 @@ public class APIAccess {
 		return new DomainObjectMatch<T>(domainObjectType, num, mappingInfo);
 	}
 	
+	/**
+	 * @param targetType must be DomainObject.class  as this represents a generic DomainObjectMatch
+	 * @param delegate
+	 * @return
+	 */
+	public static <T> DomainObjectMatch<T> createDomainObjectMatch(Class<T> targetType,
+			DomainObjectMatch<?> delegate) {
+		return new DomainObjectMatch<T>(targetType, delegate);
+	}
+	
 	public static <T> DomainObjectMatch<T> createDomainObjectMatch(DomainObjectMatch<T> domainObjectMatch,
 			int num, MappingInfo mappingInfo) {
 		return domainObjectMatch.create(num, mappingInfo);
@@ -180,5 +190,9 @@ public class APIAccess {
 	
 	public static JcValue getCloneOf(DomainObjectMatch<?> dom, JcValue val) {
 		return dom.getCloneOf(val);
+	}
+	
+	public static DomainObjectMatch<?> getDelegate(DomainObjectMatch<?> receiver) {
+		return receiver.getDelegate();
 	}
 }

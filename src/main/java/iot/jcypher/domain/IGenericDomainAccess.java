@@ -19,6 +19,7 @@ package iot.jcypher.domain;
 import iot.jcypher.domain.genericmodel.DOType;
 import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
 import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.transaction.ITransaction;
 
@@ -131,6 +132,12 @@ public interface IGenericDomainAccess {
 	 * @return a list containing the instances counts
 	 */
 	public List<Long> numberOfInstancesOf(List<String> typeNames);
+	
+	/**
+	 * create a new generic domain query
+	 * @return a GDomainQuery
+	 */
+	public GDomainQuery createQuery();
 	
 	/**
 	 * create a transaction

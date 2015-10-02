@@ -16,6 +16,7 @@
 
 package iot.jcypher.domainquery.api;
 
+import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.AbstractDomainQuery.IntAccess;
 import iot.jcypher.domainquery.InternalAccess;
@@ -43,15 +44,19 @@ public class Select<T> extends APIObject {
 	 * Specify one or more predicate expressions to constrain the set of domain objects
 	 * @param where one or more predicate expressions
 	 */
+	@SuppressWarnings("unchecked")
 	public DomainObjectMatch<T> ELEMENTS(TerminalResult...  where) {
+		DomainObjectMatch<T> ret;
 		// all where expressions have already been added to the astObjects list
 		// of the SelectExpression
 		SelectExpression<T> se = this.getSelectExpression();
-		DomainObjectMatch<T> selDom =APIAccess.createDomainObjectMatch(
+		
+		// create match for the true type
+		DomainObjectMatch<?> selDom =APIAccess.createDomainObjectMatch(
 					se.getStart().getDomainObjectType(),
 				se.getQueryExecutor().getDomainObjectMatches().size(),
 				se.getQueryExecutor().getMappingInfo());
-		handleUnionExpressions(se, selDom);
+		handleUnionExpressions(se);
 		se.getQueryExecutor().getDomainObjectMatches().add(selDom);
 		se.resetAstObjectsContainer();
 		se.setEnd(selDom);
@@ -60,13 +65,17 @@ public class Select<T> extends APIObject {
 			// it is only temporary
 			APIAccess.setPartOfReturn(selDom, false);
 			AbstractDomainQuery q = se.getDomainQuery();
-			DomainObjectMatch<T> rejectDom = InternalAccess.createMatch(q, se.getStart().getDomainObjectType());
+			DomainObjectMatch<?> rejectDom = InternalAccess.createMatch(q, se.getStart().getDomainObjectType());
 			// build complementary set
 			q.WHERE(rejectDom).IN(se.getStart());
 			q.WHERE(rejectDom).NOT().IN(selDom);
-			return rejectDom;
+			selDom = rejectDom;
 		}
-		return selDom;
+		if (se.getStartType().equals(DomainObject.class)) // generic domain object match
+			ret = APIAccess.createDomainObjectMatch(se.getStartType(), selDom);
+		else
+			ret = (DomainObjectMatch<T>) selDom;
+		return ret;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -74,7 +83,7 @@ public class Select<T> extends APIObject {
 		return (SelectExpression<T>) this.astObject;
 	}
 	
-	private void handleUnionExpressions(SelectExpression<T> se, DomainObjectMatch<T> selDom) {
+	private void handleUnionExpressions(SelectExpression<T> se) {
 		for (int i = se.getAstObjects().size() - 1; i >= 0; i--) {
 			IASTObject astObj = se.getAstObjects().get(i);
 			if (astObj instanceof PredicateExpression) {

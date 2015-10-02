@@ -52,7 +52,7 @@ import org.junit.Test;
 import test.AbstractTestSuite;
 import test.domainquery.Population;
 
-@Ignore
+//@Ignore
 public class GenericModelTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
@@ -74,9 +74,6 @@ public class GenericModelTest extends AbstractTestSuite {
 		
 		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 //		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
-		
-		QueriesPrintObserver.addOutputStream(System.out);
-		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO, ContentToObserve.CYPHER);
 		
 		// init db
 		Population population = new Population();

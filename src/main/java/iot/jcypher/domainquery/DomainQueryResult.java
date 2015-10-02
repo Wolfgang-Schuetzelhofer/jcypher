@@ -16,6 +16,8 @@
 
 package iot.jcypher.domainquery;
 
+import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 
 import java.util.List;
@@ -34,7 +36,15 @@ public class DomainQueryResult {
 	 * @param match
 	 * @return a list of matching domain objects
 	 */
+	@SuppressWarnings("unchecked")
 	public <T> List<T> resultOf(DomainObjectMatch<T> match) {
-		return this.domainQuery.getQueryExecutor().loadResult(match);
+		DomainObjectMatch<?> delegate = APIAccess.getDelegate(match);
+		if (delegate != null) { // this is a generic domain query
+			List<?> dobjs = this.domainQuery.getQueryExecutor().loadResult(delegate);
+			List<DomainObject> ret = this.domainQuery.getQueryExecutor().getMappingInfo()
+				.getInternalDomainAccess().getGenericDomainObjects(dobjs);
+			return (List<T>) ret;
+		} else
+			return this.domainQuery.getQueryExecutor().loadResult(match);
 	}
 }
