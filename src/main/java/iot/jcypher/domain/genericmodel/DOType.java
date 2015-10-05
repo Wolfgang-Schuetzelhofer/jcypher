@@ -245,6 +245,10 @@ public class DOType {
 		return sb.toString();
 	}
 	
+	DomainModel getDomainModel() {
+		return this.domainModel;
+	}
+	
 	Class<?> getRawType() throws ClassNotFoundException {
 		return this.domainModel.getClassForName(this.name);
 	}

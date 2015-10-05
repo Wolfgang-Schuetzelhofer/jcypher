@@ -16,26 +16,20 @@
 
 package iot.jcypher.domain.genericmodel.internal;
 
-import iot.jcypher.domain.genericmodel.DOType;
-import iot.jcypher.domain.internal.DomainAccess;
+import iot.jcypher.domain.genericmodel.DOField;
+import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.genericmodel.internal.DOWalker.Field;
 
-/**
- * For internal use only
- * @author wolfgang
- *
- */
-public class InternalAccess {
+import java.util.List;
 
-	public static DomainModel createDomainModel(String domainName, String domainLabel,
-			DomainAccess domAccess) {
-		return new DomainModel(domainName, domainLabel, domAccess);
-	}
+public interface IDOVisitor {
+
+	public void startVisitDomainObjects(List<DomainObject> domainObjects);
+	public void endVisitDomainObjects(List<DomainObject> domainObjects);
 	
-	public static DomainAccess getDomainAccess(DomainModel dm) {
-		return dm.getDomainAccess();
-	}
+	public void startVisitDomainObject(DomainObject domainObject, Field field, int depth);
+	public void endVisitDomainObject(DomainObject domainObject, Field field, int depth);
 	
-	public static void addDOTypeIfNeeded(DomainModel domainModel, DOType doType) {
-		domainModel.addDOTypeIfNeeded(doType);
-	}
+	public void startVisitField(DOField field, Object fieldValue, int depth);
+	public void endVisitField(DOField field, Object fieldValue, int depth);
 }

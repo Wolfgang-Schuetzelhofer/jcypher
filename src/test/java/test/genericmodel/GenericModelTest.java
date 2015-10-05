@@ -52,7 +52,7 @@ import org.junit.Test;
 import test.AbstractTestSuite;
 import test.domainquery.Population;
 
-//@Ignore
+@Ignore
 public class GenericModelTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;

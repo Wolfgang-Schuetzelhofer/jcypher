@@ -16,6 +16,7 @@
 
 package test.genericmodel;
 
+import static org.junit.Assert.assertEquals;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -23,6 +24,7 @@ import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.genericmodel.internal.DOWalker;
 import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -31,6 +33,7 @@ import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.NATIVE;
 import iot.jcypher.query.result.JcResultException;
+import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
@@ -44,13 +47,16 @@ import java.util.List;
 import java.util.Properties;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
 import test.domainquery.model.Address;
 import test.domainquery.model.Area;
 import test.domainquery.model.Person;
+import util.TestDataReader;
 
+//@Ignore
 public class GenericQueryTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
@@ -124,8 +130,12 @@ public class GenericQueryTest extends AbstractTestSuite {
 	public void testGenericQuerySelect_01() {
 		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
 		GDomainQuery q;
+		String testId;
+		
+		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENQUERY_01.txt");
 		
 		/** 01 ****************************************/
+		testId = "GENQUERY_03";
 		q = gda.createQuery();
 		
 		DomainObjectMatch<DomainObject> j_smith = q.createMatch("iot.jcypher.samples.domain.people.model.Person");
@@ -143,17 +153,25 @@ public class GenericQueryTest extends AbstractTestSuite {
 				q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
 					.FORTH("partOf").DISTANCE(0, -1).TO_GENERIC("iot.jcypher.samples.domain.people.model.Area");
 		
-//		DomainObjectMatch<DomainObject> j_smith_FilteredPocs =
-//				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
-//						q.WHERE(j_smith_Areas).CONTAINS(europe)
-//					);
+		DomainObjectMatch<DomainObject> j_smith_FilteredPocs =
+				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
+						q.WHERE(j_smith_Areas).CONTAINS(europe)
+					);
 		DomainQueryResult result = q.execute();
 		
 		List<DomainObject> j_smithResult = result.resultOf(j_smith);
 		List<DomainObject> europeResult = result.resultOf(europe);
 		List<DomainObject> j_smith_AddressesResult = result.resultOf(j_smith_Addresses);
 		List<DomainObject> j_smith_AreasResult = result.resultOf(j_smith_Areas);
-//		List<DomainObject> j_smith_FilteredPocsResult = result.resultOf(j_smith_FilteredPocs);
+		List<DomainObject> j_smith_FilteredPocsResult = result.resultOf(j_smith_FilteredPocs);
+		
+		DOToString doToString = new DOToString(Format.PRETTY_1);
+		DOWalker walker = new DOWalker(j_smith_FilteredPocsResult, doToString);
+		walker.walkDOGraph();
+		String str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData(testId), str);
 		
 		return;
 	}
@@ -162,8 +180,12 @@ public class GenericQueryTest extends AbstractTestSuite {
 	public void testGenericQuery_01() {
 		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
 		GDomainQuery q;
+		String testId;
+		
+		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENQUERY_01.txt");
 		
 		/** 01 ****************************************/
+		testId = "GENQUERY_01";
 		q = gda.createQuery();
 		DomainObjectMatch<DomainObject> j_smithMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Person");
 		q.WHERE(j_smithMatch.atttribute("lastName")).EQUALS("Smith");
@@ -177,6 +199,23 @@ public class GenericQueryTest extends AbstractTestSuite {
 		
 		List<DomainObject> j_smith = result.resultOf(j_smithMatch);
 		List<DomainObject> j_smith_Addresses = result.resultOf(j_smith_AddressesMatch);
+		
+		DOToString doToString = new DOToString(Format.PRETTY_1);
+		DOWalker walker = new DOWalker(j_smith, doToString);
+		walker.walkDOGraph();
+		String str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData(testId), str);
+		
+		testId = "GENQUERY_02";
+		doToString = new DOToString(Format.PRETTY_1);
+		walker = new DOWalker(j_smith_Addresses, doToString);
+		walker.walkDOGraph();
+		str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData(testId), str);
 		
 		return;
 	}

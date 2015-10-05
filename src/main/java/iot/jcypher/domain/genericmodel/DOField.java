@@ -17,6 +17,7 @@
 package iot.jcypher.domain.genericmodel;
 
 import java.lang.reflect.Field;
+import java.util.List;
 
 import iot.jcypher.domain.genericmodel.internal.DomainModel;
 
@@ -51,6 +52,11 @@ public class DOField {
 
 	public boolean isBuidInType() {
 		return buidInType;
+	}
+	
+	public boolean isListOrArray() {
+		return field.getType().isArray() ||
+				List.class.isAssignableFrom(field.getType());
 	}
 	
 	void setValue(Object target, Object value) {

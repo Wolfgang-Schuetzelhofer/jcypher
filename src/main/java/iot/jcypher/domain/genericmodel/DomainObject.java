@@ -16,6 +16,16 @@
 
 package iot.jcypher.domain.genericmodel;
 
+import java.lang.reflect.Array;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
+
+import iot.jcypher.domain.genericmodel.internal.InternalAccess;
+import iot.jcypher.domain.genericmodel.internal.DOWalker.IndexedField;
+import iot.jcypher.domain.internal.DomainAccess;
+import iot.jcypher.domain.internal.IIntDomainAccess;
+
 
 public class DomainObject {
 
@@ -48,7 +58,49 @@ public class DomainObject {
 		DOField field = this.domainObjectType.getFieldByName(fieldName);
 		if (field == null)
 			throw new RuntimeException("field: " + fieldName + " not found in: " + this.domainObjectType.getName());
-		return field.getValue(this.getRawObject());
+		Object raw = field.getValue(this.getRawObject());
+		DomainObject gdo = getForRawObject(raw);
+		if (gdo != null)
+			return gdo;
+		return raw;
+	}
+	
+	/**
+	 * if the field is a list or array, answer the value at the given index.
+	 * @param fieldName
+	 * @param index
+	 * @return
+	 */
+	public Object getFieldValue(String fieldName, int index) {
+		Object ret = null;
+		Object val = getFieldValue(fieldName);
+		if (val instanceof List<?>) {
+			List<?> list = (List<?>)val;
+			Object cval = list.get(index);
+			DomainObject gdo = getForRawObject(cval);
+			if (gdo != null)
+				ret = gdo;
+			else
+				ret = cval;
+		} else if (val != null && val.getClass().isArray()) {
+			Object aval = Array.get(val, index);
+			DomainObject gdo = getForRawObject(aval);
+			if (gdo != null)
+				ret = gdo;
+			else
+				ret = aval;
+		}
+		return ret;
+	}
+	
+	private DomainObject getForRawObject(Object raw) {
+		if (raw != null) {
+			DomainAccess da = InternalAccess.getDomainAccess(this.domainObjectType.getDomainModel());
+			DomainObject gdo = ((IIntDomainAccess)da).getInternalDomainAccess().getGenericDomainObject(raw);
+			if (gdo != null)
+				return gdo;
+		}
+		return null;
 	}
 
 	void setRawObject(Object rawObject) {

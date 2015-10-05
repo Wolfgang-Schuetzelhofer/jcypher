@@ -81,8 +81,8 @@ import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
 import iot.jcypher.query.writer.Format;
-import iot.jcypher.util.Util;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
+import iot.jcypher.util.Util;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -1907,7 +1907,11 @@ public class QueryExecutor implements IASTObjectsContainer {
 					}
 				}
 				
-				handleScopeClose(scope, 3, cpt, cbContext, pendingBrClose);
+				if (cpt.concatenator == null) { // no select expression content (e.g traversal xpr) added
+					cpt.valid = false;
+					return;
+				} else
+					handleScopeClose(scope, 3, cpt, cbContext, pendingBrClose);
 				if (selEx.getAstObjects().size() > 1)
 					addClause(new ConcatenateExpression(Concatenator.BR_CLOSE), cpt, cbContext);
 				

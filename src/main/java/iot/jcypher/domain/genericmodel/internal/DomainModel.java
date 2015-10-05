@@ -26,6 +26,7 @@ import iot.jcypher.domain.genericmodel.DOType.Kind;
 import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.genericmodel.InternalAccess;
+import iot.jcypher.domain.internal.DomainAccess;
 import iot.jcypher.domain.mapping.surrogate.AbstractSurrogate;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
@@ -73,13 +74,15 @@ public class DomainModel {
 	private List<DOType> unsaved;
 	private ClassPool classPool;
 	private TypeBuilderFactory typeBuilderFactory;
+	private DomainAccess domainAccess;
 
-	DomainModel(String domName, String domLabel) {
+	DomainModel(String domName, String domLabel, DomainAccess domAccess) {
 		super();
 		this.domainName = domName;
 		this.typeNodeName = domLabel.concat(TypeNodePostfix);
 		this.doTypes = new HashMap<String, DOType>();
 		this.unsaved = new ArrayList<DOType>();
+		this.domainAccess = domAccess;
 	}
 
 	public DOType addType(Class<?> clazz) {
@@ -426,6 +429,10 @@ public class DomainModel {
 		if (this.typeBuilderFactory == null)
 			this.typeBuilderFactory = new TypeBuilderFactory();
 		return this.typeBuilderFactory;
+	}
+
+	DomainAccess getDomainAccess() {
+		return domainAccess;
 	}
 
 	public String asString() {

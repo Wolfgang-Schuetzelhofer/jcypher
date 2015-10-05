@@ -317,6 +317,20 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 			return ret;
 		}
+		
+		private DomainObject getDomainObject(Object obj) {
+			DomainState ds = domainAccessHandler.getDomainState();
+			LoadInfo lInfo = ds.getLoadInfoFrom_Object2IdMap(obj);
+			if (lInfo != null) {
+				DomainObject dObj = lInfo.getDomainObject();
+				if (dObj == null) {
+					dObj = domainAccessHandler.domainModel.createDomainObjectFor(obj);
+					lInfo.setDomainObject(dObj);
+				}
+				return dObj;
+			}
+			return null;
+		}
 
 		@Override
 		public DOTypeBuilderFactory getTypeBuilderFactory() {
@@ -434,7 +448,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.type2CompoundTypeMap = new HashMap<Class<?>, CompoundObjectType>();
 			this.transactionState = new ThreadLocal<DomainState>();
 			this.domainModel = iot.jcypher.domain.genericmodel.internal.InternalAccess
-					.createDomainModel(this.domainName, getDomainLabel());
+					.createDomainModel(this.domainName, getDomainLabel(), DomainAccess.this);
 		}
 		
 		@SuppressWarnings("unchecked")
@@ -3461,6 +3475,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		
 		public List<DomainObject> getGenericDomainObjects(List<?> objects) {
 			return genericDomainAccess.getDomainObjects(objects);
+		}
+		
+		public DomainObject getGenericDomainObject(Object object) {
+			return genericDomainAccess.getDomainObject(object);
 		}
 		
 		/**
