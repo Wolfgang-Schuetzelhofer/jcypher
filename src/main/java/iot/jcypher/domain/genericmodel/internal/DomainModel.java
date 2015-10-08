@@ -133,7 +133,7 @@ public class DomainModel {
 				String tName = fTyp.getName();
 				DOField fld = InternalAccess.createDOField(fields[i].getName(), tName, builder.build());
 				builder.build().getDeclaredFields().add(fld);
-				if (!builder.build().isBuildIn())
+				if (!builder.build().isBuildIn() && !fld.isBuidInType())
 					addType(fTyp);
 			}
 		}

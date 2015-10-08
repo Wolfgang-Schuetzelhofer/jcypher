@@ -28,32 +28,20 @@ import iot.jcypher.domain.genericmodel.internal.DOWalker;
 import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
-import iot.jcypher.query.JcQuery;
-import iot.jcypher.query.JcQueryResult;
-import iot.jcypher.query.api.IClause;
-import iot.jcypher.query.factories.clause.NATIVE;
+import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
-import iot.jcypher.util.Util;
 
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.LineNumberReader;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
-import test.domainquery.model.Address;
-import test.domainquery.model.Area;
-import test.domainquery.model.Person;
 import util.TestDataReader;
 
 //@Ignore
@@ -87,43 +75,8 @@ public class GenericQueryTest extends AbstractTestSuite {
 //			printErrors(errors);
 //			throw new JcResultException(errors);
 //		}
-//		loadPeopleDomain();
-		
-	}
-	
-	private static void loadPeopleDomain() {
-		InputStreamReader ir = null;
-		try {
-			InputStream in = GenericQueryTest.class.getResourceAsStream("/test/load/people_domain.txt");
-			ir = new InputStreamReader(in);
-			
-			LineNumberReader lnr = new LineNumberReader(ir);
-			List<String> lns = new ArrayList<String>();
-			String line = lnr.readLine();
-			while(line != null) {
-				lns.add(line);
-				line = lnr.readLine();
-			}
-			String[] lines = lns.toArray(new String[lns.size()]);
-			IClause[] clauses = new IClause[] {
-					NATIVE.cypher(lines)
-			};
-			JcQuery q = new JcQuery();
-			q.setClauses(clauses);
-			
-			JcQueryResult result = dbAccess.execute(q);
-			if (result.hasErrors()) {
-				printErrors(result, true);
-				throw new JcResultException(Util.collectErrors(result));
-			}
-			
-		} catch(Throwable e) {
-			throw new RuntimeException(e);
-		} finally {
-			try {
-				ir.close();
-			} catch (Throwable e) {}
-		}
+//		LoadUtil.loadPeopleDomain(dbAccess);
+		return;
 	}
 	
 	@Test
@@ -159,10 +112,10 @@ public class GenericQueryTest extends AbstractTestSuite {
 					);
 		DomainQueryResult result = q.execute();
 		
-		List<DomainObject> j_smithResult = result.resultOf(j_smith);
-		List<DomainObject> europeResult = result.resultOf(europe);
-		List<DomainObject> j_smith_AddressesResult = result.resultOf(j_smith_Addresses);
-		List<DomainObject> j_smith_AreasResult = result.resultOf(j_smith_Areas);
+//		List<DomainObject> j_smithResult = result.resultOf(j_smith);
+//		List<DomainObject> europeResult = result.resultOf(europe);
+//		List<DomainObject> j_smith_AddressesResult = result.resultOf(j_smith_Addresses);
+//		List<DomainObject> j_smith_AreasResult = result.resultOf(j_smith_Areas);
 		List<DomainObject> j_smith_FilteredPocsResult = result.resultOf(j_smith_FilteredPocs);
 		
 		DOToString doToString = new DOToString(Format.PRETTY_1);
@@ -194,6 +147,7 @@ public class GenericQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<DomainObject> j_smith_AddressesMatch =
 				q.TRAVERSE_FROM(j_smithMatch).FORTH("pointsOfContact")
 					.TO_GENERIC("iot.jcypher.samples.domain.people.model.PointOfContact");
+		q.ORDER(j_smith_AddressesMatch).BY("street").DESCENDING();
 		
 		DomainQueryResult result = q.execute();
 		

@@ -1,0 +1,1322 @@
+----GENMODEL_01:
+PEOPLE-DOMAIN {
+   iot.jcypher.samples.domain.people.model.Address extends java.lang.Object implements iot.jcypher.samples.domain.people.model.PointOfContact {
+      street : java.lang.String (buildIn: true)
+      number : int (buildIn: true)
+      area : iot.jcypher.samples.domain.people.model.Area (buildIn: false)   }
+   iot.jcypher.samples.domain.people.model.Area extends java.lang.Object {
+      areaCode : java.lang.String (buildIn: true)
+      name : java.lang.String (buildIn: true)
+      areaType : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
+      partOf : iot.jcypher.samples.domain.people.model.Area (buildIn: false)   }
+   iot.jcypher.samples.domain.people.model.AreaType extends java.lang.Enum {
+      DISTRICT : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
+      URBAN_DISTRICT : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
+      CITY : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
+      VILLAGE : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
+      STATE : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
+      COUNTRY : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
+      CONTINENT : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
+      PLANET : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)   }
+   iot.jcypher.samples.domain.people.model.Company extends iot.jcypher.samples.domain.people.model.Subject {
+      name : java.lang.String (buildIn: true)   }
+   iot.jcypher.samples.domain.people.model.EContact extends java.lang.Object implements iot.jcypher.samples.domain.people.model.PointOfContact {
+      type : iot.jcypher.samples.domain.people.model.EContact$EContactType (buildIn: false)
+      eAddress : java.lang.String (buildIn: true)   }
+   iot.jcypher.samples.domain.people.model.EContact$EContactType extends java.lang.Enum {
+      EMAIL : iot.jcypher.samples.domain.people.model.EContact$EContactType (buildIn: false)
+      TELEPHONE : iot.jcypher.samples.domain.people.model.EContact$EContactType (buildIn: false)   }
+   iot.jcypher.samples.domain.people.model.Gender extends java.lang.Enum {
+      FEMALE : iot.jcypher.samples.domain.people.model.Gender (buildIn: false)
+      MALE : iot.jcypher.samples.domain.people.model.Gender (buildIn: false)   }
+   iot.jcypher.samples.domain.people.model.Person extends iot.jcypher.samples.domain.people.model.Subject {
+      firstName : java.lang.String (buildIn: true)
+      lastName : java.lang.String (buildIn: true)
+      gender : iot.jcypher.samples.domain.people.model.Gender (buildIn: false)
+      eyeColor : java.lang.String (buildIn: true)
+      father : iot.jcypher.samples.domain.people.model.Person (buildIn: false)
+      mother : iot.jcypher.samples.domain.people.model.Person (buildIn: false)   }
+   iot.jcypher.samples.domain.people.model.PointOfContact {   }
+   iot.jcypher.samples.domain.people.model.Subject extends java.lang.Object {
+      pointsOfContact : java.util.List (buildIn: true)   }
+   java.lang.Enum {   }
+   java.lang.Object {   }
+}
+------------------------------------------------------------
+----GENMODEL_02:
+[
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "John"
+  lastName : "Smith"
+  gender : MALE
+  eyeColor : "brown"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "San Francisco"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "California"
+              areaType : STATE
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "USA"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "North America"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    },
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Schweden Platz"
+      number : 32
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : "1010"
+          name : "Innere Stadt"
+          areaType : URBAN_DISTRICT
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "1"
+              name : "Vienna"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "Austria"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    },
+    iot.jcypher.samples.domain.people.model.EContact {
+      type : EMAIL
+      eAddress : "j.smith@email.smith"
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Caroline"
+  lastName : "Smith"
+  gender : FEMALE
+  eyeColor : "green"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "San Francisco"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "California"
+              areaType : STATE
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "USA"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "North America"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Angelina"
+  lastName : "Smith"
+  gender : FEMALE
+  eyeColor : "blue"
+  father :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "John"
+      lastName : "Smith"
+      gender : MALE
+      eyeColor : "brown"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Market Street"
+          number : 20
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "San Francisco"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "California"
+                  areaType : STATE
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : "1"
+                      name : "USA"
+                      areaType : COUNTRY
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "North America"
+                          areaType : CONTINENT
+                          partOf :
+                            iot.jcypher.samples.domain.people.model.Area {
+                              areaCode : null
+                              name : "Earth"
+                              areaType : PLANET
+                              partOf : null
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Schweden Platz"
+          number : 32
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "1010"
+              name : "Innere Stadt"
+              areaType : URBAN_DISTRICT
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "Vienna"
+                  areaType : CITY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Austria"
+                      areaType : COUNTRY
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Europe"
+                          areaType : CONTINENT
+                          partOf :
+                            iot.jcypher.samples.domain.people.model.Area {
+                              areaCode : null
+                              name : "Earth"
+                              areaType : PLANET
+                              partOf : null
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        iot.jcypher.samples.domain.people.model.EContact {
+          type : EMAIL
+          eAddress : "j.smith@email.smith"
+        }]
+    }
+  mother :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Caroline"
+      lastName : "Smith"
+      gender : FEMALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Market Street"
+          number : 20
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "San Francisco"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "California"
+                  areaType : STATE
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : "1"
+                      name : "USA"
+                      areaType : COUNTRY
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "North America"
+                          areaType : CONTINENT
+                          partOf :
+                            iot.jcypher.samples.domain.people.model.Area {
+                              areaCode : null
+                              name : "Earth"
+                              areaType : PLANET
+                              partOf : null
+                            }
+                        }
+                    }
+                }
+            }
+        }]
+    }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "San Francisco"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "California"
+              areaType : STATE
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "USA"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "North America"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Jeremy"
+  lastName : "Smith"
+  gender : MALE
+  eyeColor : "brown"
+  father :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "John"
+      lastName : "Smith"
+      gender : MALE
+      eyeColor : "brown"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Market Street"
+          number : 20
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "San Francisco"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "California"
+                  areaType : STATE
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : "1"
+                      name : "USA"
+                      areaType : COUNTRY
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "North America"
+                          areaType : CONTINENT
+                          partOf :
+                            iot.jcypher.samples.domain.people.model.Area {
+                              areaCode : null
+                              name : "Earth"
+                              areaType : PLANET
+                              partOf : null
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Schweden Platz"
+          number : 32
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "1010"
+              name : "Innere Stadt"
+              areaType : URBAN_DISTRICT
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "Vienna"
+                  areaType : CITY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Austria"
+                      areaType : COUNTRY
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Europe"
+                          areaType : CONTINENT
+                          partOf :
+                            iot.jcypher.samples.domain.people.model.Area {
+                              areaCode : null
+                              name : "Earth"
+                              areaType : PLANET
+                              partOf : null
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        iot.jcypher.samples.domain.people.model.EContact {
+          type : EMAIL
+          eAddress : "j.smith@email.smith"
+        }]
+    }
+  mother :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Caroline"
+      lastName : "Smith"
+      gender : FEMALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Market Street"
+          number : 20
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "San Francisco"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "California"
+                  areaType : STATE
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : "1"
+                      name : "USA"
+                      areaType : COUNTRY
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "North America"
+                          areaType : CONTINENT
+                          partOf :
+                            iot.jcypher.samples.domain.people.model.Area {
+                              areaCode : null
+                              name : "Earth"
+                              areaType : PLANET
+                              partOf : null
+                            }
+                        }
+                    }
+                }
+            }
+        }]
+    }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "San Francisco"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "California"
+              areaType : STATE
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "USA"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "North America"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Hans"
+  lastName : "Berghammer"
+  gender : MALE
+  eyeColor : "blue"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "Munic"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "2"
+              name : "Germany"
+              areaType : COUNTRY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "Europe"
+                  areaType : CONTINENT
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Earth"
+                      areaType : PLANET
+                      partOf : null
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Gerda"
+  lastName : "Berghammer"
+  gender : FEMALE
+  eyeColor : "green"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "Munic"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "2"
+              name : "Germany"
+              areaType : COUNTRY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "Europe"
+                  areaType : CONTINENT
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Earth"
+                      areaType : PLANET
+                      partOf : null
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Christa"
+  lastName : "Berghammer"
+  gender : FEMALE
+  eyeColor : "brown"
+  father :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Hans"
+      lastName : "Berghammer"
+      gender : MALE
+      eyeColor : "blue"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Hochstrasse"
+          number : 4
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "Munic"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "2"
+                  name : "Germany"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }]
+    }
+  mother :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Gerda"
+      lastName : "Berghammer"
+      gender : FEMALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Hochstrasse"
+          number : 4
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "Munic"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "2"
+                  name : "Germany"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }]
+    }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "Munic"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "2"
+              name : "Germany"
+              areaType : COUNTRY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "Europe"
+                  areaType : CONTINENT
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Earth"
+                      areaType : PLANET
+                      partOf : null
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Hannah"
+  lastName : "Berghammer"
+  gender : FEMALE
+  eyeColor : "blue"
+  father :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Hans"
+      lastName : "Berghammer"
+      gender : MALE
+      eyeColor : "blue"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Hochstrasse"
+          number : 4
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "Munic"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "2"
+                  name : "Germany"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }]
+    }
+  mother :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Gerda"
+      lastName : "Berghammer"
+      gender : FEMALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Hochstrasse"
+          number : 4
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "Munic"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "2"
+                  name : "Germany"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }]
+    }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "Munic"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "2"
+              name : "Germany"
+              areaType : COUNTRY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "Europe"
+                  areaType : CONTINENT
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Earth"
+                      areaType : PLANET
+                      partOf : null
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Max"
+  lastName : "Berghammer"
+  gender : MALE
+  eyeColor : "green"
+  father :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Hans"
+      lastName : "Berghammer"
+      gender : MALE
+      eyeColor : "blue"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Hochstrasse"
+          number : 4
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "Munic"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "2"
+                  name : "Germany"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }]
+    }
+  mother :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Gerda"
+      lastName : "Berghammer"
+      gender : FEMALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Hochstrasse"
+          number : 4
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "Munic"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "2"
+                  name : "Germany"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }]
+    }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "Munic"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "2"
+              name : "Germany"
+              areaType : COUNTRY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "Europe"
+                  areaType : CONTINENT
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Earth"
+                      areaType : PLANET
+                      partOf : null
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Herbert"
+  lastName : "Maier"
+  gender : MALE
+  eyeColor : "green"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Lackner Gasse"
+      number : 12
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : "1170"
+          name : "Hernals"
+          areaType : URBAN_DISTRICT
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "1"
+              name : "Vienna"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "Austria"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Fritz"
+  lastName : "Berghammer"
+  gender : MALE
+  eyeColor : "brown"
+  father :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Herbert"
+      lastName : "Maier"
+      gender : MALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Lackner Gasse"
+          number : 12
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "1170"
+              name : "Hernals"
+              areaType : URBAN_DISTRICT
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "Vienna"
+                  areaType : CITY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Austria"
+                      areaType : COUNTRY
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Europe"
+                          areaType : CONTINENT
+                          partOf :
+                            iot.jcypher.samples.domain.people.model.Area {
+                              areaCode : null
+                              name : "Earth"
+                              areaType : PLANET
+                              partOf : null
+                            }
+                        }
+                    }
+                }
+            }
+        }]
+    }
+  mother :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Gerda"
+      lastName : "Berghammer"
+      gender : FEMALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : [
+        iot.jcypher.samples.domain.people.model.Address {
+          street : "Hochstrasse"
+          number : 4
+          area :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "Munic"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "2"
+                  name : "Germany"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }]
+    }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "Munic"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "2"
+              name : "Germany"
+              areaType : COUNTRY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "Europe"
+                  areaType : CONTINENT
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Earth"
+                      areaType : PLANET
+                      partOf : null
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Jim"
+  lastName : "Watson"
+  gender : MALE
+  eyeColor : "brown"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Broadway"
+      number : 53
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "New York City"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "New York"
+              areaType : STATE
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "USA"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "North America"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Sarah"
+  lastName : "Maier"
+  gender : FEMALE
+  eyeColor : "blue"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Lackner Gasse"
+      number : 12
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : "1170"
+          name : "Hernals"
+          areaType : URBAN_DISTRICT
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "1"
+              name : "Vienna"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "Austria"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Angelina"
+  lastName : "Clark"
+  gender : FEMALE
+  eyeColor : "blue"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Pearl Street"
+      number : 124
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "New York City"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "New York"
+              areaType : STATE
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "USA"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "North America"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Clark"
+  lastName : "Kent"
+  gender : MALE
+  eyeColor : "black"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Kearny Street"
+      number : 34
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "San Francisco"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "California"
+              areaType : STATE
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "USA"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "North America"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    }]
+}]
+------------------------------------------------------------
+----GENMODEL_03:
+
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Caroline"
+  lastName : "Smith"
+  gender : FEMALE
+  eyeColor : "green"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "San Francisco"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "California"
+              areaType : STATE
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "USA"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "North America"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    }]
+}
+------------------------------------------------------------

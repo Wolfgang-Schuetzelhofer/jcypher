@@ -169,7 +169,7 @@ public class AbstractTestSuite {
 		return printErrors(result, this.print);
 	}
 	
-	protected static String printErrors(JcQueryResult result, boolean doPrint) {
+	public static String printErrors(JcQueryResult result, boolean doPrint) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("---------------General Errors:");
 		appendErrorList(result.getGeneralErrors(), sb);

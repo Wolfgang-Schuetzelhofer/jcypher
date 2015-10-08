@@ -23,48 +23,35 @@ import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.DomainInformation;
-import iot.jcypher.domain.DomainInformation.DomainObjectType;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
-import iot.jcypher.domain.SyncInfo;
-import iot.jcypher.domain.genericmodel.DOType;
-import iot.jcypher.domain.genericmodel.DOType.DOClassBuilder;
-import iot.jcypher.domain.genericmodel.DOType.DOEnumBuilder;
-import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
 import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.genericmodel.internal.DOWalker;
 import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
+import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Properties;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
-import test.domainquery.Population;
+import util.TestDataReader;
 
-@Ignore
+//@Ignore
 public class GenericModelTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
 	public static String domainName;
-	public static String secondDomainName;
-	private static List<Object> storedDomainObjects;
-	private static String domainModel;
-	
 	@BeforeClass
 	public static void before() {
 		domainName = "PEOPLE-DOMAIN"; // "QTEST-DOMAIN";
-		secondDomainName = "SECOND DOMAIN";
 		Properties props = new Properties();
 		
 		// properties for remote access and for embedded access
@@ -72,13 +59,8 @@ public class GenericModelTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 //		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
-		
-		// init db
-		Population population = new Population();
-		
-		storedDomainObjects = population.createPopulation();
 		
 		QueriesPrintObserver.addOutputStream(System.out);
 		
@@ -86,46 +68,51 @@ public class GenericModelTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOM_QUERY, ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO, ContentToObserve.CYPHER);
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-//		errors = da.store(storedDomainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		domainModel = ((IIntDomainAccess)da).getInternalDomainAccess().domainModelAsString();
+		// init db
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		LoadUtil.loadPeopleDomain(dbAccess);
+		
 	}
 	
 	@Test
 	public void testGenericModel_01() {
+		String testId;
+		
+		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENMODEL_01.txt");
+		
+		/** 01 ****************************************/
+		testId = "GENMODEL_01";
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		((IIntDomainAccess)da).getInternalDomainAccess().loadDomainInfoIfNeeded();
 		String domModel = ((IIntDomainAccess)da).getInternalDomainAccess().domainModelAsString();
 		
-		assertEquals(domainModel, domModel);
+		assertEquals(tdr.getTestData(testId), domModel);
 		return;
 	}
 	
 	@Test
 	public void testLoadGenericModel_01() {
 		IGenericDomainAccess gda;
-		List<JcError> errors;
-		DomainInformation di = DomainInformation.forDomain(dbAccess, domainName);
-		List<DomainObjectType> types = di.getDomainObjectTypes();
-		DomainObjectType type = null;
-		for (DomainObjectType t : types) {
-			if (t.getTypeName().equals("iot.jcypher.samples.domain.people.model.Person")) {
-				type = t;
-				break;
-			}
-		}
-		gda = di.getGenericDomainAccess();
-		List<DomainObject> objects = gda.loadByType(type.getTypeName(), -1, 0, -1);
+		String testId;
 		
+		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENMODEL_01.txt");
+		
+		DomainInformation di = DomainInformation.forDomain(dbAccess, domainName);
+		gda = di.getGenericDomainAccess();
+		List<DomainObject> objects = gda.loadByType("iot.jcypher.samples.domain.people.model.Person", -1, 0, -1);
+		
+		DOToString doToString = new DOToString(Format.PRETTY_1);
+		DOWalker walker = new DOWalker(objects, doToString);
+		walker.walkDOGraph();
+		String str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
+		
+		testId = "GENMODEL_02";
+		assertEquals(tdr.getTestData(testId), str);
 		
 		return;
 	}
@@ -133,77 +120,31 @@ public class GenericModelTest extends AbstractTestSuite {
 	@Test
 	public void testLoadGenericModel_02() {
 		IGenericDomainAccess gda;
-		List<JcError> errors;
+		String testId;
+		
+		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENMODEL_01.txt");
 		
 		gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
-		DomainObject object = gda.loadById("iot.jcypher.samples.domain.people.model.Person", -1, 1399);
-		
-		SyncInfo syncInfo = gda.getSyncInfo(object);
-		List<DomainObject> objects = new ArrayList<DomainObject>();
-		objects.add(object);
-		
-		List<SyncInfo> syncInfos = gda.getSyncInfos(objects);
-		
-		
-		return;
-	}
-	
-	@Test
-	public void testCreateGenericModel_01() {
-		IGenericDomainAccess gda;
-		List<JcError> errors;
-		
-		errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
+		List<DomainObject> objects = gda.loadByType("iot.jcypher.samples.domain.people.model.Person", -1, 0, -1);
+		long carolineId = -1;
+		for (DomainObject obj : objects) {
+			if (obj.getFieldValue("lastName").toString().equals("Smith") &&
+					obj.getFieldValue("firstName").toString().equals("Caroline")) {
+				carolineId = gda.getSyncInfo(obj).getId();
+				break;
+			}
 		}
+		// create a new domain access
+		gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		DomainObject object = gda.loadById("iot.jcypher.samples.domain.people.model.Person", -1, carolineId);
 		
-		gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, secondDomainName);
-		DOTypeBuilderFactory tpf = gda.getTypeBuilderFactory();
+		DOToString doToString = new DOToString(Format.PRETTY_1);
+		DOWalker walker = new DOWalker(object, doToString);
+		walker.walkDOGraph();
+		String str = doToString.getBuffer().toString();
 		
-		DOEnumBuilder subjectTypesBuilder = tpf.createEnumBuilder("mytest.model.SubjectTypes");
-		subjectTypesBuilder.addEnumValue("NAT_PERSON");
-		subjectTypesBuilder.addEnumValue("JUR_PERSON");
-		DOType subjectTypes = subjectTypesBuilder.build();
-		
-		DOClassBuilder subjectTypeBuilder = tpf.createClassBuilder("mytest.model.Subject");
-		subjectTypeBuilder.setAbstract();
-		subjectTypeBuilder.addField("subjectType", subjectTypes.getName());
-		DOType subject = subjectTypeBuilder.build();
-		
-		DOClassBuilder personTypeBuilder = tpf.createClassBuilder("mytest.model.Person");
-		personTypeBuilder.addField("firstName", String.class.getName());
-		personTypeBuilder.addField("lastName", String.class.getName());
-		personTypeBuilder.addField("birthDate", Date.class.getName());
-		personTypeBuilder.setSuperType(subject);
-		DOType personType = personTypeBuilder.build();
-		
-		DomainObject aPerson = new DomainObject(personType);
-		aPerson.setFieldValue("firstName", "Maxwell");
-		aPerson.setFieldValue("lastName", "Smart");
-		GregorianCalendar cal = new GregorianCalendar(1940, 0, 22);
-		Date birthDate = cal.getTime();
-		aPerson.setFieldValue("birthDate", birthDate);
-		aPerson.setFieldValue("subjectType", subjectTypes.getEnumValue("NAT_PERSON"));
-		
-		Object[] enumVals = subjectTypes.getEnumValues();
-		List<DomainObject> persons = new ArrayList<DomainObject>();
-		persons.add(aPerson);
-		
-//		errors = gda.store(aPerson);
-		errors = gda.store(persons);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		
-		List<DomainObject> objects = gda.loadByType("mytest.model.Person", -1, 0, -1);
-		
-		IGenericDomainAccess gda1 = DomainAccessFactory.createGenericDomainAccess(dbAccess, secondDomainName);
-		List<DomainObject> objects_2 = gda1.loadByType("mytest.model.Person", -1, 0, -1);
-		
-		/** DomainObject instances should be identic */
+		testId = "GENMODEL_03";
+		assertEquals(tdr.getTestData(testId), str);
 		
 		return;
 	}
