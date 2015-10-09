@@ -223,6 +223,10 @@ public class DOType {
 		String indent2 = "".concat(indent).concat(indent);
 		StringBuilder sb = new StringBuilder();
 		sb.append(indent);
+		if (this.kind != null) {
+			sb.append(this.kind);
+			sb.append(' ');
+		}
 		sb.append(this.name);
 		if (this.superType != null) {
 			sb.append(" extends ");
@@ -318,7 +322,7 @@ public class DOType {
 		 * @param anInterface
 		 */
 		public void addInterface(DOType anInterface) {
-			if (superType.getKind() != Kind.INTERFACE)
+			if (anInterface.getKind() != Kind.INTERFACE)
 				throw new RuntimeException("must be a kind of Interface");
 			getInterfaces().add(anInterface);
 		}
@@ -339,6 +343,16 @@ public class DOType {
 		 */
 		public void addField(String name, String typeName) {
 			getDeclaredFields().add(new DOField(name, typeName, DOType.this));
+		}
+		
+		/**
+		 * Add a list field i.e. a list or array attribute defined in a domain object type.
+		 * @param name
+		 * @param typeName
+		 * @param componentTypeName if null, java.lang.Object will be taken as component type
+		 */
+		public void addListField(String name, String typeName, String componentTypeName) {
+			getDeclaredFields().add(new DOField(name, typeName, componentTypeName, DOType.this));
 		}
 	}
 	

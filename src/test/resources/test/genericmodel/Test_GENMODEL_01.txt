@@ -1,15 +1,15 @@
 ----GENMODEL_01:
 PEOPLE-DOMAIN {
-   iot.jcypher.samples.domain.people.model.Address extends java.lang.Object implements iot.jcypher.samples.domain.people.model.PointOfContact {
+   CLASS iot.jcypher.samples.domain.people.model.Address extends java.lang.Object implements iot.jcypher.samples.domain.people.model.PointOfContact {
       street : java.lang.String (buildIn: true)
       number : int (buildIn: true)
       area : iot.jcypher.samples.domain.people.model.Area (buildIn: false)   }
-   iot.jcypher.samples.domain.people.model.Area extends java.lang.Object {
+   CLASS iot.jcypher.samples.domain.people.model.Area extends java.lang.Object {
       areaCode : java.lang.String (buildIn: true)
       name : java.lang.String (buildIn: true)
       areaType : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
       partOf : iot.jcypher.samples.domain.people.model.Area (buildIn: false)   }
-   iot.jcypher.samples.domain.people.model.AreaType extends java.lang.Enum {
+   ENUM iot.jcypher.samples.domain.people.model.AreaType extends java.lang.Enum {
       DISTRICT : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
       URBAN_DISTRICT : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
       CITY : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
@@ -18,27 +18,27 @@ PEOPLE-DOMAIN {
       COUNTRY : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
       CONTINENT : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)
       PLANET : iot.jcypher.samples.domain.people.model.AreaType (buildIn: false)   }
-   iot.jcypher.samples.domain.people.model.Company extends iot.jcypher.samples.domain.people.model.Subject {
+   CLASS iot.jcypher.samples.domain.people.model.Company extends iot.jcypher.samples.domain.people.model.Subject {
       name : java.lang.String (buildIn: true)   }
-   iot.jcypher.samples.domain.people.model.EContact extends java.lang.Object implements iot.jcypher.samples.domain.people.model.PointOfContact {
+   CLASS iot.jcypher.samples.domain.people.model.EContact extends java.lang.Object implements iot.jcypher.samples.domain.people.model.PointOfContact {
       type : iot.jcypher.samples.domain.people.model.EContact$EContactType (buildIn: false)
       eAddress : java.lang.String (buildIn: true)   }
-   iot.jcypher.samples.domain.people.model.EContact$EContactType extends java.lang.Enum {
+   ENUM iot.jcypher.samples.domain.people.model.EContact$EContactType extends java.lang.Enum {
       EMAIL : iot.jcypher.samples.domain.people.model.EContact$EContactType (buildIn: false)
       TELEPHONE : iot.jcypher.samples.domain.people.model.EContact$EContactType (buildIn: false)   }
-   iot.jcypher.samples.domain.people.model.Gender extends java.lang.Enum {
+   ENUM iot.jcypher.samples.domain.people.model.Gender extends java.lang.Enum {
       FEMALE : iot.jcypher.samples.domain.people.model.Gender (buildIn: false)
       MALE : iot.jcypher.samples.domain.people.model.Gender (buildIn: false)   }
-   iot.jcypher.samples.domain.people.model.Person extends iot.jcypher.samples.domain.people.model.Subject {
+   CLASS iot.jcypher.samples.domain.people.model.Person extends iot.jcypher.samples.domain.people.model.Subject {
       firstName : java.lang.String (buildIn: true)
       lastName : java.lang.String (buildIn: true)
       gender : iot.jcypher.samples.domain.people.model.Gender (buildIn: false)
       eyeColor : java.lang.String (buildIn: true)
       father : iot.jcypher.samples.domain.people.model.Person (buildIn: false)
       mother : iot.jcypher.samples.domain.people.model.Person (buildIn: false)   }
-   iot.jcypher.samples.domain.people.model.PointOfContact {   }
-   iot.jcypher.samples.domain.people.model.Subject extends java.lang.Object {
-      pointsOfContact : java.util.List (buildIn: true)   }
+   INTERFACE iot.jcypher.samples.domain.people.model.PointOfContact {   }
+   ABSTRACT_CLASS iot.jcypher.samples.domain.people.model.Subject extends java.lang.Object {
+      pointsOfContact : java.util.List (buildIn: true)[iot.jcypher.samples.domain.people.model.PointOfContact]   }
    java.lang.Enum {   }
    java.lang.Object {   }
 }

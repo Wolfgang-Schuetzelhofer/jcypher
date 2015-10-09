@@ -40,10 +40,13 @@ import iot.jcypher.query.values.JcNumber;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -75,6 +78,7 @@ public class DomainModel {
 	private ClassPool classPool;
 	private TypeBuilderFactory typeBuilderFactory;
 	private DomainAccess domainAccess;
+	private Map<Object, DomainObject> nursery;
 
 	DomainModel(String domName, String domLabel, DomainAccess domAccess) {
 		super();
@@ -84,7 +88,7 @@ public class DomainModel {
 		this.unsaved = new ArrayList<DOType>();
 		this.domainAccess = domAccess;
 	}
-
+	
 	public DOType addType(Class<?> clazz) {
 		if (!AbstractSurrogate.class.isAssignableFrom(clazz)) {
 			String name = clazz.getName();
@@ -133,8 +137,32 @@ public class DomainModel {
 				String tName = fTyp.getName();
 				DOField fld = InternalAccess.createDOField(fields[i].getName(), tName, builder.build());
 				builder.build().getDeclaredFields().add(fld);
-				if (!builder.build().isBuildIn() && !fld.isBuidInType())
-					addType(fTyp);
+				if (!builder.build().isBuildIn()) {
+					if (!fld.isBuidInType())
+						addType(fTyp);
+					if (List.class.isAssignableFrom(fields[i].getType())) {
+						boolean cTypeResolved = false;
+						Type gtype = fields[i].getGenericType();
+						if (gtype instanceof ParameterizedType) {
+							Type lType = ((ParameterizedType)gtype).getActualTypeArguments()[0];
+							String nm = lType instanceof Class<?> ? ((Class<?>)lType).getName() : null;
+							// add the component type if not build in
+							if (nm != null) {
+								if (!isBuildIn(nm))
+									addType((Class<?>)lType);
+								InternalAccess.setComponentTypeName(fld, nm);
+								cTypeResolved = true;
+							}
+						}
+						if (!cTypeResolved)
+							InternalAccess.setComponentTypeName(fld, DOField.COMPONENTTYPE_Object);
+					} else if (fields[i].getType().isArray()) {
+						Class<?> cType = fields[i].getType().getComponentType();
+						if (!isBuildIn(cType.getName()))
+							addType(cType);
+						InternalAccess.setComponentTypeName(fld, cType.getName());
+					}
+				}
 			}
 		}
 	}
@@ -179,6 +207,8 @@ public class DomainModel {
 					for (Object obj : (List<?>) flds) {
 						String[] fld = obj.toString().split(":");
 						DOField doField = InternalAccess.createDOField(fld[0], fld[1], doType);
+						if (fld.length == 3) // a list or array type
+							InternalAccess.setComponentTypeName(doField, fld[2]);
 						doType.getDeclaredFields().add(doField);
 					}
 				}
@@ -217,9 +247,16 @@ public class DomainModel {
 			for (DOType t : this.unsaved) {
 				List<String> flds = new ArrayList<String>();
 				for (DOField f : t.getDeclaredFields()) {
-					String fd = f.getName().concat(Colon)
-							.concat(f.getTypeName());
-					flds.add(fd);
+					StringBuilder sb = new StringBuilder();
+					sb.append(f.getName());
+					sb.append(Colon);
+					sb.append(f.getTypeName());
+					String ctn = f.getComponentTypeName();
+					if (ctn != null) {
+						sb.append(Colon);
+						sb.append(ctn);
+					}
+					flds.add(sb.toString());
 				}
 				List<String> ifss = new ArrayList<String>();
 				for (DOType ifs : t.getInterfaces()) {
@@ -293,7 +330,7 @@ public class DomainModel {
 		DOType typ = getDOType(typNm);
 		if (typ == null)
 			throw new RuntimeException("missing type: [".concat(typNm).concat("] in domain model"));
-		DomainObject dobj = new DomainObject(typ);
+		DomainObject dobj = InternalAccess.createDomainObject(typ); // don't add to nursery
 		InternalAccess.setRawObject(dobj, obj);
 		return dobj;
 	}
@@ -429,6 +466,22 @@ public class DomainModel {
 		if (this.typeBuilderFactory == null)
 			this.typeBuilderFactory = new TypeBuilderFactory();
 		return this.typeBuilderFactory;
+	}
+	
+	public void addNurseryObject(Object raw, DomainObject dobj) {
+		if (this.nursery == null)
+			this.nursery = new IdentityHashMap<Object, DomainObject>();
+		this.nursery.put(raw, dobj);
+	}
+	
+	public DomainObject getNurseryObject(Object raw) {
+		if (this.nursery != null)
+			return this.nursery.get(raw);
+		return null;
+	}
+	
+	public void clearNursery() {
+		this.nursery.clear();
 	}
 
 	DomainAccess getDomainAccess() {

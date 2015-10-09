@@ -16,15 +16,18 @@
 
 package iot.jcypher.domain.genericmodel;
 
+import iot.jcypher.domain.genericmodel.internal.DomainModel;
+
 import java.lang.reflect.Field;
 import java.util.List;
 
-import iot.jcypher.domain.genericmodel.internal.DomainModel;
-
 public class DOField {
+	
+	public static String COMPONENTTYPE_Object = "java.lang.Object";
 	
 	private String name;
 	private String typeName;
+	private String componentTypeName;
 	private boolean buidInType;
 	private DOType ownerType;
 	private Field field;
@@ -41,6 +44,18 @@ public class DOField {
 		this.buidInType = DomainModel.isBuildIn(typeName);
 		this.ownerType = ownerType;
 	}
+	
+	/**
+	 * Create a list field i.e. a list or array attribute defined in a domain object type.
+	 * @param name
+	 * @param typeName qualified type name
+	 * @param componentTypeName specifies the list's component type.
+	 * If null, java.lang.Object will be taken as component type
+	 */
+	DOField(String name, String typeName, String componentTypeName, DOType ownerType) {
+		this(name, typeName, ownerType);
+		this.componentTypeName = componentTypeName != null ? componentTypeName : COMPONENTTYPE_Object;
+	}
 
 	public String getName() {
 		return name;
@@ -48,6 +63,10 @@ public class DOField {
 
 	public String getTypeName() {
 		return typeName;
+	}
+
+	public String getComponentTypeName() {
+		return componentTypeName;
 	}
 
 	public boolean isBuidInType() {
@@ -59,6 +78,10 @@ public class DOField {
 				List.class.isAssignableFrom(field.getType());
 	}
 	
+	void setComponentTypeName(String componentTypeName) {
+		this.componentTypeName = componentTypeName;
+	}
+
 	void setValue(Object target, Object value) {
 		try {
 			getField().set(target, value);
@@ -84,6 +107,11 @@ public class DOField {
 		sb.append(" (buildIn: ");
 		sb.append(this.buidInType);
 		sb.append(')');
+		if (this.componentTypeName != null) {
+			sb.append('[');
+			sb.append(this.componentTypeName);
+			sb.append(']');
+		}
 		return sb.toString();
 	}
 	

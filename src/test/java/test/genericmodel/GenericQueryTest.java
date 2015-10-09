@@ -70,12 +70,12 @@ public class GenericQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO, ContentToObserve.CYPHER);
 		
 		// init db
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		LoadUtil.loadPeopleDomain(dbAccess);
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		LoadUtil.loadPeopleDomain(dbAccess);
 		return;
 	}
 	

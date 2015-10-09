@@ -720,6 +720,10 @@ public class DomainState {
 		private ResolutionDepth resolutionDepth;
 		private DomainObject domainObject;
 		
+		public LoadInfo() {
+			super();
+			// TODO Auto-generated constructor stub
+		}
 		private LoadInfo createCopy() {
 			LoadInfo ret = new LoadInfo();
 			ret.id = this.id;

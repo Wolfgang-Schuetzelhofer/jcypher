@@ -25,8 +25,10 @@ import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.genericmodel.DOType;
 import iot.jcypher.domain.genericmodel.DOType.DOClassBuilder;
 import iot.jcypher.domain.genericmodel.DOType.DOEnumBuilder;
+import iot.jcypher.domain.genericmodel.DOType.DOInterfaceBuilder;
 import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
 import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.util.QueriesPrintObserver;
@@ -45,7 +47,7 @@ import org.junit.Test;
 
 import test.AbstractTestSuite;
 
-@Ignore
+//@Ignore
 public class CreateGenericModelTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
@@ -90,9 +92,19 @@ public class CreateGenericModelTest extends AbstractTestSuite {
 		subjectTypesBuilder.addEnumValue("JUR_PERSON");
 		DOType subjectTypes = subjectTypesBuilder.build();
 		
+		DOInterfaceBuilder pointOfContactBuilder = tpf.createInterfaceBuilder("mytest.model.PointOfContact");
+		DOType pointOfContact = pointOfContactBuilder.build();
+		
+		DOClassBuilder addressBuilder = tpf.createClassBuilder("mytest.model.Address");
+		addressBuilder.addInterface(pointOfContact);
+		addressBuilder.addField("street", String.class.getName());
+		addressBuilder.addField("number", int.class.getName());
+		DOType addressType = addressBuilder.build();
+		
 		DOClassBuilder subjectTypeBuilder = tpf.createClassBuilder("mytest.model.Subject");
 		subjectTypeBuilder.setAbstract();
 		subjectTypeBuilder.addField("subjectType", subjectTypes.getName());
+		subjectTypeBuilder.addListField("pointsOfContact", "java.util.ArrayList", "mytest.model.PointOfContact");
 		DOType subject = subjectTypeBuilder.build();
 		
 		DOClassBuilder personTypeBuilder = tpf.createClassBuilder("mytest.model.Person");
@@ -102,6 +114,12 @@ public class CreateGenericModelTest extends AbstractTestSuite {
 		personTypeBuilder.setSuperType(subject);
 		DOType personType = personTypeBuilder.build();
 		
+		String domModel_0 = ((IIntDomainAccess)gda.getDomainAccess()).getInternalDomainAccess().domainModelAsString();
+		
+		DomainObject anAddress = new DomainObject(addressType);
+		anAddress.setFieldValue("street", "Market Street");
+		anAddress.setFieldValue("number", 42);
+		
 		DomainObject aPerson = new DomainObject(personType);
 		aPerson.setFieldValue("firstName", "Maxwell");
 		aPerson.setFieldValue("lastName", "Smart");
@@ -109,6 +127,15 @@ public class CreateGenericModelTest extends AbstractTestSuite {
 		Date birthDate = cal.getTime();
 		aPerson.setFieldValue("birthDate", birthDate);
 		aPerson.setFieldValue("subjectType", subjectTypes.getEnumValue("NAT_PERSON"));
+		
+//		ArrayList<Object> addrss = new ArrayList<>();
+//		aPerson.setFieldValue("pointsOfContact", addrss);
+		aPerson.addFieldValue("pointsOfContact", anAddress);
+		
+		Object address = aPerson.getFieldValue("pointsOfContact", 0);
+		Object addresses = aPerson.getFieldValue("pointsOfContact");
+		
+		String domModel_1 = ((IIntDomainAccess)gda.getDomainAccess()).getInternalDomainAccess().domainModelAsString();
 		
 		Object[] enumVals = subjectTypes.getEnumValues();
 		List<DomainObject> persons = new ArrayList<DomainObject>();
@@ -120,6 +147,8 @@ public class CreateGenericModelTest extends AbstractTestSuite {
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
+		
+		String domModel_2 = ((IIntDomainAccess)gda.getDomainAccess()).getInternalDomainAccess().domainModelAsString();
 		
 		List<DomainObject> objects = gda.loadByType("mytest.model.Person", -1, 0, -1);
 		

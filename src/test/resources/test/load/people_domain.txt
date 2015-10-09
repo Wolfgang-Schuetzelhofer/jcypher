@@ -1,139 +1,139 @@
-create (_1349:`Person` {`eyeColor`:"brown", `firstName`:"John", `gender`:"MALE", `lastName`:"Smith"})
-create (_1350:`Collection`)
-create (_1351:`Address` {`number`:20, `street`:"Market Street"})
-create (_1352:`Area` {`areaType`:"CITY", `name`:"San Francisco"})
-create (_1353:`Area` {`areaType`:"STATE", `name`:"California"})
-create (_1354:`Area` {`areaCode`:"1", `areaType`:"COUNTRY", `name`:"USA"})
-create (_1355:`Area` {`areaType`:"CONTINENT", `name`:"North America"})
-create (_1356:`Area` {`areaType`:"PLANET", `name`:"Earth"})
-create (_1357:`Address` {`number`:32, `street`:"Schweden Platz"})
-create (_1358:`Area` {`areaCode`:"1010", `areaType`:"URBAN_DISTRICT", `name`:"Innere Stadt"})
-create (_1359:`Area` {`areaCode`:"1", `areaType`:"CITY", `name`:"Vienna"})
-create (_1360:`Area` {`areaType`:"COUNTRY", `name`:"Austria"})
-create (_1361:`Area` {`areaType`:"CONTINENT", `name`:"Europe"})
-create (_1362:`EContact` {`eAddress`:"j.smith@email.smith", `type`:"EMAIL"})
-create (_1363:`Person` {`eyeColor`:"green", `firstName`:"Caroline", `gender`:"FEMALE", `lastName`:"Smith"})
-create (_1364:`Collection`)
-create (_1365:`Collection`)
-create (_1366:`Person` {`eyeColor`:"blue", `firstName`:"Angelina", `gender`:"FEMALE", `lastName`:"Smith"})
-create (_1367:`Collection`)
-create (_1368:`Person` {`eyeColor`:"brown", `firstName`:"Jeremy", `gender`:"MALE", `lastName`:"Smith"})
-create (_1369:`Collection`)
-create (_1370:`Person` {`eyeColor`:"blue", `firstName`:"Hans", `gender`:"MALE", `lastName`:"Berghammer"})
-create (_1371:`Area` {`areaType`:"CITY", `name`:"Munic"})
-create (_1372:`Address` {`number`:4, `street`:"Hochstrasse"})
-create (_1373:`Person` {`eyeColor`:"green", `firstName`:"Gerda", `gender`:"FEMALE", `lastName`:"Berghammer"})
-create (_1374:`Area` {`areaCode`:"2", `areaType`:"COUNTRY", `name`:"Germany"})
-create (_1375:`Person` {`eyeColor`:"brown", `firstName`:"Christa", `gender`:"FEMALE", `lastName`:"Berghammer"})
-create (_1376:`Collection`)
-create (_1377:`Person` {`eyeColor`:"blue", `firstName`:"Hannah", `gender`:"FEMALE", `lastName`:"Berghammer"})
-create (_1378:`Collection`)
-create (_1379:`Person` {`eyeColor`:"green", `firstName`:"Max", `gender`:"MALE", `lastName`:"Berghammer"})
-create (_1380:`Collection`)
-create (_1381:`Person` {`eyeColor`:"green", `firstName`:"Herbert", `gender`:"MALE", `lastName`:"Maier"})
-create (_1382:`Collection`)
-create (_1383:`Collection`)
-create (_1384:`Person` {`eyeColor`:"brown", `firstName`:"Fritz", `gender`:"MALE", `lastName`:"Berghammer"})
-create (_1385:`Collection`)
-create (_1386:`Person` {`eyeColor`:"brown", `firstName`:"Jim", `gender`:"MALE", `lastName`:"Watson"})
-create (_1387:`Address` {`number`:12, `street`:"Lackner Gasse"})
-create (_1388:`Area` {`areaCode`:"1170", `areaType`:"URBAN_DISTRICT", `name`:"Hernals"})
-create (_1389:`Area` {`areaType`:"CITY", `name`:"New York City"})
-create (_1390:`Area` {`areaType`:"STATE", `name`:"New York"})
-create (_1391:`Collection`)
-create (_1392:`Address` {`number`:53, `street`:"Broadway"})
-create (_1393:`Address` {`number`:124, `street`:"Pearl Street"})
-create (_1394:`Person` {`eyeColor`:"blue", `firstName`:"Sarah", `gender`:"FEMALE", `lastName`:"Maier"})
-create (_1395:`Person` {`eyeColor`:"blue", `firstName`:"Angelina", `gender`:"FEMALE", `lastName`:"Clark"})
-create (_1396:`Collection`)
-create (_1397:`Address` {`number`:34, `street`:"Kearny Street"})
-create (_1398:`Collection`)
-create (_1399:`Person` {`eyeColor`:"black", `firstName`:"Clark", `gender`:"MALE", `lastName`:"Kent"})
-create (_1400:`Collection`)
-create (_1401:`Company` {`name`:"MunichTec Limited"})
-create (_1402:`Address` {`number`:29, `street`:"Kearny Street"})
-create (_1403:`Collection`)
-create (_1404:`Company` {`name`:"Global Company"})
-create (_1405:`Address` {`number`:15, `street`:"Schiller Strasse"})
-create (_1406:`Collection`)
-create (_1407:`DomainInfo` {`componentTypeMap`:["iot.jcypher.domain.mapping.surrogate.Collection|c_content=iot.jcypher.samples.domain.people.model.Address, iot.jcypher.samples.domain.people.model.EContact"], `fieldTypeMap`:["iot.jcypher.domain.mapping.surrogate.Collection|c_content=java.util.ArrayList", "iot.jcypher.samples.domain.people.model.Address|area=iot.jcypher.samples.domain.people.model.Area", "iot.jcypher.samples.domain.people.model.Address|number=java.lang.Integer", "iot.jcypher.samples.domain.people.model.Address|street=java.lang.String", "iot.jcypher.samples.domain.people.model.Area|areaCode=java.lang.String", "iot.jcypher.samples.domain.people.model.Area|areaType=iot.jcypher.samples.domain.people.model.AreaType", "iot.jcypher.samples.domain.people.model.Area|name=java.lang.String", "iot.jcypher.samples.domain.people.model.Area|partOf=iot.jcypher.samples.domain.people.model.Area", "iot.jcypher.samples.domain.people.model.Company|name=java.lang.String", "iot.jcypher.samples.domain.people.model.EContact|eAddress=java.lang.String", "iot.jcypher.samples.domain.people.model.EContact|type=iot.jcypher.samples.domain.people.model.EContact$EContactType", "iot.jcypher.samples.domain.people.model.Person|eyeColor=java.lang.String", "iot.jcypher.samples.domain.people.model.Person|father=iot.jcypher.samples.domain.people.model.Person", "iot.jcypher.samples.domain.people.model.Person|firstName=java.lang.String", "iot.jcypher.samples.domain.people.model.Person|gender=iot.jcypher.samples.domain.people.model.Gender", "iot.jcypher.samples.domain.people.model.Person|lastName=java.lang.String", "iot.jcypher.samples.domain.people.model.Person|mother=iot.jcypher.samples.domain.people.model.Person", "iot.jcypher.samples.domain.people.model.Subject|pointsOfContact=iot.jcypher.domain.mapping.surrogate.Collection"], `label2ClassMap`:["Address=iot.jcypher.samples.domain.people.model.Address", "Area=iot.jcypher.samples.domain.people.model.Area", "Collection=iot.jcypher.domain.mapping.surrogate.Collection", "Company=iot.jcypher.samples.domain.people.model.Company", "EContact=iot.jcypher.samples.domain.people.model.EContact", "Person=iot.jcypher.samples.domain.people.model.Person"], `name`:"PEOPLE-DOMAIN", `useDomainLabels`:false})
-create (_1408:`PEOPLE_DOMAIN_mdl` {`fields`:["firstName:java.lang.String", "lastName:java.lang.String", "gender:iot.jcypher.samples.domain.people.model.Gender", "eyeColor:java.lang.String", "father:iot.jcypher.samples.domain.people.model.Person", "mother:iot.jcypher.samples.domain.people.model.Person"], `interfaceNames`:[], `kind`:"CLASS", `superTypeName`:"iot.jcypher.samples.domain.people.model.Subject", `typeName`:"iot.jcypher.samples.domain.people.model.Person"})
-create (_1409:`PEOPLE_DOMAIN_mdl` {`fields`:["FEMALE:iot.jcypher.samples.domain.people.model.Gender", "MALE:iot.jcypher.samples.domain.people.model.Gender"], `interfaceNames`:[], `kind`:"ENUM", `superTypeName`:"java.lang.Enum", `typeName`:"iot.jcypher.samples.domain.people.model.Gender"})
-create (_1410:`PEOPLE_DOMAIN_mdl` {`fields`:["pointsOfContact:java.util.List"], `interfaceNames`:[], `kind`:"ABSTRACT_CLASS", `superTypeName`:"java.lang.Object", `typeName`:"iot.jcypher.samples.domain.people.model.Subject"})
-create (_1411:`PEOPLE_DOMAIN_mdl` {`fields`:["street:java.lang.String", "number:int", "area:iot.jcypher.samples.domain.people.model.Area"], `interfaceNames`:["iot.jcypher.samples.domain.people.model.PointOfContact"], `kind`:"CLASS", `superTypeName`:"java.lang.Object", `typeName`:"iot.jcypher.samples.domain.people.model.Address"})
-create (_1412:`PEOPLE_DOMAIN_mdl` {`fields`:["areaCode:java.lang.String", "name:java.lang.String", "areaType:iot.jcypher.samples.domain.people.model.AreaType", "partOf:iot.jcypher.samples.domain.people.model.Area"], `interfaceNames`:[], `kind`:"CLASS", `superTypeName`:"java.lang.Object", `typeName`:"iot.jcypher.samples.domain.people.model.Area"})
-create (_1413:`PEOPLE_DOMAIN_mdl` {`fields`:["DISTRICT:iot.jcypher.samples.domain.people.model.AreaType", "URBAN_DISTRICT:iot.jcypher.samples.domain.people.model.AreaType", "CITY:iot.jcypher.samples.domain.people.model.AreaType", "VILLAGE:iot.jcypher.samples.domain.people.model.AreaType", "STATE:iot.jcypher.samples.domain.people.model.AreaType", "COUNTRY:iot.jcypher.samples.domain.people.model.AreaType", "CONTINENT:iot.jcypher.samples.domain.people.model.AreaType", "PLANET:iot.jcypher.samples.domain.people.model.AreaType"], `interfaceNames`:[], `kind`:"ENUM", `superTypeName`:"java.lang.Enum", `typeName`:"iot.jcypher.samples.domain.people.model.AreaType"})
-create (_1414:`PEOPLE_DOMAIN_mdl` {`fields`:[], `interfaceNames`:[], `kind`:"INTERFACE", `superTypeName`:"", `typeName`:"iot.jcypher.samples.domain.people.model.PointOfContact"})
-create (_1415:`PEOPLE_DOMAIN_mdl` {`fields`:["type:iot.jcypher.samples.domain.people.model.EContact$EContactType", "eAddress:java.lang.String"], `interfaceNames`:["iot.jcypher.samples.domain.people.model.PointOfContact"], `kind`:"CLASS", `superTypeName`:"java.lang.Object", `typeName`:"iot.jcypher.samples.domain.people.model.EContact"})
-create (_1416:`PEOPLE_DOMAIN_mdl` {`fields`:["EMAIL:iot.jcypher.samples.domain.people.model.EContact$EContactType", "TELEPHONE:iot.jcypher.samples.domain.people.model.EContact$EContactType"], `interfaceNames`:[], `kind`:"ENUM", `superTypeName`:"java.lang.Enum", `typeName`:"iot.jcypher.samples.domain.people.model.EContact$EContactType"})
-create (_1417:`PEOPLE_DOMAIN_mdl` {`fields`:["name:java.lang.String"], `interfaceNames`:[], `kind`:"CLASS", `superTypeName`:"iot.jcypher.samples.domain.people.model.Subject", `typeName`:"iot.jcypher.samples.domain.people.model.Company"})
-create _1349-[:`pointsOfContact`]->_1350
-create _1350-[:`c_content` {`key`:1, `keyType`:"java.lang.Integer"}]->_1357
-create _1350-[:`c_content` {`key`:2, `keyType`:"java.lang.Integer"}]->_1362
-create _1350-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1351
-create _1351-[:`area`]->_1352
-create _1352-[:`partOf`]->_1353
-create _1353-[:`partOf`]->_1354
-create _1354-[:`partOf`]->_1355
-create _1355-[:`partOf`]->_1356
-create _1357-[:`area`]->_1358
-create _1358-[:`partOf`]->_1359
-create _1359-[:`partOf`]->_1360
-create _1360-[:`partOf`]->_1361
-create _1361-[:`partOf`]->_1356
-create _1363-[:`pointsOfContact`]->_1364
-create _1364-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1351
-create _1365-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1351
-create _1366-[:`pointsOfContact`]->_1365
-create _1366-[:`mother`]->_1363
-create _1366-[:`father`]->_1349
-create _1367-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1351
-create _1368-[:`pointsOfContact`]->_1367
-create _1368-[:`mother`]->_1363
-create _1368-[:`father`]->_1349
-create _1369-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1372
-create _1370-[:`pointsOfContact`]->_1369
-create _1371-[:`partOf`]->_1374
-create _1372-[:`area`]->_1371
-create _1373-[:`pointsOfContact`]->_1376
-create _1374-[:`partOf`]->_1361
-create _1375-[:`pointsOfContact`]->_1378
-create _1375-[:`mother`]->_1373
-create _1375-[:`father`]->_1370
-create _1376-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1372
-create _1377-[:`pointsOfContact`]->_1380
-create _1377-[:`mother`]->_1373
-create _1377-[:`father`]->_1370
-create _1378-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1372
-create _1379-[:`pointsOfContact`]->_1383
-create _1379-[:`mother`]->_1373
-create _1379-[:`father`]->_1370
-create _1380-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1372
-create _1381-[:`pointsOfContact`]->_1382
-create _1382-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1387
-create _1383-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1372
-create _1384-[:`pointsOfContact`]->_1385
-create _1384-[:`mother`]->_1373
-create _1384-[:`father`]->_1381
-create _1385-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1372
-create _1386-[:`pointsOfContact`]->_1391
-create _1387-[:`area`]->_1388
-create _1388-[:`partOf`]->_1359
-create _1389-[:`partOf`]->_1390
-create _1390-[:`partOf`]->_1354
-create _1391-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1392
-create _1392-[:`area`]->_1389
-create _1393-[:`area`]->_1389
-create _1394-[:`pointsOfContact`]->_1400
-create _1395-[:`pointsOfContact`]->_1396
-create _1396-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1393
-create _1397-[:`area`]->_1352
-create _1398-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1397
-create _1399-[:`pointsOfContact`]->_1398
-create _1400-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1387
-create _1401-[:`pointsOfContact`]->_1406
-create _1402-[:`area`]->_1352
-create _1403-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1402
-create _1404-[:`pointsOfContact`]->_1403
-create _1405-[:`area`]->_1371
-create _1406-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1405
+create (_1645:`Person` {`eyeColor`:"brown", `firstName`:"John", `gender`:"MALE", `lastName`:"Smith"})
+create (_1646:`Collection`)
+create (_1647:`Address` {`number`:20, `street`:"Market Street"})
+create (_1648:`Area` {`areaType`:"CITY", `name`:"San Francisco"})
+create (_1649:`Area` {`areaType`:"STATE", `name`:"California"})
+create (_1658:`Area` {`areaCode`:"1", `areaType`:"COUNTRY", `name`:"USA"})
+create (_1659:`Area` {`areaType`:"CONTINENT", `name`:"North America"})
+create (_1660:`Area` {`areaType`:"PLANET", `name`:"Earth"})
+create (_1661:`Address` {`number`:32, `street`:"Schweden Platz"})
+create (_1662:`Area` {`areaCode`:"1010", `areaType`:"URBAN_DISTRICT", `name`:"Innere Stadt"})
+create (_1663:`Area` {`areaCode`:"1", `areaType`:"CITY", `name`:"Vienna"})
+create (_1664:`Area` {`areaType`:"COUNTRY", `name`:"Austria"})
+create (_1665:`Area` {`areaType`:"CONTINENT", `name`:"Europe"})
+create (_1666:`EContact` {`eAddress`:"j.smith@email.smith", `type`:"EMAIL"})
+create (_1667:`Person` {`eyeColor`:"green", `firstName`:"Caroline", `gender`:"FEMALE", `lastName`:"Smith"})
+create (_1668:`Collection`)
+create (_1669:`Collection`)
+create (_1670:`Person` {`eyeColor`:"blue", `firstName`:"Angelina", `gender`:"FEMALE", `lastName`:"Smith"})
+create (_1671:`Collection`)
+create (_1672:`Person` {`eyeColor`:"brown", `firstName`:"Jeremy", `gender`:"MALE", `lastName`:"Smith"})
+create (_1673:`Collection`)
+create (_1674:`Person` {`eyeColor`:"blue", `firstName`:"Hans", `gender`:"MALE", `lastName`:"Berghammer"})
+create (_1675:`Area` {`areaType`:"CITY", `name`:"Munic"})
+create (_1676:`Address` {`number`:4, `street`:"Hochstrasse"})
+create (_1677:`Person` {`eyeColor`:"green", `firstName`:"Gerda", `gender`:"FEMALE", `lastName`:"Berghammer"})
+create (_1678:`Area` {`areaCode`:"2", `areaType`:"COUNTRY", `name`:"Germany"})
+create (_1679:`Person` {`eyeColor`:"brown", `firstName`:"Christa", `gender`:"FEMALE", `lastName`:"Berghammer"})
+create (_1680:`Collection`)
+create (_1681:`Person` {`eyeColor`:"blue", `firstName`:"Hannah", `gender`:"FEMALE", `lastName`:"Berghammer"})
+create (_1682:`Collection`)
+create (_1683:`Person` {`eyeColor`:"green", `firstName`:"Max", `gender`:"MALE", `lastName`:"Berghammer"})
+create (_1684:`Collection`)
+create (_1685:`Person` {`eyeColor`:"green", `firstName`:"Herbert", `gender`:"MALE", `lastName`:"Maier"})
+create (_1686:`Collection`)
+create (_1687:`Collection`)
+create (_1688:`Person` {`eyeColor`:"brown", `firstName`:"Fritz", `gender`:"MALE", `lastName`:"Berghammer"})
+create (_1689:`Collection`)
+create (_1690:`Person` {`eyeColor`:"brown", `firstName`:"Jim", `gender`:"MALE", `lastName`:"Watson"})
+create (_1691:`Address` {`number`:12, `street`:"Lackner Gasse"})
+create (_1692:`Area` {`areaCode`:"1170", `areaType`:"URBAN_DISTRICT", `name`:"Hernals"})
+create (_1693:`Area` {`areaType`:"CITY", `name`:"New York City"})
+create (_1694:`Area` {`areaType`:"STATE", `name`:"New York"})
+create (_1695:`Collection`)
+create (_1696:`Address` {`number`:53, `street`:"Broadway"})
+create (_1697:`Address` {`number`:124, `street`:"Pearl Street"})
+create (_1698:`Person` {`eyeColor`:"blue", `firstName`:"Sarah", `gender`:"FEMALE", `lastName`:"Maier"})
+create (_1699:`Person` {`eyeColor`:"blue", `firstName`:"Angelina", `gender`:"FEMALE", `lastName`:"Clark"})
+create (_1700:`Collection`)
+create (_1701:`Address` {`number`:34, `street`:"Kearny Street"})
+create (_1702:`Collection`)
+create (_1703:`Person` {`eyeColor`:"black", `firstName`:"Clark", `gender`:"MALE", `lastName`:"Kent"})
+create (_1704:`Collection`)
+create (_1705:`Company` {`name`:"MunichTec Limited"})
+create (_1706:`Address` {`number`:29, `street`:"Kearny Street"})
+create (_1707:`Collection`)
+create (_1708:`Company` {`name`:"Global Company"})
+create (_1709:`Address` {`number`:15, `street`:"Schiller Strasse"})
+create (_1710:`Collection`)
+create (_1711:`DomainInfo` {`componentTypeMap`:["iot.jcypher.domain.mapping.surrogate.Collection|c_content=iot.jcypher.samples.domain.people.model.Address, iot.jcypher.samples.domain.people.model.EContact"], `fieldTypeMap`:["iot.jcypher.domain.mapping.surrogate.Collection|c_content=java.util.ArrayList", "iot.jcypher.samples.domain.people.model.Address|area=iot.jcypher.samples.domain.people.model.Area", "iot.jcypher.samples.domain.people.model.Address|number=java.lang.Integer", "iot.jcypher.samples.domain.people.model.Address|street=java.lang.String", "iot.jcypher.samples.domain.people.model.Area|areaCode=java.lang.String", "iot.jcypher.samples.domain.people.model.Area|areaType=iot.jcypher.samples.domain.people.model.AreaType", "iot.jcypher.samples.domain.people.model.Area|name=java.lang.String", "iot.jcypher.samples.domain.people.model.Area|partOf=iot.jcypher.samples.domain.people.model.Area", "iot.jcypher.samples.domain.people.model.Company|name=java.lang.String", "iot.jcypher.samples.domain.people.model.EContact|eAddress=java.lang.String", "iot.jcypher.samples.domain.people.model.EContact|type=iot.jcypher.samples.domain.people.model.EContact$EContactType", "iot.jcypher.samples.domain.people.model.Person|eyeColor=java.lang.String", "iot.jcypher.samples.domain.people.model.Person|father=iot.jcypher.samples.domain.people.model.Person", "iot.jcypher.samples.domain.people.model.Person|firstName=java.lang.String", "iot.jcypher.samples.domain.people.model.Person|gender=iot.jcypher.samples.domain.people.model.Gender", "iot.jcypher.samples.domain.people.model.Person|lastName=java.lang.String", "iot.jcypher.samples.domain.people.model.Person|mother=iot.jcypher.samples.domain.people.model.Person", "iot.jcypher.samples.domain.people.model.Subject|pointsOfContact=iot.jcypher.domain.mapping.surrogate.Collection"], `label2ClassMap`:["Address=iot.jcypher.samples.domain.people.model.Address", "Area=iot.jcypher.samples.domain.people.model.Area", "Collection=iot.jcypher.domain.mapping.surrogate.Collection", "Company=iot.jcypher.samples.domain.people.model.Company", "EContact=iot.jcypher.samples.domain.people.model.EContact", "Person=iot.jcypher.samples.domain.people.model.Person"], `name`:"PEOPLE-DOMAIN", `useDomainLabels`:false})
+create (_1712:`PEOPLE_DOMAIN_mdl` {`fields`:["firstName:java.lang.String", "lastName:java.lang.String", "gender:iot.jcypher.samples.domain.people.model.Gender", "eyeColor:java.lang.String", "father:iot.jcypher.samples.domain.people.model.Person", "mother:iot.jcypher.samples.domain.people.model.Person"], `interfaceNames`:[], `kind`:"CLASS", `superTypeName`:"iot.jcypher.samples.domain.people.model.Subject", `typeName`:"iot.jcypher.samples.domain.people.model.Person"})
+create (_1713:`PEOPLE_DOMAIN_mdl` {`fields`:["FEMALE:iot.jcypher.samples.domain.people.model.Gender", "MALE:iot.jcypher.samples.domain.people.model.Gender"], `interfaceNames`:[], `kind`:"ENUM", `superTypeName`:"java.lang.Enum", `typeName`:"iot.jcypher.samples.domain.people.model.Gender"})
+create (_1714:`PEOPLE_DOMAIN_mdl` {`fields`:["pointsOfContact:java.util.List:iot.jcypher.samples.domain.people.model.PointOfContact"], `interfaceNames`:[], `kind`:"ABSTRACT_CLASS", `superTypeName`:"java.lang.Object", `typeName`:"iot.jcypher.samples.domain.people.model.Subject"})
+create (_1715:`PEOPLE_DOMAIN_mdl` {`fields`:[], `interfaceNames`:[], `kind`:"INTERFACE", `superTypeName`:"", `typeName`:"iot.jcypher.samples.domain.people.model.PointOfContact"})
+create (_1716:`PEOPLE_DOMAIN_mdl` {`fields`:["street:java.lang.String", "number:int", "area:iot.jcypher.samples.domain.people.model.Area"], `interfaceNames`:["iot.jcypher.samples.domain.people.model.PointOfContact"], `kind`:"CLASS", `superTypeName`:"java.lang.Object", `typeName`:"iot.jcypher.samples.domain.people.model.Address"})
+create (_1717:`PEOPLE_DOMAIN_mdl` {`fields`:["areaCode:java.lang.String", "name:java.lang.String", "areaType:iot.jcypher.samples.domain.people.model.AreaType", "partOf:iot.jcypher.samples.domain.people.model.Area"], `interfaceNames`:[], `kind`:"CLASS", `superTypeName`:"java.lang.Object", `typeName`:"iot.jcypher.samples.domain.people.model.Area"})
+create (_1718:`PEOPLE_DOMAIN_mdl` {`fields`:["DISTRICT:iot.jcypher.samples.domain.people.model.AreaType", "URBAN_DISTRICT:iot.jcypher.samples.domain.people.model.AreaType", "CITY:iot.jcypher.samples.domain.people.model.AreaType", "VILLAGE:iot.jcypher.samples.domain.people.model.AreaType", "STATE:iot.jcypher.samples.domain.people.model.AreaType", "COUNTRY:iot.jcypher.samples.domain.people.model.AreaType", "CONTINENT:iot.jcypher.samples.domain.people.model.AreaType", "PLANET:iot.jcypher.samples.domain.people.model.AreaType"], `interfaceNames`:[], `kind`:"ENUM", `superTypeName`:"java.lang.Enum", `typeName`:"iot.jcypher.samples.domain.people.model.AreaType"})
+create (_1719:`PEOPLE_DOMAIN_mdl` {`fields`:["type:iot.jcypher.samples.domain.people.model.EContact$EContactType", "eAddress:java.lang.String"], `interfaceNames`:["iot.jcypher.samples.domain.people.model.PointOfContact"], `kind`:"CLASS", `superTypeName`:"java.lang.Object", `typeName`:"iot.jcypher.samples.domain.people.model.EContact"})
+create (_1720:`PEOPLE_DOMAIN_mdl` {`fields`:["EMAIL:iot.jcypher.samples.domain.people.model.EContact$EContactType", "TELEPHONE:iot.jcypher.samples.domain.people.model.EContact$EContactType"], `interfaceNames`:[], `kind`:"ENUM", `superTypeName`:"java.lang.Enum", `typeName`:"iot.jcypher.samples.domain.people.model.EContact$EContactType"})
+create (_1721:`PEOPLE_DOMAIN_mdl` {`fields`:["name:java.lang.String"], `interfaceNames`:[], `kind`:"CLASS", `superTypeName`:"iot.jcypher.samples.domain.people.model.Subject", `typeName`:"iot.jcypher.samples.domain.people.model.Company"})
+create _1645-[:`pointsOfContact`]->_1646
+create _1646-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1647
+create _1646-[:`c_content` {`key`:1, `keyType`:"java.lang.Integer"}]->_1661
+create _1646-[:`c_content` {`key`:2, `keyType`:"java.lang.Integer"}]->_1666
+create _1647-[:`area`]->_1648
+create _1648-[:`partOf`]->_1649
+create _1649-[:`partOf`]->_1658
+create _1658-[:`partOf`]->_1659
+create _1659-[:`partOf`]->_1660
+create _1661-[:`area`]->_1662
+create _1662-[:`partOf`]->_1663
+create _1663-[:`partOf`]->_1664
+create _1664-[:`partOf`]->_1665
+create _1665-[:`partOf`]->_1660
+create _1667-[:`pointsOfContact`]->_1668
+create _1668-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1647
+create _1669-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1647
+create _1670-[:`pointsOfContact`]->_1669
+create _1670-[:`mother`]->_1667
+create _1670-[:`father`]->_1645
+create _1671-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1647
+create _1672-[:`pointsOfContact`]->_1671
+create _1672-[:`mother`]->_1667
+create _1672-[:`father`]->_1645
+create _1673-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1676
+create _1674-[:`pointsOfContact`]->_1673
+create _1675-[:`partOf`]->_1678
+create _1676-[:`area`]->_1675
+create _1677-[:`pointsOfContact`]->_1680
+create _1678-[:`partOf`]->_1665
+create _1679-[:`pointsOfContact`]->_1682
+create _1679-[:`mother`]->_1677
+create _1679-[:`father`]->_1674
+create _1680-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1676
+create _1681-[:`pointsOfContact`]->_1684
+create _1681-[:`mother`]->_1677
+create _1681-[:`father`]->_1674
+create _1682-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1676
+create _1683-[:`pointsOfContact`]->_1687
+create _1683-[:`mother`]->_1677
+create _1683-[:`father`]->_1674
+create _1684-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1676
+create _1685-[:`pointsOfContact`]->_1686
+create _1686-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1691
+create _1687-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1676
+create _1688-[:`pointsOfContact`]->_1689
+create _1688-[:`mother`]->_1677
+create _1688-[:`father`]->_1685
+create _1689-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1676
+create _1690-[:`pointsOfContact`]->_1695
+create _1691-[:`area`]->_1692
+create _1692-[:`partOf`]->_1663
+create _1693-[:`partOf`]->_1694
+create _1694-[:`partOf`]->_1658
+create _1695-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1696
+create _1696-[:`area`]->_1693
+create _1697-[:`area`]->_1693
+create _1698-[:`pointsOfContact`]->_1704
+create _1699-[:`pointsOfContact`]->_1700
+create _1700-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1697
+create _1701-[:`area`]->_1648
+create _1702-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1701
+create _1703-[:`pointsOfContact`]->_1702
+create _1704-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1691
+create _1705-[:`pointsOfContact`]->_1710
+create _1706-[:`area`]->_1648
+create _1707-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1706
+create _1708-[:`pointsOfContact`]->_1707
+create _1709-[:`area`]->_1675
+create _1710-[:`c_content` {`key`:0, `keyType`:"java.lang.Integer"}]->_1709

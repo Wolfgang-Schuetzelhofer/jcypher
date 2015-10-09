@@ -76,4 +76,12 @@ public class InternalAccess {
 	public static Object getRawObject(DomainObject domainObject) {
 		return domainObject.getRawObject();
 	}
+	
+	public static void setComponentTypeName(DOField doField, String componentTypeName) {
+		doField.setComponentTypeName(componentTypeName);
+	}
+	
+	public static DomainObject createDomainObject(DOType doType) {
+		return new DomainObject(doType, false); // don't add to nursery
+	}
 }
