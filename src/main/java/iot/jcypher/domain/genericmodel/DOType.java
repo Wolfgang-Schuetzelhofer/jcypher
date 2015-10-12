@@ -342,17 +342,16 @@ public class DOType {
 		 * @param typeName qualified type name
 		 */
 		public void addField(String name, String typeName) {
-			getDeclaredFields().add(new DOField(name, typeName, DOType.this));
+			getDeclaredFields().add(new DOField(name, typeName, false, DOType.this));
 		}
 		
 		/**
 		 * Add a list field i.e. a list or array attribute defined in a domain object type.
-		 * @param name
-		 * @param typeName
+		 * @param name of the field (attribute)
 		 * @param componentTypeName if null, java.lang.Object will be taken as component type
 		 */
-		public void addListField(String name, String typeName, String componentTypeName) {
-			getDeclaredFields().add(new DOField(name, typeName, componentTypeName, DOType.this));
+		public void addListField(String name, String componentTypeName) {
+			getDeclaredFields().add(new DOField(name, componentTypeName, true, DOType.this));
 		}
 	}
 	
@@ -415,7 +414,7 @@ public class DOType {
 		 * @param name
 		 */
 		public void addEnumValue(String name) {
-			getDeclaredFields().add(new DOField(name, DOType.this.name, DOType.this));
+			getDeclaredFields().add(new DOField(name, DOType.this.name, false, DOType.this));
 		}
 	}
 	

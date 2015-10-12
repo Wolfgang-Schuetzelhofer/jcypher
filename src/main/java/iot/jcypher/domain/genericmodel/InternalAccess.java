@@ -55,7 +55,7 @@ public class InternalAccess {
 	}
 	
 	public static DOField createDOField(String name, String typeName, DOType ownerType) {
-		return new DOField(name, typeName, ownerType);
+		return new DOField(name, typeName, false, ownerType); // not a list
 	}
 	
 	public static DOClassBuilder createClassBuilder(String typeName, DomainModel domainModel) {
@@ -83,5 +83,9 @@ public class InternalAccess {
 	
 	public static DomainObject createDomainObject(DOType doType) {
 		return new DomainObject(doType, false); // don't add to nursery
+	}
+	
+	public static Object getFieldValueInternal(DomainObject domainObject, String fieldName) {
+		return domainObject.getFieldValue(fieldName, true);
 	}
 }

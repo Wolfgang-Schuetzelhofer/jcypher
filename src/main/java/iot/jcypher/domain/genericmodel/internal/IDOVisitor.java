@@ -27,7 +27,14 @@ public interface IDOVisitor {
 	public void startVisitDomainObjects(List<DomainObject> domainObjects);
 	public void endVisitDomainObjects(List<DomainObject> domainObjects);
 	
-	public void startVisitDomainObject(DomainObject domainObject, Field field, int depth);
+	/**
+	 * return false if you want to stop walking the tree at this level.
+	 * @param domainObject
+	 * @param field
+	 * @param depth
+	 * @return false if you want to stop walking the tree at this level.
+	 */
+	public boolean startVisitDomainObject(DomainObject domainObject, Field field, int depth);
 	public void endVisitDomainObject(DomainObject domainObject, Field field, int depth);
 	
 	public void startVisitField(DOField field, Object fieldValue, int depth);

@@ -31,16 +31,26 @@ public class DOToString implements IDOVisitor {
 	private StringBuilder buffer;
 	private Format format;
 	private String indent;
+	private int maxDepth;
 	private List<DomainObject> theDomainObjects;
 	
 	public DOToString(Format format) {
 		this(format, "  ");
 	}
 	
+	public DOToString(Format format, int maxDepth) {
+		this(format, "  ", maxDepth);
+	}
+	
 	public DOToString(Format format, String indent) {
+		this(format, indent, -1);
+	}
+	
+	public DOToString(Format format, String indent, int maxDepth) {
 		this.buffer = new StringBuilder();
 		this.format = format;
 		this.indent = indent;
+		this.maxDepth = maxDepth;
 	}
 
 	@Override
@@ -58,13 +68,15 @@ public class DOToString implements IDOVisitor {
 	}
 
 	@Override
-	public void startVisitDomainObject(DomainObject domainObject, Field field,
+	public boolean startVisitDomainObject(DomainObject domainObject, Field field,
 			int depth) {
+		boolean ret = this.maxDepth == -1 ? true : depth >= this.maxDepth ? false : true;
 		String ind = initLine(depth);
 		buffer.append(ind);
 		DOType dot = domainObject.getDomainObjectType();
 		buffer.append(dot.getName());
 		buffer.append(" {");
+		return ret;
 	}
 
 	@Override

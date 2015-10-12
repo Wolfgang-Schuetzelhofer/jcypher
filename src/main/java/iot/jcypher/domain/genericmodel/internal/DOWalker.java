@@ -19,6 +19,7 @@ package iot.jcypher.domain.genericmodel.internal;
 import iot.jcypher.domain.genericmodel.DOField;
 import iot.jcypher.domain.genericmodel.DOType;
 import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.genericmodel.InternalAccess;
 
 import java.lang.reflect.Array;
 import java.util.ArrayList;
@@ -57,37 +58,44 @@ public class DOWalker {
 
 	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private void walkDO(DomainObject dobj, Field theField, int depth) {
-		this.visitor.startVisitDomainObject(dobj, theField, depth);
+		boolean goOn = this.visitor.startVisitDomainObject(dobj, theField, depth);
 		
 		DOType dot = dobj.getDomainObjectType();
 		List<DOField> fields = dot.getFields();
 		for (DOField field : fields) {
-			Object val = dobj.getFieldValue(field.getName());
+			Object val = InternalAccess.getFieldValueInternal(dobj, field.getName());
 			this.visitor.startVisitField(field, val, depth + 1);
 			if (val instanceof DomainObject) {
-				walkDO((DomainObject)val, new Field(field), depth + 2);
+				if (goOn)
+					walkDO((DomainObject)val, new Field(field), depth + 2);
 			} else if (val instanceof List<?>) {
 				List<?> list = (List<?>)val;
 				int len = list.size();
 				for (int i = 0; i < len; i++) {
-					Object cval = dobj.getFieldValue(field.getName(), i);
-					if (cval instanceof DomainObject)
-						walkDO((DomainObject)cval, new IndexedField(i, len, field), depth + 2);
+					Object cval = dobj.getListFieldValue(field.getName(), i);
+					if (cval instanceof DomainObject) {
+						if (goOn)
+							walkDO((DomainObject)cval, new IndexedField(i, len, field), depth + 2);
+					}
 				}
 			} else if (val != null && val.getClass().isArray()) {
 				int len = Array.getLength(val);
 				for (int i = 0; i < len; i++) {
-					Object aval = dobj.getFieldValue(field.getName(), i);
-					if (aval instanceof DomainObject)
-						walkDO((DomainObject)aval, new IndexedField(i, len, field), depth + 2);
+					Object aval = dobj.getListFieldValue(field.getName(), i);
+					if (aval instanceof DomainObject) {
+						if (goOn)
+							walkDO((DomainObject)aval, new IndexedField(i, len, field), depth + 2);
+					}
 				}
 			} else if (val instanceof Map<?, ?>) { //TODO not correctly functional yet
 				Map map = (Map)val;
 				Iterator<Entry> it = map.entrySet().iterator();
 				while(it.hasNext()) {
 					Entry entry = it.next();
-					if (entry.getValue() instanceof DomainObject)
-						walkDO((DomainObject)entry.getValue(), new KeyedField(entry.getKey(), field), depth + 2);
+					if (entry.getValue() instanceof DomainObject) {
+						if (goOn)
+							walkDO((DomainObject)entry.getValue(), new KeyedField(entry.getKey(), field), depth + 2);
+					}
 				}
 			}
 			this.visitor.endVisitField(field, val, depth + 1);

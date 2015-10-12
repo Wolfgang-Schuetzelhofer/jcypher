@@ -1,0 +1,111 @@
+----GENQUERY_2_01:
+[
+iot.jcypher.samples.domain.people.model.Address {
+  street : "Market Street"
+  number : 20
+  area :
+    iot.jcypher.samples.domain.people.model.Area {
+      areaCode : null
+      name : "San Francisco"
+      areaType : CITY
+      partOf :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "California"
+          areaType : STATE
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "1"
+              name : "USA"
+              areaType : COUNTRY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "North America"
+                  areaType : CONTINENT
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Earth"
+                      areaType : PLANET
+                      partOf : null
+                    }
+                }
+            }
+        }
+    }
+},
+iot.jcypher.samples.domain.people.model.Address {
+  street : "Schweden Platz"
+  number : 32
+  area :
+    iot.jcypher.samples.domain.people.model.Area {
+      areaCode : "1010"
+      name : "Innere Stadt"
+      areaType : URBAN_DISTRICT
+      partOf :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : "1"
+          name : "Vienna"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "Austria"
+              areaType : COUNTRY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "Europe"
+                  areaType : CONTINENT
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Earth"
+                      areaType : PLANET
+                      partOf : null
+                    }
+                }
+            }
+        }
+    }
+}]
+------------------------------------------------------------
+----GENQUERY_2_02:
+
+iot.jcypher.samples.domain.people.model.Address {
+  street : "Market Street"
+  number : 20
+  area :
+    iot.jcypher.samples.domain.people.model.Area {
+      areaCode : null
+      name : "San Francisco"
+      areaType : CITY
+      partOf :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "California"
+          areaType : STATE
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "1"
+              name : "USA"
+              areaType : COUNTRY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "North America"
+                  areaType : CONTINENT
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Earth"
+                      areaType : PLANET
+                      partOf : null
+                    }
+                }
+            }
+        }
+    }
+}
+------------------------------------------------------------

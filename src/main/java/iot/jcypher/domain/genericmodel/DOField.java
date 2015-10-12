@@ -24,6 +24,7 @@ import java.util.List;
 public class DOField {
 	
 	public static String COMPONENTTYPE_Object = "java.lang.Object";
+	public static String LIST_TYPE = "java.util.List";
 	
 	private String name;
 	private String typeName;
@@ -33,28 +34,21 @@ public class DOField {
 	private Field field;
 	
 	/**
-	 * Create a field i.e. an attribute defined in a domain object type.
+	 * Create either a field i.e. an attribute defined in a domain object type or
+	 * a list field i.e. a list or array attribute defined in a domain object type, depending on the value of the isList parameter.
 	 * @param name
-	 * @param typeName qualified type name
+	 * @param typeName specifies the field's type or the list's component type depending on the value of the isList parameter.
+	 * @param isList defines if this is a field or a list field
+	 * @param ownerType
 	 */
-	DOField(String name, String typeName, DOType ownerType) {
+	DOField(String name, String typeName, boolean isList, DOType ownerType) {
 		super();
 		this.name = name;
-		this.typeName = typeName;
-		this.buidInType = DomainModel.isBuildIn(typeName);
+		this.typeName = isList ? LIST_TYPE : typeName;
+		this.buidInType = DomainModel.isBuildIn(this.typeName);
 		this.ownerType = ownerType;
-	}
-	
-	/**
-	 * Create a list field i.e. a list or array attribute defined in a domain object type.
-	 * @param name
-	 * @param typeName qualified type name
-	 * @param componentTypeName specifies the list's component type.
-	 * If null, java.lang.Object will be taken as component type
-	 */
-	DOField(String name, String typeName, String componentTypeName, DOType ownerType) {
-		this(name, typeName, ownerType);
-		this.componentTypeName = componentTypeName != null ? componentTypeName : COMPONENTTYPE_Object;
+		if (isList)
+			this.componentTypeName = typeName != null ? typeName : COMPONENTTYPE_Object;
 	}
 
 	public String getName() {
