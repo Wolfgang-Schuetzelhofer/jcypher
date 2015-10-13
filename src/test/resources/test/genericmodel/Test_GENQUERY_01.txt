@@ -373,6 +373,50 @@ iot.jcypher.samples.domain.people.model.Person {
     }]
 },
 iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Caroline"
+  lastName : "Smith"
+  gender : FEMALE
+  eyeColor : "green"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "San Francisco"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "California"
+              areaType : STATE
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "USA"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "North America"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
   firstName : "Jeremy"
   lastName : "Smith"
   gender : MALE
@@ -542,50 +586,6 @@ iot.jcypher.samples.domain.people.model.Person {
             }
         }
     }]
-},
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Caroline"
-  lastName : "Smith"
-  gender : FEMALE
-  eyeColor : "green"
-  father : null
-  mother : null
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Market Street"
-      number : 20
-      area :
-        iot.jcypher.samples.domain.people.model.Area {
-          areaCode : null
-          name : "San Francisco"
-          areaType : CITY
-          partOf :
-            iot.jcypher.samples.domain.people.model.Area {
-              areaCode : null
-              name : "California"
-              areaType : STATE
-              partOf :
-                iot.jcypher.samples.domain.people.model.Area {
-                  areaCode : "1"
-                  name : "USA"
-                  areaType : COUNTRY
-                  partOf :
-                    iot.jcypher.samples.domain.people.model.Area {
-                      areaCode : null
-                      name : "North America"
-                      areaType : CONTINENT
-                      partOf :
-                        iot.jcypher.samples.domain.people.model.Area {
-                          areaCode : null
-                          name : "Earth"
-                          areaType : PLANET
-                          partOf : null
-                        }
-                    }
-                }
-            }
-        }
-    }]
 }]
 ------------------------------------------------------------
 ----GENQUERY_05:
@@ -605,135 +605,6 @@ iot.jcypher.samples.domain.people.model.Company {
     iot.jcypher.samples.domain.people.model.Address {
       street : "Kearny Street"
       number : 29
-      area :
-    }]
-},
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "John"
-  lastName : "Smith"
-  gender : MALE
-  eyeColor : "brown"
-  father : null
-  mother : null
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Market Street"
-      number : 20
-      area :
-    },
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Schweden Platz"
-      number : 32
-      area :
-    },
-    iot.jcypher.samples.domain.people.model.EContact {
-      type : EMAIL
-      eAddress : "j.smith@email.smith"
-    }]
-},
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Caroline"
-  lastName : "Smith"
-  gender : FEMALE
-  eyeColor : "green"
-  father : null
-  mother : null
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Market Street"
-      number : 20
-      area :
-    }]
-},
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Angelina"
-  lastName : "Smith"
-  gender : FEMALE
-  eyeColor : "blue"
-  father :
-    iot.jcypher.samples.domain.people.model.Person {
-      firstName : "John"
-      lastName : "Smith"
-      gender : MALE
-      eyeColor : "brown"
-      father : null
-      mother : null
-      pointsOfContact : []
-    }
-  mother :
-    iot.jcypher.samples.domain.people.model.Person {
-      firstName : "Caroline"
-      lastName : "Smith"
-      gender : FEMALE
-      eyeColor : "green"
-      father : null
-      mother : null
-      pointsOfContact : []
-    }
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Market Street"
-      number : 20
-      area :
-    }]
-},
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Jeremy"
-  lastName : "Smith"
-  gender : MALE
-  eyeColor : "brown"
-  father :
-    iot.jcypher.samples.domain.people.model.Person {
-      firstName : "John"
-      lastName : "Smith"
-      gender : MALE
-      eyeColor : "brown"
-      father : null
-      mother : null
-      pointsOfContact : []
-    }
-  mother :
-    iot.jcypher.samples.domain.people.model.Person {
-      firstName : "Caroline"
-      lastName : "Smith"
-      gender : FEMALE
-      eyeColor : "green"
-      father : null
-      mother : null
-      pointsOfContact : []
-    }
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Market Street"
-      number : 20
-      area :
-    }]
-},
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Hans"
-  lastName : "Berghammer"
-  gender : MALE
-  eyeColor : "blue"
-  father : null
-  mother : null
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Hochstrasse"
-      number : 4
-      area :
-    }]
-},
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Gerda"
-  lastName : "Berghammer"
-  gender : FEMALE
-  eyeColor : "green"
-  father : null
-  mother : null
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Hochstrasse"
-      number : 4
       area :
     }]
 },
@@ -762,6 +633,52 @@ iot.jcypher.samples.domain.people.model.Person {
       mother : null
       pointsOfContact : []
     }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Fritz"
+  lastName : "Berghammer"
+  gender : MALE
+  eyeColor : "brown"
+  father :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Herbert"
+      lastName : "Maier"
+      gender : MALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : []
+    }
+  mother :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Gerda"
+      lastName : "Berghammer"
+      gender : FEMALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : []
+    }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Gerda"
+  lastName : "Berghammer"
+  gender : FEMALE
+  eyeColor : "green"
+  father : null
+  mother : null
   pointsOfContact : [
     iot.jcypher.samples.domain.people.model.Address {
       street : "Hochstrasse"
@@ -802,6 +719,20 @@ iot.jcypher.samples.domain.people.model.Person {
     }]
 },
 iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Hans"
+  lastName : "Berghammer"
+  gender : MALE
+  eyeColor : "blue"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
   firstName : "Max"
   lastName : "Berghammer"
   gender : MALE
@@ -830,80 +761,6 @@ iot.jcypher.samples.domain.people.model.Person {
     iot.jcypher.samples.domain.people.model.Address {
       street : "Hochstrasse"
       number : 4
-      area :
-    }]
-},
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Herbert"
-  lastName : "Maier"
-  gender : MALE
-  eyeColor : "green"
-  father : null
-  mother : null
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Lackner Gasse"
-      number : 12
-      area :
-    }]
-},
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Fritz"
-  lastName : "Berghammer"
-  gender : MALE
-  eyeColor : "brown"
-  father :
-    iot.jcypher.samples.domain.people.model.Person {
-      firstName : "Herbert"
-      lastName : "Maier"
-      gender : MALE
-      eyeColor : "green"
-      father : null
-      mother : null
-      pointsOfContact : []
-    }
-  mother :
-    iot.jcypher.samples.domain.people.model.Person {
-      firstName : "Gerda"
-      lastName : "Berghammer"
-      gender : FEMALE
-      eyeColor : "green"
-      father : null
-      mother : null
-      pointsOfContact : []
-    }
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Hochstrasse"
-      number : 4
-      area :
-    }]
-},
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Jim"
-  lastName : "Watson"
-  gender : MALE
-  eyeColor : "brown"
-  father : null
-  mother : null
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Broadway"
-      number : 53
-      area :
-    }]
-},
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Sarah"
-  lastName : "Maier"
-  gender : FEMALE
-  eyeColor : "blue"
-  father : null
-  mother : null
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Lackner Gasse"
-      number : 12
       area :
     }]
 },
@@ -934,44 +791,32 @@ iot.jcypher.samples.domain.people.model.Person {
       number : 34
       area :
     }]
-}]
-------------------------------------------------------------
-----GENQUERY_06:
-[
-iot.jcypher.samples.domain.people.model.Person {
-  firstName : "John"
-  lastName : "Smith"
-  gender : MALE
-  eyeColor : "brown"
-  father : null
-  mother : null
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Market Street"
-      number : 20
-      area :
-    },
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Schweden Platz"
-      number : 32
-      area :
-    },
-    iot.jcypher.samples.domain.people.model.EContact {
-      type : EMAIL
-      eAddress : "j.smith@email.smith"
-    }]
 },
 iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Caroline"
-  lastName : "Smith"
-  gender : FEMALE
+  firstName : "Herbert"
+  lastName : "Maier"
+  gender : MALE
   eyeColor : "green"
   father : null
   mother : null
   pointsOfContact : [
     iot.jcypher.samples.domain.people.model.Address {
-      street : "Market Street"
-      number : 20
+      street : "Lackner Gasse"
+      number : 12
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Sarah"
+  lastName : "Maier"
+  gender : FEMALE
+  eyeColor : "blue"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Lackner Gasse"
+      number : 12
       area :
     }]
 },
@@ -1000,6 +845,20 @@ iot.jcypher.samples.domain.people.model.Person {
       mother : null
       pointsOfContact : []
     }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Caroline"
+  lastName : "Smith"
+  gender : FEMALE
+  eyeColor : "green"
+  father : null
+  mother : null
   pointsOfContact : [
     iot.jcypher.samples.domain.people.model.Address {
       street : "Market Street"
@@ -1040,33 +899,45 @@ iot.jcypher.samples.domain.people.model.Person {
     }]
 },
 iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Hans"
-  lastName : "Berghammer"
+  firstName : "John"
+  lastName : "Smith"
   gender : MALE
-  eyeColor : "blue"
+  eyeColor : "brown"
   father : null
   mother : null
   pointsOfContact : [
     iot.jcypher.samples.domain.people.model.Address {
-      street : "Hochstrasse"
-      number : 4
+      street : "Market Street"
+      number : 20
       area :
+    },
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Schweden Platz"
+      number : 32
+      area :
+    },
+    iot.jcypher.samples.domain.people.model.EContact {
+      type : EMAIL
+      eAddress : "j.smith@email.smith"
     }]
 },
 iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Gerda"
-  lastName : "Berghammer"
-  gender : FEMALE
-  eyeColor : "green"
+  firstName : "Jim"
+  lastName : "Watson"
+  gender : MALE
+  eyeColor : "brown"
   father : null
   mother : null
   pointsOfContact : [
     iot.jcypher.samples.domain.people.model.Address {
-      street : "Hochstrasse"
-      number : 4
+      street : "Broadway"
+      number : 53
       area :
     }]
-},
+}]
+------------------------------------------------------------
+----GENQUERY_06:
+[
 iot.jcypher.samples.domain.people.model.Person {
   firstName : "Christa"
   lastName : "Berghammer"
@@ -1100,6 +971,52 @@ iot.jcypher.samples.domain.people.model.Person {
     }]
 },
 iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Fritz"
+  lastName : "Berghammer"
+  gender : MALE
+  eyeColor : "brown"
+  father :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Herbert"
+      lastName : "Maier"
+      gender : MALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : []
+    }
+  mother :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Gerda"
+      lastName : "Berghammer"
+      gender : FEMALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : []
+    }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Gerda"
+  lastName : "Berghammer"
+  gender : FEMALE
+  eyeColor : "green"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
   firstName : "Hannah"
   lastName : "Berghammer"
   gender : FEMALE
@@ -1124,6 +1041,20 @@ iot.jcypher.samples.domain.people.model.Person {
       mother : null
       pointsOfContact : []
     }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Hochstrasse"
+      number : 4
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Hans"
+  lastName : "Berghammer"
+  gender : MALE
+  eyeColor : "blue"
+  father : null
+  mother : null
   pointsOfContact : [
     iot.jcypher.samples.domain.people.model.Address {
       street : "Hochstrasse"
@@ -1178,38 +1109,6 @@ iot.jcypher.samples.domain.people.model.Person {
     }]
 },
 iot.jcypher.samples.domain.people.model.Person {
-  firstName : "Fritz"
-  lastName : "Berghammer"
-  gender : MALE
-  eyeColor : "brown"
-  father :
-    iot.jcypher.samples.domain.people.model.Person {
-      firstName : "Herbert"
-      lastName : "Maier"
-      gender : MALE
-      eyeColor : "green"
-      father : null
-      mother : null
-      pointsOfContact : []
-    }
-  mother :
-    iot.jcypher.samples.domain.people.model.Person {
-      firstName : "Gerda"
-      lastName : "Berghammer"
-      gender : FEMALE
-      eyeColor : "green"
-      father : null
-      mother : null
-      pointsOfContact : []
-    }
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Hochstrasse"
-      number : 4
-      area :
-    }]
-},
-iot.jcypher.samples.domain.people.model.Person {
   firstName : "Sarah"
   lastName : "Maier"
   gender : FEMALE
@@ -1221,6 +1120,107 @@ iot.jcypher.samples.domain.people.model.Person {
       street : "Lackner Gasse"
       number : 12
       area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Angelina"
+  lastName : "Smith"
+  gender : FEMALE
+  eyeColor : "blue"
+  father :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "John"
+      lastName : "Smith"
+      gender : MALE
+      eyeColor : "brown"
+      father : null
+      mother : null
+      pointsOfContact : []
+    }
+  mother :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Caroline"
+      lastName : "Smith"
+      gender : FEMALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : []
+    }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Caroline"
+  lastName : "Smith"
+  gender : FEMALE
+  eyeColor : "green"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Jeremy"
+  lastName : "Smith"
+  gender : MALE
+  eyeColor : "brown"
+  father :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "John"
+      lastName : "Smith"
+      gender : MALE
+      eyeColor : "brown"
+      father : null
+      mother : null
+      pointsOfContact : []
+    }
+  mother :
+    iot.jcypher.samples.domain.people.model.Person {
+      firstName : "Caroline"
+      lastName : "Smith"
+      gender : FEMALE
+      eyeColor : "green"
+      father : null
+      mother : null
+      pointsOfContact : []
+    }
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "John"
+  lastName : "Smith"
+  gender : MALE
+  eyeColor : "brown"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+    },
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Schweden Platz"
+      number : 32
+      area :
+    },
+    iot.jcypher.samples.domain.people.model.EContact {
+      type : EMAIL
+      eAddress : "j.smith@email.smith"
     }]
 }]
 ------------------------------------------------------------

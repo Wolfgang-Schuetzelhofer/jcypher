@@ -22,10 +22,12 @@ import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
+import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.genericmodel.internal.DOWalker;
 import iot.jcypher.domainquery.CountQueryResult;
+import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -43,8 +45,11 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
+import test.domainquery.Population;
 import test.domainquery.model.AbstractArea;
-import test.domainquery.model.Person;
+import test.domainquery.model.Area;
+import test.domainquery.model.PointOfContact;
+import test.domainquery.model.Subject;
 import util.TestDataReader;
 
 //@Ignore
@@ -73,12 +78,175 @@ public class GenericQueryTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO, ContentToObserve.CYPHER);
 		
 		// init db
+//		List<JcError> errors = dbAccess.clearDatabase();
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
+//		LoadUtil.loadPeopleDomain(dbAccess);
+		return;
+	}
+	
+	@Test
+	public void testQueryUnion_Intersection_01() {
+		IDomainAccess da1;
+		DomainQuery q;
+		
+		initTest();
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> j_smith = q.createMatch(Subject.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<PointOfContact> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(PointOfContact.class);
+		DomainObjectMatch<Area> j_smith_d_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.TO(Area.class);
+		DomainObjectMatch<Area> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+		DomainObjectMatch<Area> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
+		
+		DomainObjectMatch<PointOfContact> j_smith_FilteredPocs =
+				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
+						q.WHERE(j_smith_all_Areas.COUNT()).EQUALS(5)
+				);
+		
+		DomainQueryResult result = q.execute();
+		
+		List<Area> j_smith_all = result.resultOf(j_smith_all_Areas);
+		List<PointOfContact> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
+		
+		return;
+	}
+	
+	private void initTest() {
+		Population population = new Population();
+		
+		List<Object> storedDomainObjects = population.createPopulation();
+		
 		List<JcError> errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
-		LoadUtil.loadPeopleDomain(dbAccess);
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		errors = da.store(storedDomainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+	}
+	
+	@Test
+	public void testGenericQueryUnion_Intersection_01() {
+		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		GDomainQuery q;
+		String testId;
+		
+		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENQUERY_03.txt");
+		
+		/** 01 ****************************************/
+		testId = "UNION_01";
+		q = gda.createQuery();
+		DomainObjectMatch<DomainObject> smithMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
+		DomainObjectMatch<DomainObject> bergHammerMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
+		
+		q.WHERE(smithMatch.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(bergHammerMatch.atttribute("lastName")).EQUALS("Berghammer");
+		DomainObjectMatch<DomainObject> unionMatch = q.UNION(smithMatch, bergHammerMatch);
+		q.ORDER(unionMatch).BY("lastName");
+		q.ORDER(unionMatch).BY("firstName");
+		
+		DomainQueryResult result = q.execute();
+		
+		List<DomainObject> smith = result.resultOf(smithMatch);
+		List<DomainObject> bergHammer = result.resultOf(bergHammerMatch);
+		List<DomainObject> union = result.resultOf(unionMatch);
+		
+		assertEquals(4, smith.size());
+		assertEquals(6, bergHammer.size());
+		assertEquals(10, union.size());
+		
+		DOToString doToString = new DOToString(Format.PRETTY_1, 1);
+		DOWalker walker = new DOWalker(union, doToString);
+		walker.walkDOGraph();
+		String str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData(testId), str);
+		
+		/** 02 ****************************************/
+		testId = "UNION_02";
+		
+		q = gda.createQuery();
+		DomainObjectMatch<DomainObject> j_smith = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<DomainObject> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO_GENERIC("iot.jcypher.samples.domain.people.model.PointOfContact");
+		DomainObjectMatch<DomainObject> j_smith_d_Areas =
+				q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.TO_GENERIC("iot.jcypher.samples.domain.people.model.Area");
+		DomainObjectMatch<DomainObject> j_smith_Areas =
+				q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO_GENERIC("iot.jcypher.samples.domain.people.model.Area");
+		@SuppressWarnings("unchecked")
+		DomainObjectMatch<DomainObject> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
+		
+		DomainObjectMatch<DomainObject> j_smith_FilteredPocs =
+			q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
+				q.WHERE(j_smith_all_Areas.COUNT()).EQUALS(5)
+		);
+		result = q.execute();
+		
+		List<DomainObject> j_smith_all = result.resultOf(j_smith_all_Areas);
+		List<DomainObject> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
+		
+		return;
+	}
+	
+	@Test
+	public void testGenericQueryCollect_01() {
+		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		GDomainQuery q;
+		
+		/** 01 ****************************************/
+		
+		q = gda.createQuery();
+		DomainObjectMatch<DomainObject> subjectsMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
+		DomainObjectMatch<DomainObject> subjectsMatch2 = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
+		
+		q.ORDER(subjectsMatch).BY("firstName");
+		q.ORDER(subjectsMatch2).BY("lastName").DESCENDING();
+		DomainObjectMatch<String> firstNamesMatch = q.COLLECT(subjectsMatch.atttribute("firstName"))
+				.AS(String.class);
+		firstNamesMatch.setPage(0, 5);
+		DomainObjectMatch<String> lastNamesMatch = q.COLLECT(subjectsMatch2.atttribute("lastName"))
+				.AS(String.class);
+		
+		CountQueryResult countResult = q.executeCount();
+		DomainQueryResult result = q.execute();
+		
+		long numFirstNames = countResult.countOf(firstNamesMatch);
+		long numLastNames = countResult.countOf(lastNamesMatch);
+		long numSubjects = countResult.countOf(subjectsMatch);
+		List<String> firstNames = result.resultOf(firstNamesMatch);
+		List<String> lastNames = result.resultOf(lastNamesMatch);
+		
+		assertEquals(14, numFirstNames);
+		assertEquals(6, numLastNames);
+		assertEquals(17, numSubjects);
+		
+		assertEquals("[Angelina, Caroline, Christa, Clark, Fritz]", firstNames.toString());
+		assertEquals("[Watson, Smith, Maier, Kent, Clark, Berghammer]", lastNames.toString());
+		
 		return;
 	}
 	
@@ -102,6 +270,7 @@ public class GenericQueryTest extends AbstractTestSuite {
 		
 		DomainObjectMatch<DomainObject> j_smith_Addresses_p = q.TRAVERSE_FROM(j_smith_p).FORTH("pointsOfContact")
 			.TO_GENERIC("iot.jcypher.samples.domain.people.model.Address");
+		q.ORDER(j_smith_Addresses_p).BY("street");
 		 DomainObjectMatch<DomainObject> j_smith_Areas_a = q.TRAVERSE_FROM(j_smith_Addresses_p).FORTH("area")
 				.FORTH("partOf").DISTANCE(0, -1).TO_GENERIC("iot.jcypher.samples.domain.people.model.Area");
 		
@@ -120,7 +289,7 @@ public class GenericQueryTest extends AbstractTestSuite {
 		DOWalker walker = new DOWalker(j_smith_Addresses_pResult, doToString);
 		walker.walkDOGraph();
 		String str = doToString.getBuffer().toString();
-		System.out.println("\nObjectGraph:" + str);
+		//System.out.println("\nObjectGraph:" + str);
 		
 		assertEquals(tdr.getTestData(testId), str);
 		
@@ -129,7 +298,7 @@ public class GenericQueryTest extends AbstractTestSuite {
 		walker = new DOWalker(j_smith_FilteredPoCs_pResult, doToString);
 		walker.walkDOGraph();
 		str = doToString.getBuffer().toString();
-		System.out.println("\nObjectGraph:" + str);
+		//System.out.println("\nObjectGraph:" + str);
 		
 		assertEquals(tdr.getTestData(testId), str);
 		
@@ -189,6 +358,8 @@ public class GenericQueryTest extends AbstractTestSuite {
 		q = gda.createQuery();
 		DomainObjectMatch<DomainObject> subjects = q.createMatch("iot.jcypher.samples.domain.people.model.Person");
 		DomainObjectMatch<DomainObject> allSubjects = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
+		q.ORDER(allSubjects).BY("lastName");
+		q.ORDER(allSubjects).BY("firstName");
 		
 		DomainObjectMatch<DomainObject> addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact")
 				.TO_GENERIC("iot.jcypher.samples.domain.people.model.PointOfContact");
@@ -200,6 +371,9 @@ public class GenericQueryTest extends AbstractTestSuite {
 				q.OR(),
 				q.WHERE(areas.atttribute("name")).EQUALS("Europe")
 			);
+		q.ORDER(num_addresses).BY("lastName");
+		q.ORDER(num_addresses).BY("firstName");
+		
 		result = q.execute();
 		
 		List<DomainObject> allSubjectsResult = result.resultOf(allSubjects);
@@ -262,6 +436,8 @@ public class GenericQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<DomainObject> j_smith_residentsMatch =
 				q.TRAVERSE_FROM(j_smithMatch).FORTH("pointsOfContact")
 					.BACK("pointsOfContact").TO_GENERIC("iot.jcypher.samples.domain.people.model.Person");
+		q.ORDER(j_smith_residentsMatch).BY("lastName");
+		q.ORDER(j_smith_residentsMatch).BY("firstName");
 		
 		// execute the query
 		DomainQueryResult result = q.execute();
