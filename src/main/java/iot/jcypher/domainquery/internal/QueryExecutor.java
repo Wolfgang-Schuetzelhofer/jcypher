@@ -2514,8 +2514,11 @@ public class QueryExecutor implements IASTObjectsContainer {
 					List<JcNode> ret = new ArrayList<JcNode>();
 					for (DomainObjectMatch<?> dom : ue.getSources()) {
 						travResPerTypes = this.getTraversalResultPerTypes(collOwner, dom, false);
-						if (travResPerTypes != null)
-							ret.addAll(travResPerTypes.getCountsFor(startNodeName));
+						if (travResPerTypes != null) {
+							List<JcNode> cf = travResPerTypes.getCountsFor(startNodeName);
+							if (cf != null)
+								ret.addAll(travResPerTypes.getCountsFor(startNodeName));
+						}
 					}
 					return ret;
 				}

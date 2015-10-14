@@ -69,7 +69,8 @@ public class QueriesPrintObserver {
 	public enum QueryToObserve {
 		DOMAIN_INFO("DOMAIN INFO"),
 		DOM_QUERY("DOM QUERY"),
-		COUNT_QUERY("COUNT QUERY");
+		COUNT_QUERY("COUNT QUERY"),
+		CLOSURE_QUERY("CLOSURE");
 		
 		private String title;
 

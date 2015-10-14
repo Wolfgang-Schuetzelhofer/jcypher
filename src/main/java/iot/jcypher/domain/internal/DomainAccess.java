@@ -908,7 +908,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					query.setClauses(removeStartClauses.toArray(new IClause[removeStartClauses.size()]));
 					queries.add(query);
 				}
-//				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
+				Util.printQueries(queries, QueryToObserve.CLOSURE_QUERY, Format.PRETTY_1);
 				List<JcQueryResult> results = this.dbAccess.execute(queries);
 				List<JcError> errors = Util.collectErrors(results);
 				if (errors.size() > 0) {
