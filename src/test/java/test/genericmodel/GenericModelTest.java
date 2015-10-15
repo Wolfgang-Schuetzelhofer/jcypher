@@ -106,7 +106,7 @@ public class GenericModelTest extends AbstractTestSuite {
 		DomainInformation di = DomainInformation.forDomain(dbAccess, domainName);
 		gda = di.getGenericDomainAccess();
 		List<DomainObject> objects = gda.loadByType("iot.jcypher.samples.domain.people.model.Person", -1, 0, -1);
-		objects = sortPersons(objects);
+		objects = Util.sortPersons(objects);
 		
 		DOToString doToString = new DOToString(Format.PRETTY_1);
 		DOWalker walker = new DOWalker(objects, doToString);
@@ -150,24 +150,5 @@ public class GenericModelTest extends AbstractTestSuite {
 		assertEquals(tdr.getTestData(testId), str);
 		
 		return;
-	}
-	
-	private List<DomainObject> sortPersons(List<DomainObject> toSort) {
-		Collections.sort(toSort, new Comparator<DomainObject>() {
-
-			@Override
-			public int compare(DomainObject o1, DomainObject o2) {
-				String nm1 = o1.getFieldValue("lastName").toString();
-				String nm2 = o2.getFieldValue("lastName").toString();
-				int res = nm1.compareTo(nm2);
-				if (res == 0) {
-					nm1 = o1.getFieldValue("firstName").toString();
-					nm2 = o2.getFieldValue("firstName").toString();
-					res = nm1.compareTo(nm2);
-				}
-				return res;
-			}
-		});
-		return toSort;
 	}
 }

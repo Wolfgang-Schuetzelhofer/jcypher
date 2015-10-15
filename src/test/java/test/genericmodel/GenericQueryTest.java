@@ -50,6 +50,7 @@ import test.AbstractTestSuite;
 import test.domainquery.Population;
 import test.domainquery.model.AbstractArea;
 import test.domainquery.model.Area;
+import test.domainquery.model.Person;
 import test.domainquery.model.PointOfContact;
 import test.domainquery.model.Subject;
 import util.TestDataReader;
@@ -137,7 +138,73 @@ public class GenericQueryTest extends AbstractTestSuite {
 	}
 	
 	@Test
-	public void testGenericQueryUnion_Intersection_01() {
+	public void testGenericQueryIntersection_01() {
+		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		GDomainQuery q;
+		
+		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENQUERY_03.txt");
+		
+		/** 01 ****************************************/
+		q = gda.createQuery();
+		DomainObjectMatch<DomainObject> personsMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Person");
+
+		DomainObjectMatch<DomainObject> m_childrenMatch = q.TRAVERSE_FROM(personsMatch).FORTH("mother")
+				.BACK("mother").TO_GENERIC("iot.jcypher.samples.domain.people.model.Person");
+		DomainObjectMatch<DomainObject> f_childrenMatch = q.TRAVERSE_FROM(personsMatch).FORTH("father")
+				.BACK("father").TO_GENERIC("iot.jcypher.samples.domain.people.model.Person");
+		@SuppressWarnings("unchecked")
+		DomainObjectMatch<DomainObject> siblingsMatch = q.INTERSECTION(m_childrenMatch, f_childrenMatch);
+		
+		DomainObjectMatch<DomainObject> siblings1Match = q.SELECT_FROM(personsMatch).ELEMENTS(
+				q.WHERE(siblingsMatch.COUNT()).EQUALS(1)
+		);
+		q.ORDER(siblings1Match).BY("lastName");
+		q.ORDER(siblings1Match).BY("firstName");
+		DomainObjectMatch<DomainObject> siblings2Match = q.SELECT_FROM(personsMatch).ELEMENTS(
+				q.WHERE(siblingsMatch.COUNT()).EQUALS(2)
+		);
+		q.ORDER(siblings2Match).BY("lastName");
+		q.ORDER(siblings2Match).BY("firstName");
+		DomainObjectMatch<DomainObject> siblings1PlusMatch = q.SELECT_FROM(personsMatch).ELEMENTS(
+				q.WHERE(siblingsMatch.COUNT()).GTE(1)
+		);
+		q.ORDER(siblings1Match).BY("lastName");
+		q.ORDER(siblings1Match).BY("firstName");
+		DomainQueryResult result = q.execute();
+		
+		List<DomainObject> siblings1 = result.resultOf(siblings1Match);
+		List<DomainObject> siblings2 = result.resultOf(siblings2Match);
+		List<DomainObject> siblings1Plus = result.resultOf(siblings1PlusMatch);
+		
+		DOToString doToString = new DOToString(Format.PRETTY_1, 0);
+		DOWalker walker = new DOWalker(siblings1, doToString);
+		walker.walkDOGraph();
+		String str = doToString.getBuffer().toString();
+		System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData("INTERSECTION_01"), str);
+		
+		doToString = new DOToString(Format.PRETTY_1, 1);
+		walker = new DOWalker(siblings2, doToString);
+		walker.walkDOGraph();
+		str = doToString.getBuffer().toString();
+		System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData("INTERSECTION_02"), str);
+		
+		doToString = new DOToString(Format.PRETTY_1, 1);
+		walker = new DOWalker(siblings1Plus, doToString);
+		walker.walkDOGraph();
+		str = doToString.getBuffer().toString();
+		System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData("INTERSECTION_03"), str);
+		
+		return;
+	}
+	
+	@Test
+	public void testGenericQueryUnion_01() {
 		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
 		GDomainQuery q;
 		String testId;
@@ -196,15 +263,42 @@ public class GenericQueryTest extends AbstractTestSuite {
 		@SuppressWarnings("unchecked")
 		DomainObjectMatch<DomainObject> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
 		
-		DomainObjectMatch<DomainObject> j_smith_FilteredPocs =
+		DomainObjectMatch<DomainObject> j_smith_Filtered_4 =
 			q.SELECT_FROM(j_smith_AddressesMatch).ELEMENTS(
 				q.WHERE(j_smith_all_Areas.COUNT()).EQUALS(4)
 		);
+		DomainObjectMatch<DomainObject> j_smith_Filtered_5 =
+				q.SELECT_FROM(j_smith_AddressesMatch).ELEMENTS(
+					q.WHERE(j_smith_all_Areas.COUNT()).EQUALS(5)
+			);
 		result = q.execute();
 		
 		List<DomainObject> j_smith_Addresses = result.resultOf(j_smith_AddressesMatch);
-		List<DomainObject> j_smith_all = result.resultOf(j_smith_all_Areas);
-		List<DomainObject> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
+		List<DomainObject> j_smith_allAreas = result.resultOf(j_smith_all_Areas);
+		List<DomainObject> j_smith_Filtered_4Result = result.resultOf(j_smith_Filtered_4);
+		List<DomainObject> j_smith_Filtered_5Result = result.resultOf(j_smith_Filtered_5);
+		
+		assertEquals(4, j_smith_Addresses.size());
+		assertEquals(11, j_smith_allAreas.size());
+		assertEquals(1, j_smith_Filtered_4Result.size());
+		assertEquals(2, j_smith_Filtered_5Result.size());
+		
+		doToString = new DOToString(Format.PRETTY_1, 1);
+		walker = new DOWalker(j_smith_Filtered_4Result, doToString);
+		walker.walkDOGraph();
+		str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData("UNION_02"), str);
+		
+		j_smith_Filtered_5Result = Util.sortAddresses(j_smith_Filtered_5Result);
+		doToString = new DOToString(Format.PRETTY_1, 1);
+		walker = new DOWalker(j_smith_Filtered_5Result, doToString);
+		walker.walkDOGraph();
+		str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData("UNION_03"), str);
 		
 		initDB();
 		

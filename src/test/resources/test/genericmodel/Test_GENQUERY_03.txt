@@ -258,3 +258,48 @@ iot.jcypher.samples.domain.people.model.Person {
     }]
 }]
 ------------------------------------------------------------
+----UNION_02:
+
+iot.jcypher.samples.domain.people.model.Address {
+  street : "Karlsplatz Stachus"
+  number : 1
+  area :
+    iot.jcypher.samples.domain.people.model.Area {
+      areaCode : null
+      name : "Munich"
+      areaType : CITY
+      partOf :
+    }
+}
+------------------------------------------------------------
+----UNION_03:
+[
+iot.jcypher.samples.domain.people.model.Address {
+  street : "Market Street"
+  number : 20
+  area :
+    iot.jcypher.samples.domain.people.model.Area {
+      areaCode : null
+      name : "San Francisco"
+      areaType : CITY
+      partOf :
+    }
+},
+iot.jcypher.samples.domain.people.model.Address {
+  street : "Schweden Platz"
+  number : 32
+  area :
+    iot.jcypher.samples.domain.people.model.Area {
+      areaCode : "1010"
+      name : "Innere Stadt"
+      areaType : URBAN_DISTRICT
+      partOf :
+    }
+}]
+------------------------------------------------------------
+----INTERSECTION_01:
+------------------------------------------------------------
+----INTERSECTION_02:
+------------------------------------------------------------
+----INTERSECTION_03:
+------------------------------------------------------------
