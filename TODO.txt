@@ -1,3 +1,5 @@
+concurrency: updateMappingsIfNeeded has to ask the graph for changes
+
 ---done--- comment additional config properties for embedded db access
 
 ---done--- ad dependency in docu for: neo4j-io

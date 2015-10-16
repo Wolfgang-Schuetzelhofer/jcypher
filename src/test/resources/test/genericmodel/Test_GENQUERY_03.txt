@@ -298,8 +298,164 @@ iot.jcypher.samples.domain.people.model.Address {
 }]
 ------------------------------------------------------------
 ----INTERSECTION_01:
+[
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Angelina"
+  lastName : "Smith"
+  gender : FEMALE
+  eyeColor : "blue"
+  father :
+  mother :
+  pointsOfContact : []
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Jeremy"
+  lastName : "Smith"
+  gender : MALE
+  eyeColor : "brown"
+  father :
+  mother :
+  pointsOfContact : []
+}]
 ------------------------------------------------------------
 ----INTERSECTION_02:
+[
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Christa"
+  lastName : "Berghammer"
+  gender : FEMALE
+  eyeColor : "brown"
+  father :
+  mother :
+  pointsOfContact : []
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Hannah"
+  lastName : "Berghammer"
+  gender : FEMALE
+  eyeColor : "blue"
+  father :
+  mother :
+  pointsOfContact : []
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Max"
+  lastName : "Berghammer"
+  gender : MALE
+  eyeColor : "green"
+  father :
+  mother :
+  pointsOfContact : []
+}]
 ------------------------------------------------------------
 ----INTERSECTION_03:
+[
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Christa"
+  lastName : "Berghammer"
+  gender : FEMALE
+  eyeColor : "brown"
+  father :
+  mother :
+  pointsOfContact : []
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Hannah"
+  lastName : "Berghammer"
+  gender : FEMALE
+  eyeColor : "blue"
+  father :
+  mother :
+  pointsOfContact : []
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Max"
+  lastName : "Berghammer"
+  gender : MALE
+  eyeColor : "green"
+  father :
+  mother :
+  pointsOfContact : []
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Angelina"
+  lastName : "Smith"
+  gender : FEMALE
+  eyeColor : "blue"
+  father :
+  mother :
+  pointsOfContact : []
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Jeremy"
+  lastName : "Smith"
+  gender : MALE
+  eyeColor : "brown"
+  father :
+  mother :
+  pointsOfContact : []
+}]
+------------------------------------------------------------
+----CONCAT_01:
+
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "John"
+  lastName : "Smith"
+  gender : MALE
+  eyeColor : "brown"
+  father : null
+  mother : null
+  pointsOfContact : []
+}
+------------------------------------------------------------
+----CONCAT_02:
+[
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Angelina"
+  lastName : "Smith"
+  gender : FEMALE
+  eyeColor : "blue"
+  father :
+  mother :
+  pointsOfContact : []
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Caroline"
+  lastName : "Smith"
+  gender : FEMALE
+  eyeColor : "green"
+  father : null
+  mother : null
+  pointsOfContact : []
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "Jeremy"
+  lastName : "Smith"
+  gender : MALE
+  eyeColor : "brown"
+  father :
+  mother :
+  pointsOfContact : []
+},
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "John"
+  lastName : "Smith"
+  gender : MALE
+  eyeColor : "brown"
+  father : null
+  mother : null
+  pointsOfContact : []
+}]
+------------------------------------------------------------
+----CONCAT_03:
+
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "John"
+  lastName : "Smith"
+  gender : MALE
+  eyeColor : "brown"
+  father : null
+  mother : null
+  pointsOfContact : []
+}
 ------------------------------------------------------------

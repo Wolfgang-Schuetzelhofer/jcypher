@@ -225,6 +225,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		synchronized (this.domainAccessHandler) {
 			DomainState ds = this.domainAccessHandler.domainState.createCopy();
 			this.domainAccessHandler.transactionState.set(ds);
+			this.domainAccessHandler.domainModel.beginTx();
 		}
 		return ret;
 	}
@@ -245,6 +246,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			DomainState ds = domainAccessHandler.getDomainState();
 			LoadInfo info = ds.getLoadInfoFrom_Object2IdMap(InternalAccess.getRawObject(domainObject));
 			info.setDomainObject(domainObject);
+			domainAccessHandler.domainModel.removeNurseryObject(InternalAccess.getRawObject(domainObject));
 			return ret;
 		}
 		
@@ -259,6 +261,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			for(DomainObject dobj : domainObjects) {
 				LoadInfo info = ds.getLoadInfoFrom_Object2IdMap(InternalAccess.getRawObject(dobj));
 				info.setDomainObject(dobj);
+				domainAccessHandler.domainModel.removeNurseryObject(InternalAccess.getRawObject(dobj));
 			}
 			return ret;
 		}
@@ -310,7 +313,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				LoadInfo lInfo = ds.getLoadInfoFrom_Object2IdMap(obj);
 				DomainObject dObj = lInfo.getDomainObject();
 				if (dObj == null) {
-					dObj = domainAccessHandler.domainModel.createDomainObjectFor(obj);
+					dObj = domainAccessHandler.domainModel.getCreateDomainObjectFor(obj);
 					lInfo.setDomainObject(dObj);
 				}
 				ret.add(dObj);
@@ -324,7 +327,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			if (lInfo != null) {
 				DomainObject dObj = lInfo.getDomainObject();
 				if (dObj == null) {
-					dObj = domainAccessHandler.domainModel.createDomainObjectFor(obj);
+					dObj = domainAccessHandler.domainModel.getCreateDomainObjectFor(obj);
 					lInfo.setDomainObject(dObj);
 				}
 				return dObj;
@@ -454,7 +457,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		@SuppressWarnings("unchecked")
 		<T> List<T> loadByIds(Class<T> domainObjectClass,
 				Map<Class<?>, List<Long>> type2IdsMap, int resolutionDepth, long... ids) {
-			List<T> resultList;
+			List<T> resultList = new ArrayList<T>(ids.length);
+			
+			if (ids.length == 0)
+				return resultList;
 			
 			InternalDomainAccess internalAccess = null;
 			try {
@@ -499,7 +505,6 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					MappingUtil.internalDomainAccess.remove();
 			}
 
-			resultList = new ArrayList<T>(ids.length);
 			for (long id : ids) {
 				resultList.add((T)getDomainState().getFrom_Id2ObjectMap(id));
 			}
@@ -596,30 +601,32 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					idx++;
 				}
 			}
-//			Util.printQueries(queries, "LOAD-BY-TYPE", Format.PRETTY_1);
-			List<JcQueryResult> results = this.dbAccess.execute(queries);
-			List<JcError> errors = Util.collectErrors(results);
-			if (errors.size() > 0) {
-				throw new JcResultException(errors);
-			}
-//			Util.printResults(results, "LOAD-BY-TYPE", Format.PRETTY_1);
 			List<Long> ids = new ArrayList<Long>();
-			idx = 0;
-			int resIdx = 0;
-			for (Class<?> rawType : typeList) {
-				String nodeLabel = domainInfo.getLabelForClass(rawType);
-				if (nodeLabel != null) {
-					if (lens.get(idx) != 0) { // no query in that case
-						JcQueryResult result = results.get(resIdx);
-						List<BigDecimal> rList = result.resultOf(num);
-						int sz = lens.get(idx) + offsets.get(idx);
-						sz = sz == -1 ? rList.size() : sz > rList.size() ? rList.size() : sz;
-						for (int i = offsets.get(idx); i < sz; i++) {
-							ids.add(rList.get(i).longValue());
+			if (queries.size() > 0) {
+				Util.printQueries(queries, QueryToObserve.LOAD_BY_TYPE_QUERY, Format.PRETTY_1);
+				List<JcQueryResult> results = this.dbAccess.execute(queries);
+				List<JcError> errors = Util.collectErrors(results);
+				if (errors.size() > 0) {
+					throw new JcResultException(errors);
+				}
+	//			Util.printResults(results, "LOAD-BY-TYPE", Format.PRETTY_1);
+				idx = 0;
+				int resIdx = 0;
+				for (Class<?> rawType : typeList) {
+					String nodeLabel = domainInfo.getLabelForClass(rawType);
+					if (nodeLabel != null) {
+						if (lens.get(idx) != 0) { // no query in that case
+							JcQueryResult result = results.get(resIdx);
+							List<BigDecimal> rList = result.resultOf(num);
+							int sz = lens.get(idx) + offsets.get(idx);
+							sz = sz == -1 ? rList.size() : sz > rList.size() ? rList.size() : sz;
+							for (int i = offsets.get(idx); i < sz; i++) {
+								ids.add(rList.get(i).longValue());
+							}
+							resIdx++;
 						}
-						resIdx++;
+						idx++;
 					}
-					idx++;
 				}
 			}
 			long[] idsArray = new long[ids.size()];
@@ -783,7 +790,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			// with embedded and in_memory databases
 			if (this.dbAccess.getDBType() != DBType.REMOTE)
 				query.setExtractParams(false);
-//			Util.printQuery(query, "Query concrete type", Format.PRETTY_1);
+			Util.printQuery(query, QueryToObserve.QUERY_CONCRETE_TYPE, Format.PRETTY_1);
 			JcQueryResult result = dbAccess.execute(query);
 			List<JcError> errors = Util.collectErrors(result);
 			if (errors.size() > 0) {
@@ -3466,6 +3473,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						}
 					}
 				}
+				domainAccessHandler.domainModel.closeTx(failed);
 			}
 		}
 		
@@ -3494,6 +3502,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		 */
 		public String domainModelAsString() {
 			return domainAccessHandler.domainModel.asString();
+		}
+		
+		/**
+		 * For Testing
+		 * @return
+		 */
+		public String nurseryAsString() {
+			return domainAccessHandler.domainModel.nurseryAsString();
 		}
 	}
 }

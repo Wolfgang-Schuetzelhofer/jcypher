@@ -1,6 +1,11 @@
 Release Notes
 =======
 
+## 3.0.0-SNAPSHOT (under development, will be released as 3.0.0)
+**Fixed**
+- Domain Query - Select Expression on abstract types produced (in rare scenarios) wrong results.
+- Domain Query - Count Expression within Select Expression on abstract types produced (in rare scenarios) exceptions.
+
 ## 2.7.1
 **Fixed**
 - Properties of nodes in generic graph model which are of type short were not stored to the graph database (fix in JSONWriter).

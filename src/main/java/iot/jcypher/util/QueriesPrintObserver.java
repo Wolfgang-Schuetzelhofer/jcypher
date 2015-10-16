@@ -70,7 +70,10 @@ public class QueriesPrintObserver {
 		DOMAIN_INFO("DOMAIN INFO"),
 		DOM_QUERY("DOM QUERY"),
 		COUNT_QUERY("COUNT QUERY"),
-		CLOSURE_QUERY("CLOSURE");
+		CLOSURE_QUERY("CLOSURE"),
+		UPDATE_QUERY("UPDATE"),
+		QUERY_CONCRETE_TYPE("Query concrete type"),
+		LOAD_BY_TYPE_QUERY("LOAD-BY-TYPE");
 		
 		private String title;
 

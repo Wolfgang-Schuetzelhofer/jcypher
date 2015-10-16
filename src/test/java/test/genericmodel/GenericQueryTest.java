@@ -22,14 +22,11 @@ import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
-import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.genericmodel.DOType;
-import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.genericmodel.internal.DOWalker;
 import iot.jcypher.domainquery.CountQueryResult;
-import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -47,12 +44,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
-import test.domainquery.Population;
-import test.domainquery.model.AbstractArea;
-import test.domainquery.model.Area;
-import test.domainquery.model.Person;
-import test.domainquery.model.PointOfContact;
-import test.domainquery.model.Subject;
 import util.TestDataReader;
 
 //@Ignore
@@ -71,7 +62,7 @@ public class GenericQueryTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 //		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
 		
 		QueriesPrintObserver.addOutputStream(System.out);
@@ -138,6 +129,76 @@ public class GenericQueryTest extends AbstractTestSuite {
 	}
 	
 	@Test
+	public void testGenericQueryConcatenation_01() {
+		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		GDomainQuery q, q1;
+		
+		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENQUERY_03.txt");
+		
+		/** 01 ****************************************/
+		q = gda.createQuery();
+		DomainObjectMatch<DomainObject> smith = q.createMatch("iot.jcypher.samples.domain.people.model.Person");
+		
+		q.WHERE(smith.atttribute("lastName")).EQUALS("Smith");
+		//result = q.execute();
+		
+		q1 = gda.createQuery();
+		DomainObjectMatch<DomainObject> j_smith = q1.createMatchFrom(smith);
+		q1.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainQueryResult result1 = q1.execute();
+		
+		//List<Person> smithResult = result.resultOf(smith);
+		List<DomainObject> j_smithResult = result1.resultOf(j_smith);
+		
+		DOToString doToString = new DOToString(Format.PRETTY_1, 0);
+		DOWalker walker = new DOWalker(j_smithResult, doToString);
+		walker.walkDOGraph();
+		String str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData("CONCAT_01"), str);
+		
+		/** 02 ****************************************/
+		gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		q = gda.createQuery();
+		smith = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
+		q.ORDER(smith).BY("firstName");
+		
+		q.WHERE(smith.atttribute("lastName")).EQUALS("Smith");
+		//q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		DomainQueryResult result = q.execute();
+		
+		List<DomainObject> smithResult = result.resultOf(smith);
+		
+		q1 = gda.createQuery();
+		j_smith = q1.createMatchFor(smithResult, "iot.jcypher.samples.domain.people.model.Subject");
+		q1.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		result1 = q1.execute();
+		
+		j_smithResult = result1.resultOf(j_smith);
+		
+		doToString = new DOToString(Format.PRETTY_1, 0);
+		walker = new DOWalker(smithResult, doToString);
+		walker.walkDOGraph();
+		str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData("CONCAT_02"), str);
+		
+		doToString = new DOToString(Format.PRETTY_1, 0);
+		walker = new DOWalker(j_smithResult, doToString);
+		walker.walkDOGraph();
+		str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData("CONCAT_03"), str);
+		
+		return;
+	}
+	
+	@Test
 	public void testGenericQueryIntersection_01() {
 		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
 		GDomainQuery q;
@@ -168,8 +229,8 @@ public class GenericQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<DomainObject> siblings1PlusMatch = q.SELECT_FROM(personsMatch).ELEMENTS(
 				q.WHERE(siblingsMatch.COUNT()).GTE(1)
 		);
-		q.ORDER(siblings1Match).BY("lastName");
-		q.ORDER(siblings1Match).BY("firstName");
+		q.ORDER(siblings1PlusMatch).BY("lastName");
+		q.ORDER(siblings1PlusMatch).BY("firstName");
 		DomainQueryResult result = q.execute();
 		
 		List<DomainObject> siblings1 = result.resultOf(siblings1Match);
@@ -180,23 +241,23 @@ public class GenericQueryTest extends AbstractTestSuite {
 		DOWalker walker = new DOWalker(siblings1, doToString);
 		walker.walkDOGraph();
 		String str = doToString.getBuffer().toString();
-		System.out.println("\nObjectGraph:" + str);
+		//System.out.println("\nObjectGraph:" + str);
 		
 		assertEquals(tdr.getTestData("INTERSECTION_01"), str);
 		
-		doToString = new DOToString(Format.PRETTY_1, 1);
+		doToString = new DOToString(Format.PRETTY_1, 0);
 		walker = new DOWalker(siblings2, doToString);
 		walker.walkDOGraph();
 		str = doToString.getBuffer().toString();
-		System.out.println("\nObjectGraph:" + str);
+		//System.out.println("\nObjectGraph:" + str);
 		
 		assertEquals(tdr.getTestData("INTERSECTION_02"), str);
 		
-		doToString = new DOToString(Format.PRETTY_1, 1);
+		doToString = new DOToString(Format.PRETTY_1, 0);
 		walker = new DOWalker(siblings1Plus, doToString);
 		walker.walkDOGraph();
 		str = doToString.getBuffer().toString();
-		System.out.println("\nObjectGraph:" + str);
+		//System.out.println("\nObjectGraph:" + str);
 		
 		assertEquals(tdr.getTestData("INTERSECTION_03"), str);
 		

@@ -47,8 +47,10 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javassist.ClassPool;
 import javassist.CtClass;
@@ -79,6 +81,7 @@ public class DomainModel {
 	private TypeBuilderFactory typeBuilderFactory;
 	private DomainAccess domainAccess;
 	private Map<Object, DomainObject> nursery;
+	private ThreadLocal<TransactionState> transactionState;
 
 	DomainModel(String domName, String domLabel, DomainAccess domAccess) {
 		super();
@@ -87,6 +90,7 @@ public class DomainModel {
 		this.doTypes = new HashMap<String, DOType>();
 		this.unsaved = new ArrayList<DOType>();
 		this.domainAccess = domAccess;
+		this.transactionState = new ThreadLocal<TransactionState>();
 	}
 	
 	public DOType addType(Class<?> clazz) {
@@ -103,7 +107,7 @@ public class DomainModel {
 							Enum.class.isAssignableFrom(clazz) ? Kind.ENUM : Modifier.isAbstract(clazz
 							.getModifiers()) ? Kind.ABSTRACT_CLASS : Kind.CLASS;
 					InternalAccess.setKind(builder, kind);
-					this.unsaved.add(doType);
+					this.addToUnsaved(doType);
 					addFields(builder, clazz);
 					Class<?> sClass = clazz.getSuperclass();
 					DOType superType = null;
@@ -299,6 +303,13 @@ public class DomainModel {
 	public List<DOType> getUnsaved() {
 		return unsaved;
 	}
+	
+	public void addToUnsaved(DOType typ) {
+		this.unsaved.add(typ);
+		TransactionState txState = this.transactionState.get();
+		if (txState != null)
+			txState.unsaved.add(typ);
+	}
 
 	public void updatedToGraph() {
 		this.unsaved.clear();
@@ -325,13 +336,17 @@ public class DomainModel {
 		return clazz;
 	}
 	
-	public DomainObject createDomainObjectFor(Object obj) {
-		String typNm = obj.getClass().getName();
-		DOType typ = getDOType(typNm);
-		if (typ == null)
-			throw new RuntimeException("missing type: [".concat(typNm).concat("] in domain model"));
-		DomainObject dobj = InternalAccess.createDomainObject(typ); // don't add to nursery
-		InternalAccess.setRawObject(dobj, obj);
+	public DomainObject getCreateDomainObjectFor(Object obj) {
+		DomainObject dobj = getNurseryObject(obj);
+		if (dobj == null) {
+			String typNm = obj.getClass().getName();
+			DOType typ = getDOType(typNm);
+			if (typ == null)
+				throw new RuntimeException("missing type: [".concat(typNm).concat("] in domain model"));
+			dobj = InternalAccess.createDomainObject(typ); // don't add to nursery
+			InternalAccess.setRawObject(dobj, obj);
+		} else
+			removeNurseryObject(obj);
 		return dobj;
 	}
 
@@ -458,7 +473,7 @@ public class DomainModel {
 		if (this.doTypes.get(doType.getName()) == null) {
 			this.doTypes.put(doType.getName(), doType);
 			if (!doType.isBuildIn())
-				this.unsaved.add(doType);
+				this.addToUnsaved(doType);
 		}
 	}
 	
@@ -472,6 +487,12 @@ public class DomainModel {
 		if (this.nursery == null)
 			this.nursery = new IdentityHashMap<Object, DomainObject>();
 		this.nursery.put(raw, dobj);
+		TransactionState txState = this.transactionState.get();
+		if (txState != null) {
+			if (txState.nursery == null)
+				txState.nursery = new IdentityHashMap<Object, DomainObject>();
+			txState.nursery.put(raw, dobj);
+		}
 	}
 	
 	public DomainObject getNurseryObject(Object raw) {
@@ -480,8 +501,36 @@ public class DomainModel {
 		return null;
 	}
 	
+	public void removeNurseryObject(Object raw) {
+		if (this.nursery != null)
+			this.nursery.remove(raw);
+	}
+	
 	public void clearNursery() {
-		this.nursery.clear();
+		if (this.nursery != null)
+			this.nursery.clear();
+	}
+	
+	@SuppressWarnings("unchecked")
+	public void beginTx() {
+		if (this.transactionState.get() == null) {
+			TransactionState txState = new TransactionState();
+			txState.unsaved = (List<DOType>) ((ArrayList<DOType>) this.unsaved).clone();
+			if (this.nursery != null)
+				txState.nursery = (Map<Object, DomainObject>) ((HashMap<Object, DomainObject>)this.nursery).clone();
+			this.transactionState.set(txState);
+		}
+	}
+	
+	public void closeTx(boolean failed) {
+		TransactionState txState = this.transactionState.get();
+		if (txState != null) {
+			if (failed) {
+				this.unsaved = txState.unsaved;
+				this.nursery = txState.nursery;
+			}
+			this.transactionState.remove();
+		}
 	}
 
 	DomainAccess getDomainAccess() {
@@ -508,6 +557,36 @@ public class DomainModel {
 		sb.append('\n');
 		sb.append('}');
 		return sb.toString();
+	}
+	
+	public String nurseryAsString() {
+		if (this.nursery != null) {
+			List<String> keys = new ArrayList<String>();
+			Map<String, Integer> cont = new HashMap<String, Integer>();
+			Iterator<Object> it = this.nursery.keySet().iterator();
+			while(it.hasNext()) {
+				String nm = it.next().getClass().getName();
+				Integer cnt = cont.get(nm);
+				if (cnt == null)
+					cnt = new Integer(1);
+				else
+					cnt = new Integer(cnt.intValue() + 1);
+				cont.put(nm, cnt);
+			}
+			Iterator<Entry<String, Integer>> it_2 = cont.entrySet().iterator();
+			while(it_2.hasNext()) {
+				Entry<String, Integer> entry = (Entry<String, Integer>) it_2.next();
+				StringBuilder sb = new StringBuilder();
+				sb.append(entry.getKey());
+				sb.append('(');
+				sb.append(entry.getValue());
+				sb.append(')');
+				keys.add(sb.toString());
+			}
+			Collections.sort(keys);
+			return keys.toString();
+		}
+		return "null";
 	}
 	
 	/********************************************/
@@ -545,6 +624,11 @@ public class DomainModel {
 			ret.setSuperType(sType);
 			return ret;
 		}
-		
+	}
+	
+	/********************************************/
+	private static class TransactionState {
+		private List<DOType> unsaved;
+		private Map<Object, DomainObject> nursery;
 	}
 }
