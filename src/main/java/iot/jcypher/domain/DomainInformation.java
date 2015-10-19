@@ -17,7 +17,6 @@
 package iot.jcypher.domain;
 
 import iot.jcypher.database.IDBAccess;
-import iot.jcypher.domain.internal.DomainAccess;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 import iot.jcypher.query.JcQuery;
@@ -98,6 +97,19 @@ public class DomainInformation {
 			}
 		}
 		return resultList;
+	}
+	
+	/**
+	 * answer a list of names of DomainObjectTypes stored in the domain graph
+	 * @return a list of DomainObjectTypes
+	 */
+	public List<String> getDomainObjectTypeNames() {
+		List<DomainObjectType> types = getDomainObjectTypes();
+		List<String> typeNames = new ArrayList<String>(types.size());
+		for (DomainObjectType typ : types) {
+			typeNames.add(typ.getTypeName());
+		}
+		return typeNames;
 	}
 	
 	/**

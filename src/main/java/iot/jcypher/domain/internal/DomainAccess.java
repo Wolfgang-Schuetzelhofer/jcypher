@@ -342,6 +342,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 		@Override
 		public DOType getDomainObjectType(String typeName) {
+			domainAccessHandler.updateMappingsIfNeeded();
 			return domainAccessHandler.domainModel.getDOType(typeName);
 		}
 

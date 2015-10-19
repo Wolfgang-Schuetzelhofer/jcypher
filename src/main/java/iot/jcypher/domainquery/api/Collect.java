@@ -16,8 +16,6 @@
 
 package iot.jcypher.domainquery.api;
 
-import iot.jcypher.domain.genericmodel.DomainObject;
-import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domainquery.ast.CollectExpression;
 
 public class Collect extends APIObject {
@@ -40,30 +38,5 @@ public class Collect extends APIObject {
 		ce.setEnd(ret);
 		ce.getQueryExecutor().getDomainObjectMatches().add(ret);
 		return ret;
-	}
-	
-	/**
-	 * Return the collect result as a DomainObjectMatch of specified typ
-	 * (it represents a set of objects of that type).
-	 * <br/><b>AS_GENERIC</b> is used when the result is a generic domain object.
-	 * <br/>Note: <b>AS_GENERIC</b> cannot be used when the result's object type is a primitive type (e.g. String).
-	 * @param domainObjectType
-	 * @return a DomainObjectMatch
-	 */
-	public DomainObjectMatch<DomainObject> AS_GENERIC(String domainObjectTypeName) {
-		try {
-			CollectExpression ce = (CollectExpression)this.astObject;
-			InternalDomainAccess iAccess = ce.getQueryExecutor().getMappingInfo().getInternalDomainAccess();
-			iAccess.loadDomainInfoIfNeeded();
-			Class<?> clazz = iAccess.getClassForName(domainObjectTypeName);
-			DomainObjectMatch<?> delegate = AS(clazz);
-			DomainObjectMatch<DomainObject> ret = APIAccess.createDomainObjectMatch(DomainObject.class, delegate);
-			return ret;
-		} catch (Throwable e) {
-			if (e instanceof RuntimeException)
-				throw (RuntimeException)e;
-			else
-				throw new RuntimeException(e);
-		}
 	}
 }
