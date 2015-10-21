@@ -58,8 +58,6 @@ body{
 }
 
 .jc_nav {
-    border-right-style: groove;
-    border-right-width: 3px;
     padding-left: 1em;
     padding-right: 2em;
     text-align: right;
@@ -99,8 +97,6 @@ body{
 }
 
 .jc_nav_right {
-    border-left-style: groove;
-    border-left-width: 3px;
     padding-right: 1em;
     padding-left: 2em;
     text-align: left;
@@ -121,6 +117,8 @@ body{
     border-radius: 0.5em;
     padding-left: 0.5em;
     padding-right: 0.5em;
+    border-style: groove;
+    border-width: 3px;
 }
 
 .fz-header {
@@ -157,4 +155,27 @@ body{
     padding-top: 0.5em;
     font-style: italic
     
+}
+
+.fz-content_1 {
+    font-size: 1.2em;
+    padding-left: 2em;
+    font-style: italic;
+    padding-top: 0.1em;
+    padding-bottom: 0.1em;
+}
+
+.fz-content_2 {
+    font-size: 1.2em;
+    padding-left: 3em;
+    font-style: italic;
+    padding-top: 0.1em;
+    padding-bottom: 0.1em;
+}
+
+.fz-content_0 {
+    font-size: 1.2em;
+    padding-bottom: 0.5em;
+    padding-top: 0.2em;
+    font-style: italic
 }
