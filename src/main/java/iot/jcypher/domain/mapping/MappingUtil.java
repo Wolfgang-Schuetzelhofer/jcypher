@@ -63,14 +63,7 @@ public class MappingUtil {
 	}
 	
 	public static long dateToLong(Date date) {
-		long millis = date.getTime();
-		if (date instanceof java.sql.Date)
-			return millis;
-		else if (date instanceof Time)
-			return millis;
-		else if (date instanceof Timestamp)
-			return millis;
-		return (millis / 1000) * 1000;
+		return date.getTime();
 	}
 	
 	public static Date longToDate(long millis, Class<?> dateType) {

@@ -105,8 +105,9 @@ public class DomainQueryTest extends AbstractTestSuite {
 		long millis = 292517846786l;
 		Calendar cal = GregorianCalendar.getInstance();
 		cal.set(1960, 1, 8, 0, 0, 0);
+		cal.set(Calendar.MILLISECOND, 0);
 		Date date = cal.getTime();
-		long tm = (date.getTime() / 1000) * 1000;
+		long tm = date.getTime(); //(date.getTime() / 1000) * 1000;
 		dates.add(new Timestamp(tm));
 		dates.add(new Timestamp(millis));
 		DateHolder dh = new DateHolder("w", date);
@@ -114,8 +115,9 @@ public class DomainQueryTest extends AbstractTestSuite {
 		nhs.add(dh);
 		cal = GregorianCalendar.getInstance();
 		cal.set(1963, 9, 24, 0, 0, 0);
+		cal.set(Calendar.MILLISECOND, 0);
 		date = cal.getTime();
-		tm = (date.getTime() / 1000) * 1000;
+		tm = date.getTime(); //(date.getTime() / 1000) * 1000;
 		dates.add(new Timestamp(tm));
 		dh.setDates(dates);
 		DateHolder dh1 = new DateHolder("d", date);
@@ -775,6 +777,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		Calendar cal = GregorianCalendar.getInstance();
 		cal.set(1960, 1, 8, 0, 0, 0);
+		cal.set(Calendar.MILLISECOND, 0);
 		Date date = cal.getTime();
 		
 		q.WHERE(dateHolderMatch.atttribute("date")).EQUALS(date);
@@ -792,14 +795,16 @@ public class DomainQueryTest extends AbstractTestSuite {
 		List<Date> dates = new ArrayList<Date>();
 		cal = GregorianCalendar.getInstance();
 		cal.set(1960, 1, 8, 0, 0, 0);
+		cal.set(Calendar.MILLISECOND, 0);
 		date = cal.getTime();
-		long tm = (date.getTime() / 1000) * 1000;
+		long tm = date.getTime(); //(date.getTime() / 1000) * 1000;
 		dates.add(new Timestamp(tm));
 		dates.add(new Timestamp(millis));
 		cal = GregorianCalendar.getInstance();
 		cal.set(1963, 9, 24, 0, 0, 0);
+		cal.set(Calendar.MILLISECOND, 0);
 		date = cal.getTime();
-		tm = (date.getTime() / 1000) * 1000;
+		tm = date.getTime(); //(date.getTime() / 1000) * 1000;
 		dates.add(new Timestamp(tm));
 		
 		CompareUtil.equalsList(dates, dh.getDates());
@@ -812,6 +817,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		cal = GregorianCalendar.getInstance();
 		cal.set(1963, 9, 24, 0, 0, 0);
+		cal.set(Calendar.MILLISECOND, 0);
 		date = cal.getTime();
 		
 		q.WHERE(dateHolderMatch.atttribute("date")).EQUALS(date);

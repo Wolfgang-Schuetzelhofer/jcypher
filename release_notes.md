@@ -5,6 +5,7 @@ Release Notes
 **Fixed**
 - Domain Query - Select Expression on abstract types produced (in rare scenarios) wrong results.
 - Domain Query - Count Expression within Select Expression on abstract types produced (in rare scenarios) exceptions.
+- Unnecessary rounding of milliseconds when mapping Date instances removed.
 
 ## 2.7.1
 **Fixed**
