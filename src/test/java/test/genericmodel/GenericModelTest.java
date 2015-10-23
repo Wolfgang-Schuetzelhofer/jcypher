@@ -40,6 +40,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Properties;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -78,6 +79,11 @@ public class GenericModelTest extends AbstractTestSuite {
 		}
 		LoadUtil.loadPeopleDomain(dbAccess);
 		
+	}
+	
+	@AfterClass
+	public static void after() {
+		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.DOMAIN_INFO);
 	}
 	
 	@Test

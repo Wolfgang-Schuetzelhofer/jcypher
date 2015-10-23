@@ -40,6 +40,7 @@ import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 import java.util.List;
 import java.util.Properties;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -75,6 +76,12 @@ public class GenericQueryTest extends AbstractTestSuite {
 		// init db
 		initDB();
 		return;
+	}
+	
+	@AfterClass
+	public static void after() {
+		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.DOMAIN_INFO);
+		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.CLOSURE_QUERY);
 	}
 	
 	private static void initDB() {

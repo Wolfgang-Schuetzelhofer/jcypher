@@ -1,7 +1,10 @@
 Release Notes
 =======
 
-## 3.0.0-SNAPSHOT (under development, will be released as 3.0.0)
+## 3.0.0
+**New**
+- Generic Domain Model.
+
 **Fixed**
 - Domain Query - Select Expression on abstract types produced (in rare scenarios) wrong results.
 - Domain Query - Count Expression within Select Expression on abstract types produced (in rare scenarios) exceptions.

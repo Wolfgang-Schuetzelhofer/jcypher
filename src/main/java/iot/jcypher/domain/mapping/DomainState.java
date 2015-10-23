@@ -97,6 +97,8 @@ public class DomainState {
 					copyRelationsList(entry.getValue(), copiedRels));
 		}
 		
+		ret.surrogateState = this.surrogateState.createCopy(copiedRels, ret);
+		
 		return ret;
 	}
 	

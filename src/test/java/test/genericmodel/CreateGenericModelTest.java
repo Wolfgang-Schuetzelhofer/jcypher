@@ -46,6 +46,7 @@ import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Properties;
 
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -78,6 +79,13 @@ public class CreateGenericModelTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.QUERY_CONCRETE_TYPE, ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.LOAD_BY_TYPE_QUERY, ContentToObserve.CYPHER);
 		//QueriesPrintObserver.addToEnabledQueries(QueryToObserve.UPDATE_QUERY, ContentToObserve.CYPHER);
+	}
+	
+	@AfterClass
+	public static void after() {
+		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.DOMAIN_INFO);
+		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.QUERY_CONCRETE_TYPE);
+		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.LOAD_BY_TYPE_QUERY);
 	}
 	
 	@Test

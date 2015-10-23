@@ -2377,7 +2377,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 										domainObject);
 								ds.add_Id2Relation(
 										relat, rel.getId());
-								if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Map)
+								if (domainObject instanceof AbstractSurrogate)
 									context.surrogateChangeLog.added.add(relat);
 							}
 							if (domainObject instanceof AbstractSurrogate) {
