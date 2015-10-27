@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,14 +14,11 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.query.ast;
+package iot.jcypher.query.factories.clause;
 
-public enum ClauseType {
-	START, MATCH, OPTIONAL_MATCH, CREATE, CREATE_UNIQUE, USING_INDEX,
-	USING_SCAN, RETURN, WITH, WHERE, UNION, UNION_ALL,
-	CYPHER_NATIVE,
-	SET, DELETE, REMOVE, FOREACH,
-	CREATE_INDEX, DROP_INDEX,
-	SEPARATE,
-	CASE
+/**
+ * <div color='red' style="font-size:24px;color:red"><b><i>JCYPHER CLAUSE</i></b></div>
+ */
+public class CASE {
+
 }

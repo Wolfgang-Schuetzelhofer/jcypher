@@ -19,6 +19,7 @@ package iot.jcypher.graph;
 import java.util.Collections;
 import java.util.List;
 
+import iot.jcypher.concurrency.Locking;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.result.JcError;
@@ -44,6 +45,16 @@ public class Graph {
 		Graph ret = rh.getGraph();
 		ret.setSyncState(SyncState.NEW);
 		return ret;
+	}
+	
+	/**
+	 * Set the locking strategy (e.g. Locking.OPTIMISTIC, ...).
+	 * @param locking
+	 * @return the Graph (self) to allow fluent method concatenation.
+	 */
+	public Graph setLockingStrategy(Locking locking) {
+		this.resultHandler.setLockingStrategy(locking);
+		return this;
 	}
 	
 	/**

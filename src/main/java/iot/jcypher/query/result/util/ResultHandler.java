@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.result.util;
 
+import iot.jcypher.concurrency.Locking;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
@@ -80,6 +81,7 @@ public class ResultHandler {
 	private IDBAccess dbAccess;
 	
 	private Graph graph;
+	private Locking lockingStrategy;
 	private LocalElements localElements;
 	private JcQueryResult queryResult;
 	// needed to support multiple queries
@@ -110,11 +112,16 @@ public class ResultHandler {
 		this.dbAccess = dbAccess;
 		this.queryResult = queryResult;
 		this.queryIndex = queryIndex;
+		this.lockingStrategy = Locking.NONE;
 		this.localElements = new LocalElements();
 		this.graph = GrAccess.createGraph(this);
 		GrAccess.setGraphState(this.graph, SyncState.SYNC);
 	}
 	
+	public void setLockingStrategy(Locking lockingStrategy) {
+		this.lockingStrategy = lockingStrategy;
+	}
+
 	public LocalElements getLocalElements() {
 		return localElements;
 	}

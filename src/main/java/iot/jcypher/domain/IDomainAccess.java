@@ -16,6 +16,7 @@
 
 package iot.jcypher.domain;
 
+import iot.jcypher.concurrency.Locking;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.transaction.ITransaction;
@@ -140,6 +141,13 @@ public interface IDomainAccess {
 	 * @return an instance of ITransaction
 	 */
 	public ITransaction beginTX();
+	
+	/**
+	 * Set the locking strategy (e.g. Locking.OPTIMISTIC, ...).
+	 * @param locking
+	 * @return the IDomainAccess instance (self) to allow fluent method concatenation.
+	 */
+	public IDomainAccess setLockingStrategy(Locking locking);
 	
 	/**
 	 * Answer a domain access object which works with a generic domain model.

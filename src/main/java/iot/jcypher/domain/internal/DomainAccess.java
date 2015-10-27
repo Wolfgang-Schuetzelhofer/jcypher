@@ -16,6 +16,7 @@
 
 package iot.jcypher.domain.internal;
 
+import iot.jcypher.concurrency.Locking;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.IDomainAccess;
@@ -231,6 +232,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	}
 	
 	@Override
+	public IDomainAccess setLockingStrategy(Locking locking) {
+		this.domainAccessHandler.lockingStrategy = locking;
+		return this;
+	}
+
+	@Override
 	public IGenericDomainAccess getGenericDomainAccess() {
 		if (this.genericDomainAccess == null)
 			this.genericDomainAccess = new GenericDomainAccess();
@@ -403,6 +410,13 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		public ITransaction beginTX() {
 			return DomainAccess.this.beginTX();
 		}
+
+		@Override
+		public IGenericDomainAccess setLockingStrategy(Locking locking) {
+			domainAccessHandler.lockingStrategy = locking;
+			return this;
+		}
+		
 	}
 
 	/**********************************************************************/
@@ -431,6 +445,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private IDBAccess dbAccess;
 		private DomainState domainState;
 		private ThreadLocal<DomainState> transactionState;
+		private Locking lockingStrategy;
 		private Map<Class<?>, ObjectMapping> mappings;
 		
 		// for a root level type in a query, all possible variants (subclasses) must be considered
@@ -451,6 +466,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.mappings = new HashMap<Class<?>, ObjectMapping>();
 			this.type2CompoundTypeMap = new HashMap<Class<?>, CompoundObjectType>();
 			this.transactionState = new ThreadLocal<DomainState>();
+			this.lockingStrategy = Locking.NONE;
 			this.domainModel = iot.jcypher.domain.genericmodel.internal.InternalAccess
 					.createDomainModel(this.domainName, getDomainLabel(), DomainAccess.this);
 		}

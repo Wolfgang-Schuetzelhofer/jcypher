@@ -16,6 +16,7 @@
 
 package iot.jcypher.domain;
 
+import iot.jcypher.concurrency.Locking;
 import iot.jcypher.domain.genericmodel.DOType;
 import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
 import iot.jcypher.domain.genericmodel.DomainObject;
@@ -144,6 +145,13 @@ public interface IGenericDomainAccess {
 	 * @return an instance of ITransaction
 	 */
 	public ITransaction beginTX();
+	
+	/**
+	 * Set the locking strategy (e.g. Locking.OPTIMISTIC, ...).
+	 * @param locking
+	 * @return the IGenericDomainAccess instance (self) to allow fluent method concatenation.
+	 */
+	public IGenericDomainAccess setLockingStrategy(Locking locking);
 	
 	/**
 	 * Answer a factory for retrieving type builders. Type builders are the means to specify domain object types

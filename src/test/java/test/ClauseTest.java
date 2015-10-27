@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,11 @@ import util.TestDataReader;
 //@Ignore
 public class ClauseTest extends AbstractTestSuite {
 
+	@Test
+	public void testCase_01() {
+		
+	}
+	
 	@Test
 	public void testStart_01() {
 		String result;
@@ -450,7 +455,6 @@ public class ClauseTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testPredicateFunctions_Where_01() {
 		String result;
