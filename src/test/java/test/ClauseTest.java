@@ -16,13 +16,18 @@
 
 package test;
 
+import org.junit.Test;
+
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.JC;
+import iot.jcypher.query.factories.clause.CASE;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.CREATE_INDEX;
 import iot.jcypher.query.factories.clause.CREATE_UNIQUE;
 import iot.jcypher.query.factories.clause.DO;
 import iot.jcypher.query.factories.clause.DROP_INDEX;
+import iot.jcypher.query.factories.clause.ELSE;
+import iot.jcypher.query.factories.clause.END;
 import iot.jcypher.query.factories.clause.FOR_EACH;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.NATIVE;
@@ -31,6 +36,7 @@ import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.factories.clause.UNION;
 import iot.jcypher.query.factories.clause.USING;
+import iot.jcypher.query.factories.clause.WHEN;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.factories.clause.WITH;
 import iot.jcypher.query.factories.xpression.C;
@@ -46,9 +52,6 @@ import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.writer.Format;
-
-import org.junit.Test;
-
 import util.TestDataReader;
 
 //@Ignore
@@ -56,7 +59,53 @@ public class ClauseTest extends AbstractTestSuite {
 
 	@Test
 	public void testCase_01() {
+		String result;
+		String testId;
+		setDoPrint(true);
+		setDoAssert(true);
 		
+		TestDataReader tdr = new TestDataReader("/test/Test_CASE_01.txt");
+		
+		JcNode n = new JcNode("n");
+		JcString john = new JcString("John", "John");
+		JcString angie = new JcString("Angie", "Angie");
+		JcString notFound = new JcString("notFound", "notFound");
+		
+		/*******************************/
+		IClause[] clauses = new IClause[] {
+				MATCH.node(n),
+				RETURN.value(n),
+				CASE.resultOf(n.property("firstName")),
+				WHEN.value().EQUALS("John"),
+					NATIVE.cypher("1"),
+				WHEN.value().EQUALS("Angie"),
+					NATIVE.cypher("2"),
+				ELSE.perform(),
+					NATIVE.cypher("-1"),
+				END.caseXpr()
+		};
+		
+		result = print(clauses, Format.PRETTY_1);
+		testId = "CASE_01";
+		
+		/*******************************/
+		clauses = new IClause[] {
+				MATCH.node(n),
+				RETURN.value(n),
+				CASE.result(),
+				WHEN.valueOf(n.property("firstName")).EQUALS("John"),
+					NATIVE.cypher("1"),
+				WHEN.valueOf(n.property("firstName")).EQUALS("Angie"),
+					NATIVE.cypher("2"),
+				ELSE.perform(),
+					NATIVE.cypher("-1"),
+				END.caseXpr()
+		};
+		
+		result = print(clauses, Format.PRETTY_1);
+		testId = "CASE_02";
+		
+		return;
 	}
 	
 	@Test

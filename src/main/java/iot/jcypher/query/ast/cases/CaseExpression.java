@@ -16,10 +16,26 @@
 
 package iot.jcypher.query.ast.cases;
 
-public class CaseExpression {
+import iot.jcypher.query.ast.ASTNode;
+import iot.jcypher.query.values.JcValue;
 
-	public CaseExpression() {
-		// TODO Auto-generated constructor stub
+public class CaseExpression extends ASTNode {
+
+	private JcValue caseValue;
+
+	public JcValue getCaseValue() {
+		return caseValue;
 	}
 
+	public void setCaseValue(JcValue caseValue) {
+		this.caseValue = caseValue;
+	}
+	
+	/****************************************/
+	public static class WhenJcValue extends JcValue {
+
+		public WhenJcValue() {
+			super(null);
+		}
+	}
 }

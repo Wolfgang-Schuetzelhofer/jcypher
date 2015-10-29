@@ -17,11 +17,14 @@
 package iot.jcypher.query.api.cases;
 
 import iot.jcypher.query.api.APIObject;
+import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.ast.cases.CaseExpression;
 
-public class CaseTerminal extends APIObject {
+public class CaseTerminal extends APIObject implements IClause {
 
-	public CaseTerminal() {
-		// TODO Auto-generated constructor stub
+	CaseTerminal(CaseExpression cx) {
+		super();
+		this.astNode = cx;
 	}
 
 }

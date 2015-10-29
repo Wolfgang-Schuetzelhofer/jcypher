@@ -20,38 +20,23 @@ import iot.jcypher.query.api.cases.CaseFactory;
 import iot.jcypher.query.api.cases.CaseTerminal;
 import iot.jcypher.query.ast.ClauseType;
 import iot.jcypher.query.ast.cases.CaseExpression;
-import iot.jcypher.query.values.JcValue;
 
 /**
- * <div color='red' style="font-size:24px;color:red"><b><i>JCYPHER CLAUSE</i></b></div>
+ * <div color='red' style="font-size:24px;color:red"><b><i>JCYPHER CLAUSE - ELSE part of a CASE expression</i></b></div>
  */
-public class CASE {
+public class ELSE {
 
 	/**
 	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
-	 * <div color='red' style="font-size:18px;color:red"><i>start a CASE expression on the result of the preceding RETURN statement</i></div>
-	 * <div color='red' style="font-size:18px;color:red"><i>e.g. <b>CASE.result()</b></i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>last part of a CASE expression</i></div>
+	 * <br/>WHEN...
+	 * <br/>ELSE.perform() ...</b></i></div>
 	 * <br/>
 	 */
-	public static CaseTerminal result() {
+	public static CaseTerminal perform() {
 		CaseExpression cx = new CaseExpression();
 		CaseTerminal ret = CaseFactory.createCaseTerminal(cx);
-		cx.setClauseType(ClauseType.CASE);
-		return ret;
-	}
-	
-	/**
-	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
-	 * <div color='red' style="font-size:18px;color:red"><i>start a CASE expression on a value calculated from the result of the preceding RETURN statement</i></div>
-	 * <div color='red' style="font-size:18px;color:red"><i>e.g. <b>RETURN.value(n)
-	 * <br/>CASE.result(n.property("name"))</b></i></div>
-	 * <br/>
-	 */
-	public static CaseTerminal resultOf(JcValue value) {
-		CaseExpression cx = new CaseExpression();
-		CaseTerminal ret = CaseFactory.createCaseTerminal(cx);
-		cx.setClauseType(ClauseType.CASE);
-		cx.setCaseValue(value);
+		cx.setClauseType(ClauseType.ELSE);
 		return ret;
 	}
 }
