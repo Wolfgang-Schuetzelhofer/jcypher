@@ -16,8 +16,6 @@
 
 package test;
 
-import org.junit.Test;
-
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.JC;
 import iot.jcypher.query.factories.clause.CASE;
@@ -52,10 +50,54 @@ import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.writer.Format;
+
+import org.junit.Test;
+
 import util.TestDataReader;
 
 //@Ignore
 public class ClauseTest extends AbstractTestSuite {
+	
+	@Test
+	public void testCase_02() {
+		String result;
+		String testId;
+		setDoPrint(true);
+		setDoAssert(true);
+		
+		TestDataReader tdr = new TestDataReader("/test/Test_CASE_01.txt");
+		
+		JcNode n = new JcNode("n");
+		JcValue x = new JcValue("x");
+		
+		/*******************************/
+		IClause[] clauses = new IClause[] {
+				MATCH.node(n).label("Person"),
+				WHERE.valueOf(n.property("lastName")).EQUALS("Smith"),
+				FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+						CASE.result(),
+						WHEN.valueOf(n.property("firstName")).EQUALS("John"),
+							NATIVE.cypher("[1]"),
+						ELSE.perform(),
+							NATIVE.cypher("[]"),
+						END.caseXpr()
+				})).DO().SET(n.property("role")).to("Father"),
+				FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+						CASE.result(),
+						WHEN.valueOf(n.property("firstName")).EQUALS("Caroline"),
+							NATIVE.cypher("[1]"),
+						ELSE.perform(),
+							NATIVE.cypher("[]"),
+						END.caseXpr()
+				})).DO().SET(n.property("role")).to("Mother"),
+				RETURN.value(n)
+		};
+		
+		result = print(clauses, Format.PRETTY_1);
+		testId = "CASE_04";
+		
+		return;
+	}
 
 	@Test
 	public void testCase_01() {
@@ -67,18 +109,16 @@ public class ClauseTest extends AbstractTestSuite {
 		TestDataReader tdr = new TestDataReader("/test/Test_CASE_01.txt");
 		
 		JcNode n = new JcNode("n");
-		JcString john = new JcString("John", "John");
-		JcString angie = new JcString("Angie", "Angie");
-		JcString notFound = new JcString("notFound", "notFound");
 		
 		/*******************************/
 		IClause[] clauses = new IClause[] {
-				MATCH.node(n),
+				MATCH.node(n).label("Person"),
+				WHERE.valueOf(n.property("lastName")).EQUALS("Smith"),
 				RETURN.value(n),
 				CASE.resultOf(n.property("firstName")),
 				WHEN.value().EQUALS("John"),
 					NATIVE.cypher("1"),
-				WHEN.value().EQUALS("Angie"),
+				WHEN.value().EQUALS("Angelina"),
 					NATIVE.cypher("2"),
 				ELSE.perform(),
 					NATIVE.cypher("-1"),
@@ -90,12 +130,13 @@ public class ClauseTest extends AbstractTestSuite {
 		
 		/*******************************/
 		clauses = new IClause[] {
-				MATCH.node(n),
+				MATCH.node(n).label("Person"),
+				WHERE.valueOf(n.property("lastName")).EQUALS("Smith"),
 				RETURN.value(n),
 				CASE.result(),
 				WHEN.valueOf(n.property("firstName")).EQUALS("John"),
 					NATIVE.cypher("1"),
-				WHEN.valueOf(n.property("firstName")).EQUALS("Angie"),
+				WHEN.valueOf(n.property("firstName")).EQUALS("Angelina"),
 					NATIVE.cypher("2"),
 				ELSE.perform(),
 					NATIVE.cypher("-1"),
@@ -104,6 +145,26 @@ public class ClauseTest extends AbstractTestSuite {
 		
 		result = print(clauses, Format.PRETTY_1);
 		testId = "CASE_02";
+		
+		/*******************************/
+		JcNumber res = new JcNumber("result");
+		
+		clauses = new IClause[] {
+				MATCH.node(n).label("Person"),
+				WHERE.valueOf(n.property("lastName")).EQUALS("Smith"),
+				RETURN.value(n),
+				CASE.result(),
+				WHEN.valueOf(n.property("firstName")).EQUALS("John"),
+					NATIVE.cypher("1"),
+				WHEN.valueOf(n.property("firstName")).EQUALS("Angelina"),
+					NATIVE.cypher("2"),
+				ELSE.perform(),
+					NATIVE.cypher("-1"),
+				END.caseXpr().AS(res)
+		};
+		
+		result = print(clauses, Format.PRETTY_1);
+		testId = "CASE_03";
 		
 		return;
 	}

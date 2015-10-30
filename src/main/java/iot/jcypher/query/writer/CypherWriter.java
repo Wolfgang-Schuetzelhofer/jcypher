@@ -333,6 +333,8 @@ public class CypherWriter {
 		
 		/*** CASE CLAUSE **************************************/
 		else if (clauseType == ClauseType.CASE) {
+			if (context.previousClause == ClauseType.RETURN)
+				context.buffer.append(',');
 			if (hasStart)
 				Pretty.writePreClauseSeparator(context, context.buffer);
 			context.buffer.append("CASE");
@@ -364,7 +366,8 @@ public class CypherWriter {
 			if (hasStart)
 				Pretty.writePreClauseSeparator(context, context.buffer);
 			context.buffer.append(clauseType.name());
-			//Pretty.writePostClauseSeparator(context, context.buffer);
+			Pretty.writePostClauseSeparator(context, context.buffer);
+			CaseCypherWriter.toEndExpression((CaseExpression)astNode, context);
 		}
 		
 		context.previousClause = context.currentClause;
@@ -462,6 +465,19 @@ public class CypherWriter {
 			if (collectExpression.getIterationVariable() != null) {
 				ValueWriter.toValueExpression(collectExpression.getIterationVariable(), context, context.buffer);
 				context.buffer.append(" IN ");
+			}
+			
+			if (collectExpression.getCreationClauses() != null) {
+				Format orgFormat = context.cypherFormat;
+				ClauseType curClause = context.currentClause;
+				ClauseType prevClause = context.previousClause;
+				context.cypherFormat = Format.NONE;
+				context.previousClause = null;
+				context.currentClause = null;
+				CypherWriter.toCypherExpression(collectExpression.getCreationClauses(), 0, context);
+				context.cypherFormat = orgFormat;
+				context.previousClause = prevClause;
+				context.currentClause = curClause;
 			}
 			
 			CollectionSpec collSpec = collectExpression.getCollectionToOperateOn();
@@ -1087,6 +1103,13 @@ public class CypherWriter {
 		
 		private static void toWhenExpression(PredicateExpression px, WriterContext context) {
 			PredicateCypherWriter.toCypherExpression(px, context);
+		}
+		
+		private static void toEndExpression(CaseExpression cx, WriterContext context) {
+			if (cx.getEndAlias() != null) {
+				context.buffer.append(" AS ");
+				ValueWriter.toValueExpression(cx.getEndAlias(), context, context.buffer);
+			}
 		}
 	}
 	

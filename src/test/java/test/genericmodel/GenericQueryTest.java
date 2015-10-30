@@ -80,6 +80,10 @@ public class GenericQueryTest extends AbstractTestSuite {
 	
 	@AfterClass
 	public static void after() {
+		if (dbAccess != null) {
+			dbAccess.close();
+			dbAccess = null;
+		}
 		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.DOMAIN_INFO);
 		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.CLOSURE_QUERY);
 	}

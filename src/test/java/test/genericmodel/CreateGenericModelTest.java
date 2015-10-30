@@ -83,6 +83,10 @@ public class CreateGenericModelTest extends AbstractTestSuite {
 	
 	@AfterClass
 	public static void after() {
+		if (dbAccess != null) {
+			dbAccess.close();
+			dbAccess = null;
+		}
 		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.DOMAIN_INFO);
 		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.QUERY_CONCRETE_TYPE);
 		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.LOAD_BY_TYPE_QUERY);

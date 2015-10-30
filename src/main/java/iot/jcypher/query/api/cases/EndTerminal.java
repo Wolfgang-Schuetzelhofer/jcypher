@@ -16,15 +16,28 @@
 
 package iot.jcypher.query.api.cases;
 
+import iot.jcypher.query.api.APIObject;
+import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.ast.cases.CaseExpression;
+import iot.jcypher.query.values.JcValue;
 
-public class CaseFactory {
+public class EndTerminal extends APIObject implements IClause {
 
-	public static CaseTerminal createCaseTerminal(CaseExpression cx) {
-		return new CaseTerminal(cx);
+	EndTerminal(CaseExpression cx) {
+		super();
+		this.astNode = cx;
 	}
-	
-	public static EndTerminal createEndTerminal(CaseExpression cx) {
-		return new EndTerminal(cx);
+
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>specify an alias for the result</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>you need to do this if you want to return a result from the CASE statement</i></div>
+	 * <br/>
+	 */
+	public CaseTerminal AS(JcValue alias) {
+		CaseExpression cx = (CaseExpression) this.astNode;
+		cx.setEndAlias(alias);
+		CaseTerminal ret = CaseFactory.createCaseTerminal(cx);
+		return ret;
 	}
 }

@@ -83,6 +83,10 @@ public class GenericModelTest extends AbstractTestSuite {
 	
 	@AfterClass
 	public static void after() {
+		if (dbAccess != null) {
+			dbAccess.close();
+			dbAccess = null;
+		}
 		QueriesPrintObserver.removeFromEnabledQueries(QueryToObserve.DOMAIN_INFO);
 	}
 	

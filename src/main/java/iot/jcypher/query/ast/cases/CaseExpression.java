@@ -22,6 +22,7 @@ import iot.jcypher.query.values.JcValue;
 public class CaseExpression extends ASTNode {
 
 	private JcValue caseValue;
+	private JcValue endAlias;
 
 	public JcValue getCaseValue() {
 		return caseValue;
@@ -31,6 +32,14 @@ public class CaseExpression extends ASTNode {
 		this.caseValue = caseValue;
 	}
 	
+	public JcValue getEndAlias() {
+		return endAlias;
+	}
+
+	public void setEndAlias(JcValue endAlias) {
+		this.endAlias = endAlias;
+	}
+
 	/****************************************/
 	public static class WhenJcValue extends JcValue {
 

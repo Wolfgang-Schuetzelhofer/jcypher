@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.ast.collection;
 
+import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.ast.ASTNode;
 import iot.jcypher.query.values.JcValue;
 
@@ -26,6 +27,7 @@ public class CollectExpression extends ASTNode {
 	private JcValue iterationVariable;
 	private CollectionSpec collectionToOperateOn;
 	private EvalExpression evalExpression;
+	private IClause[] creationClauses;
 	
 	public CollectXpressionType getType() {
 		return type;
@@ -51,6 +53,14 @@ public class CollectExpression extends ASTNode {
 		this.collectionToOperateOn = collectionToOperateOn;
 	}
 
+	public IClause[] getCreationClauses() {
+		return creationClauses;
+	}
+
+	public void setCreationClauses(IClause[] creationClauses) {
+		this.creationClauses = creationClauses;
+	}
+
 	public JcValue getIterationVariable() {
 		return iterationVariable;
 	}
@@ -71,6 +81,7 @@ public class CollectExpression extends ASTNode {
 	public enum CollectXpressionType {
 		EXTRACT, COLLECT, FILTER, REDUCE, TAIL, NODES, RELATIONS, LABELS,
 		PATTERN_EXPRESSION, PREDICATE_FUNCTION,
-		FOREACH
+		FOREACH,
+		CREATE
 	}
 }

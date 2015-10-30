@@ -18,6 +18,7 @@ package iot.jcypher.query.factories.clause;
 
 import iot.jcypher.query.api.cases.CaseFactory;
 import iot.jcypher.query.api.cases.CaseTerminal;
+import iot.jcypher.query.api.cases.EndTerminal;
 import iot.jcypher.query.ast.ClauseType;
 import iot.jcypher.query.ast.cases.CaseExpression;
 
@@ -33,9 +34,9 @@ public class END {
 	 * <br/>ELSE.perform() ...</b></i></div>
 	 * <br/>
 	 */
-	public static CaseTerminal caseXpr() {
+	public static EndTerminal caseXpr() {
 		CaseExpression cx = new CaseExpression();
-		CaseTerminal ret = CaseFactory.createCaseTerminal(cx);
+		EndTerminal ret = CaseFactory.createEndTerminal(cx);
 		cx.setClauseType(ClauseType.END);
 		return ret;
 	}

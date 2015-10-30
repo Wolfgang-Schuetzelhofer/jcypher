@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.factories.xpression;
 
+import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.collection.CFactory;
 import iot.jcypher.query.api.collection.CFrom;
 import iot.jcypher.query.api.collection.CTerminal;
@@ -40,6 +41,28 @@ public class C {
 	 */
 	public static EXProperty<CollectFrom> COLLECT() {
 		return CFactory.COLLECT();
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>create a collection using a list of clauses.</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>This allows to use complex statements as e.g. CASE WHEN ... to create collections</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. ...
+	 * <pre>C.CREATE(new IClause[]{
+	 *	CASE.result(),
+	 *	WHEN.valueOf(n.property("firstName")).EQUALS("John"),
+	 *	  NATIVE.cypher("[1]"),
+	 *	ELSE.perform(),
+	 *	  NATIVE.cypher("[]"),
+	 *	END.caseXpr()
+	 *	})</i></div></pre>
+	 *<div color='red' style="font-size:18px;color:red"><i>This will create an array of size 1 if property firstName equals 'John'
+	 * and an empty array otherwise.
+	 * <br/>You can then e.g. use a FOR_EACH loop to conditionally execute statements.</i></div>
+	 * <br/>
+	 */
+	public static CTerminal CREATE(IClause[] clauses) {
+		return CFactory.CREATE(clauses);
 	}
 	
 	/**

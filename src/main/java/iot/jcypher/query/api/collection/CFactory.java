@@ -18,6 +18,7 @@ package iot.jcypher.query.api.collection;
 
 import iot.jcypher.query.api.APIObject;
 import iot.jcypher.query.api.APIObjectAccess;
+import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.ast.ASTNode;
 import iot.jcypher.query.ast.collection.CollectExpression;
 import iot.jcypher.query.ast.collection.CollectionSpec;
@@ -76,6 +77,15 @@ public class CFactory {
 		collXpr.setType(CollectXpressionType.TAIL);
 		
 		Collection ret = new Collection(collXpr);
+		return ret;
+	}
+	
+	public static CTerminal CREATE(IClause[] clauses) {
+		CollectExpression collXpr = new CollectExpression();
+		collXpr.setType(CollectXpressionType.CREATE);
+		collXpr.setCreationClauses(clauses);
+		
+		CTerminal ret = new CTerminal(collXpr);
 		return ret;
 	}
 	
