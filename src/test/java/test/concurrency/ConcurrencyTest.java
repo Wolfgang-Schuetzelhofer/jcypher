@@ -16,6 +16,7 @@
 
 package test.concurrency;
 
+import iot.jcypher.concurrency.Locking;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -60,22 +61,25 @@ public class ConcurrencyTest extends AbstractTestSuite {
 	private static List<Object> storedDomainObjects;
 	
 	@Test
-	public void testConcurrency_temp() {
-		
-	}
-	
-	@Test
 	public void testConcurrency_01() {
-		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
+				.setLockingStrategy(Locking.OPTIMISTIC);
 		DomainQuery q = da1.createQuery();
 		DomainObjectMatch<Person> j_smithMatch = q.createMatch(Person.class);
 
 		q.WHERE(j_smithMatch.atttribute("lastName")).EQUALS("Smith");
-		//q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		q.WHERE(j_smithMatch.atttribute("firstName")).EQUALS("John");
 		
 		DomainQueryResult result = q.execute();
 		
-		List<Person> j_smith = result.resultOf(j_smithMatch);
+		Person j_smith = result.resultOf(j_smithMatch).get(0);
+		j_smith.setFirstName("Johnny");
+		
+		List<JcError> errors = da1.store(j_smith);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 		
 		return;
 	}
@@ -102,18 +106,20 @@ public class ConcurrencyTest extends AbstractTestSuite {
 		
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.COUNT_QUERY, ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOM_QUERY, ContentToObserve.CYPHER);
+		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.UPDATE_QUERY, ContentToObserve.CYPHER);
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-//		errors = da.store(storedDomainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
+				.setLockingStrategy(Locking.OPTIMISTIC);
+		errors = da.store(storedDomainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 	}
 	
 	@AfterClass

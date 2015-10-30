@@ -77,6 +77,8 @@ import javax.json.JsonValue;
 import javax.json.JsonValue.ValueType;
 
 public class ResultHandler {
+	
+	private static final String lockVersionProperty = "_c_version_";
 
 	private IDBAccess dbAccess;
 	
@@ -93,6 +95,8 @@ public class ResultHandler {
 	private Map<Long, GrRelation> relationsById;
 	// contains changed and removed (deleted) relations
 	private Map<Long, GrRelation> changedRelationsById;
+	// contains element versions if Locking is activated
+	private ElementVersions elementVersions;
 	private Map<String, List<GrNode>> nodeColumns;
 	private Map<String, List<GrRelation>> relationColumns;
 	private Map<String, List<GrPath>> pathColumns;
@@ -1005,6 +1009,8 @@ public class ResultHandler {
 			for (GrProperty prop : node.getProperties()) {
 				create = create.property(prop.getName()).value(prop.getValue());
 			}
+			if (lockingStrategy == Locking.OPTIMISTIC)
+				create = create.property(ResultHandler.lockVersionProperty).value(0);
 			clauses.add(create);
 			localNodeMap.put(node, n);
 		}
@@ -1026,6 +1032,8 @@ public class ResultHandler {
 			for (GrProperty prop : relation.getProperties()) {
 				create = create.property(prop.getName()).value(prop.getValue());
 			}
+			if (lockingStrategy == Locking.OPTIMISTIC)
+				create = create.property(ResultHandler.lockVersionProperty).value(0);
 			createRelationClauses.add(create.node(en));
 		}
 		
@@ -1083,6 +1091,8 @@ public class ResultHandler {
 			List<IClause> clauses = new ArrayList<IClause>();
 			clauses.add(buildStartClause(element));
 			clauses.addAll(buildChangedPropertiesClauses(element));
+			if (lockingStrategy == Locking.OPTIMISTIC)
+				clauses.add(buildVersionPropertyClauses(element));
 			clauses.addAll(buildChangedLabelsClauses(element));
 			IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
 			JcQuery query = new JcQuery();
@@ -1157,6 +1167,31 @@ public class ResultHandler {
 			return ret;
 		}
 		
+		private IClause buildVersionPropertyClauses(GrPropertyContainer element) {
+				if (elementVersions == null)
+					elementVersions = new ElementVersions();
+				int oldVersion;
+				GrProperty prop = element.getProperty(ResultHandler.lockVersionProperty);
+				if (prop != null) {
+					oldVersion = ((BigDecimal)prop.getValue()).intValue();
+					prop.setValue(oldVersion + 1);
+				} else {
+					oldVersion = -1;
+					prop = element.addProperty(ResultHandler.lockVersionProperty, oldVersion + 1);
+				}
+				JcElement elem = null;
+				if (element instanceof GrNode) {
+					elementVersions.nodeVersions.put(element, oldVersion);
+					elem = new JcNode("elem");
+				} else if (element instanceof GrRelation) {
+					elementVersions.nodeVersions.put(element, oldVersion);
+					elem = new JcRelation("elem");
+				}
+				
+				IClause clause = DO.SET(elem.property(prop.getName())).to(prop.getValue());
+				return clause;
+		}
+		
 		/*************************************/
 		private class GrNode2JcNode {
 			private GrNode grNode;
@@ -1180,6 +1215,18 @@ public class ResultHandler {
 				this.jcRelation = jcRelation;
 			}
 		}
+	}
+	
+	/**************************************/
+	private class ElementVersions {
+		
+		private ElementVersions() {
+			super();
+			this.nodeVersions = new HashMap<GrPropertyContainer, Integer>();
+			this.relationVersions = new HashMap<GrPropertyContainer, Integer>();
+		}
+		private Map<GrPropertyContainer, Integer> nodeVersions;
+		private Map<GrPropertyContainer, Integer> relationVersions;
 	}
 	
 	/**************************************/

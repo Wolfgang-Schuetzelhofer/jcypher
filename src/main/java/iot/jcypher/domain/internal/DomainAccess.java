@@ -964,6 +964,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			
 			if (graph == null) // no nodes loaded from db
 				graph = Graph.create(this.dbAccess);
+			graph.setLockingStrategy(this.lockingStrategy);
 			
 			context.domObj2Node = new HashMap<Object, GrNode>(
 					context.domainObjects.size());
