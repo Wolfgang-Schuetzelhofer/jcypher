@@ -1,3 +1,46 @@
 ----CASE_01:
-START n = node:Persons(name = 'Tobias')
+MATCH (n:Person)
+WHERE n.lastName = 'Smith'
+RETURN n,
+CASE n.firstName
+WHEN 'John' THEN
+1
+WHEN 'Angelina' THEN
+2
+ELSE
+-1
+END 
+------------------------------------------------------------
+----CASE_02:
+MATCH (n:Person)
+WHERE n.lastName = 'Smith'
+RETURN n,
+CASE 
+WHEN n.firstName = 'John' THEN
+1
+WHEN n.firstName = 'Angelina' THEN
+2
+ELSE
+-1
+END 
+------------------------------------------------------------
+----CASE_03:
+MATCH (n:Person)
+WHERE n.lastName = 'Smith'
+RETURN n,
+CASE 
+WHEN n.firstName = 'John' THEN
+1
+WHEN n.firstName = 'Angelina' THEN
+2
+ELSE
+-1
+END  AS result
+------------------------------------------------------------
+----CASE_04:
+MATCH (n:Person)
+WHERE n.lastName = 'Smith'
+FOREACH (x IN CASE  WHEN n.firstName = 'John' THEN [1] ELSE [] END  | SET n.role = 'Father')
+FOREACH (x IN CASE  WHEN n.firstName = 'Caroline' THEN [1] ELSE [] END  | SET n.role = 'Mother')
+RETURN n
 ------------------------------------------------------------

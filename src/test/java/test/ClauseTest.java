@@ -59,7 +59,7 @@ import util.TestDataReader;
 public class ClauseTest extends AbstractTestSuite {
 	
 	@Test
-	public void testCase_02() {
+	public void testForEach_Case_01() {
 		String result;
 		String testId;
 		setDoPrint(true);
@@ -95,6 +95,7 @@ public class ClauseTest extends AbstractTestSuite {
 		
 		result = print(clauses, Format.PRETTY_1);
 		testId = "CASE_04";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		return;
 	}
@@ -127,6 +128,7 @@ public class ClauseTest extends AbstractTestSuite {
 		
 		result = print(clauses, Format.PRETTY_1);
 		testId = "CASE_01";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
 		clauses = new IClause[] {
@@ -145,6 +147,7 @@ public class ClauseTest extends AbstractTestSuite {
 		
 		result = print(clauses, Format.PRETTY_1);
 		testId = "CASE_02";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
 		JcNumber res = new JcNumber("result");
@@ -165,6 +168,7 @@ public class ClauseTest extends AbstractTestSuite {
 		
 		result = print(clauses, Format.PRETTY_1);
 		testId = "CASE_03";
+		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		return;
 	}
