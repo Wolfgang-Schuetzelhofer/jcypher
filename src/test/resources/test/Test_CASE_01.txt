@@ -44,3 +44,8 @@ FOREACH (x IN CASE  WHEN n.firstName = 'John' THEN [1] ELSE [] END  | SET n.role
 FOREACH (x IN CASE  WHEN n.firstName = 'Caroline' THEN [1] ELSE [] END  | SET n.role = 'Mother')
 RETURN n
 ------------------------------------------------------------
+----CASE_05:
+MATCH (n:Person)
+WHERE n.lastName = 'Smith'
+FOREACH (x IN CASE  WHEN n.firstName = 'John' THEN [1] ELSE [] END  | CREATE ({name:'Johnnys_Relative'})<--(n) SET n.name = 'John')
+------------------------------------------------------------

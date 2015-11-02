@@ -17,6 +17,7 @@
 package test;
 
 import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.api.collection.DoConcat;
 import iot.jcypher.query.factories.JC;
 import iot.jcypher.query.factories.clause.CASE;
 import iot.jcypher.query.factories.clause.CREATE;
@@ -57,6 +58,57 @@ import util.TestDataReader;
 
 //@Ignore
 public class ClauseTest extends AbstractTestSuite {
+	
+	@Test
+	public void testForEach_Do_01() {
+		String result;
+		String testId;
+		setDoPrint(true);
+		setDoAssert(true);
+		
+		TestDataReader tdr = new TestDataReader("/test/Test_CASE_01.txt");
+		
+		JcNode n = new JcNode("n");
+		JcValue x = new JcValue("x");
+		
+		/*******************************/
+//		IClause foreach = FOR_EACH.element(x).IN_list("Stan", "Will", "Henry").DO().
+//				CREATE(X.node().property("name").value(x).relation().in().node(n))
+//				.AND_DO()
+//				.SET(n.property("name")).to("John");
+//		
+//		result = print(foreach, Format.PRETTY_1);
+		
+//		foreach = FOR_EACH.element(x).IN_list("Stan", "Will", "Henry").DO(new IClause[]{
+//				CREATE.node().property("name").value(x).relation().in().node(n),
+//				DO.SET(n.property("name")).to("John")
+//		});
+//		
+//		result = print(foreach, Format.PRETTY_1);
+		
+		/*******************************/
+		IClause[] clauses = new IClause[] {
+				MATCH.node(n).label("Person"),
+				WHERE.valueOf(n.property("lastName")).EQUALS("Smith"),
+				FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+						CASE.result(),
+						WHEN.valueOf(n.property("firstName")).EQUALS("John"),
+							NATIVE.cypher("[1]"),
+						ELSE.perform(),
+							NATIVE.cypher("[]"),
+						END.caseXpr()
+				})).DO(new IClause[]{
+						CREATE.node().property("name").value("Johnnys_Relative").relation().in().node(n),
+						DO.SET(n.property("name")).to("John")
+				})
+		};
+		
+		result = print(clauses, Format.PRETTY_1);
+		testId = "CASE_05";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		return;
+	}
 	
 	@Test
 	public void testForEach_Case_01() {

@@ -467,17 +467,9 @@ public class CypherWriter {
 				context.buffer.append(" IN ");
 			}
 			
-			if (collectExpression.getCreationClauses() != null) {
-				Format orgFormat = context.cypherFormat;
-				ClauseType curClause = context.currentClause;
-				ClauseType prevClause = context.previousClause;
-				context.cypherFormat = Format.NONE;
-				context.previousClause = null;
-				context.currentClause = null;
-				CypherWriter.toCypherExpression(collectExpression.getCreationClauses(), 0, context);
-				context.cypherFormat = orgFormat;
-				context.previousClause = prevClause;
-				context.currentClause = curClause;
+			if (collectExpression.getType() == CollectXpressionType.CREATE &&
+					collectExpression.getCreationClauses() != null) {
+				CollectionCypherWriter.writeInnerClauses(collectExpression.getCreationClauses(), context);
 			}
 			
 			CollectionSpec collSpec = collectExpression.getCollectionToOperateOn();
@@ -490,6 +482,11 @@ public class CypherWriter {
 			else if (collectExpression.getType() == CollectXpressionType.FILTER ||
 					collectExpression.getType() == CollectXpressionType.PREDICATE_FUNCTION)
 				context.buffer.append(" WHERE ");
+			
+			if (collectExpression.getCreationClauses() != null &&
+					collectExpression.getType() == CollectXpressionType.FOREACH) {
+				CollectionCypherWriter.writeInnerClauses(collectExpression.getCreationClauses(), context);
+			}
 			
 			if (collectExpression.getEvalExpression() != null)
 				toCypherExpression(collectExpression.getEvalExpression(), collectExpression.getIterationVariable(),
@@ -538,6 +535,19 @@ public class CypherWriter {
 				idx++;
 			}
 			context.inFunction = inF;
+		}
+		
+		private static void writeInnerClauses(IClause[] innerClauses, WriterContext context) {
+			Format orgFormat = context.cypherFormat;
+			ClauseType curClause = context.currentClause;
+			ClauseType prevClause = context.previousClause;
+			context.cypherFormat = Format.NONE;
+			context.previousClause = null;
+			context.currentClause = null;
+			CypherWriter.toCypherExpression(innerClauses, 0, context);
+			context.cypherFormat = orgFormat;
+			context.previousClause = prevClause;
+			context.currentClause = curClause;
 		}
 	}
 	
