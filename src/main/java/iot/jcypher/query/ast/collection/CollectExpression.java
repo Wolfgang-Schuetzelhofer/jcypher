@@ -27,7 +27,7 @@ public class CollectExpression extends ASTNode {
 	private JcValue iterationVariable;
 	private CollectionSpec collectionToOperateOn;
 	private EvalExpression evalExpression;
-	private IClause[] creationClauses;
+	private IClause[] nestedClauses;
 	
 	public CollectXpressionType getType() {
 		return type;
@@ -53,12 +53,12 @@ public class CollectExpression extends ASTNode {
 		this.collectionToOperateOn = collectionToOperateOn;
 	}
 
-	public IClause[] getCreationClauses() {
-		return creationClauses;
+	public IClause[] getNestedClauses() {
+		return nestedClauses;
 	}
 
-	public void setCreationClauses(IClause[] creationClauses) {
-		this.creationClauses = creationClauses;
+	public void setNestedClauses(IClause[] nClauses) {
+		this.nestedClauses = nClauses;
 	}
 
 	public JcValue getIterationVariable() {

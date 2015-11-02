@@ -468,8 +468,8 @@ public class CypherWriter {
 			}
 			
 			if (collectExpression.getType() == CollectXpressionType.CREATE &&
-					collectExpression.getCreationClauses() != null) {
-				CollectionCypherWriter.writeInnerClauses(collectExpression.getCreationClauses(), context);
+					collectExpression.getNestedClauses() != null) {
+				CollectionCypherWriter.writeInnerClauses(collectExpression.getNestedClauses(), context);
 			}
 			
 			CollectionSpec collSpec = collectExpression.getCollectionToOperateOn();
@@ -483,9 +483,9 @@ public class CypherWriter {
 					collectExpression.getType() == CollectXpressionType.PREDICATE_FUNCTION)
 				context.buffer.append(" WHERE ");
 			
-			if (collectExpression.getCreationClauses() != null &&
+			if (collectExpression.getNestedClauses() != null &&
 					collectExpression.getType() == CollectXpressionType.FOREACH) {
-				CollectionCypherWriter.writeInnerClauses(collectExpression.getCreationClauses(), context);
+				CollectionCypherWriter.writeInnerClauses(collectExpression.getNestedClauses(), context);
 			}
 			
 			if (collectExpression.getEvalExpression() != null)

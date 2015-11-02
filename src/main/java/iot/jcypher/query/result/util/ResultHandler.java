@@ -78,7 +78,7 @@ import javax.json.JsonValue.ValueType;
 
 public class ResultHandler {
 	
-	private static final String lockVersionProperty = "_c_version_";
+	public static final String lockVersionProperty = "_c_version_";
 
 	private IDBAccess dbAccess;
 	

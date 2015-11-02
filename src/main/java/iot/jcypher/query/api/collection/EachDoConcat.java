@@ -19,8 +19,6 @@ package iot.jcypher.query.api.collection;
 import iot.jcypher.query.api.APIObject;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.ast.collection.CollectExpression;
-import iot.jcypher.query.factories.clause.CREATE;
-import iot.jcypher.query.factories.clause.DO;
 
 public class EachDoConcat extends APIObject {
 
@@ -53,7 +51,7 @@ public class EachDoConcat extends APIObject {
 	 * <br/>
 	 */
 	public DoConcat DO(IClause[] clauses) {
-		((CollectExpression)this.astNode).setCreationClauses(clauses);
+		((CollectExpression)this.astNode).setNestedClauses(clauses);
 		Do doConnector = new Do((CollectExpression)this.astNode);
 		DoConcat ret = new DoConcat((CollectExpression)this.astNode, doConnector);
 		return ret;

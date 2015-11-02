@@ -21,6 +21,7 @@ import iot.jcypher.query.api.APIObjectAccess;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.ast.ASTNode;
 import iot.jcypher.query.ast.collection.CollectExpression;
+import iot.jcypher.query.ast.collection.CollectExpression.CollectXpressionType;
 import iot.jcypher.query.ast.collection.CollectionSpec;
 import iot.jcypher.query.ast.collection.DoEvalExpression;
 import iot.jcypher.query.ast.collection.ExtractEvalExpression;
@@ -28,7 +29,6 @@ import iot.jcypher.query.ast.collection.PredicateEvalExpression;
 import iot.jcypher.query.ast.collection.PredicateFunctionEvalExpression;
 import iot.jcypher.query.ast.collection.PropertyEvalExpresssion;
 import iot.jcypher.query.ast.collection.ReduceEvalExpression;
-import iot.jcypher.query.ast.collection.CollectExpression.CollectXpressionType;
 import iot.jcypher.query.ast.predicate.PredicateExpression;
 import iot.jcypher.query.ast.predicate.PredicateFunction.PredicateFunctionType;
 import iot.jcypher.query.values.JcCollection;
@@ -83,7 +83,7 @@ public class CFactory {
 	public static CTerminal CREATE(IClause[] clauses) {
 		CollectExpression collXpr = new CollectExpression();
 		collXpr.setType(CollectXpressionType.CREATE);
-		collXpr.setCreationClauses(clauses);
+		collXpr.setNestedClauses(clauses);
 		
 		CTerminal ret = new CTerminal(collXpr);
 		return ret;

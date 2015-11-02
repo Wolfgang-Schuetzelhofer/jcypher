@@ -81,6 +81,7 @@ import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
+import iot.jcypher.query.result.util.ResultHandler;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
@@ -718,7 +719,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				Iterator<Entry<Object, GrNode>> it = context.domObj2Node.entrySet().iterator();
 				while(it.hasNext()) {
 					Entry<Object, GrNode> entry = it.next();
-					ds.add_Id2Object(entry.getKey(), entry.getValue().getId(), ResolutionDepth.DEEP);
+					GrNode nd = entry.getValue();
+					GrProperty prop = nd.getProperty(ResultHandler.lockVersionProperty);
+					int v = -1;
+					if (prop != null)
+						v = ((BigDecimal)prop.getValue()).intValue();
+					ds.add_Id2Object(entry.getKey(), nd.getId(), v, ResolutionDepth.DEEP);
 				}
 				
 				for (DomRelation2ResultRelation d2r : context.domRelation2Relations) {
@@ -1177,11 +1183,16 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				T obj = id2Object.get(id);
 				GrNode rNode = result.resultOf(id2QueryNode.get(id)).get(0);
 				T resObj = createIfNeeded_MapProperties(domainObjectClass, rNode, obj);
+				GrProperty prop = rNode.getProperty(ResultHandler.lockVersionProperty);
+				int v = -1;
+				if (prop != null)
+					v = ((BigDecimal)prop.getValue()).intValue();
 				if (obj == null)
-					ds.add_Id2Object(resObj, id, ResolutionDepth.DEEP);
+					ds.add_Id2Object(resObj, id, v, ResolutionDepth.DEEP);
 				else
 					ds.getLoadInfoFrom_Object2IdMap(obj)
-						.setResolutionDepth(ResolutionDepth.DEEP);
+						.setResolutionDepth(ResolutionDepth.DEEP)
+						.setVersion(v);
 				resultList.add(resObj);
 			}
 			return resultList;
@@ -2201,7 +2212,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 										domainObject = domainAccessHandler.createInstance(clazz);
 									if (domainObject instanceof Array)
 										((Array)domainObject).setSurrogateState(ds.getSurrogateState());
-									ds.add_Id2Object(domainObject, actNode.getId(),
+									GrProperty prop = actNode.getProperty(ResultHandler.lockVersionProperty);
+									int v = -1;
+									if (prop != null)
+										v = ((BigDecimal)prop.getValue()).intValue();
+									ds.add_Id2Object(domainObject, actNode.getId(), v,
 											resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
 									if (domainObject instanceof InnerClassSurrogate) {
 										((InnerClassSurrogate)domainObject).setId2ObjectMapper(getInternalDomainAccess());

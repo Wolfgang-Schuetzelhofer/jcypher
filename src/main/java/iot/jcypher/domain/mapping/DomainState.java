@@ -145,9 +145,10 @@ public class DomainState {
 		return ret;
 	}
 	
-	private void addTo_Object2IdMap(Object key, Long value, ResolutionDepth resolutionDepth) {
+	private void addTo_Object2IdMap(Object key, Long value, int version, ResolutionDepth resolutionDepth) {
 		LoadInfo loadInfo = new LoadInfo();
 		loadInfo.id = value;
+		loadInfo.version = version;
 		loadInfo.resolutionDepth = resolutionDepth;
 		this.object2IdMap.put(key, loadInfo);
 	}
@@ -238,15 +239,15 @@ public class DomainState {
 		this.id2ObjectMap.put(id, obj);
 	}
 	
-	public void add_Id2Object(Object obj, Long id, ResolutionDepth resolutionDepth) {
+	public void add_Id2Object(Object obj, Long id, int version, ResolutionDepth resolutionDepth) {
 		this.addTo_Id2ObjectMap(obj, id);
-		this.addTo_Object2IdMap(obj, id, resolutionDepth);
+		this.addTo_Object2IdMap(obj, id, version, resolutionDepth);
 	}
 	
 	public void replace_Id2Object(Object old, Object obj, Long id) {
 		this.addTo_Id2ObjectMap(obj, id);
 		LoadInfo li = this.object2IdMap.remove(old);
-		this.addTo_Object2IdMap(obj, id, li.resolutionDepth);
+		this.addTo_Object2IdMap(obj, id, li.version, li.resolutionDepth);
 	}
 	
 	public boolean existsRelation(IRelation relat) {
@@ -719,16 +720,17 @@ public class DomainState {
 	/********************************/
 	public static class LoadInfo {
 		private Long id;
+		private int version;
 		private ResolutionDepth resolutionDepth;
 		private DomainObject domainObject;
 		
 		public LoadInfo() {
 			super();
-			// TODO Auto-generated constructor stub
 		}
 		private LoadInfo createCopy() {
 			LoadInfo ret = new LoadInfo();
 			ret.id = this.id;
+			ret.version = this.version;
 			ret.resolutionDepth = this.resolutionDepth;
 			ret.domainObject = this.domainObject;
 			return ret;
@@ -739,8 +741,12 @@ public class DomainState {
 		public ResolutionDepth getResolutionDepth() {
 			return resolutionDepth;
 		}
-		public void setResolutionDepth(ResolutionDepth resolutionDepth) {
+		public LoadInfo setResolutionDepth(ResolutionDepth resolutionDepth) {
 			this.resolutionDepth = resolutionDepth;
+			return this;
+		}
+		public void setVersion(int v) {
+			this.version = v;
 		}
 		public DomainObject getDomainObject() {
 			return domainObject;
