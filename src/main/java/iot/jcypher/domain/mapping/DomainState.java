@@ -738,6 +738,9 @@ public class DomainState {
 		public Long getId() {
 			return id;
 		}
+		public int getVersion() {
+			return version;
+		}
 		public ResolutionDepth getResolutionDepth() {
 			return resolutionDepth;
 		}

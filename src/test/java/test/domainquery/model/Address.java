@@ -36,6 +36,9 @@ public class Address implements PointOfContact {
 	public int getNumber() {
 		return number;
 	}
+	public void setNumber(int number) {
+		this.number = number;
+	}
 	public Area getArea() {
 		return area;
 	}

@@ -709,7 +709,18 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					MappingUtil.internalDomainAccess.remove();
 			}
 			
-			List<JcError> errors = context.graph.store();
+			Map<Long, Integer> nodeVersionsMap = null;
+			if (this.lockingStrategy == Locking.OPTIMISTIC) {
+				if (context.nodeIndexMap != null) {
+					nodeVersionsMap = new HashMap<Long, Integer>();
+					Iterator<QueryNode2ResultNode> it = context.nodeIndexMap.values().iterator();
+					while (it.hasNext()) {
+						QueryNode2ResultNode n2n = it.next();
+						nodeVersionsMap.put(n2n.resultNode.getId(), n2n.version);
+					}
+				}
+			}
+			List<JcError> errors = GrAccess.store(context.graph, nodeVersionsMap);
 			DomainState ds = getDomainState();
 			if (errors.isEmpty()) {
 				for (IRelation relat : context.relationsToRemove) {
@@ -723,7 +734,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					GrProperty prop = nd.getProperty(ResultHandler.lockVersionProperty);
 					int v = -1;
 					if (prop != null)
-						v = ((BigDecimal)prop.getValue()).intValue();
+						v = ((Number)prop.getValue()).intValue();
 					ds.add_Id2Object(entry.getKey(), nd.getId(), v, ResolutionDepth.DEEP);
 				}
 				
@@ -856,21 +867,22 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			//int sz1 = domainState.getSurrogateState().size();
 			Graph graph = null;
 			Object domainObject;
-			Map<Integer, QueryNode2ResultNode> nodeIndexMap = null;
 			List<IClause> clauses = null;
 			List<IClause> removeStartClauses = null;
 			List<IClause> removeClauses = null;
 			DomainState ds = this.getDomainState();
 			for (int i = 0; i < context.domainObjects.size(); i++) {
 				domainObject = context.domainObjects.get(i);
-				Long id = ds.getIdFrom_Object2IdMap(domainObject);
+				LoadInfo li = ds.getLoadInfoFrom_Object2IdMap(domainObject);
+				Long id = li != null ? li.getId() : null;
 				if (id != null) { // object exists in graphdb
 					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
 					QueryNode2ResultNode n2n = new QueryNode2ResultNode();
 					n2n.queryNode = n;
-					if (nodeIndexMap == null)
-						nodeIndexMap = new HashMap<Integer, QueryNode2ResultNode>();
-					nodeIndexMap.put(new Integer(i), n2n);
+					n2n.version = li.getVersion();
+					if (context.nodeIndexMap == null)
+						context.nodeIndexMap = new HashMap<Integer, QueryNode2ResultNode>();
+					context.nodeIndexMap.put(new Integer(i), n2n);
 					if (clauses == null)
 						clauses = new ArrayList<IClause>();
 					clauses.add(START.node(n).byId(id.longValue()));
@@ -949,8 +961,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					JcQueryResult result = results.get(0);
 					graph = result.getGraph();
 					GrAccess.setDBAccess(this.dbAccess, graph);
-					if (nodeIndexMap != null) {
-						Iterator<Entry<Integer, QueryNode2ResultNode>> nit = nodeIndexMap.entrySet().iterator();
+					if (context.nodeIndexMap != null) {
+						Iterator<Entry<Integer, QueryNode2ResultNode>> nit = context.nodeIndexMap.entrySet().iterator();
 						while (nit.hasNext()) {
 							Entry<Integer, QueryNode2ResultNode> entry = nit.next();
 							entry.getValue().resultNode = result.resultOf(entry.getValue().queryNode).get(0);
@@ -977,8 +989,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			context.domRelation2Relations = new ArrayList<DomRelation2ResultRelation>();
 			for (int i = 0; i < context.domainObjects.size(); i++) {
 				GrNode rNode = null;
-				if (nodeIndexMap != null && nodeIndexMap.get(i) != null) {
-					rNode = nodeIndexMap.get(i).resultNode;
+				if (context.nodeIndexMap != null && context.nodeIndexMap.get(i) != null) {
+					rNode = context.nodeIndexMap.get(i).resultNode;
 				}
 				if (rNode == null)
 					rNode = graph.createNode();
@@ -1186,7 +1198,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				GrProperty prop = rNode.getProperty(ResultHandler.lockVersionProperty);
 				int v = -1;
 				if (prop != null)
-					v = ((BigDecimal)prop.getValue()).intValue();
+					v = ((Number)prop.getValue()).intValue();
 				if (obj == null)
 					ds.add_Id2Object(resObj, id, v, ResolutionDepth.DEEP);
 				else
@@ -2215,7 +2227,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 									GrProperty prop = actNode.getProperty(ResultHandler.lockVersionProperty);
 									int v = -1;
 									if (prop != null)
-										v = ((BigDecimal)prop.getValue()).intValue();
+										v = ((Number)prop.getValue()).intValue();
 									ds.add_Id2Object(domainObject, actNode.getId(), v,
 											resolveDeep ? ResolutionDepth.DEEP : ResolutionDepth.SHALLOW);
 									if (domainObject instanceof InnerClassSurrogate) {
@@ -2999,6 +3011,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private List<Object> domainObjectsToRemove = new ArrayList<Object>();
 		private Map<Object, GrNode> domObj2Node;
 		private List<DomRelation2ResultRelation> domRelation2Relations;
+		private Map<Integer, QueryNode2ResultNode> nodeIndexMap;
 		private Graph graph;
 		private SurrogateChangeLog surrogateChangeLog = new SurrogateChangeLog();
 	}
@@ -3013,6 +3026,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	private class QueryNode2ResultNode {
 		private JcNode queryNode;
 		private GrNode resultNode;
+		private int version;
 	}
 	
 	/***********************************/

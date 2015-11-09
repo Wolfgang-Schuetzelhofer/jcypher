@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,12 +19,17 @@ package iot.jcypher.graph;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.internal.ChangeListener;
 import iot.jcypher.graph.internal.GrId;
+import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.util.ResultHandler;
 
 import java.util.List;
+import java.util.Map;
 
 public class GrAccess {
 
+	public static List<JcError> store(Graph graph, Map<Long, Integer> nodeVersionsMap) {
+		return graph.store(nodeVersionsMap);
+	}
 	public static GrNode createNode(ResultHandler rh, GrId id, int rowIdx) {
 		return new GrNode(rh, id, rowIdx);
 	}

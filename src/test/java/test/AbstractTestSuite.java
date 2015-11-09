@@ -210,6 +210,10 @@ public class AbstractTestSuite {
 			sb.append(err.getCodeOrType());
 			sb.append("\nmessage: ");
 			sb.append(err.getMessage());
+			if (err.getAdditionalInfo() != null) {
+				sb.append("\ninfo: ");
+				sb.append(err.getAdditionalInfo());
+			}
 		}
 	}
 }

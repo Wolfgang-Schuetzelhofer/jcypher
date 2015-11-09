@@ -37,10 +37,17 @@ import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.pattern.Node;
 import iot.jcypher.query.api.pattern.Relation;
 import iot.jcypher.query.api.start.StartPoint;
+import iot.jcypher.query.factories.clause.CASE;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.DO;
+import iot.jcypher.query.factories.clause.ELSE;
+import iot.jcypher.query.factories.clause.END;
+import iot.jcypher.query.factories.clause.FOR_EACH;
+import iot.jcypher.query.factories.clause.NATIVE;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.START;
+import iot.jcypher.query.factories.clause.WHEN;
+import iot.jcypher.query.factories.xpression.C;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
@@ -673,10 +680,10 @@ public class ResultHandler {
 	 * Update the underlying database with changes made on the graph
 	 * @return a list of errors, which is empty if no errors occurred
 	 */
-	public List<JcError> store() {
+	public List<JcError> store(Map<Long, Integer> nodeVersionsMap) {
 		Map<GrNode, JcNumber> createdNodeToIdMap = new HashMap<GrNode, JcNumber>();
 		Map<GrRelation, JcNumber> createdRelationToIdMap = new HashMap<GrRelation, JcNumber>();
-		List<JcQuery> queries = createUpdateQueries(createdNodeToIdMap, createdRelationToIdMap);
+		List<JcQuery> queries = createUpdateQueries(createdNodeToIdMap, createdRelationToIdMap, nodeVersionsMap);
 		Util.printQueries(queries, QueryToObserve.UPDATE_QUERY, Format.PRETTY_1);
 		List<JcError> errors = new ArrayList<JcError>();
 		if (queries.size() > 0) {
@@ -684,34 +691,52 @@ public class ResultHandler {
 //			Util.printResults(results, "UPDATE", Format.PRETTY_1);
 			errors.addAll(Util.collectErrors(results));
 			if (errors.isEmpty()) { // success
-				this.setToSynchronized(results, createdNodeToIdMap,
-						createdRelationToIdMap);
+				int errId;
+				if ((errId = hasLockingError(results, !createdNodeToIdMap.isEmpty() || !createdRelationToIdMap.isEmpty())) != -1) {
+					JcError error = new JcError("JCypher.Locking", "Optimistic locking failed (an element was changed by another client)",
+							"element id: " + errId);
+					errors.add(error);
+				} else {
+					this.setToSynchronized(results, createdNodeToIdMap,
+							createdRelationToIdMap);
+				}
 			}
 		}
 		return errors;
 	}
 	
-	/**
-	 * create a list of queries which would apply the changes of the graph to the
-	 * underlying database. You can use it to have a look which queries will be executed
-	 * by a store operation.
-	 * @return a list of JcQueries
-	 */
-	public List<JcQuery> createUpdateQueries() {
-		Map<GrNode, JcNumber> createdNodeToIdMap = new HashMap<GrNode, JcNumber>();
-		Map<GrRelation, JcNumber> createdRelationToIdMap = new HashMap<GrRelation, JcNumber>();
-		return createUpdateQueries(createdNodeToIdMap, createdRelationToIdMap);
-	}
-	
 	private List<JcQuery> createUpdateQueries(Map<GrNode, JcNumber> createdNodeToIdMap,
-			Map<GrRelation, JcNumber> createdRelationToIdMap) {
+			Map<GrRelation, JcNumber> createdRelationToIdMap, Map<Long, Integer> nodeVersionsMap) {
 		QueryBuilder queryBuilder = new QueryBuilder();
-		List<JcQuery> queries = queryBuilder.buildUpdateAndRemoveQueries();
+		List<JcQuery> queries = queryBuilder.buildUpdateAndRemoveQueries(nodeVersionsMap);
 		JcQuery createQuery = queryBuilder.buildCreateQuery(createdNodeToIdMap,
 				createdRelationToIdMap);
 		if (createQuery != null)
 			queries.add(createQuery);
 		return queries;
+	}
+	
+	/**
+	 * in case of error return the element's id, in case of ok return -1
+	 * @param results
+	 * @param hasCreateQuery
+	 * @return
+	 */
+	private int hasLockingError(List<JcQueryResult> results, boolean hasCreateQuery) {
+		int ret = -1;
+		if (this.lockingStrategy == Locking.OPTIMISTIC) {
+			JcNumber lockV = new JcNumber("lockV");
+			JcNumber elemId = new JcNumber("elemId");
+			int to = hasCreateQuery ? results.size() - 1 : results.size(); // don't check the result of the create query
+			for (int i = 0; i < to; i++) { 
+				int res = results.get(i).resultOf(lockV).get(0).intValue();
+				if (res == -2) {
+					ret = results.get(i).resultOf(elemId).get(0).intValue();
+					break;
+				}
+			}
+		}
+		return ret;
 	}
 	
 	private void setToSynchronized(List<JcQueryResult> results,
@@ -958,7 +983,7 @@ public class ResultHandler {
 			return ret;
 		}
 		
-		List<JcQuery> buildUpdateAndRemoveQueries() {
+		List<JcQuery> buildUpdateAndRemoveQueries(Map<Long, Integer> nodeVersionsMap) {
 			List<JcQuery> ret = new ArrayList<JcQuery>();
 			List<GrPropertyContainer> removedNodes = new ArrayList<GrPropertyContainer>();
 			if (changedNodesById != null) {
@@ -967,7 +992,7 @@ public class ResultHandler {
 					GrNode node = nit.next();
 					SyncState state = GrAccess.getState(node);
 					if (state == SyncState.CHANGED) {
-						ret.add(buildChangedNodeOrRelationQuery(node));
+						ret.add(buildChangedNodeOrRelationQuery(node, nodeVersionsMap));
 					} else if (state == SyncState.REMOVED) {
 						removedNodes.add(node);
 					}
@@ -981,7 +1006,7 @@ public class ResultHandler {
 					GrRelation relation = rit.next();
 					SyncState state = GrAccess.getState(relation);
 					if (state == SyncState.CHANGED) {
-						ret.add(buildChangedNodeOrRelationQuery(relation));
+						ret.add(buildChangedNodeOrRelationQuery(relation, null));
 					} else if (state == SyncState.REMOVED) {
 						removedRelations.add(relation);
 					}
@@ -1087,14 +1112,64 @@ public class ResultHandler {
 			return query;
 		}
 
-		private JcQuery buildChangedNodeOrRelationQuery(GrPropertyContainer element) {
+		private JcQuery buildChangedNodeOrRelationQuery(GrPropertyContainer element,
+				Map<Long, Integer> nodeVersionsMap) {
+			int nodeVersion = -1;
+			// TODO handle version property in case of Locking.NONE
+			if (lockingStrategy == Locking.OPTIMISTIC) {
+				if (nodeVersionsMap != null) { // only when coming from DomainAccess
+					Integer v = nodeVersionsMap.get(element.getId());
+					if (v != null)
+						nodeVersion = v;
+				} else {
+					GrProperty prop = element.getProperty(lockVersionProperty);
+					if (prop != null)
+						nodeVersion = ((Number)prop.getValue()).intValue();
+				}
+			}
+			
 			List<IClause> clauses = new ArrayList<IClause>();
-			clauses.add(buildStartClause(element));
+			IClause startClause = buildStartClause(element);
 			clauses.addAll(buildChangedPropertiesClauses(element));
 			if (lockingStrategy == Locking.OPTIMISTIC)
-				clauses.add(buildVersionPropertyClauses(element));
+				clauses.add(buildVersionPropertyClauses(element, nodeVersion));
 			clauses.addAll(buildChangedLabelsClauses(element));
-			IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
+			IClause[] clausesArray;
+			JcNumber lockV = new JcNumber("lockV");
+			JcElement elem = null;
+			if (element instanceof GrNode)
+				elem = new JcNode("elem");
+			else if (element instanceof GrRelation)
+				elem = new JcRelation("elem");
+			if (lockingStrategy == Locking.OPTIMISTIC && nodeVersion >= 0) {
+				clausesArray = clauses.toArray(new IClause[clauses.size()]);
+				clauses.clear();
+				clauses.add(startClause);
+				JcValue x = new JcValue("x");
+				IClause clause = FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+						CASE.result(),
+						WHEN.valueOf(elem.property(lockVersionProperty)).NOT_EQUALS(nodeVersion),
+							NATIVE.cypher("[1]"),
+						ELSE.perform(),
+							NATIVE.cypher("[]"),
+						END.caseXpr()
+				})).DO().SET(elem.property(lockVersionProperty)).to(-2);
+				clauses.add(clause);
+				clause = FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+						CASE.result(),
+						WHEN.valueOf(elem.property(lockVersionProperty)).EQUALS(nodeVersion),
+							NATIVE.cypher("[1]"),
+						ELSE.perform(),
+							NATIVE.cypher("[]"),
+						END.caseXpr()
+				})).DO(clausesArray);
+				clauses.add(clause);
+			} else
+				clauses.add(0, startClause);
+			JcNumber elemId = new JcNumber("elemId");
+			clauses.add(RETURN.value(elem.property(lockVersionProperty)).AS(lockV));
+			clauses.add(RETURN.value(elem.id()).AS(elemId));
+			clausesArray = clauses.toArray(new IClause[clauses.size()]);
 			JcQuery query = new JcQuery();
 			query.setClauses(clausesArray);
 			return query;
@@ -1167,18 +1242,16 @@ public class ResultHandler {
 			return ret;
 		}
 		
-		private IClause buildVersionPropertyClauses(GrPropertyContainer element) {
+		private IClause buildVersionPropertyClauses(GrPropertyContainer element, int curVersion) {
 				if (elementVersions == null)
 					elementVersions = new ElementVersions();
-				int oldVersion;
+				int oldVersion = curVersion;
 				GrProperty prop = element.getProperty(ResultHandler.lockVersionProperty);
-				if (prop != null) {
-					oldVersion = ((BigDecimal)prop.getValue()).intValue();
+				if (prop != null)
 					prop.setValue(oldVersion + 1);
-				} else {
-					oldVersion = -1;
+				else
 					prop = element.addProperty(ResultHandler.lockVersionProperty, oldVersion + 1);
-				}
+
 				JcElement elem = null;
 				if (element instanceof GrNode) {
 					elementVersions.nodeVersions.put(element, oldVersion);

@@ -18,6 +18,7 @@ package iot.jcypher.graph;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import iot.jcypher.concurrency.Locking;
 import iot.jcypher.database.IDBAccess;
@@ -91,21 +92,17 @@ public class Graph {
 	 * @return a list of errors, which is empty if no errors occurred
 	 */
 	public List<JcError> store() {
-		if (isModified())
-			return this.resultHandler.store();
-		return Collections.emptyList();
+		return store(null);
 	}
 	
 	/**
-	 * create a list of queries which would apply the changes of the graph to the
-	 * underlying database. You can use it to have a look which queries will be executed
-	 * by a store operation.
-	 * @return a list of JcQueries
+	 * Update the underlying database with changes made on the graph
+	 * @return a list of errors, which is empty if no errors occurred
 	 */
-	public List<JcQuery> createUpdateQueries() {
+	List<JcError> store(Map<Long, Integer> nodeVersionsMap) {
 		if (isModified())
-			return this.resultHandler.createUpdateQueries();
-		return null;
+			return this.resultHandler.store(nodeVersionsMap);
+		return Collections.emptyList();
 	}
 
 	SyncState getSyncState() {
