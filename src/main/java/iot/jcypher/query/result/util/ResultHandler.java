@@ -88,6 +88,7 @@ public class ResultHandler {
 	public static final String lockVersionProperty = "_c_version_";
 
 	private IDBAccess dbAccess;
+	private boolean writeVersion = true;
 	
 	private Graph graph;
 	private Locking lockingStrategy;
@@ -1034,7 +1035,7 @@ public class ResultHandler {
 			for (GrProperty prop : node.getProperties()) {
 				create = create.property(prop.getName()).value(prop.getValue());
 			}
-			if (lockingStrategy == Locking.OPTIMISTIC)
+			if (writeVersion || lockingStrategy == Locking.OPTIMISTIC)
 				create = create.property(ResultHandler.lockVersionProperty).value(0);
 			clauses.add(create);
 			localNodeMap.put(node, n);
@@ -1057,7 +1058,7 @@ public class ResultHandler {
 			for (GrProperty prop : relation.getProperties()) {
 				create = create.property(prop.getName()).value(prop.getValue());
 			}
-			if (lockingStrategy == Locking.OPTIMISTIC)
+			if (writeVersion || lockingStrategy == Locking.OPTIMISTIC)
 				create = create.property(ResultHandler.lockVersionProperty).value(0);
 			createRelationClauses.add(create.node(en));
 		}
@@ -1115,32 +1116,31 @@ public class ResultHandler {
 		private JcQuery buildChangedNodeOrRelationQuery(GrPropertyContainer element,
 				Map<Long, Integer> nodeVersionsMap) {
 			int nodeVersion = -1;
-			// TODO handle version property in case of Locking.NONE
-			if (lockingStrategy == Locking.OPTIMISTIC) {
-				if (nodeVersionsMap != null) { // only when coming from DomainAccess
-					Integer v = nodeVersionsMap.get(element.getId());
-					if (v != null)
-						nodeVersion = v;
-				} else {
-					GrProperty prop = element.getProperty(lockVersionProperty);
-					if (prop != null)
-						nodeVersion = ((Number)prop.getValue()).intValue();
-				}
+			if (nodeVersionsMap != null) { // only when coming from DomainAccess
+				Integer v = nodeVersionsMap.get(element.getId());
+				if (v != null)
+					nodeVersion = v;
+			} else {
+				GrProperty prop = element.getProperty(lockVersionProperty);
+				if (prop != null)
+					nodeVersion = ((Number)prop.getValue()).intValue();
 			}
 			
+			handleVersionProperty(element, nodeVersion);
 			List<IClause> clauses = new ArrayList<IClause>();
-			IClause startClause = buildStartClause(element);
-			clauses.addAll(buildChangedPropertiesClauses(element));
-			if (lockingStrategy == Locking.OPTIMISTIC)
-				clauses.add(buildVersionPropertyClauses(element, nodeVersion));
-			clauses.addAll(buildChangedLabelsClauses(element));
-			IClause[] clausesArray;
-			JcNumber lockV = new JcNumber("lockV");
 			JcElement elem = null;
 			if (element instanceof GrNode)
 				elem = new JcNode("elem");
 			else if (element instanceof GrRelation)
 				elem = new JcRelation("elem");
+			IClause startClause = buildStartClause(element);
+			clauses.addAll(buildChangedPropertiesClauses(element));
+			if (writeVersion || lockingStrategy == Locking.OPTIMISTIC)
+				clauses.add(
+						DO.SET(elem.property(lockVersionProperty)).byExpression(elem.numberProperty(lockVersionProperty).plus(1)));
+			clauses.addAll(buildChangedLabelsClauses(element));
+			IClause[] clausesArray;
+			JcNumber lockV = new JcNumber("lockV");
 			if (lockingStrategy == Locking.OPTIMISTIC && nodeVersion >= 0) {
 				clausesArray = clauses.toArray(new IClause[clauses.size()]);
 				clauses.clear();
@@ -1167,8 +1167,10 @@ public class ResultHandler {
 			} else
 				clauses.add(0, startClause);
 			JcNumber elemId = new JcNumber("elemId");
-			clauses.add(RETURN.value(elem.property(lockVersionProperty)).AS(lockV));
-			clauses.add(RETURN.value(elem.id()).AS(elemId));
+			if (writeVersion || lockingStrategy == Locking.OPTIMISTIC) {
+				clauses.add(RETURN.value(elem.property(lockVersionProperty)).AS(lockV));
+				clauses.add(RETURN.value(elem.id()).AS(elemId));
+			}
 			clausesArray = clauses.toArray(new IClause[clauses.size()]);
 			JcQuery query = new JcQuery();
 			query.setClauses(clausesArray);
@@ -1207,24 +1209,26 @@ public class ResultHandler {
 			Iterator<GrProperty> pit = modified.iterator();
 			while(pit.hasNext()) {
 				GrProperty prop = pit.next();
-				SyncState state = GrAccess.getState(prop);
-				JcElement elem = null;
-				if (element instanceof GrNode)
-					elem = new JcNode("elem");
-				else
-					elem = new JcRelation("elem");
-				
-				IClause c = null;
-				if (state == SyncState.CHANGED || state == SyncState.NEW) {
-					Object propValue = prop.getValue();
-					if (propValue != null)
-						c = DO.SET(elem.property(prop.getName())).to(prop.getValue());
+				if (!prop.getName().equals(lockVersionProperty)) { // version property is handled differently
+					SyncState state = GrAccess.getState(prop);
+					JcElement elem = null;
+					if (element instanceof GrNode)
+						elem = new JcNode("elem");
 					else
-						c = DO.SET(elem.property(prop.getName())).toNull();
-				} else if (state == SyncState.REMOVED) {
-					c = DO.REMOVE(elem.property(prop.getName()));
+						elem = new JcRelation("elem");
+					
+					IClause c = null;
+					if (state == SyncState.CHANGED || state == SyncState.NEW) {
+						Object propValue = prop.getValue();
+						if (propValue != null)
+							c = DO.SET(elem.property(prop.getName())).to(prop.getValue());
+						else
+							c = DO.SET(elem.property(prop.getName())).toNull();
+					} else if (state == SyncState.REMOVED) {
+						c = DO.REMOVE(elem.property(prop.getName()));
+					}
+					ret.add(c);
 				}
-				ret.add(c);
 			}
 			return ret;
 		}
@@ -1242,7 +1246,8 @@ public class ResultHandler {
 			return ret;
 		}
 		
-		private IClause buildVersionPropertyClauses(GrPropertyContainer element, int curVersion) {
+		private void handleVersionProperty(GrPropertyContainer element, int curVersion) {
+			if (writeVersion || lockingStrategy == Locking.OPTIMISTIC) {
 				if (elementVersions == null)
 					elementVersions = new ElementVersions();
 				int oldVersion = curVersion;
@@ -1252,17 +1257,11 @@ public class ResultHandler {
 				else
 					prop = element.addProperty(ResultHandler.lockVersionProperty, oldVersion + 1);
 
-				JcElement elem = null;
-				if (element instanceof GrNode) {
+				if (element instanceof GrNode)
 					elementVersions.nodeVersions.put(element, oldVersion);
-					elem = new JcNode("elem");
-				} else if (element instanceof GrRelation) {
+				else if (element instanceof GrRelation)
 					elementVersions.nodeVersions.put(element, oldVersion);
-					elem = new JcRelation("elem");
-				}
-				
-				IClause clause = DO.SET(elem.property(prop.getName())).to(prop.getValue());
-				return clause;
+			}
 		}
 		
 		/*************************************/

@@ -32,13 +32,6 @@ import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Calendar;
-import java.util.Date;
-import java.util.GregorianCalendar;
 import java.util.List;
 import java.util.Properties;
 
@@ -48,11 +41,7 @@ import org.junit.Test;
 
 import test.AbstractTestSuite;
 import test.domainquery.Population;
-import test.domainquery.model.Address;
-import test.domainquery.model.DateHolder;
-import test.domainquery.model.NumberHolder;
 import test.domainquery.model.Person;
-import test.domainquery.model.SubNumberHolder;
 
 public class ConcurrencyTest extends AbstractTestSuite {
 	
