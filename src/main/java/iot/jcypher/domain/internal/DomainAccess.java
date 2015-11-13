@@ -72,20 +72,29 @@ import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.pattern.Node;
+import iot.jcypher.query.factories.clause.CASE;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.DO;
+import iot.jcypher.query.factories.clause.ELSE;
+import iot.jcypher.query.factories.clause.END;
+import iot.jcypher.query.factories.clause.FOR_EACH;
 import iot.jcypher.query.factories.clause.MATCH;
+import iot.jcypher.query.factories.clause.NATIVE;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.factories.clause.START;
+import iot.jcypher.query.factories.clause.WHEN;
 import iot.jcypher.query.factories.clause.WHERE;
+import iot.jcypher.query.factories.clause.WITH;
+import iot.jcypher.query.factories.xpression.C;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.result.util.ResultHandler;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.transaction.ITransaction;
 import iot.jcypher.transaction.internal.AbstractTransaction;
@@ -894,6 +903,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			List<IClause> clauses = null;
 			List<IClause> removeStartClauses = null;
 			List<IClause> removeClauses = null;
+			List<IClause> withClauses = null;
 			DomainState ds = this.getDomainState();
 			for (int i = 0; i < context.domainObjects.size(); i++) {
 				domainObject = context.domainObjects.get(i);
@@ -930,15 +940,29 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 			
 			// relations to remove
+			int versionSum = 0;
+			JcNumber sum = null;
 			if (context.relationsToRemove.size() > 0) {
 				removeStartClauses = new ArrayList<IClause>();
 				removeClauses = new ArrayList<IClause>();
 				for (int i = 0; i < context.relationsToRemove.size(); i++) {
 					IRelation relat = context.relationsToRemove.get(i);
 					// relation must exist in db
-					Long id = ds.getFrom_Relation2IdMap(relat).getId();
+					RelationLoadInfo rli = ds.getFrom_Relation2IdMap(relat);
+					Long id = rli.getId();
 					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
 					removeStartClauses.add(START.relation(r).byId(id.longValue()));
+					if (this.lockingStrategy == Locking.OPTIMISTIC) {
+						if (withClauses == null)
+							withClauses = new ArrayList<IClause>();
+						withClauses.add(WITH.value(r));
+						if (sum == null)
+							sum = r.numberProperty(ResultHandler.lockVersionProperty);
+						else
+							sum = sum.plus(r.numberProperty(ResultHandler.lockVersionProperty));
+						int v = rli.getVersion();
+						versionSum = v >= 0 ? versionSum + v : versionSum;
+					}
 					removeClauses.add(DO.DELETE(r));
 				}
 			}
@@ -951,12 +975,29 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				}
 				for (int i = 0; i < context.domainObjectsToRemove.size(); i++) {
 					Object dobj = context.domainObjectsToRemove.get(i);
-					// relation must exist in db
-					Long id = ds.getIdFrom_Object2IdMap(dobj);
+					// node must exist in db
+					LoadInfo li = ds.getLoadInfoFrom_Object2IdMap(dobj);
+					Long id = li.getId();
 					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
 					removeStartClauses.add(START.node(n).byId(id.longValue()));
+					if (this.lockingStrategy == Locking.OPTIMISTIC) {
+						if (withClauses == null)
+							withClauses = new ArrayList<IClause>();
+						withClauses.add(WITH.value(n));
+						if (sum == null)
+							sum = n.numberProperty(ResultHandler.lockVersionProperty);
+						else
+							sum = sum.plus(n.numberProperty(ResultHandler.lockVersionProperty));
+						int v = li.getVersion();
+						versionSum = v >= 0 ? versionSum + v : versionSum;
+					}
 					removeClauses.add(DO.DELETE(n));
 				}
+			}
+			
+			if (withClauses != null) {
+				JcNumber nSum = new JcNumber("sum");
+				withClauses.add(WITH.value(sum).AS(nSum));
 			}
 			
 			if (clauses != null || removeStartClauses != null) {
@@ -970,7 +1011,22 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					queries.add(query);
 				}
 				if (removeStartClauses != null) {
-					removeStartClauses.addAll(removeClauses);
+					if (withClauses != null) {
+						removeStartClauses.addAll(withClauses);
+						JcValue x = new JcValue("x");
+						JcNumber nSum = new JcNumber("sum");
+						IClause clause = FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+								CASE.result(),
+								WHEN.valueOf(nSum).EQUALS(versionSum),
+									NATIVE.cypher("[1]"),
+								ELSE.perform(),
+									NATIVE.cypher("[]"),
+								END.caseXpr()
+						})).DO(removeClauses.toArray(new IClause[removeClauses.size()]));
+						removeStartClauses.add(clause);
+						removeStartClauses.add(RETURN.value(nSum));
+					} else
+						removeStartClauses.addAll(removeClauses);
 					query = new JcQuery();
 					query.setClauses(removeStartClauses.toArray(new IClause[removeStartClauses.size()]));
 					queries.add(query);

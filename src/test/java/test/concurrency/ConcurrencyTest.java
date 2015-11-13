@@ -52,7 +52,7 @@ public class ConcurrencyTest extends AbstractTestSuite {
 	
 	@Test
 	public void testConcurrency_05() {
-		Locking lockingStrategy = Locking.NONE;
+		Locking lockingStrategy = Locking.OPTIMISTIC;
 		initDB(lockingStrategy);
 		
 		/******* first client loading j_smith ******/
@@ -84,9 +84,32 @@ public class ConcurrencyTest extends AbstractTestSuite {
 		/******* second client modifying j_smith pointsOfContact ******/
 		List<PointOfContact> pocs2 = j_smith2.getPointsOfContact();
 		PointOfContact poc2 = pocs2.remove(0);
-		pocs2.remove(0);
+		pocs2.add(poc2);
 		
 		List<JcError> errors = da2.store(j_smith2);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		/******* second client modifying j_smith pointsOfContact ******/
+		da2 = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
+				.setLockingStrategy(lockingStrategy);
+		q2 = da2.createQuery();
+		j_smithMatch2 = q2.createMatch(Person.class);
+
+		q2.WHERE(j_smithMatch2.atttribute("lastName")).EQUALS("Smith");
+		q2.WHERE(j_smithMatch2.atttribute("firstName")).EQUALS("John");
+		
+		result2 = q2.execute();
+		
+		j_smith2 = result2.resultOf(j_smithMatch2).get(0);
+		
+		pocs2 = j_smith2.getPointsOfContact();
+		poc2 = pocs2.remove(0);
+		pocs2.remove(0);
+		
+		errors = da2.store(j_smith2);
 		if (errors.size() > 0) {
 			printErrors(errors);
 			throw new JcResultException(errors);
