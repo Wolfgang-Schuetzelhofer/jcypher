@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,15 +16,16 @@
 
 package iot.jcypher.graph;
 
+import iot.jcypher.concurrency.Locking;
+import iot.jcypher.database.IDBAccess;
+import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.util.ResultHandler;
+import iot.jcypher.transaction.ITransaction;
+
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import iot.jcypher.concurrency.Locking;
-import iot.jcypher.database.IDBAccess;
-import iot.jcypher.query.JcQuery;
-import iot.jcypher.query.result.JcError;
-import iot.jcypher.query.result.util.ResultHandler;
 
 public class Graph {
 
@@ -100,9 +101,22 @@ public class Graph {
 	 * @return a list of errors, which is empty if no errors occurred
 	 */
 	List<JcError> store(Map<Long, Integer> nodeVersionsMap) {
-		if (isModified())
-			return this.resultHandler.store(nodeVersionsMap);
-		return Collections.emptyList();
+		List<JcError> ret = null;
+		ITransaction txToClose = null;
+		try {
+			if (isModified()) {
+				txToClose = this.resultHandler.createLockingTxIfNeeded();
+				ret = this.resultHandler.store(nodeVersionsMap);
+			} else
+				ret = Collections.emptyList();
+		} finally {
+			if (txToClose != null) { // we have created the transaction
+				if (ret == null)
+					ret = new ArrayList<JcError>();
+				ret.addAll(txToClose.close());
+			}
+		}
+		return ret;
 	}
 
 	SyncState getSyncState() {

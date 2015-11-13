@@ -42,6 +42,7 @@ import org.junit.Test;
 import test.AbstractTestSuite;
 import test.domainquery.Population;
 import test.domainquery.model.Person;
+import test.domainquery.model.PointOfContact;
 
 public class ConcurrencyTest extends AbstractTestSuite {
 	
@@ -50,7 +51,179 @@ public class ConcurrencyTest extends AbstractTestSuite {
 	private static List<Object> storedDomainObjects;
 	
 	@Test
+	public void testConcurrency_04() {
+		Locking lockingStrategy = Locking.OPTIMISTIC;
+		initDB(lockingStrategy);
+		
+		/******* first client loading j_smith ******/
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
+				.setLockingStrategy(lockingStrategy);
+		DomainQuery q = da1.createQuery();
+		DomainObjectMatch<Person> j_smithMatch = q.createMatch(Person.class);
+
+		q.WHERE(j_smithMatch.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smithMatch.atttribute("firstName")).EQUALS("John");
+		
+		DomainQueryResult result = q.execute();
+		
+		Person j_smith = result.resultOf(j_smithMatch).get(0);
+		
+		/******* second client loading j_smith ******/
+		IDomainAccess da2 = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
+				.setLockingStrategy(lockingStrategy);
+		DomainQuery q2 = da2.createQuery();
+		DomainObjectMatch<Person> j_smithMatch2 = q2.createMatch(Person.class);
+
+		q2.WHERE(j_smithMatch2.atttribute("lastName")).EQUALS("Smith");
+		q2.WHERE(j_smithMatch2.atttribute("firstName")).EQUALS("John");
+		
+		DomainQueryResult result2 = q2.execute();
+		
+		Person j_smith2 = result2.resultOf(j_smithMatch2).get(0);
+		
+		/******* second client modifying j_smith pointsOfContact ******/
+		List<PointOfContact> pocs2 = j_smith2.getPointsOfContact();
+		PointOfContact poc2 = pocs2.remove(pocs2.size() - 1);
+		pocs2.add(0, poc2);
+		
+		List<JcError> errors = da2.store(j_smith2);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		/******* first client modifying j_smith pointsOfContact ******/
+		
+		List<PointOfContact> pocs = j_smith.getPointsOfContact();
+		PointOfContact poc = pocs.remove(0);
+		pocs.add(poc);
+		
+		errors = da1.store(j_smith);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		return;
+	}
+	
+	@Test
+	public void testConcurrency_03() {
+		Locking lockingStrategy = Locking.NONE;
+		initDB(lockingStrategy);
+		
+		/******* first client loading j_smith ******/
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
+				.setLockingStrategy(lockingStrategy);
+		DomainQuery q = da1.createQuery();
+		DomainObjectMatch<Person> j_smithMatch = q.createMatch(Person.class);
+
+		q.WHERE(j_smithMatch.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smithMatch.atttribute("firstName")).EQUALS("John");
+		
+		DomainQueryResult result = q.execute();
+		
+		Person j_smith = result.resultOf(j_smithMatch).get(0);
+		
+		/******* second client loading j_smith ******/
+		IDomainAccess da2 = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
+				.setLockingStrategy(lockingStrategy);
+		DomainQuery q2 = da2.createQuery();
+		DomainObjectMatch<Person> j_smithMatch2 = q2.createMatch(Person.class);
+
+		q2.WHERE(j_smithMatch2.atttribute("lastName")).EQUALS("Smith");
+		q2.WHERE(j_smithMatch2.atttribute("firstName")).EQUALS("John");
+		
+		DomainQueryResult result2 = q2.execute();
+		
+		Person j_smith2 = result2.resultOf(j_smithMatch2).get(0);
+		
+		/******* second client modifying j_smith pointsOfContact ******/
+		List<PointOfContact> pocs2 = j_smith2.getPointsOfContact();
+		PointOfContact poc2 = pocs2.remove(pocs2.size() - 1);
+		pocs2.add(0, poc2);
+		
+		List<JcError> errors = da2.store(j_smith2);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		/******* first client modifying j_smith pointsOfContact ******/
+		
+		List<PointOfContact> pocs = j_smith.getPointsOfContact();
+		PointOfContact poc = pocs.remove(0);
+		pocs.add(poc);
+		
+		errors = da1.store(j_smith);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		return;
+	}
+	
+	@Test
+	public void testConcurrency_02() {
+		Locking lockingStrategy = Locking.NONE;
+		initDB(lockingStrategy);
+		
+		/******* first client loading j_smith ******/
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
+				.setLockingStrategy(lockingStrategy);
+		DomainQuery q = da1.createQuery();
+		DomainObjectMatch<Person> j_smithMatch = q.createMatch(Person.class);
+
+		q.WHERE(j_smithMatch.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smithMatch.atttribute("firstName")).EQUALS("John");
+		
+		DomainQueryResult result = q.execute();
+		
+		Person j_smith = result.resultOf(j_smithMatch).get(0);
+		
+		/******* second client loading j_smith ******/
+		IDomainAccess da2 = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
+				.setLockingStrategy(lockingStrategy);
+		DomainQuery q2 = da2.createQuery();
+		DomainObjectMatch<Person> j_smithMatch2 = q2.createMatch(Person.class);
+
+		q2.WHERE(j_smithMatch2.atttribute("lastName")).EQUALS("Smith");
+		q2.WHERE(j_smithMatch2.atttribute("firstName")).EQUALS("John");
+		
+		DomainQueryResult result2 = q2.execute();
+		
+		Person j_smith2 = result2.resultOf(j_smithMatch2).get(0);
+		
+		/******* second client modifying j_smith ******/
+		j_smith2.setFirstName("Johnny");
+//		Address addr = (Address)j_smith2.getPointsOfContact().get(0);
+//		addr.setNumber(addr.getNumber() + 1);
+		
+		List<JcError> errors = da2.store(j_smith2);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		/******* first client modifying j_smith ******/
+		
+		j_smith.setFirstName("Johnny boy");
+		
+		errors = da1.store(j_smith);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		return;
+	}
+	
+	@Test
 	public void testConcurrency_01() {
+		Locking lockingStrategy = Locking.OPTIMISTIC;
+		initDB(lockingStrategy);
+		
 		/******* first client loading j_smith ******/
 		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
 				.setLockingStrategy(Locking.OPTIMISTIC);
@@ -66,7 +239,7 @@ public class ConcurrencyTest extends AbstractTestSuite {
 		
 		/******* second client loading j_smith ******/
 		IDomainAccess da2 = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
-				.setLockingStrategy(Locking.OPTIMISTIC);
+				.setLockingStrategy(lockingStrategy);
 		DomainQuery q2 = da2.createQuery();
 		DomainObjectMatch<Person> j_smithMatch2 = q2.createMatch(Person.class);
 
@@ -125,19 +298,6 @@ public class ConcurrencyTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOM_QUERY, ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.UPDATE_QUERY, ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.CLOSURE_QUERY, ContentToObserve.CYPHER);
-		
-		List<JcError> errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
-		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
-				.setLockingStrategy(Locking.OPTIMISTIC);
-		errors = da.store(storedDomainObjects);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
 	}
 	
 	@AfterClass
@@ -151,4 +311,19 @@ public class ConcurrencyTest extends AbstractTestSuite {
 		QueriesPrintObserver.removeAllOutputStreams();
 	}
 
+	private static void initDB(Locking lockingStrategy) {
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
+				.setLockingStrategy(lockingStrategy);
+		errors = da.store(storedDomainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+	}
+	
 }

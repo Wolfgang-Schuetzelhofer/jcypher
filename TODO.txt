@@ -1,3 +1,5 @@
+does a node who's relation change need a new version ???
+
 concurrency: updateMappingsIfNeeded has to ask the graph for changes
 
 ---done--- comment additional config properties for embedded db access

@@ -132,12 +132,22 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	
 	@Override
 	public List<JcError> store(List<?> domainObjects) {
-		List<JcError> ret;
+		List<JcError> ret = null;
 		String pLab = this.domainAccessHandler.setDomainLabel();
+		ITransaction txToClose = null;
 		try {
+			if (this.domainAccessHandler.lockingStrategy == Locking.OPTIMISTIC) {
+				if (this.domainAccessHandler.dbAccess.getTX() == null)
+					txToClose = this.beginTX();
+			}
 			ret = this.domainAccessHandler.store(domainObjects);
 		} finally {
 			CurrentDomain.setDomainLabel(pLab);
+			if (txToClose != null) { // we have created the transaction
+				if (ret == null)
+					ret = new ArrayList<JcError>();
+				ret.addAll(txToClose.close());
+			}
 		}
 		return ret;
 	}
@@ -3012,6 +3022,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private Map<Object, GrNode> domObj2Node;
 		private List<DomRelation2ResultRelation> domRelation2Relations;
 		private Map<Integer, QueryNode2ResultNode> nodeIndexMap;
+		private Map<Integer, QueryRelation2ResultRelation> relationIndexMap;
 		private Graph graph;
 		private SurrogateChangeLog surrogateChangeLog = new SurrogateChangeLog();
 	}
