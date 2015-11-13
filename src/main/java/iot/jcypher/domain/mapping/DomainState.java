@@ -32,7 +32,7 @@ import java.util.Map.Entry;
 public class DomainState {
 
 	private Map<Object, LoadInfo> object2IdMap;
-	private Map<IRelation, Long> relation2IdMap;
+	private Map<IRelation, RelationLoadInfo> relation2IdMap;
 	
 	// in a domain there can only exist unambiguous mappings between objects and nodes
 	private Map<Long, Object> id2ObjectMap;
@@ -44,7 +44,7 @@ public class DomainState {
 	public DomainState() {
 		super();
 		this.object2IdMap = new HashMap<Object, LoadInfo>();
-		this.relation2IdMap = new HashMap<IRelation, Long>();
+		this.relation2IdMap = new HashMap<IRelation, RelationLoadInfo>();
 		this.id2ObjectMap = new HashMap<Long, Object>();
 		this.object2RelationsMap = new HashMap<Object, List<IRelation>>();
 		this.objectField2KeyedRelationsMap = new HashMap<SourceField2TargetKey, List<KeyedRelation>>();
@@ -62,10 +62,10 @@ public class DomainState {
 		
 		Map<IRelation, IRelation> copiedRels = new IdentityHashMap<IRelation, IRelation>();
 		
-		Iterator<Entry<IRelation, Long>> it_2 = this.relation2IdMap.entrySet().iterator();
+		Iterator<Entry<IRelation, RelationLoadInfo>> it_2 = this.relation2IdMap.entrySet().iterator();
 		while(it_2.hasNext()) {
-			Entry<IRelation, Long> entry = it_2.next();
-			ret.relation2IdMap.put(copyRelation(entry.getKey(), copiedRels), entry.getValue());
+			Entry<IRelation, RelationLoadInfo> entry = it_2.next();
+			ret.relation2IdMap.put(copyRelation(entry.getKey(), copiedRels), entry.getValue().createCopy());
 		}
 		Iterator<Entry<Long, Object>> it_3 = this.id2ObjectMap.entrySet().iterator();
 		while(it_3.hasNext()) {
@@ -171,7 +171,14 @@ public class DomainState {
 		return this.object2IdMap.get(key);
 	}
 	
-	public void add_Id2Relation(IRelation relat, Long value) {
+	public void add_Id2Relation(IRelation relat, Long id, int version) {
+		RelationLoadInfo rli = new RelationLoadInfo();
+		rli.id = id;
+		rli.version = version;
+		add_Info2Relation(relat, rli);
+	}
+	
+	public void add_Info2Relation(IRelation relat, RelationLoadInfo rli) {
 		if (!relat.isDeferred()) {
 			IRelation toPut = relat; 
 			if (relat instanceof KeyedRelationToChange) {
@@ -191,7 +198,7 @@ public class DomainState {
 				KeyedRelation newOne = ((KeyedRelationToChange)relat).getNewOne();
 				toPut = newOne;
 			}
-			this.relation2IdMap.put(toPut, value);
+			this.relation2IdMap.put(toPut, rli);
 			
 			if (toPut instanceof KeyedRelation) {
 				SourceField2TargetKey key = new SourceField2TargetKey(toPut.getStart(),
@@ -222,11 +229,11 @@ public class DomainState {
 			}
 		} else {
 			relat.setDomainState(this);
-			relat.setId(value.longValue());
+			relat.setId(rli.id.longValue());
 		}
 	}
 	
-	public Long getFrom_Relation2IdMap(IRelation relat) {
+	public RelationLoadInfo getFrom_Relation2IdMap(IRelation relat) {
 		IRelation key;
 		if (relat instanceof KeyedRelationToChange)
 			key = ((KeyedRelationToChange)relat).existingOne;
@@ -452,12 +459,14 @@ public class DomainState {
 			}
 
 			public void updateWith(Object startOrEnd) {
+				RelationLoadInfo rli = Relation.this.domainState.getFrom_Relation2IdMap(Relation.this);
+				int v = rli != null ? rli.getVersion() : -1;
 				if (this.start)
 					Relation.this.start = startOrEnd;
 				else
 					Relation.this.end = startOrEnd;
 				Relation.this.domainState.add_Id2Relation(Relation.this,
-						Relation.this.id);
+						Relation.this.id, v);
 			}
 		}
 	}
@@ -715,6 +724,26 @@ public class DomainState {
 			return true;
 		}
 		
+	}
+	
+	/********************************/
+	public static class RelationLoadInfo {
+		private Long id;
+		private int version;
+		
+		private RelationLoadInfo createCopy() {
+			RelationLoadInfo ret = new RelationLoadInfo();
+			ret.id = this.id;
+			ret.version = this.version;
+			return ret;
+		}
+		
+		public Long getId() {
+			return id;
+		}
+		public int getVersion() {
+			return version;
+		}
 	}
 	
 	/********************************/

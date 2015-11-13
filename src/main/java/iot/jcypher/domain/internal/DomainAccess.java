@@ -38,6 +38,7 @@ import iot.jcypher.domain.mapping.DomainState.KeyedRelation;
 import iot.jcypher.domain.mapping.DomainState.KeyedRelationToChange;
 import iot.jcypher.domain.mapping.DomainState.LoadInfo;
 import iot.jcypher.domain.mapping.DomainState.Relation;
+import iot.jcypher.domain.mapping.DomainState.RelationLoadInfo;
 import iot.jcypher.domain.mapping.DomainState.SourceField2TargetKey;
 import iot.jcypher.domain.mapping.DomainState.SourceFieldKey;
 import iot.jcypher.domain.mapping.FieldMapping;
@@ -719,18 +720,26 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					MappingUtil.internalDomainAccess.remove();
 			}
 			
-			Map<Long, Integer> nodeVersionsMap = null;
+			Map<Long, Integer> elementVersionsMap = null;
 			if (this.lockingStrategy == Locking.OPTIMISTIC) {
+				if (context.nodeIndexMap != null || context.relationIndexMap != null)
+					elementVersionsMap = new HashMap<Long, Integer>();
 				if (context.nodeIndexMap != null) {
-					nodeVersionsMap = new HashMap<Long, Integer>();
 					Iterator<QueryNode2ResultNode> it = context.nodeIndexMap.values().iterator();
 					while (it.hasNext()) {
 						QueryNode2ResultNode n2n = it.next();
-						nodeVersionsMap.put(n2n.resultNode.getId(), n2n.version);
+						elementVersionsMap.put(n2n.resultNode.getId(), n2n.version);
+					}
+				}
+				if (context.relationIndexMap != null) {
+					Iterator<QueryRelation2ResultRelation> it = context.relationIndexMap.values().iterator();
+					while (it.hasNext()) {
+						QueryRelation2ResultRelation r2r = it.next();
+						elementVersionsMap.put(r2r.resultRelation.getId(), r2r.version);
 					}
 				}
 			}
-			List<JcError> errors = GrAccess.store(context.graph, nodeVersionsMap);
+			List<JcError> errors = GrAccess.store(context.graph, elementVersionsMap);
 			DomainState ds = getDomainState();
 			if (errors.isEmpty()) {
 				for (IRelation relat : context.relationsToRemove) {
@@ -749,7 +758,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				}
 				
 				for (DomRelation2ResultRelation d2r : context.domRelation2Relations) {
-					ds.add_Id2Relation(d2r.domRelation, d2r.resultRelation.getId());
+					GrRelation rel = d2r.resultRelation;
+					GrProperty prop = rel.getProperty(ResultHandler.lockVersionProperty);
+					int v = -1;
+					if (prop != null)
+						v = ((Number)prop.getValue()).intValue();
+					ds.add_Id2Relation(d2r.domRelation, rel.getId(), v);
 				}
 			}
 			return errors;
@@ -899,17 +913,18 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				}
 			}
 			
-			Map<Integer, QueryRelation2ResultRelation> relationIndexMap = null;
 			for (int i = 0; i < context.relations.size(); i++) {
 				IRelation relat = context.relations.get(i);
-				Long id = ds.getFrom_Relation2IdMap(relat);
+				RelationLoadInfo rli = ds.getFrom_Relation2IdMap(relat);
+				Long id = rli != null ? rli.getId() : null;
 				if (id != null) { // relation exists in graphdb
 					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
 					QueryRelation2ResultRelation r2r = new QueryRelation2ResultRelation();
 					r2r.queryRelation = r;
-					if (relationIndexMap == null)
-						relationIndexMap = new HashMap<Integer, QueryRelation2ResultRelation>();
-					relationIndexMap.put(new Integer(i), r2r);
+					r2r.version = rli.getVersion();
+					if (context.relationIndexMap == null)
+						context.relationIndexMap = new HashMap<Integer, QueryRelation2ResultRelation>();
+					context.relationIndexMap.put(new Integer(i), r2r);
 					clauses.add(START.relation(r).byId(id.longValue()));
 				}
 			}
@@ -921,7 +936,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				for (int i = 0; i < context.relationsToRemove.size(); i++) {
 					IRelation relat = context.relationsToRemove.get(i);
 					// relation must exist in db
-					Long id = ds.getFrom_Relation2IdMap(relat);
+					Long id = ds.getFrom_Relation2IdMap(relat).getId();
 					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
 					removeStartClauses.add(START.relation(r).byId(id.longValue()));
 					removeClauses.add(DO.DELETE(r));
@@ -978,8 +993,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 							entry.getValue().resultNode = result.resultOf(entry.getValue().queryNode).get(0);
 						}
 					}
-					if (relationIndexMap != null) {
-						Iterator<Entry<Integer, QueryRelation2ResultRelation>> rit = relationIndexMap.entrySet().iterator();
+					if (context.relationIndexMap != null) {
+						Iterator<Entry<Integer, QueryRelation2ResultRelation>> rit = context.relationIndexMap.entrySet().iterator();
 						while (rit.hasNext()) {
 							Entry<Integer, QueryRelation2ResultRelation> entry = rit.next();
 							entry.getValue().resultRelation = result.resultOf(entry.getValue().queryRelation).get(0);
@@ -1011,8 +1026,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			
 			for (int i = 0; i < context.relations.size(); i++) {
 				GrRelation rRelation = null;
-				if (relationIndexMap != null && relationIndexMap.get(i) != null) {
-					rRelation = relationIndexMap.get(i).resultRelation;
+				if (context.relationIndexMap != null && context.relationIndexMap.get(i) != null) {
+					rRelation = context.relationIndexMap.get(i).resultRelation;
 				}
 				if (rRelation == null) {
 					IRelation relat = context.relations.get(i);
@@ -2429,8 +2444,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 								Relation relat = new Relation(fm.getPropertyOrRelationName(),
 										context.parentObject,
 										domainObject);
+								GrProperty prop = rel.getProperty(ResultHandler.lockVersionProperty);
+								int v = -1;
+								if (prop != null)
+									v = ((Number)prop.getValue()).intValue();
 								ds.add_Id2Relation(
-										relat, rel.getId());
+										relat, rel.getId(), v);
 								if (domainObject instanceof AbstractSurrogate)
 									context.surrogateChangeLog.added.add(relat);
 							}
@@ -2545,7 +2564,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						needResort = true;
 					prevIndex = idx;
 					KeyedRelation irel = new KeyedRelation(relType, idx, context.parentObject, domainObject);
-					ds.add_Id2Relation(irel, rel.getId());
+					prop = rel.getProperty(ResultHandler.lockVersionProperty);
+					int v = -1;
+					if (prop != null)
+						v = ((Number)prop.getValue()).intValue();
+					ds.add_Id2Relation(irel, rel.getId(), v);
 					boolean fillList = true;
 					if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.AbstractSurrogate) {
 						if (listUpdater == null) {
@@ -2609,7 +2632,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 										domainAccessHandler.domainModel.getClassForName(typeProp.getValue().toString()));
 								irel.setValue(val);
 							}
-							ds.add_Id2Relation(irel, relId);
+							prop = rel.getProperty(ResultHandler.lockVersionProperty);
+							int v = -1;
+							if (prop != null)
+								v = ((Number)prop.getValue()).intValue();
+							ds.add_Id2Relation(irel, relId, v);
 							
 							boolean fillMap = true;
 							if (end instanceof MapEntry) {
@@ -3044,6 +3071,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	private class QueryRelation2ResultRelation {
 		private JcRelation queryRelation;
 		private GrRelation resultRelation;
+		private int version;
 	}
 	
 	/***********************************/

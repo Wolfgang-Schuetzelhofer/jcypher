@@ -100,13 +100,13 @@ public class Graph {
 	 * Update the underlying database with changes made on the graph
 	 * @return a list of errors, which is empty if no errors occurred
 	 */
-	List<JcError> store(Map<Long, Integer> nodeVersionsMap) {
+	List<JcError> store(Map<Long, Integer> elementVersionsMap) {
 		List<JcError> ret = null;
 		ITransaction txToClose = null;
 		try {
 			if (isModified()) {
 				txToClose = this.resultHandler.createLockingTxIfNeeded();
-				ret = this.resultHandler.store(nodeVersionsMap);
+				ret = this.resultHandler.store(elementVersionsMap);
 			} else
 				ret = Collections.emptyList();
 		} finally {

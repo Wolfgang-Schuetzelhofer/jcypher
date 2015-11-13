@@ -91,7 +91,7 @@ public class ResultHandler {
 	private IDBAccess dbAccess;
 	
 	// allow to switch off writing version property for testing purposes
-	public static boolean writeVersion = true;
+	public static final boolean writeVersion = true;
 	
 	private Graph graph;
 	private Locking lockingStrategy;
@@ -693,10 +693,10 @@ public class ResultHandler {
 	 * Update the underlying database with changes made on the graph
 	 * @return a list of errors, which is empty if no errors occurred
 	 */
-	public List<JcError> store(Map<Long, Integer> nodeVersionsMap) {
+	public List<JcError> store(Map<Long, Integer> elementVersionsMap) {
 		Map<GrNode, JcNumber> createdNodeToIdMap = new HashMap<GrNode, JcNumber>();
 		Map<GrRelation, JcNumber> createdRelationToIdMap = new HashMap<GrRelation, JcNumber>();
-		List<ElemId2Query> elemIds2Query = createUpdateQueries(createdNodeToIdMap, createdRelationToIdMap, nodeVersionsMap);
+		List<ElemId2Query> elemIds2Query = createUpdateQueries(createdNodeToIdMap, createdRelationToIdMap, elementVersionsMap);
 		Map<Long, Integer> elemId2ResultIndex = new HashMap<Long, Integer>();
 		List<JcQuery> queries = collectQueries(elemIds2Query, elemId2ResultIndex);
 		Util.printQueries(queries, QueryToObserve.UPDATE_QUERY, Format.PRETTY_1);
@@ -733,9 +733,9 @@ public class ResultHandler {
 	}
 	
 	private List<ElemId2Query> createUpdateQueries(Map<GrNode, JcNumber> createdNodeToIdMap,
-			Map<GrRelation, JcNumber> createdRelationToIdMap, Map<Long, Integer> nodeVersionsMap) {
+			Map<GrRelation, JcNumber> createdRelationToIdMap, Map<Long, Integer> elementVersionsMap) {
 		QueryBuilder queryBuilder = new QueryBuilder();
-		List<ElemId2Query> elemIds2Query = queryBuilder.buildUpdateAndRemoveQueries(nodeVersionsMap);
+		List<ElemId2Query> elemIds2Query = queryBuilder.buildUpdateAndRemoveQueries(elementVersionsMap);
 		JcQuery createQuery = queryBuilder.buildCreateQuery(createdNodeToIdMap,
 				createdRelationToIdMap);
 		if (createQuery != null)
@@ -1047,7 +1047,7 @@ public class ResultHandler {
 			return ret;
 		}
 		
-		List<ElemId2Query> buildUpdateAndRemoveQueries(Map<Long, Integer> nodeVersionsMap) {
+		List<ElemId2Query> buildUpdateAndRemoveQueries(Map<Long, Integer> elementVersionsMap) {
 			List<ElemId2Query> ret = new ArrayList<ElemId2Query>();
 			List<GrPropertyContainer> removedNodes = new ArrayList<GrPropertyContainer>();
 			if (changedNodesById != null) {
@@ -1058,7 +1058,7 @@ public class ResultHandler {
 					if (state == SyncState.CHANGED) {
 						ret.add(
 								new ElemId2Query(node.getId(), ret.size(),
-										buildChangedNodeOrRelationQuery(node, nodeVersionsMap)));
+										buildChangedNodeOrRelationQuery(node, elementVersionsMap)));
 					} else if (state == SyncState.REMOVED) {
 						removedNodes.add(node);
 					}
@@ -1074,7 +1074,7 @@ public class ResultHandler {
 					if (state == SyncState.CHANGED) {
 						ret.add(
 								new ElemId2Query(relation.getId(), ret.size(),
-										buildChangedNodeOrRelationQuery(relation, null)));
+										buildChangedNodeOrRelationQuery(relation, elementVersionsMap)));
 					} else if (state == SyncState.REMOVED) {
 						removedRelations.add(relation);
 					}
@@ -1185,11 +1185,11 @@ public class ResultHandler {
 		}
 
 		private JcQuery buildChangedNodeOrRelationQuery(GrPropertyContainer element,
-				Map<Long, Integer> nodeVersionsMap) {
+				Map<Long, Integer> elementVersionsMap) {
 			int nodeVersion = -1;
-			if (nodeVersionsMap != null) { // only when coming from DomainAccess
+			if (elementVersionsMap != null) { // only when coming from DomainAccess
 						// with Locking.OTIMISTIC
-				Integer v = nodeVersionsMap.get(element.getId());
+				Integer v = elementVersionsMap.get(element.getId());
 				if (v != null)
 					nodeVersion = v;
 			} else {

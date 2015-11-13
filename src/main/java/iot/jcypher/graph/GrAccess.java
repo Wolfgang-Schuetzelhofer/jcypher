@@ -27,8 +27,8 @@ import java.util.Map;
 
 public class GrAccess {
 
-	public static List<JcError> store(Graph graph, Map<Long, Integer> nodeVersionsMap) {
-		return graph.store(nodeVersionsMap);
+	public static List<JcError> store(Graph graph, Map<Long, Integer> elementVersionsMap) {
+		return graph.store(elementVersionsMap);
 	}
 	public static GrNode createNode(ResultHandler rh, GrId id, int rowIdx) {
 		return new GrNode(rh, id, rowIdx);
