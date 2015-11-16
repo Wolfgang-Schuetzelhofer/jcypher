@@ -1,6 +1,10 @@
 Release Notes
 =======
 
+## 3.1.0
+**Fixed**
+- Bug in close transaction when working with generic graph model.
+
 ## 3.0.0
 **New**
 - Generic Domain Model.

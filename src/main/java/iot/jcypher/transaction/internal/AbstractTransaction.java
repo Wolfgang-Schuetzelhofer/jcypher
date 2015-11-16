@@ -61,8 +61,10 @@ public abstract class AbstractTransaction implements ITransaction {
 	
 	protected void setClosed() {
 		this.closed = true;
-		this.intDomainAccess.getInternalDomainAccess().transactionClosed(this.failed,
-				this.domainInfoChanged, this.noInfoNodeId);
+		if (this.intDomainAccess != null) {
+			this.intDomainAccess.getInternalDomainAccess().transactionClosed(this.failed,
+					this.domainInfoChanged, this.noInfoNodeId);
+		}
 		this.intDomainAccess = null;
 		this.dbAccess = null;
 	}

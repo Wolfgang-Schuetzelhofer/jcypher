@@ -60,6 +60,27 @@ import util.TestDataReader;
 public class ClauseTest extends AbstractTestSuite {
 	
 	@Test
+	public void testExperimental() {
+		JcRelation r_0 = new JcRelation("r_0");
+		JcRelation r_1 = new JcRelation("r_1");
+		JcNumber sum = new JcNumber("sum");
+		IClause[] clauses = new IClause[] {
+				OPTIONAL_MATCH.node().relation(r_0).node(),
+				WHERE.valueOf(r_0.id()).EQUALS(100),
+				OPTIONAL_MATCH.node().relation(r_1).node(),
+				WHERE.valueOf(r_1.id()).EQUALS(101),
+				WITH.value(r_0),
+				WITH.value(r_1),
+				WITH.value(r_0.numberProperty("_c_version_").plus(r_1.numberProperty("_c_version_"))).AS(sum),
+				RETURN.value(r_0),
+				RETURN.value(r_1),
+				RETURN.value(sum)
+		};
+		String result = print(clauses, Format.PRETTY_1);
+		return;
+	}
+	
+	@Test
 	public void testForEach_Do_01() {
 		String result;
 		String testId;

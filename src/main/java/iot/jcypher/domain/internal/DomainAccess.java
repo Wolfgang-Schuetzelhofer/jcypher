@@ -68,6 +68,7 @@ import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.graph.Graph;
+import iot.jcypher.graph.internal.LockUtil;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
@@ -729,50 +730,61 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					MappingUtil.internalDomainAccess.remove();
 			}
 			
-			Map<Long, Integer> elementVersionsMap = null;
-			if (this.lockingStrategy == Locking.OPTIMISTIC) {
-				if (context.nodeIndexMap != null || context.relationIndexMap != null)
-					elementVersionsMap = new HashMap<Long, Integer>();
-				if (context.nodeIndexMap != null) {
-					Iterator<QueryNode2ResultNode> it = context.nodeIndexMap.values().iterator();
-					while (it.hasNext()) {
-						QueryNode2ResultNode n2n = it.next();
-						elementVersionsMap.put(n2n.resultNode.getId(), n2n.version);
+			List<JcError> errors;
+			if (context.lockingErrors) { // only set if Locking.OPTIMISTIC and there are errors
+				errors = new ArrayList<JcError>();
+				JcError error = new JcError("JCypher.Locking", "Optimistic locking failed (an element was deleted by another client)",
+						null);
+				errors.add(error);
+				ITransaction tx = this.dbAccess.getTX();
+				if (tx != null)
+					tx.failure();
+			} else {
+				Map<Long, Integer> elementVersionsMap = null;
+				if (this.lockingStrategy == Locking.OPTIMISTIC) {
+					if (context.nodeIndexMap != null || context.relationIndexMap != null)
+						elementVersionsMap = new HashMap<Long, Integer>();
+					if (context.nodeIndexMap != null) {
+						Iterator<QueryNode2ResultNode> it = context.nodeIndexMap.values().iterator();
+						while (it.hasNext()) {
+							QueryNode2ResultNode n2n = it.next();
+							elementVersionsMap.put(n2n.resultNode.getId(), n2n.version);
+						}
+					}
+					if (context.relationIndexMap != null) {
+						Iterator<QueryRelation2ResultRelation> it = context.relationIndexMap.values().iterator();
+						while (it.hasNext()) {
+							QueryRelation2ResultRelation r2r = it.next();
+							elementVersionsMap.put(r2r.resultRelation.getId(), r2r.version);
+						}
 					}
 				}
-				if (context.relationIndexMap != null) {
-					Iterator<QueryRelation2ResultRelation> it = context.relationIndexMap.values().iterator();
-					while (it.hasNext()) {
-						QueryRelation2ResultRelation r2r = it.next();
-						elementVersionsMap.put(r2r.resultRelation.getId(), r2r.version);
+				errors = GrAccess.store(context.graph, elementVersionsMap);
+				DomainState ds = getDomainState();
+				if (errors.isEmpty()) {
+					for (IRelation relat : context.relationsToRemove) {
+						ds.removeRelation(relat);
 					}
-				}
-			}
-			List<JcError> errors = GrAccess.store(context.graph, elementVersionsMap);
-			DomainState ds = getDomainState();
-			if (errors.isEmpty()) {
-				for (IRelation relat : context.relationsToRemove) {
-					ds.removeRelation(relat);
-				}
-				
-				Iterator<Entry<Object, GrNode>> it = context.domObj2Node.entrySet().iterator();
-				while(it.hasNext()) {
-					Entry<Object, GrNode> entry = it.next();
-					GrNode nd = entry.getValue();
-					GrProperty prop = nd.getProperty(ResultHandler.lockVersionProperty);
-					int v = -1;
-					if (prop != null)
-						v = ((Number)prop.getValue()).intValue();
-					ds.add_Id2Object(entry.getKey(), nd.getId(), v, ResolutionDepth.DEEP);
-				}
-				
-				for (DomRelation2ResultRelation d2r : context.domRelation2Relations) {
-					GrRelation rel = d2r.resultRelation;
-					GrProperty prop = rel.getProperty(ResultHandler.lockVersionProperty);
-					int v = -1;
-					if (prop != null)
-						v = ((Number)prop.getValue()).intValue();
-					ds.add_Id2Relation(d2r.domRelation, rel.getId(), v);
+					
+					Iterator<Entry<Object, GrNode>> it = context.domObj2Node.entrySet().iterator();
+					while(it.hasNext()) {
+						Entry<Object, GrNode> entry = it.next();
+						GrNode nd = entry.getValue();
+						GrProperty prop = nd.getProperty(ResultHandler.lockVersionProperty);
+						int v = -1;
+						if (prop != null)
+							v = ((Number)prop.getValue()).intValue();
+						ds.add_Id2Object(entry.getKey(), nd.getId(), v, ResolutionDepth.DEEP);
+					}
+					
+					for (DomRelation2ResultRelation d2r : context.domRelation2Relations) {
+						GrRelation rel = d2r.resultRelation;
+						GrProperty prop = rel.getProperty(ResultHandler.lockVersionProperty);
+						int v = -1;
+						if (prop != null)
+							v = ((Number)prop.getValue()).intValue();
+						ds.add_Id2Relation(d2r.domRelation, rel.getId(), v);
+					}
 				}
 			}
 			return errors;
@@ -893,6 +905,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 		private UpdateContext updateLocalGraph(List<?> domainObjects) {
 			UpdateContext context = new UpdateContext();
+			context.lockingErrors = false;
 			new ClosureCalculator().calculateClosure(domainObjects,
 					context);
 			//int sz = domainState.getSurrogateState().size();
@@ -903,7 +916,6 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			List<IClause> clauses = null;
 			List<IClause> removeStartClauses = null;
 			List<IClause> removeClauses = null;
-			List<IClause> withClauses = null;
 			DomainState ds = this.getDomainState();
 			for (int i = 0; i < context.domainObjects.size(); i++) {
 				domainObject = context.domainObjects.get(i);
@@ -919,7 +931,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					context.nodeIndexMap.put(new Integer(i), n2n);
 					if (clauses == null)
 						clauses = new ArrayList<IClause>();
-					clauses.add(START.node(n).byId(id.longValue()));
+					//clauses.add(START.node(n).byId(id.longValue()));
+					
+					// use OPTIONAL_MATCH to be tolerant for removed elements
+					clauses.add(OPTIONAL_MATCH.node(n));
+					clauses.add(WHERE.valueOf(n.id()).EQUALS(id.longValue()));
 				}
 			}
 			
@@ -935,13 +951,16 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					if (context.relationIndexMap == null)
 						context.relationIndexMap = new HashMap<Integer, QueryRelation2ResultRelation>();
 					context.relationIndexMap.put(new Integer(i), r2r);
-					clauses.add(START.relation(r).byId(id.longValue()));
+					//clauses.add(START.relation(r).byId(id.longValue()));
+					
+					// use OPTIONAL_MATCH to be tolerant for removed elements
+					clauses.add(OPTIONAL_MATCH.node().relation(r).node());
+					clauses.add(WHERE.valueOf(r.id()).EQUALS(id.longValue()));
 				}
 			}
 			
 			// relations to remove
-			int versionSum = 0;
-			JcNumber sum = null;
+			LockUtil.Removes removes = new LockUtil.Removes();
 			if (context.relationsToRemove.size() > 0) {
 				removeStartClauses = new ArrayList<IClause>();
 				removeClauses = new ArrayList<IClause>();
@@ -951,17 +970,13 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					RelationLoadInfo rli = ds.getFrom_Relation2IdMap(relat);
 					Long id = rli.getId();
 					JcRelation r = new JcRelation(RelationPrefix.concat(String.valueOf(i)));
-					removeStartClauses.add(START.relation(r).byId(id.longValue()));
+					//removeStartClauses.add(START.relation(r).byId(id.longValue()));
+					
+					// use OPTIONAL_MATCH to be tolerant for removed elements
+					removeStartClauses.add(OPTIONAL_MATCH.node().relation(r).node());
+					removeStartClauses.add(WHERE.valueOf(r.id()).EQUALS(id.longValue()));
 					if (this.lockingStrategy == Locking.OPTIMISTIC) {
-						if (withClauses == null)
-							withClauses = new ArrayList<IClause>();
-						withClauses.add(WITH.value(r));
-						if (sum == null)
-							sum = r.numberProperty(ResultHandler.lockVersionProperty);
-						else
-							sum = sum.plus(r.numberProperty(ResultHandler.lockVersionProperty));
-						int v = rli.getVersion();
-						versionSum = v >= 0 ? versionSum + v : versionSum;
+						LockUtil.calcRemoves(removes, r, rli.getVersion());
 					}
 					removeClauses.add(DO.DELETE(r));
 				}
@@ -979,27 +994,24 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					LoadInfo li = ds.getLoadInfoFrom_Object2IdMap(dobj);
 					Long id = li.getId();
 					JcNode n = new JcNode(NodePrefix.concat(String.valueOf(i)));
-					removeStartClauses.add(START.node(n).byId(id.longValue()));
+					//removeStartClauses.add(START.node(n).byId(id.longValue()));
+					
+					// use OPTIONAL_MATCH to be tolerant for removed elements
+					removeStartClauses.add(OPTIONAL_MATCH.node(n));
+					removeStartClauses.add(WHERE.valueOf(n.id()).EQUALS(id.longValue()));
 					if (this.lockingStrategy == Locking.OPTIMISTIC) {
-						if (withClauses == null)
-							withClauses = new ArrayList<IClause>();
-						withClauses.add(WITH.value(n));
-						if (sum == null)
-							sum = n.numberProperty(ResultHandler.lockVersionProperty);
-						else
-							sum = sum.plus(n.numberProperty(ResultHandler.lockVersionProperty));
-						int v = li.getVersion();
-						versionSum = v >= 0 ? versionSum + v : versionSum;
+						LockUtil.calcRemoves(removes, n, li.getVersion());
 					}
 					removeClauses.add(DO.DELETE(n));
 				}
 			}
 			
-			if (withClauses != null) {
+			if (removes.getWithClauses() != null) {
 				JcNumber nSum = new JcNumber("sum");
-				withClauses.add(WITH.value(sum).AS(nSum));
+				removes.getWithClauses().add(WITH.value(removes.getSum()).AS(nSum));
 			}
 			
+			JcNumber nSum = null;
 			if (clauses != null || removeStartClauses != null) {
 				JcQuery query;
 				List<JcQuery> queries = new ArrayList<JcQuery>();
@@ -1011,13 +1023,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					queries.add(query);
 				}
 				if (removeStartClauses != null) {
-					if (withClauses != null) {
-						removeStartClauses.addAll(withClauses);
+					if (removes.getWithClauses() != null) {
+						removeStartClauses.addAll(removes.getWithClauses());
 						JcValue x = new JcValue("x");
-						JcNumber nSum = new JcNumber("sum");
+						nSum = new JcNumber("sum");
+						// conditional remove in case of Locking.OPTIONAL
 						IClause clause = FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
 								CASE.result(),
-								WHEN.valueOf(nSum).EQUALS(versionSum),
+								WHEN.valueOf(nSum).EQUALS(removes.getVersionSum()),
 									NATIVE.cypher("[1]"),
 								ELSE.perform(),
 									NATIVE.cypher("[]"),
@@ -1038,6 +1051,16 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					throw new JcResultException(errors);
 				}
 				
+				// check for locking error
+				if (removeStartClauses != null && this.lockingStrategy == Locking.OPTIMISTIC) {
+					JcQueryResult result = clauses != null ? results.get(1) : results.get(0);
+					List<BigDecimal> versionSums = result.resultOf(nSum);
+					if (versionSums.size() == 0 || versionSums.get(0) == null)
+						context.lockingErrors = true;
+					else if (versionSums.get(0).intValue() != removes.getVersionSum())
+						context.lockingErrors = true;
+				}
+				
 				if (clauses != null) {
 					JcQueryResult result = results.get(0);
 					graph = result.getGraph();
@@ -1046,14 +1069,20 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						Iterator<Entry<Integer, QueryNode2ResultNode>> nit = context.nodeIndexMap.entrySet().iterator();
 						while (nit.hasNext()) {
 							Entry<Integer, QueryNode2ResultNode> entry = nit.next();
-							entry.getValue().resultNode = result.resultOf(entry.getValue().queryNode).get(0);
+							GrNode res = result.resultOf(entry.getValue().queryNode).get(0);
+							if (this.lockingStrategy == Locking.OPTIMISTIC && res == null)
+								context.lockingErrors = true;
+							entry.getValue().resultNode = res;
 						}
 					}
 					if (context.relationIndexMap != null) {
 						Iterator<Entry<Integer, QueryRelation2ResultRelation>> rit = context.relationIndexMap.entrySet().iterator();
 						while (rit.hasNext()) {
 							Entry<Integer, QueryRelation2ResultRelation> entry = rit.next();
-							entry.getValue().resultRelation = result.resultOf(entry.getValue().queryRelation).get(0);
+							GrRelation res = result.resultOf(entry.getValue().queryRelation).get(0);
+							if (this.lockingStrategy == Locking.OPTIMISTIC && res == null)
+								context.lockingErrors = true;
+							entry.getValue().resultRelation = res;
 						}
 					}
 				}
@@ -1065,36 +1094,38 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				graph = Graph.create(this.dbAccess);
 			graph.setLockingStrategy(this.lockingStrategy);
 			
-			context.domObj2Node = new HashMap<Object, GrNode>(
-					context.domainObjects.size());
-			context.domRelation2Relations = new ArrayList<DomRelation2ResultRelation>();
-			for (int i = 0; i < context.domainObjects.size(); i++) {
-				GrNode rNode = null;
-				if (context.nodeIndexMap != null && context.nodeIndexMap.get(i) != null) {
-					rNode = context.nodeIndexMap.get(i).resultNode;
+			if (!context.lockingErrors) {
+				context.domObj2Node = new HashMap<Object, GrNode>(
+						context.domainObjects.size());
+				context.domRelation2Relations = new ArrayList<DomRelation2ResultRelation>();
+				for (int i = 0; i < context.domainObjects.size(); i++) {
+					GrNode rNode = null;
+					if (context.nodeIndexMap != null && context.nodeIndexMap.get(i) != null) {
+						rNode = context.nodeIndexMap.get(i).resultNode;
+					}
+					if (rNode == null)
+						rNode = graph.createNode();
+					
+					context.domObj2Node.put(context.domainObjects.get(i), rNode);
+					updateGraphFromObject(context.domainObjects.get(i), rNode);
 				}
-				if (rNode == null)
-					rNode = graph.createNode();
 				
-				context.domObj2Node.put(context.domainObjects.get(i), rNode);
-				updateGraphFromObject(context.domainObjects.get(i), rNode);
-			}
-			
-			for (int i = 0; i < context.relations.size(); i++) {
-				GrRelation rRelation = null;
-				if (context.relationIndexMap != null && context.relationIndexMap.get(i) != null) {
-					rRelation = context.relationIndexMap.get(i).resultRelation;
+				for (int i = 0; i < context.relations.size(); i++) {
+					GrRelation rRelation = null;
+					if (context.relationIndexMap != null && context.relationIndexMap.get(i) != null) {
+						rRelation = context.relationIndexMap.get(i).resultRelation;
+					}
+					if (rRelation == null) {
+						IRelation relat = context.relations.get(i);
+						rRelation = graph.createRelation(relat.getType(),
+								context.domObj2Node.get(relat.getStart()), context.domObj2Node.get(relat.getEnd()));
+						DomRelation2ResultRelation d2r = new DomRelation2ResultRelation();
+						d2r.domRelation = relat;
+						d2r.resultRelation = rRelation;
+						context.domRelation2Relations.add(d2r);
+					}
+					updateGraphFromRelation(context.relations.get(i), rRelation);
 				}
-				if (rRelation == null) {
-					IRelation relat = context.relations.get(i);
-					rRelation = graph.createRelation(relat.getType(),
-							context.domObj2Node.get(relat.getStart()), context.domObj2Node.get(relat.getEnd()));
-					DomRelation2ResultRelation d2r = new DomRelation2ResultRelation();
-					d2r.domRelation = relat;
-					d2r.resultRelation = rRelation;
-					context.domRelation2Relations.add(d2r);
-				}
-				updateGraphFromRelation(context.relations.get(i), rRelation);
 			}
 			context.graph = graph;
 			return context;
@@ -3106,6 +3137,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private List<DomRelation2ResultRelation> domRelation2Relations;
 		private Map<Integer, QueryNode2ResultNode> nodeIndexMap;
 		private Map<Integer, QueryRelation2ResultRelation> relationIndexMap;
+		private boolean lockingErrors;
 		private Graph graph;
 		private SurrogateChangeLog surrogateChangeLog = new SurrogateChangeLog();
 	}

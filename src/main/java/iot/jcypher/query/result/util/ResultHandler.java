@@ -31,6 +31,7 @@ import iot.jcypher.graph.SyncState;
 import iot.jcypher.graph.internal.ChangeListener;
 import iot.jcypher.graph.internal.GrId;
 import iot.jcypher.graph.internal.LocalId;
+import iot.jcypher.graph.internal.LockUtil;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
@@ -44,9 +45,12 @@ import iot.jcypher.query.factories.clause.ELSE;
 import iot.jcypher.query.factories.clause.END;
 import iot.jcypher.query.factories.clause.FOR_EACH;
 import iot.jcypher.query.factories.clause.NATIVE;
+import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.factories.clause.WHEN;
+import iot.jcypher.query.factories.clause.WHERE;
+import iot.jcypher.query.factories.clause.WITH;
 import iot.jcypher.query.factories.xpression.C;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.values.JcBoolean;
@@ -91,7 +95,7 @@ public class ResultHandler {
 	private IDBAccess dbAccess;
 	
 	// allow to switch off writing version property for testing purposes
-	public static final boolean writeVersion = true;
+	public static boolean writeVersion = true;
 	
 	private Graph graph;
 	private Locking lockingStrategy;
@@ -706,8 +710,9 @@ public class ResultHandler {
 //			Util.printResults(results, "UPDATE", Format.PRETTY_1);
 			errors.addAll(Util.collectErrors(results));
 			if (errors.isEmpty()) { // success
-				int errId;
-				if ((errId = hasLockingError(results, !createdNodeToIdMap.isEmpty() || !createdRelationToIdMap.isEmpty())) != -1) {
+				long errId;
+				if ((errId = hasLockingError(results, !createdNodeToIdMap.isEmpty() || !createdRelationToIdMap.isEmpty(),
+						elemIds2Query)) != -1) {
 					JcError error = new JcError("JCypher.Locking", "Optimistic locking failed (an element was changed by another client)",
 							"element id: " + errId);
 					errors.add(error);
@@ -747,19 +752,35 @@ public class ResultHandler {
 	 * in case of error return the element's id, in case of ok return -1
 	 * @param results
 	 * @param hasCreateQuery
+	 * @param elemIds2Query 
 	 * @return
 	 */
-	private int hasLockingError(List<JcQueryResult> results, boolean hasCreateQuery) {
-		int ret = -1;
+	private long hasLockingError(List<JcQueryResult> results, boolean hasCreateQuery, List<ElemId2Query> elemIds2Query) {
+		long ret = -1;
 		if (this.lockingStrategy == Locking.OPTIMISTIC) {
 			JcNumber lockV = new JcNumber("lockV");
 			JcNumber elemId = new JcNumber("elemId");
+			JcNumber nSum = new JcNumber("sum");
 			int to = hasCreateQuery ? results.size() - 1 : results.size(); // don't check the result of the create query
-			for (int i = 0; i < to; i++) { 
-				int res = results.get(i).resultOf(lockV).get(0).intValue();
-				if (res == -2) {
-					ret = results.get(i).resultOf(elemId).get(0).intValue();
-					break;
+			for (int i = 0; i < to; i++) {
+				ElemId2Query elemId2Query = elemIds2Query.get(i);
+				if (elemId2Query.versionSum >= 0 && elemId2Query.elemId < 0) { // delete query
+					List<BigDecimal> ires = results.get(i).resultOf(nSum);
+					if (ires.size() > 0) {
+						
+					}
+				} else { // change query
+					List<BigDecimal> ires = results.get(i).resultOf(lockV);
+					if (ires.size() > 0) {
+						int res = ires.get(0).intValue();
+						if (res == -2) {
+							ret = results.get(i).resultOf(elemId).get(0).intValue();
+							break;
+						}
+					} else {
+						ret = elemIds2Query.get(i).elemId;
+						break;
+					}
 				}
 			}
 		}
@@ -843,11 +864,17 @@ public class ResultHandler {
 					// version in db may be different from element version, so sync element version
 				if (qResult != null) { // only for changed elements
 					JcNumber lockV = new JcNumber("lockV");
-					int v = ((Number)qResult.resultOf(lockV).get(0)).intValue();
 					GrProperty vprop = ((GrPropertyContainer)item).getProperty(lockVersionProperty);
-					int ov = ((Number)vprop.getValue()).intValue();
-					if (v != ov) {
-						vprop.setValue(ov);
+					List<BigDecimal> lvr = qResult.resultOf(lockV);
+					if (lvr.size() > 0) {
+						int v = ((Number)lvr.get(0)).intValue();
+						int ov = ((Number)vprop.getValue()).intValue();
+						if (v != ov) {
+							vprop.setValue(v);
+							GrAccess.setToSynchronized(vprop);
+						}
+					} else { // has been deleted on db, reset to previous value
+						vprop.setValue(((Number)vprop.getValue()).intValue() - 1);
 						GrAccess.setToSynchronized(vprop);
 					}
 				}
@@ -1081,14 +1108,16 @@ public class ResultHandler {
 				}
 			}
 			
-			if (removedRelations.size() > 0)
-				ret.add(
-						new ElemId2Query(-1, ret.size(),
-								buildRemovedNodeOrRelationQuery(removedRelations)));
-			if (removedNodes.size() > 0)
-				ret.add(
-						new ElemId2Query(-1, ret.size(),
-								buildRemovedNodeOrRelationQuery(removedNodes)));
+			if (removedRelations.size() > 0) {
+				ElemId2Query elemId2Query = new ElemId2Query(-1, ret.size(), null);
+				buildRemovedNodeOrRelationQuery(removedRelations, elemId2Query);
+				ret.add(elemId2Query);
+			}
+			if (removedNodes.size() > 0) {
+				ElemId2Query elemId2Query = new ElemId2Query(-1, ret.size(), null);
+				buildRemovedNodeOrRelationQuery(removedNodes, elemId2Query);
+				ret.add(elemId2Query);
+			}
 			
 			return ret;
 		}
@@ -1153,35 +1182,76 @@ public class ResultHandler {
 			return n;
 		}
 
-		private JcQuery buildRemovedNodeOrRelationQuery(List<GrPropertyContainer> elements) {
+		private void buildRemovedNodeOrRelationQuery(List<GrPropertyContainer> elements, ElemId2Query elemId2Query) {
 			List<IClause> clauses = new ArrayList<IClause>();
+			List<IClause> removeClauses = new ArrayList<IClause>();
 			List<String> elemNames = new ArrayList<String>(elements.size());
 			for (int i = 0; i < elements.size(); i++) {
 				String nm = "elem_".concat(String.valueOf(i));
 				elemNames.add(nm);
 				if (elements.get(0) instanceof GrNode) {
 					JcNode elem = new JcNode(nm);
-					clauses.add(START.node(elem).byId(elements.get(i).getId()));
+					//clauses.add(START.node(elem).byId(elements.get(i).getId()));
+					
+					// use OPTIONAL_MATCH to be tolerant for removed elements
+					clauses.add(OPTIONAL_MATCH.node(elem));
+					clauses.add(WHERE.valueOf(elem.id()).EQUALS(elements.get(i).getId()));
 				} else if (elements.get(0) instanceof GrRelation) {
 					JcRelation elem = new JcRelation(nm);
-					clauses.add(START.relation(elem).byId(elements.get(i).getId()));
+					//clauses.add(START.relation(elem).byId(elements.get(i).getId()));
+					
+					// use OPTIONAL_MATCH to be tolerant for removed elements
+					clauses.add(OPTIONAL_MATCH.node().relation(elem).node());
+					clauses.add(WHERE.valueOf(elem.id()).EQUALS(elements.get(i).getId()));
 				}
 			}
+			
+			LockUtil.Removes removes = new LockUtil.Removes();
+			int idx = 0;
 			for (String nm : elemNames) {
 				JcElement elem = null;
 				if (elements.get(0) instanceof GrNode)
 					elem = new JcNode(nm);
 				else if (elements.get(0) instanceof GrRelation)
 					elem = new JcRelation(nm);
-				clauses.add(DO.DELETE(elem));
+				int nodeVersion = -1;
+				GrProperty prop = elements.get(idx).getProperty(lockVersionProperty);
+				if (prop != null)
+					nodeVersion = ((Number)prop.getValue()).intValue();
+				
+				if (lockingStrategy == Locking.OPTIMISTIC) {
+					LockUtil.calcRemoves(removes, elem, nodeVersion);
+				}
+				
+				removeClauses.add(DO.DELETE(elem));
+				idx++;
 			}
 			
+			if (removes.getWithClauses() != null) {
+				JcNumber nSum = new JcNumber("sum");
+				removes.getWithClauses().add(WITH.value(removes.getSum()).AS(nSum));
+				clauses.addAll(removes.getWithClauses());
+				JcValue x = new JcValue("x");
+				// conditional remove in case of Locking.OPTIONAL
+				IClause clause = FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+						CASE.result(),
+						WHEN.valueOf(nSum).EQUALS(removes.getVersionSum()),
+							NATIVE.cypher("[1]"),
+						ELSE.perform(),
+							NATIVE.cypher("[]"),
+						END.caseXpr()
+				})).DO(removeClauses.toArray(new IClause[removeClauses.size()]));
+				clauses.add(clause);
+				clauses.add(RETURN.value(nSum));
+			} else
+				clauses.addAll(removeClauses);
 			
 			IClause[] clausesArray = clauses.toArray(new IClause[clauses.size()]);
 			JcQuery query = new JcQuery();
 			//query.setExtractParams(false);
 			query.setClauses(clausesArray);
-			return query;
+			elemId2Query.versionSum = removes.getVersionSum();
+			elemId2Query.query = query;
 		}
 
 		private JcQuery buildChangedNodeOrRelationQuery(GrPropertyContainer element,
@@ -1205,7 +1275,7 @@ public class ResultHandler {
 				elem = new JcNode("elem");
 			else if (element instanceof GrRelation)
 				elem = new JcRelation("elem");
-			IClause startClause = buildStartClause(element);
+			List<IClause> startClause = buildStartClause(element);
 			clauses.addAll(buildChangedPropertiesClauses(element));
 			if (writeVersion || lockingStrategy == Locking.OPTIMISTIC)
 				clauses.add(
@@ -1216,7 +1286,7 @@ public class ResultHandler {
 			if (lockingStrategy == Locking.OPTIMISTIC && nodeVersion >= 0) {
 				clausesArray = clauses.toArray(new IClause[clauses.size()]);
 				clauses.clear();
-				clauses.add(startClause);
+				clauses.addAll(startClause);
 				JcValue x = new JcValue("x");
 				IClause clause = FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
 						CASE.result(),
@@ -1237,7 +1307,7 @@ public class ResultHandler {
 				})).DO(clausesArray);
 				clauses.add(clause);
 			} else
-				clauses.add(0, startClause);
+				clauses.addAll(0, startClause);
 			JcNumber elemId = new JcNumber("elemId");
 			if (writeVersion || lockingStrategy == Locking.OPTIMISTIC) {
 				clauses.add(RETURN.value(elem.property(lockVersionProperty)).AS(lockV));
@@ -1305,16 +1375,19 @@ public class ResultHandler {
 			return ret;
 		}
 
-		private IClause buildStartClause(GrPropertyContainer element) {
-			long id = element.getId();
-			IClause ret = null;
+		private List<IClause> buildStartClause(GrPropertyContainer element) {
+			List<IClause> ret = new ArrayList<IClause>();
+			JcElement elem;
 			if (element instanceof GrNode) {
-				JcNode elem = new JcNode("elem");
-				ret = START.node(elem).byId(id);
-			} else if (element instanceof GrRelation) {
-				JcRelation elem = new JcRelation("elem");
-				ret = START.relation(elem).byId(id);
+				elem = new JcNode("elem");
+				//ret = START.node(elem).byId(id);
+				ret.add(OPTIONAL_MATCH.node((JcNode) elem));
+			} else {
+				elem = new JcRelation("elem");
+				//ret = START.relation(elem).byId(id);
+				ret.add(OPTIONAL_MATCH.relation((JcRelation) elem));
 			}
+			ret.add(WHERE.valueOf(elem.id()).EQUALS(element.getId()));
 			return ret;
 		}
 		
@@ -1377,6 +1450,7 @@ public class ResultHandler {
 	private class ElemId2Query {
 		private long elemId;
 		private int queryIndex;
+		private int versionSum;
 		private JcQuery query;
 		
 		private ElemId2Query(long elemId, int queryIndex, JcQuery query) {
@@ -1384,6 +1458,7 @@ public class ResultHandler {
 			this.elemId = elemId;
 			this.queryIndex = queryIndex;
 			this.query = query;
+			this.versionSum = -1;
 		}
 		
 	}
