@@ -53,6 +53,7 @@ import org.junit.Test;
 import test.AbstractTestSuite;
 import test.domainquery.Population;
 import test.domainquery.model.Person;
+import test.domainquery.model.PointOfContact;
 
 public class ConcurrencyGraphTest extends AbstractTestSuite {
 
@@ -69,13 +70,23 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 		Locking lockingStrategy = Locking.OPTIMISTIC;
 		initDB(lockingStrategy);
 		
-		/******* first client loading j_smith ******/
+		/******* modifying j_smith to increment version ******/
 		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName)
 				.setLockingStrategy(lockingStrategy);
 		
 		Person j_smith = ConcurrencyTest.findPerson(da1, "Smith", "John");
 		long j_smithId = da1.getSyncInfo(j_smith).getId();
+		List<PointOfContact> pocs = j_smith.getPointsOfContact();
+		PointOfContact poc = pocs.remove(0);
+		pocs.add(poc);
+		j_smith.setFirstName("Johnny");
+		List<JcError> errors = da1.store(j_smith);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			//throw new JcResultException(errors);
+		}
 		
+		/******* first client loading j_smith ******/
 		QResult res = queryResult(j_smithId, lockingStrategy);
 		
 		/******* second client loading j_smith ******/
@@ -87,7 +98,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 		}
 		res2.person.remove();
 		
-		List<JcError> errors = res2.graph.store();
+		errors = res2.graph.store();
 		if (errors.size() > 0) {
 			printErrors(errors);
 			//throw new JcResultException(errors);

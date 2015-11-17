@@ -1201,7 +1201,7 @@ public class ResultHandler {
 					//clauses.add(START.relation(elem).byId(elements.get(i).getId()));
 					
 					// use OPTIONAL_MATCH to be tolerant for removed elements
-					clauses.add(OPTIONAL_MATCH.node().relation(elem).node());
+					clauses.add(OPTIONAL_MATCH.node().relation(elem).out().node());
 					clauses.add(WHERE.valueOf(elem.id()).EQUALS(elements.get(i).getId()));
 				}
 			}
@@ -1308,8 +1308,8 @@ public class ResultHandler {
 				clauses.add(clause);
 			} else
 				clauses.addAll(0, startClause);
-			JcNumber elemId = new JcNumber("elemId");
 			if (writeVersion || lockingStrategy == Locking.OPTIMISTIC) {
+				JcNumber elemId = new JcNumber("elemId");
 				clauses.add(RETURN.value(elem.property(lockVersionProperty)).AS(lockV));
 				clauses.add(RETURN.value(elem.id()).AS(elemId));
 			}
@@ -1385,7 +1385,7 @@ public class ResultHandler {
 			} else {
 				elem = new JcRelation("elem");
 				//ret = START.relation(elem).byId(id);
-				ret.add(OPTIONAL_MATCH.relation((JcRelation) elem));
+				ret.add(OPTIONAL_MATCH.node().relation((JcRelation) elem).out().node());
 			}
 			ret.add(WHERE.valueOf(elem.id()).EQUALS(element.getId()));
 			return ret;

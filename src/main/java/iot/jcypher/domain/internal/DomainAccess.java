@@ -954,7 +954,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					//clauses.add(START.relation(r).byId(id.longValue()));
 					
 					// use OPTIONAL_MATCH to be tolerant for removed elements
-					clauses.add(OPTIONAL_MATCH.node().relation(r).node());
+					clauses.add(OPTIONAL_MATCH.node().relation(r).out().node());
 					clauses.add(WHERE.valueOf(r.id()).EQUALS(id.longValue()));
 				}
 			}
@@ -973,7 +973,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					//removeStartClauses.add(START.relation(r).byId(id.longValue()));
 					
 					// use OPTIONAL_MATCH to be tolerant for removed elements
-					removeStartClauses.add(OPTIONAL_MATCH.node().relation(r).node());
+					removeStartClauses.add(OPTIONAL_MATCH.node().relation(r).out().node());
 					removeStartClauses.add(WHERE.valueOf(r.id()).EQUALS(id.longValue()));
 					if (this.lockingStrategy == Locking.OPTIMISTIC) {
 						LockUtil.calcRemoves(removes, r, rli.getVersion());
