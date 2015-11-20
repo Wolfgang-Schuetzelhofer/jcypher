@@ -707,21 +707,18 @@ public class ResultHandler {
 		List<JcError> errors = new ArrayList<JcError>();
 		if (queries.size() > 0) {
 			List<JcQueryResult> results = dbAccess.execute(queries);
-//			Util.printResults(results, "UPDATE", Format.PRETTY_1);
 			errors.addAll(Util.collectErrors(results));
 			if (errors.isEmpty()) { // success
-				long errId;
-				if ((errId = hasLockingError(results, !createdNodeToIdMap.isEmpty() || !createdRelationToIdMap.isEmpty(),
-						elemIds2Query)) != -1) {
-					JcError error = new JcError("JCypher.Locking", "Optimistic locking failed (an element was changed by another client)",
-							"element id: " + errId);
+				JcError error;
+				if ((error = checkLockingError(results, !createdNodeToIdMap.isEmpty() || !createdRelationToIdMap.isEmpty(),
+						elemIds2Query)) != null) {
 					errors.add(error);
 					ITransaction tx = this.dbAccess.getTX();
 					if (tx != null)
 						tx.failure();
 				}
 				this.handleSyncState(results, createdNodeToIdMap,
-						createdRelationToIdMap, errId >= 0, elemId2ResultIndex);
+						createdRelationToIdMap, error != null, elemId2ResultIndex);
 			}
 		}
 		return errors;
@@ -749,17 +746,17 @@ public class ResultHandler {
 	}
 	
 	/**
-	 * in case of error return the element's id, in case of ok return -1
+	 * in case of error return the element's id, or if not available return -2 in case of change or -3 in case of delete,
+	 * in case of ok return -1
 	 * @param results
 	 * @param hasCreateQuery
 	 * @param elemIds2Query 
 	 * @return
 	 */
-	private long hasLockingError(List<JcQueryResult> results, boolean hasCreateQuery, List<ElemId2Query> elemIds2Query) {
-		long ret = -1;
+	private JcError checkLockingError(List<JcQueryResult> results, boolean hasCreateQuery, List<ElemId2Query> elemIds2Query) {
+		JcError error = null;
 		if (this.lockingStrategy == Locking.OPTIMISTIC) {
 			JcNumber lockV = new JcNumber("lockV");
-			JcNumber elemId = new JcNumber("elemId");
 			JcNumber nSum = new JcNumber("sum");
 			int to = hasCreateQuery ? results.size() - 1 : results.size(); // don't check the result of the create query
 			for (int i = 0; i < to; i++) {
@@ -767,24 +764,34 @@ public class ResultHandler {
 				if (elemId2Query.versionSum >= 0 && elemId2Query.elemId < 0) { // delete query
 					List<BigDecimal> ires = results.get(i).resultOf(nSum);
 					if (ires.size() > 0) {
-						
+						if (((Number)ires.get(0)).intValue() != elemId2Query.versionSum) {
+							error = new JcError("JCypher.Locking", "Optimistic locking failed (an element was changed by another client)",
+									null);
+							break;
+						}
+					} else { // an element has been deleted
+						error = new JcError("JCypher.Locking", "Optimistic locking failed (an element was deleted by another client)",
+								null);
+						break;
 					}
 				} else { // change query
 					List<BigDecimal> ires = results.get(i).resultOf(lockV);
 					if (ires.size() > 0) {
 						int res = ires.get(0).intValue();
 						if (res == -2) {
-							ret = results.get(i).resultOf(elemId).get(0).intValue();
+							error = new JcError("JCypher.Locking", "Optimistic locking failed (an element was changed by another client)",
+									"element id: " + elemId2Query.elemId);
 							break;
 						}
-					} else {
-						ret = elemIds2Query.get(i).elemId;
+					} else { // an element has been deleted
+						error = new JcError("JCypher.Locking", "Optimistic locking failed (an element was deleted by another client)",
+								"element id: " + elemId2Query.elemId);
 						break;
 					}
 				}
 			}
 		}
-		return ret;
+		return error;
 	}
 	
 	private void handleSyncState(List<JcQueryResult> results,
@@ -846,17 +853,19 @@ public class ResultHandler {
 			JcQueryResult qResult) {
 		if (hasErrors) { // reset version property (can only be with optimistic locking)
 			Integer v;
-			if (item instanceof GrNode)
-				v = this.elementVersions.nodeVersions.get(item);
-			else
-				v = this.elementVersions.relationVersions.get(item);
-			if (v != null) { // for changed elements only
-				GrProperty vprop = ((GrPropertyContainer)item).getProperty(lockVersionProperty);
-				if (v == -1) // remove version property
-					vprop.remove();
-				else { // reset version property
-					vprop.setValue(v);
-					GrAccess.setToSynchronized(vprop);
+			if (this.elementVersions != null) { // there is at least one changed element
+				if (item instanceof GrNode)		// elements to be removed are not added to elementVersions,
+					v = this.elementVersions.nodeVersions.get(item);		// their version property is not changed
+				else
+					v = this.elementVersions.relationVersions.get(item);
+				if (v != null) { // for changed elements only
+					GrProperty vprop = ((GrPropertyContainer)item).getProperty(lockVersionProperty);
+					if (v == -1) // remove version property
+						vprop.remove();
+					else { // reset version property
+						vprop.setValue(v);
+						GrAccess.setToSynchronized(vprop);
+					}
 				}
 			}
 		} else {

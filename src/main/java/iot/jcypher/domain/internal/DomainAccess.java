@@ -1070,7 +1070,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						while (nit.hasNext()) {
 							Entry<Integer, QueryNode2ResultNode> entry = nit.next();
 							GrNode res = result.resultOf(entry.getValue().queryNode).get(0);
-							if (this.lockingStrategy == Locking.OPTIMISTIC && res == null)
+							if (this.lockingStrategy == Locking.OPTIMISTIC && res == null) // element has been deleted
 								context.lockingErrors = true;
 							entry.getValue().resultNode = res;
 						}
@@ -1080,7 +1080,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						while (rit.hasNext()) {
 							Entry<Integer, QueryRelation2ResultRelation> entry = rit.next();
 							GrRelation res = result.resultOf(entry.getValue().queryRelation).get(0);
-							if (this.lockingStrategy == Locking.OPTIMISTIC && res == null)
+							if (this.lockingStrategy == Locking.OPTIMISTIC && res == null) // element has been deleted
 								context.lockingErrors = true;
 							entry.getValue().resultRelation = res;
 						}

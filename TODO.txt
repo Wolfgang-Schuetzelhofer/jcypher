@@ -1,3 +1,5 @@
+optimize lists and arrays using dynamic classes
+
 add concurrency test for directly modifying Graphs
 
 does a node who's relation change need a new version ???
