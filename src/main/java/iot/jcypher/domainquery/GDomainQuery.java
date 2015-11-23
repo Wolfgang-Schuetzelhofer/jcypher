@@ -18,6 +18,7 @@ package iot.jcypher.domainquery;
 
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.internal.QueryRecorder;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -48,6 +49,7 @@ public class GDomainQuery extends AbstractDomainQuery {
 			Class<?> clazz = iAccess.getClassForName(domainObjectTypeName);
 			DomainObjectMatch<?> delegate = createMatchInternal(clazz);
 			DomainObjectMatch<DomainObject> ret = APIAccess.createDomainObjectMatch(DomainObject.class, delegate);
+			QueryRecorder.recordInvocation(this, "createMatch", ret, QueryRecorder.literal(domainObjectTypeName));
 			return ret;
 		} catch (Throwable e) {
 			if (e instanceof RuntimeException)
@@ -66,7 +68,9 @@ public class GDomainQuery extends AbstractDomainQuery {
 	 */
 	public DomainObjectMatch<DomainObject> createMatchFor(List<DomainObject> domainObjects,
 			String domainObjectTypeName) {
-		return createGenMatchForInternal(domainObjects, domainObjectTypeName);
+		DomainObjectMatch<DomainObject> ret = createGenMatchForInternal(domainObjects, domainObjectTypeName);
+		QueryRecorder.recordInvocation(this, "createMatchFor", ret);
+		return ret;
 	}
 
 }

@@ -16,6 +16,7 @@
 
 package iot.jcypher.domainquery.api;
 
+import iot.jcypher.domain.internal.QueryRecorder;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.ast.PredicateExpression.Operator;
 
@@ -33,7 +34,9 @@ public class BooleanOperation extends APIObject {
 	public <E> TerminalResult EQUALS(E value) {
 		getPredicateExpression().setOperator(Operator.EQUALS);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createTerminalResult(this.getPredicateExpression());
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "EQUALS", ret, QueryRecorder.placeHolder(value));
+		return ret;
 	}
 	
 	/**

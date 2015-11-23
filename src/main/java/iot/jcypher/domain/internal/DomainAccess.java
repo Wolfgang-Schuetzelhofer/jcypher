@@ -231,7 +231,9 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 	@Override
 	public DomainQuery createQuery() {
-		return new DomainQuery(this);
+		DomainQuery ret = new DomainQuery(this);
+		QueryRecorder.recordCreateQuery(ret);
+		return ret;
 	}
 
 	@Override
@@ -425,7 +427,9 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 		@Override
 		public GDomainQuery createQuery() {
-			return new GDomainQuery(DomainAccess.this);
+			GDomainQuery ret = new GDomainQuery(DomainAccess.this);
+			QueryRecorder.recordCreateQuery(ret);
+			return ret;
 		}
 
 		@Override

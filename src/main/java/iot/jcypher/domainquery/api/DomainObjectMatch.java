@@ -18,6 +18,7 @@ package iot.jcypher.domainquery.api;
 
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
+import iot.jcypher.domain.internal.QueryRecorder;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domainquery.ast.UnionExpression;
@@ -114,7 +115,9 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	public JcProperty atttribute(String name) {
 		if (this.delegate != null)
 			return this.delegate.atttribute(name);
-		return checkField_getJcVal(name, JcProperty.class);
+		JcProperty ret = checkField_getJcVal(name, JcProperty.class);
+		QueryRecorder.recordInvocationReplace(this, ret);
+		return ret;
 	}
 	
 	/**
@@ -125,7 +128,9 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	public JcString stringAtttribute(String name) {
 		if (this.delegate != null)
 			return this.delegate.stringAtttribute(name);
-		return checkField_getJcVal(name, JcString.class);
+		JcString ret = checkField_getJcVal(name, JcString.class);
+		QueryRecorder.recordInvocationReplace(this, ret);
+		return ret;
 	}
 	
 	/**
@@ -136,7 +141,9 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	public JcNumber numberAtttribute(String name) {
 		if (this.delegate != null)
 			return this.delegate.numberAtttribute(name);
-		return checkField_getJcVal(name, JcNumber.class);
+		JcNumber ret = checkField_getJcVal(name, JcNumber.class);
+		QueryRecorder.recordInvocationReplace(this, ret);
+		return ret;
 	}
 	
 	/**
@@ -147,7 +154,9 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	public JcBoolean booleanAtttribute(String name) {
 		if (this.delegate != null)
 			return this.delegate.booleanAtttribute(name);
-		return checkField_getJcVal(name, JcBoolean.class);
+		JcBoolean ret = checkField_getJcVal(name, JcBoolean.class);
+		QueryRecorder.recordInvocationReplace(this, ret);
+		return ret;
 	}
 	
 	/**
@@ -158,7 +167,9 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	public JcCollection collectionAtttribute(String name) {
 		if (this.delegate != null)
 			return this.delegate.collectionAtttribute(name);
-		return checkField_getJcVal(name, JcCollection.class);
+		JcCollection ret = checkField_getJcVal(name, JcCollection.class);
+		QueryRecorder.recordInvocationReplace(this, ret);
+		return ret;
 	}
 	
 	/**
@@ -320,6 +331,7 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 				if (ret == null) {
 					String propName = this.getPropertyOrRelationName(fm);
 					JcNode n = this.nodes.get(i);
+					ValueAccess.setHint(n, APIAccess.hintKey_dom, this);
 					if (attributeType.equals(JcProperty.class))
 						ret = (E) n.property(propName);
 					else if (attributeType.equals(JcString.class))

@@ -72,11 +72,6 @@ public class ConcurrencyTest extends AbstractTestSuite {
 		long j_smithId = da1.getSyncInfo(j_smith).getId();
 
 		/******* second client loading j_smith ******/
-		IDomainAccess da2 = DomainAccessFactory.createDomainAccess(dbAccess,
-				domainName).setLockingStrategy(lockingStrategy);
-
-		Person j_smith2 = findPerson(da2, "Smith", "John");
-
 		/******* second client deleting relation ******/
 		QResult res2 = ConcurrencyGraphTest.queryResult2(j_smithId,
 				lockingStrategy, dbAccess);
@@ -129,11 +124,6 @@ public class ConcurrencyTest extends AbstractTestSuite {
 		long j_smithId = da1.getSyncInfo(j_smith).getId();
 
 		/******* second client loading j_smith ******/
-		IDomainAccess da2 = DomainAccessFactory.createDomainAccess(dbAccess,
-				domainName).setLockingStrategy(lockingStrategy);
-
-		Person j_smith2 = findPerson(da2, "Smith", "John");
-
 		/******* second client deleting relation ******/
 		QResult res2 = ConcurrencyGraphTest.queryResult2(j_smithId,
 				lockingStrategy, dbAccess);
@@ -367,11 +357,6 @@ public class ConcurrencyTest extends AbstractTestSuite {
 		long j_smithId = da1.getSyncInfo(j_smith).getId();
 
 		/******* second client loading j_smith ******/
-		IDomainAccess da2 = DomainAccessFactory.createDomainAccess(dbAccess,
-				domainName).setLockingStrategy(lockingStrategy);
-
-		Person j_smith2 = findPerson(da2, "Smith", "John");
-
 		/******* second client deleting j_smith ******/
 		QResult res2 = ConcurrencyGraphTest.queryResult(j_smithId,
 				lockingStrategy, dbAccess);
@@ -425,11 +410,6 @@ public class ConcurrencyTest extends AbstractTestSuite {
 		long j_smithId = da1.getSyncInfo(j_smith).getId();
 
 		/******* second client loading j_smith ******/
-		IDomainAccess da2 = DomainAccessFactory.createDomainAccess(dbAccess,
-				domainName).setLockingStrategy(lockingStrategy);
-
-		Person j_smith2 = findPerson(da2, "Smith", "John");
-
 		/******* second client deleting j_smith ******/
 		QResult res2 = ConcurrencyGraphTest.queryResult(j_smithId,
 				lockingStrategy, dbAccess);

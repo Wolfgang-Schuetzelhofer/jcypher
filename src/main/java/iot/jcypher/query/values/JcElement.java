@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.values;
 
+import iot.jcypher.domain.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
 import iot.jcypher.query.values.operators.OPERATOR;
 
@@ -39,7 +40,9 @@ public abstract class JcElement extends JcValue {
 	 * <br/>
 	 */
 	public JcProperty property(String name) {
-		return new JcProperty(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+		JcProperty ret = new JcProperty(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+		QueryRecorder.recordInvocationConditional(this, "property", ret, QueryRecorder.literal(name));
+		return ret;
 	}
 	
 	/**
@@ -48,7 +51,9 @@ public abstract class JcElement extends JcValue {
 	 * <br/>
 	 */
 	public JcString stringProperty(String name) {
-		return new JcString(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+		JcString ret = new JcString(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+		QueryRecorder.recordInvocationConditional(this, "stringProperty", ret, QueryRecorder.literal(name));
+		return ret;
 	}
 	
 	/**
@@ -57,7 +62,9 @@ public abstract class JcElement extends JcValue {
 	 * <br/>
 	 */
 	public JcNumber numberProperty(String name) {
-		return new JcNumber(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+		JcNumber ret = new JcNumber(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+		QueryRecorder.recordInvocationConditional(this, "numberProperty", ret, QueryRecorder.literal(name));
+		return ret;
 	}
 	
 	/**
@@ -66,7 +73,9 @@ public abstract class JcElement extends JcValue {
 	 * <br/>
 	 */
 	public JcBoolean booleanProperty(String name) {
-		return new JcBoolean(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+		JcBoolean ret = new JcBoolean(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+		QueryRecorder.recordInvocationConditional(this, "booleanProperty", ret, QueryRecorder.literal(name));
+		return ret;
 	}
 	
 	/**
@@ -75,7 +84,9 @@ public abstract class JcElement extends JcValue {
 	 * <br/>
 	 */
 	public JcCollection collectionProperty(String name) {
-		return new JcCollection(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+		JcCollection ret = new JcCollection(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+		QueryRecorder.recordInvocationConditional(this, "collectionProperty", ret, QueryRecorder.literal(name));
+		return ret;
 	}
 	
 	/**
