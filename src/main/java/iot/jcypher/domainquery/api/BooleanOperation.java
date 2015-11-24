@@ -16,9 +16,9 @@
 
 package iot.jcypher.domainquery.api;
 
-import iot.jcypher.domain.internal.QueryRecorder;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.ast.PredicateExpression.Operator;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 
 public class BooleanOperation extends APIObject {
 

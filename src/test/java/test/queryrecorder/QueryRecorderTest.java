@@ -16,22 +16,6 @@
 
 package test.queryrecorder;
 
-import iot.jcypher.database.DBAccessFactory;
-import iot.jcypher.database.DBProperties;
-import iot.jcypher.database.DBType;
-import iot.jcypher.database.IDBAccess;
-import iot.jcypher.domain.DomainAccessFactory;
-import iot.jcypher.domain.IDomainAccess;
-import iot.jcypher.domain.internal.QueryRecorder;
-import iot.jcypher.domain.internal.RecordedQuery;
-import iot.jcypher.domainquery.DomainQuery;
-import iot.jcypher.domainquery.DomainQueryResult;
-import iot.jcypher.domainquery.api.DomainObjectMatch;
-import iot.jcypher.query.result.JcError;
-import iot.jcypher.query.result.JcResultException;
-import iot.jcypher.util.QueriesPrintObserver;
-
-import java.io.IOException;
 import java.util.List;
 import java.util.Properties;
 
@@ -39,6 +23,19 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import iot.jcypher.database.DBAccessFactory;
+import iot.jcypher.database.DBProperties;
+import iot.jcypher.database.DBType;
+import iot.jcypher.database.IDBAccess;
+import iot.jcypher.domain.DomainAccessFactory;
+import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domainquery.DomainQuery;
+import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.domainquery.internal.QueryRecorder;
+import iot.jcypher.domainquery.internal.RecordedQuery;
+import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.JcResultException;
+import iot.jcypher.util.QueriesPrintObserver;
 import test.AbstractTestSuite;
 import test.domainquery.Population;
 import test.domainquery.model.Subject;
@@ -73,6 +70,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 				q.WHERE(bergHammer.stringAtttribute("matchString")).EQUALS("berghammer_family");
 			q.BR_CLOSE();
 		q.BR_CLOSE();
+		String str = recordedQuery.toString();
 		
 		q.WHERE(smith_true.stringAtttribute("firstName")).EQUALS("Angelina");
 		q.WHERE(smith_true.stringAtttribute("matchString")).EQUALS("smith");

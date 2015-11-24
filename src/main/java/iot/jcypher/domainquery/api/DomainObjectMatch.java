@@ -18,10 +18,10 @@ package iot.jcypher.domainquery.api;
 
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
-import iot.jcypher.domain.internal.QueryRecorder;
 import iot.jcypher.domain.mapping.FieldMapping;
 import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domainquery.ast.UnionExpression;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.domainquery.internal.QueryExecutor.MappingInfo;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;

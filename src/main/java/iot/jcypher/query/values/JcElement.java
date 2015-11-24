@@ -16,7 +16,7 @@
 
 package iot.jcypher.query.values;
 
-import iot.jcypher.domain.internal.QueryRecorder;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
 import iot.jcypher.query.values.operators.OPERATOR;
 

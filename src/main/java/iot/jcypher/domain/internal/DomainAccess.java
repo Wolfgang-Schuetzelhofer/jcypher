@@ -62,6 +62,7 @@ import iot.jcypher.domain.mapping.surrogate.Surrogate2ListEntry;
 import iot.jcypher.domain.mapping.surrogate.Surrogate2MapEntry;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;

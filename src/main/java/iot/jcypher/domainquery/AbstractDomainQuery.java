@@ -20,7 +20,6 @@ import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.genericmodel.InternalAccess;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
-import iot.jcypher.domain.internal.QueryRecorder;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.BooleanOperation;
 import iot.jcypher.domainquery.api.Collect;
@@ -43,6 +42,7 @@ import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.ast.UnionExpression;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
 import iot.jcypher.domainquery.internal.QueryExecutor;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.JcProperty;
 
 import java.util.ArrayList;
@@ -214,20 +214,22 @@ public abstract class AbstractDomainQuery {
 	 * Open a block, encapsulating predicate expressions
 	 */
 	public TerminalResult BR_OPEN() {
-		QueryRecorder.recordBracketOpen(this);
 		ConcatenateExpression ce = new ConcatenateExpression(Concatenator.BR_OPEN);
 		this.astObjectsContainer.addAstObject(ce);
-		return APIAccess.createTerminalResult(ce);
+		TerminalResult ret = APIAccess.createTerminalResult(ce);
+		QueryRecorder.recordInvocation(this, "BR_OPEN", ret);
+		return ret;
 	}
 	
 	/**
 	 * Close a block, encapsulating predicate expressions
 	 */
 	public TerminalResult BR_CLOSE() {
-		QueryRecorder.recordBracketClose(this);
 		ConcatenateExpression ce = new ConcatenateExpression(Concatenator.BR_CLOSE);
 		this.astObjectsContainer.addAstObject(ce);
-		return APIAccess.createTerminalResult(ce);
+		TerminalResult ret = APIAccess.createTerminalResult(ce);
+		QueryRecorder.recordInvocation(this, "BR_CLOSE", ret);
+		return ret;
 	}
 	
 	/**
