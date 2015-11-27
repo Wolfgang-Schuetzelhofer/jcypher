@@ -207,7 +207,9 @@ public abstract class AbstractDomainQuery {
 	public TerminalResult OR() {
 		ConcatenateExpression ce = new ConcatenateExpression(Concatenator.OR);
 		this.astObjectsContainer.addAstObject(ce);
-		return APIAccess.createTerminalResult(ce);
+		TerminalResult ret = APIAccess.createTerminalResult(ce);
+		QueryRecorder.recordInvocation(this, "OR", ret);
+		return ret;
 	}
 	
 	/**

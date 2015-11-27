@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,28 +14,21 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domainquery.ast;
+package iot.jcypher.domainquery.internal;
 
-public class Parameter {
+import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domainquery.AbstractDomainQuery;
 
-	private String name;
-	private Object value;
+public class RecordedQueryPlayer {
 
-	public Parameter(String name) {
-		super();
-		this.name = name;
-	}
-
-	public Object getValue() {
-		return value;
-	}
-
-	public void setValue(Object value) {
-		this.value = value;
-	}
-
-	public String getName() {
-		return name;
+	/**
+	 * Create a domain query from a recorded query.
+	 * @param recordedQuery
+	 * @param domainAccess
+	 * @return
+	 */
+	public <T extends AbstractDomainQuery> T createQuery(RecordedQuery<T> recordedQuery, IDomainAccess domainAccess) {
+		return null;
 	}
 	
 }

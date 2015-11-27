@@ -29,10 +29,12 @@ import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.domainquery.internal.RecordedQuery;
+import iot.jcypher.domainquery.internal.RecordedQueryPlayer;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.util.QueriesPrintObserver;
@@ -52,10 +54,20 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		/******************************************/
 		DomainQuery q = da1.createQuery();
-		RecordedQuery recordedQuery = QueryRecorder.getRecordedQuery(q);
+		RecordedQuery<DomainQuery> recordedQuery = QueryRecorder.getRecordedQuery(q);
+		DomainObjectMatch<Subject> j_smith = q.createMatch(Subject.class);
+		
+		q.WHERE(j_smith.stringAtttribute("firstName")
+				.concat(j_smith.stringAtttribute("lastName"))).EQUALS("JohnSmith");
+		System.out.println(recordedQuery.toString());
+		
+		/******************************************/
+		q = da1.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
 		DomainObjectMatch<Subject> smith_false = q.createMatch(Subject.class);
 		DomainObjectMatch<Subject> bergHammer = q.createMatch(Subject.class);
 		DomainObjectMatch<Subject> smith_true = q.createMatch(Subject.class);
+		j_smith = q.createMatch(Subject.class);
 		q.BR_OPEN();
 			q.WHERE(smith_false.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
 			q.WHERE(smith_false.stringAtttribute("matchString")).EQUALS("smith_family");
@@ -70,12 +82,19 @@ public class QueryRecorderTest extends AbstractTestSuite {
 				q.WHERE(bergHammer.stringAtttribute("matchString")).EQUALS("berghammer_family");
 			q.BR_CLOSE();
 		q.BR_CLOSE();
-		String str = recordedQuery.toString();
+		//String str = recordedQuery.toString();
+		
+		q.WHERE(j_smith.stringAtttribute("firstName")
+				.concat(j_smith.stringAtttribute("lastName"))).EQUALS("JohnSmith");
 		
 		q.WHERE(smith_true.stringAtttribute("firstName")).EQUALS("Angelina");
 		q.WHERE(smith_true.stringAtttribute("matchString")).EQUALS("smith");
 		
 		q.parameter("lastName").setValue("Smith");
+		
+		System.out.println(recordedQuery.toString());
+		
+		DomainQuery q2 = new RecordedQueryPlayer().createQuery(recordedQuery, da1);
 		
 		//DomainQueryResult result = q.execute();
 		return;

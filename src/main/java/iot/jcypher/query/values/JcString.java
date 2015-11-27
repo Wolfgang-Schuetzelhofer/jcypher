@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.values;
 
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
 import iot.jcypher.query.values.operators.OPERATOR;
 
@@ -66,7 +67,9 @@ public class JcString extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcString concat(JcString concat) {
-		return new JcString(concat, this, OPERATOR.String.CONCAT);
+		JcString ret = new JcString(concat, this, OPERATOR.String.CONCAT);
+		QueryRecorder.recordInvocationConditional(this, "concat", ret, QueryRecorder.placeHolder(concat));
+		return ret;
 	}
 	
 	/**

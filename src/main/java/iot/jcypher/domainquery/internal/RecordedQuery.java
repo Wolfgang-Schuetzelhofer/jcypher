@@ -16,17 +16,17 @@
 
 package iot.jcypher.domainquery.internal;
 
-import iot.jcypher.query.writer.CypherWriter;
-
 import java.util.ArrayList;
 import java.util.List;
 
-public class RecordedQuery {
+import iot.jcypher.domainquery.AbstractDomainQuery;
+
+public class RecordedQuery<T extends AbstractDomainQuery> {
 
 	private boolean generic;
 	private List<Statement> statements;
 	
-	public RecordedQuery(boolean generic) {
+	public <E extends AbstractDomainQuery> RecordedQuery(boolean generic) {
 		super();
 		this.generic = generic;
 		this.statements = new ArrayList<Statement>();
@@ -53,7 +53,7 @@ public class RecordedQuery {
 	public boolean isGeneric() {
 		return generic;
 	}
-
+	
 	@Override
 	public String toString() {
 		return RecordedQueryToString.queryToString(this);
@@ -61,7 +61,8 @@ public class RecordedQuery {
 
 	/**************************************/
 	public interface Statement {
-		
+		public String getHint();
+		public RecordedQuery<?> getRecordedQuery();
 	}
 
 	/**************************************/
@@ -102,6 +103,16 @@ public class RecordedQuery {
 		public List<Statement> getParams() {
 			return params;
 		}
+
+		@Override
+		public String getHint() {
+			return this.method;
+		}
+
+		@Override
+		public RecordedQuery<?> getRecordedQuery() {
+			return RecordedQuery.this;
+		}
 	}
 	
 	/**************************************/
@@ -124,7 +135,24 @@ public class RecordedQuery {
 		}
 
 		public Object getValue() {
-			return value;
+			if (this.value instanceof iot.jcypher.domainquery.ast.Parameter)
+				return ((iot.jcypher.domainquery.ast.Parameter)this.value).getValue();
+			return this.value;
+		}
+		
+		@Override
+		public String getHint() {
+			if (this.value != null) {
+				if (this.value instanceof iot.jcypher.domainquery.ast.Parameter)
+					return "_QueryParameter_";
+				return this.value.toString();
+			} else
+				return new String();
+		}
+
+		@Override
+		public RecordedQuery<?> getRecordedQuery() {
+			return RecordedQuery.this;
 		}
 	}
 }

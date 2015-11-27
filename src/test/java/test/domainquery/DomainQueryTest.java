@@ -2293,6 +2293,19 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		/******************************************/
 		q = da1.createQuery();
+		DomainObjectMatch<Subject> smith_0 = q.createMatch(Subject.class);
+		q.WHERE(smith_0.stringAtttribute("firstName")
+				.concat(smith_0.stringAtttribute("lastName"))).EQUALS("JohnSmith");
+		
+		result = q.execute();
+		
+		List<Subject> smith_0Result = result.resultOf(smith_0);
+		assertTrue(smith_0Result.size() == 1);
+		equals = CompareUtil.equalsObjects(population.getJohn_smith(), smith_0Result.get(0));
+		assertTrue(equals);
+		
+		/******************************************/
+		q = da1.createQuery();
 		DomainObjectMatch<Subject> smith_false = q.createMatch(Subject.class);
 		DomainObjectMatch<Subject> bergHammer = q.createMatch(Subject.class);
 		DomainObjectMatch<Subject> smith_true = q.createMatch(Subject.class);

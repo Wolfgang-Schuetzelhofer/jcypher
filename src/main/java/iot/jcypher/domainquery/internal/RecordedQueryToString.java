@@ -16,6 +16,8 @@
 
 package iot.jcypher.domainquery.internal;
 
+import java.util.List;
+
 import iot.jcypher.domainquery.internal.RecordedQuery.Assignment;
 import iot.jcypher.domainquery.internal.RecordedQuery.Invocation;
 import iot.jcypher.domainquery.internal.RecordedQuery.Literal;
@@ -24,65 +26,129 @@ import iot.jcypher.query.writer.CypherWriter;
 
 public class RecordedQueryToString {
 
-	public static String queryToString(RecordedQuery query) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(query.isGeneric() ? "Generic-DomainQuery" : "DomainQuery");
-		sb.append("\n");
+	public static String queryToString(RecordedQuery<?> query) {
+		Context context = new Context();
+		context.sb.append(query.isGeneric() ? "Generic-DomainQuery" : "DomainQuery");
+		context.sb.append("\n");
+		List<Statement> stmts = query.getStatements();
+		statementsToString(stmts, context);
+		return context.sb.toString();
+	}
+	
+	@SuppressWarnings("rawtypes")
+	private static void statementsToString(List<Statement> statements, Context context) {
 		Statement prev = null;
-		for(Statement s : query.getStatements()) {
+		for(int i = 0; i < statements.size(); i++) {
+			Statement s = statements.get(i);
+			context.indent.calcBefore(s, context.callDepth);
 			boolean separator = false;
-			if (prev != null && prev instanceof Invocation && s instanceof Invocation) {
+			if (prev instanceof Invocation && !(prev instanceof Assignment) && s instanceof Invocation) {
 				if (((Invocation)prev).getReturnObjectRef().equals(((Invocation)s).getOnObjectRef())) {
-					sb.append('.');
+					context.sb.append('.');
 					separator = true;
 				}
 			}
-			if (!separator) {
-				if (prev != null)
-					sb.append(";\n");
-				sb.append(statementToString(s));
-			} else
-				sb.append(callToString((Invocation)s));
+			if (!separator) { // start new statement
+				if (prev != null) {
+					if (context.callDepth > 0) {
+						context.sb.append(", ");
+					} else {
+						context.sb.append(";\n");
+						context.sb.append(context.indent.getIndent());
+					}
+				}
+				statementToString(s, context);
+			} else // concatenate statements
+				callToString((Invocation)s, context); // must be an Invocation
+			context.indent.calcAfter(s, context.callDepth);
+			if (context.callDepth == 0 && i == statements.size() - 1) // the last one
+				context.sb.append(';');
 			prev = s;
 		}
-		return sb.toString();
 	}
 	
-	private static String statementToString(Statement statement) {
-		StringBuilder sb = new StringBuilder();
+	@SuppressWarnings("rawtypes")
+	private static void statementToString(Statement statement, Context context) {
 		if (statement instanceof Literal) {
 			if (((Literal)statement).getValue() != null)
-				CypherWriter.PrimitiveCypherWriter.writePrimitiveValue(((Literal)statement).getValue(), null, sb);
+				CypherWriter.PrimitiveCypherWriter.writePrimitiveValue(((Literal)statement).getValue(), null, context.sb);
 			else
-				sb.append("null");
+				context.sb.append("null");
 		} else if (statement instanceof Assignment) {
-			sb.append(((Assignment)statement).getReturnObjectRef());
-			sb.append(" = ");
-			sb.append(invocationToString((Assignment)statement));
+			context.sb.append(((Assignment)statement).getReturnObjectRef());
+			context.sb.append(" = ");
+			invocationToString((Assignment)statement, context);
 		} else if (statement instanceof Invocation) {
-			sb.append(invocationToString((Invocation)statement));
+			invocationToString((Invocation)statement, context);
 		}
-		return sb.toString();
 	}
 	
-	private static String invocationToString(Invocation invocation) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(invocation.getOnObjectRef());
-		sb.append('.');
-		sb.append(callToString(invocation));
-		return sb.toString();
+	private static void invocationToString(RecordedQuery<?>.Invocation invocation, Context context) {
+		context.sb.append(invocation.getOnObjectRef());
+		context.sb.append('.');
+		callToString(invocation, context);
 	}
 	
-	private static String callToString(Invocation invocation) {
-		StringBuilder sb = new StringBuilder();
-		sb.append(invocation.getMethod());
-		sb.append('(');
-		for (int i = 0; i < invocation.getParams().size(); i++) {
-			sb.append(statementToString(invocation.getParams().get(i)));
-			if (i < invocation.getParams().size() - 1)
-				sb.append(", ");
+	private static void callToString(RecordedQuery<?>.Invocation invocation, Context context) {
+		context.sb.append(invocation.getMethod());
+		context.sb.append('(');
+		List<Statement> params = invocation.getParams();
+		context.callDepth++;
+		if (params != null)
+			statementsToString(params, context);
+		context.callDepth--;
+		context.sb.append(')');
+	}
+	
+	/******************************************/
+	private static class Indent {
+		
+		private static final String BR_OPEN = "BR_OPEN";
+		private static final String BR_CLOSE = "BR_CLOSE";
+		private static final String IN = "   ";
+		
+		private int level = 0;
+		private String indent = new String();
+		
+		private String getIndent() {
+			return indent;
 		}
-		sb.append(')');
-		return sb.toString();
+
+		private void calcBefore(Statement statement, int callDepth) {
+			if (callDepth == 0) {
+				String hint = statement.getHint();
+				if (BR_CLOSE.equals(hint)) {
+					if (level > 0) {
+						level--;
+						buildIndent();
+					}
+				}
+			}
+		}
+		
+		private void calcAfter(Statement statement, int callDepth) {
+			if (callDepth == 0) {
+				String hint = statement.getHint();
+				if (BR_OPEN.equals(hint)) {
+					level++;
+					buildIndent();
+				}
+			}
+		}
+		
+		private void buildIndent() {
+			StringBuilder sb = new StringBuilder();
+			for (int i = 0; i < level; i++) {
+				sb.append(IN);
+			}
+			indent = sb.toString();
+		}
+	}
+	
+	/******************************************/
+	private static class Context {
+		private Indent indent = new Indent();
+		private int callDepth = 0;
+		private StringBuilder sb = new StringBuilder();
 	}
 }
