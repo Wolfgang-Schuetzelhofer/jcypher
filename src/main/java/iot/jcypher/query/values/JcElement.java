@@ -95,7 +95,9 @@ public abstract class JcElement extends JcValue {
 	 * <br/>
 	 */
 	public JcNumber id() {
-		return new JcNumber(null, this,
+		JcNumber ret = new JcNumber(null, this,
 				new FunctionInstance(FUNCTION.PropertyContainer.ID, 1));
+		QueryRecorder.recordInvocationConditional(this, "id", ret);
+		return ret;
 	}
 }

@@ -19,8 +19,10 @@ package iot.jcypher.domainquery.internal;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.DomainQuery;
@@ -73,6 +75,9 @@ public class QueryRecorder {
 		}
 		rqh.recordInvocation(assign, on, method, result, parameters);
 		qpt.putHolderRef(result, rqh);
+		if (rqh.root) {
+			qpt.removeFromQuery2HolderMap(rqh, null, false); // don't remove root
+		}
 		return;
 	}
 	
@@ -116,6 +121,7 @@ public class QueryRecorder {
 					adoptStatement(nextFrom, to, stmt);
 			}
 		}
+		to.addAdopted(from);
 	}
 
 	public static void recordInvocationConditional(ValueElement on, String method, Object result, Object... params) {
@@ -147,13 +153,39 @@ public class QueryRecorder {
 			//qpt.removeHolderRef(toReplace);
 			if (rqh == null)
 				qpt.putHolderRef(on, trqh);
+			else
+				rqh.addReplaced(trqh);
 		}
 	}
 	
 	public static void recordCreateQuery(AbstractDomainQuery query) {
 		RecordedQuery<?> rq = new RecordedQuery<AbstractDomainQuery>(query instanceof GDomainQuery);
 		RecQueryHolder rqh = new RecQueryHolder(rq);
+		rqh.root = true;
 		getCreateQueriesPerThread().put(query, rqh);
+	}
+	
+	public static void queryCompleted(AbstractDomainQuery query) {
+		QueriesPerThread qpt = queriesPerThread.get();
+		if (qpt != null) {
+			RecQueryHolder rqh = qpt.queries.remove(query);
+			if (rqh != null) {
+				qpt.removeFromQuery2HolderMap(rqh, null, true); // also remove root
+				List<Object> toRemove = new ArrayList<Object>();
+				Iterator<Entry<Object, RecQueryHolder>> it = qpt.recHolderRefs.entrySet().iterator();
+				while(it.hasNext()) {
+					Entry<Object, RecQueryHolder> e = it.next();
+					if (e.getValue() == rqh)
+						toRemove.add(e.getKey());
+					else {
+						if (rqh.inReplaced(e.getValue()))
+							toRemove.add(e.getKey());
+					}
+				}
+				for (Object o : toRemove) 
+					qpt.recHolderRefs.remove(o);
+			}
+		}
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -184,7 +216,7 @@ public class QueryRecorder {
 		return rqh;
 	}
 
-	private static QueriesPerThread getCreateQueriesPerThread() {
+	public static QueriesPerThread getCreateQueriesPerThread() {
 		QueriesPerThread qpt = queriesPerThread.get();
 		if (qpt == null)  {
 			qpt = new QueriesPerThread();
@@ -194,7 +226,7 @@ public class QueryRecorder {
 	}
 	
 	/*******************************/
-	private static class QueriesPerThread {
+	public static class QueriesPerThread {
 		private Map<AbstractDomainQuery, RecQueryHolder> queries;
 		private Map<Object, RecQueryHolder> recHolderRefs;
 		private Map<RecordedQuery<?>, RecQueryHolder> query2HolderMap;
@@ -236,8 +268,32 @@ public class QueryRecorder {
 			return ret;
 		}
 		
+		private void removeFromQuery2HolderMap(RecQueryHolder rqh, RecQueryHolder par,
+				boolean removeRoot) {
+			if (!rqh.root || removeRoot) {
+				this.query2HolderMap.remove(rqh.recordedQuery);
+				if (par != null)
+					par.adopted.remove(rqh);
+			}
+			ArrayList<RecQueryHolder> adopted = new ArrayList<RecQueryHolder>();
+			adopted.addAll(rqh.adopted);
+			for (RecQueryHolder qh : adopted) {
+				this.removeFromQuery2HolderMap(qh, rqh, removeRoot);
+			}
+		}
+		
 		private boolean isEmpty() {
 			return this.queries.isEmpty();
+		}
+		
+		/**
+		 * For testing purposes
+		 * @return
+		 */
+		public boolean isCleared() {
+			return this.queries.isEmpty() &&
+					this.recHolderRefs.isEmpty() &&
+					this.query2HolderMap.isEmpty();
 		}
 	}
 	
@@ -246,9 +302,12 @@ public class QueryRecorder {
 		
 		private static final String idPrefix = "obj";
 		
+		private boolean root;
 		private RecordedQuery<?> recordedQuery;
 		private Map<Object, String> object2IdMap;
 		private Map<String, Object> id2ObjectMap;
+		private List<RecQueryHolder> adopted;
+		private List<RecQueryHolder> replaced;
 		private int lastId;
 
 		private RecQueryHolder(RecordedQuery<?> recordedQuery) {
@@ -256,7 +315,10 @@ public class QueryRecorder {
 			this.recordedQuery = recordedQuery;
 			this.object2IdMap = new HashMap<Object, String>();
 			this.id2ObjectMap = new HashMap<String, Object>();
+			this.adopted = new ArrayList<RecQueryHolder>();
+			this.replaced = new ArrayList<RecQueryHolder>();
 			this.lastId = -1;
+			this.root = false;
 		}
 		
 		private void recordInvocation(boolean assign, Object on, String method, Object result, List<Statement> parameters) {
@@ -284,6 +346,21 @@ public class QueryRecorder {
 		private String getNextId() {
 			this.lastId++;
 			return idPrefix.concat(String.valueOf(this.lastId));
+		}
+		
+		private void addAdopted(RecQueryHolder qh) {
+			if (!this.adopted.contains(qh))
+				this.adopted.add(qh);
+		}
+		
+		private void addReplaced(RecQueryHolder qh) {
+			if (!this.replaced.contains(qh))
+				this.replaced.add(qh);
+		}
+		
+		private boolean inReplaced(RecQueryHolder rqh) {
+			int idx = this.replaced.indexOf(rqh);
+			return idx >= 0;
 		}
 
 		@Override

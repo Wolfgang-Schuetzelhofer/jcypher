@@ -20,6 +20,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import iot.jcypher.domainquery.api.IPredicateOperand1;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
 
 public class ValueElement implements IFragment, IPredicateOperand1 {
@@ -45,8 +46,10 @@ public class ValueElement implements IFragment, IPredicateOperand1 {
 	 * <br/>
 	 */
 	public JcString str() {
-		return new JcString(null, this,
+		JcString ret = new JcString(null, this,
 				new FunctionInstance(FUNCTION.Common.STR, 1));
+		QueryRecorder.recordInvocationConditional(this, "str", ret);
+		return ret;
 	}
 	
 	/**
@@ -55,8 +58,10 @@ public class ValueElement implements IFragment, IPredicateOperand1 {
 	 * <br/>
 	 */
 	public JcNumber toInt() {
-		return new JcNumber(null, this,
+		JcNumber ret = new JcNumber(null, this,
 				new FunctionInstance(FUNCTION.Common.TOINT, 1));
+		QueryRecorder.recordInvocationConditional(this, "toInt", ret);
+		return ret;
 	}
 	
 	/**
@@ -65,8 +70,10 @@ public class ValueElement implements IFragment, IPredicateOperand1 {
 	 * <br/>
 	 */
 	public JcNumber toFloat() {
-		return new JcNumber(null, this,
+		JcNumber ret = new JcNumber(null, this,
 				new FunctionInstance(FUNCTION.Common.TOFLOAT, 1));
+		QueryRecorder.recordInvocationConditional(this, "toFloat", ret);
+		return ret;
 	}
 
 	ValueElement getPredecessor() {

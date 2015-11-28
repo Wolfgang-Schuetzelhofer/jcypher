@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -58,7 +58,9 @@ public class JcString extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcString concat(String concat) {
-		return new JcString(concat, this, OPERATOR.String.CONCAT);
+		JcString ret = new JcString(concat, this, OPERATOR.String.CONCAT);
+		QueryRecorder.recordInvocationConditional(this, "concat", ret, QueryRecorder.literal(concat));
+		return ret;
 	}
 	
 	/**
@@ -78,8 +80,10 @@ public class JcString extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcString trim() {
-		return new JcString(null, this,
+		JcString ret = new JcString(null, this,
 				new FunctionInstance(FUNCTION.String.TRIM, 1));
+		QueryRecorder.recordInvocationConditional(this, "trim", ret);
+		return ret;
 	}
 	
 	/**
@@ -88,8 +92,10 @@ public class JcString extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcString trimLeft() {
-		return new JcString(null, this,
+		JcString ret = new JcString(null, this,
 				new FunctionInstance(FUNCTION.String.LTRIM, 1));
+		QueryRecorder.recordInvocationConditional(this, "trimLeft", ret);
+		return ret;
 	}
 	
 	/**
@@ -98,8 +104,10 @@ public class JcString extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcString trimRight() {
-		return new JcString(null, this,
+		JcString ret = new JcString(null, this,
 				new FunctionInstance(FUNCTION.String.RTRIM, 1));
+		QueryRecorder.recordInvocationConditional(this, "trimRight", ret);
+		return ret;
 	}
 	
 	/**
@@ -108,8 +116,10 @@ public class JcString extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber length() {
-		return new JcNumber(null, this,
+		JcNumber ret = new JcNumber(null, this,
 				new FunctionInstance(FUNCTION.Collection.LENGTH, 1));
+		QueryRecorder.recordInvocationConditional(this, "length", ret);
+		return ret;
 	}
 	
 	/**
@@ -118,7 +128,9 @@ public class JcString extends JcPrimitive {
 	 * <br/>
 	 */
 	public ReplaceWith replace(String what) {
-		return new ReplaceWith(what, this, OPERATOR.Common.COMMA_SEPARATOR);
+		ReplaceWith ret = new ReplaceWith(what, this, OPERATOR.Common.COMMA_SEPARATOR);
+		QueryRecorder.recordInvocationConditional(this, "replace", ret, QueryRecorder.literal(what));
+		return ret;
 	}
 	
 	/**
@@ -127,7 +139,9 @@ public class JcString extends JcPrimitive {
 	 * <br/>
 	 */
 	public ReplaceWith replace(JcString what) {
-		return new ReplaceWith(what, this, OPERATOR.Common.COMMA_SEPARATOR);
+		ReplaceWith ret = new ReplaceWith(what, this, OPERATOR.Common.COMMA_SEPARATOR);
+		QueryRecorder.recordInvocationConditional(this, "replace", ret, QueryRecorder.placeHolder(what));
+		return ret;
 	}
 	
 	/**
@@ -137,8 +151,10 @@ public class JcString extends JcPrimitive {
 	 */
 	public SubString substring(int start) {
 		JcNumber sub = new JcNumber(start, this, OPERATOR.Common.COMMA_SEPARATOR);
-		return new SubString(null, sub,
+		SubString ret = new SubString(null, sub,
 				new FunctionInstance(FUNCTION.String.SUBSTRING, 2));
+		QueryRecorder.recordInvocationConditional(this, "substring", ret, QueryRecorder.literal(start));
+		return ret;
 	}
 	
 	/**
@@ -148,8 +164,10 @@ public class JcString extends JcPrimitive {
 	 */
 	public JcString left(int n) {
 		JcNumber left = new JcNumber(n, this, OPERATOR.Common.COMMA_SEPARATOR);
-		return new SubString(null, left,
+		SubString ret = new SubString(null, left,
 				new FunctionInstance(FUNCTION.String.LEFT, 2));
+		QueryRecorder.recordInvocationConditional(this, "left", ret, QueryRecorder.literal(n));
+		return ret;
 	}
 	
 	/**
@@ -159,8 +177,10 @@ public class JcString extends JcPrimitive {
 	 */
 	public JcString right(int n) {
 		JcNumber right = new JcNumber(n, this, OPERATOR.Common.COMMA_SEPARATOR);
-		return new SubString(null, right,
+		SubString ret = new SubString(null, right,
 				new FunctionInstance(FUNCTION.String.RIGHT, 2));
+		QueryRecorder.recordInvocationConditional(this, "right", ret, QueryRecorder.literal(n));
+		return ret;
 	}
 	
 	/**
@@ -169,8 +189,10 @@ public class JcString extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcString lower() {
-		return new JcString(null, this,
+		JcString ret = new JcString(null, this,
 				new FunctionInstance(FUNCTION.String.LOWER, 1));
+		QueryRecorder.recordInvocationConditional(this, "lower", ret);
+		return ret;
 	}
 	
 	/**
@@ -179,8 +201,10 @@ public class JcString extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcString upper() {
-		return new JcString(null, this,
+		JcString ret = new JcString(null, this,
 				new FunctionInstance(FUNCTION.String.UPPER, 1));
+		QueryRecorder.recordInvocationConditional(this, "upper", ret);
+		return ret;
 	}
 	
 }

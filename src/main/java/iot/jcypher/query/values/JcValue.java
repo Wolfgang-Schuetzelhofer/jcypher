@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.values;
 
+import iot.jcypher.domainquery.internal.QueryRecorder;
 
 public class JcValue extends ValueElement {
 	
@@ -45,7 +46,9 @@ public class JcValue extends ValueElement {
 	 * <br/>
 	 */
 	public JcCollection asCollection() {
-		return new JcCollection(this.name);
+		JcCollection ret = new JcCollection(this.name);
+		QueryRecorder.recordInvocationConditional(this, "asCollection", ret);
+		return ret;
 	}
 	
 	String getName() {

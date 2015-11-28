@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.values;
 
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
 
 public class JcCollection extends JcValue {
@@ -43,8 +44,10 @@ public class JcCollection extends JcValue {
 	 * <br/>
 	 */
 	public JcNumber length() {
-		return new JcNumber(null, this,
+		JcNumber ret = new JcNumber(null, this,
 				new FunctionInstance(FUNCTION.Collection.LENGTH, 1));
+		QueryRecorder.recordInvocationConditional(this, "length", ret);
+		return ret;
 	}
 	
 	/**
@@ -53,8 +56,10 @@ public class JcCollection extends JcValue {
 	 * <br/>
 	 */
 	public ValueElement head() {
-		return new ValueElement(this, 
+		ValueElement ret = new ValueElement(this, 
 				new FunctionInstance(FUNCTION.Collection.HEAD, 1));
+		QueryRecorder.recordInvocationConditional(this, "head", ret);
+		return ret;
 	}
 	
 	/**
@@ -63,7 +68,9 @@ public class JcCollection extends JcValue {
 	 * <br/>
 	 */
 	public ValueElement last() {
-		return new ValueElement(this, 
+		ValueElement ret = new ValueElement(this, 
 				new FunctionInstance(FUNCTION.Collection.LAST, 1));
+		QueryRecorder.recordInvocationConditional(this, "last", ret);
+		return ret;
 	}
 }

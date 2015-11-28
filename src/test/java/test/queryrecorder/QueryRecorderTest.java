@@ -16,6 +16,7 @@
 
 package test.queryrecorder;
 
+import static org.junit.Assert.assertTrue;
 import java.util.List;
 import java.util.Properties;
 
@@ -29,14 +30,12 @@ import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.IDomainAccess;
-import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.QueryRecorder;
+import iot.jcypher.domainquery.internal.QueryRecorder.QueriesPerThread;
 import iot.jcypher.domainquery.internal.RecordedQuery;
 import iot.jcypher.domainquery.internal.RecordedQueryPlayer;
-import iot.jcypher.query.result.JcError;
-import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.util.QueriesPrintObserver;
 import test.AbstractTestSuite;
 import test.domainquery.Population;
@@ -54,11 +53,15 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		/******************************************/
 		DomainQuery q = da1.createQuery();
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
 		RecordedQuery<DomainQuery> recordedQuery = QueryRecorder.getRecordedQuery(q);
 		DomainObjectMatch<Subject> j_smith = q.createMatch(Subject.class);
 		
 		q.WHERE(j_smith.stringAtttribute("firstName")
 				.concat(j_smith.stringAtttribute("lastName"))).EQUALS("JohnSmith");
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
+		
 		System.out.println(recordedQuery.toString());
 		
 		/******************************************/
@@ -91,6 +94,8 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		q.WHERE(smith_true.stringAtttribute("matchString")).EQUALS("smith");
 		
 		q.parameter("lastName").setValue("Smith");
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
 		
 		System.out.println(recordedQuery.toString());
 		
