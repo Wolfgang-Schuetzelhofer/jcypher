@@ -21,7 +21,7 @@ import java.util.List;
 
 import iot.jcypher.domainquery.AbstractDomainQuery;
 
-public class RecordedQuery<T extends AbstractDomainQuery> {
+public class RecordedQuery {
 
 	private boolean generic;
 	private List<Statement> statements;
@@ -46,6 +46,10 @@ public class RecordedQuery<T extends AbstractDomainQuery> {
 		return new Literal(value);
 	}
 	
+	public DOMatchRef doMatchRef(String ref) {
+		return new DOMatchRef(ref);
+	}
+	
 	public List<Statement> getStatements() {
 		return statements;
 	}
@@ -62,7 +66,7 @@ public class RecordedQuery<T extends AbstractDomainQuery> {
 	/**************************************/
 	public interface Statement {
 		public String getHint();
-		public RecordedQuery<?> getRecordedQuery();
+		public RecordedQuery getRecordedQuery();
 	}
 
 	/**************************************/
@@ -82,6 +86,10 @@ public class RecordedQuery<T extends AbstractDomainQuery> {
 
 		public String getMethod() {
 			return method;
+		}
+
+		public void setMethod(String method) {
+			this.method = method;
 		}
 
 		public void setOnObjectRef(String onObjectRef) {
@@ -110,7 +118,7 @@ public class RecordedQuery<T extends AbstractDomainQuery> {
 		}
 
 		@Override
-		public RecordedQuery<?> getRecordedQuery() {
+		public RecordedQuery getRecordedQuery() {
 			return RecordedQuery.this;
 		}
 	}
@@ -120,6 +128,32 @@ public class RecordedQuery<T extends AbstractDomainQuery> {
 
 		public Assignment(String onObjectRef, String method, String retObjectRef, List<Statement> params) {
 			super(onObjectRef, method, retObjectRef, params);
+		}
+		
+	}
+	
+	/**************************************/
+	public class DOMatchRef implements Statement {
+
+		private String ref;
+		
+		public DOMatchRef(String ref) {
+			super();
+			this.ref = ref;
+		}
+
+		public String getRef() {
+			return ref;
+		}
+
+		@Override
+		public String getHint() {
+			return this.ref;
+		}
+
+		@Override
+		public RecordedQuery getRecordedQuery() {
+			return RecordedQuery.this;
 		}
 		
 	}
@@ -151,7 +185,7 @@ public class RecordedQuery<T extends AbstractDomainQuery> {
 		}
 
 		@Override
-		public RecordedQuery<?> getRecordedQuery() {
+		public RecordedQuery getRecordedQuery() {
 			return RecordedQuery.this;
 		}
 	}

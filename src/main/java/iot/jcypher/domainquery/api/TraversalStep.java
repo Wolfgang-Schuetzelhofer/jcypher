@@ -20,6 +20,7 @@ import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression.Step;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 
 public class TraversalStep extends APIObject {
 
@@ -77,6 +78,7 @@ public class TraversalStep extends APIObject {
 				te.getQueryExecutor().getMappingInfo());
 		te.getQueryExecutor().getDomainObjectMatches().add(ret);
 		te.setEnd(ret);
+		QueryRecorder.recordAssignment(this, "TO", ret, QueryRecorder.literal(domainObjectType.getName()));
 		return ret;
 	}
 	
@@ -94,6 +96,7 @@ public class TraversalStep extends APIObject {
 			Class<?> clazz = iAccess.getClassForName(domainObjectTypeName);
 			DomainObjectMatch<?> delegate = TO(clazz);
 			DomainObjectMatch<DomainObject> ret = APIAccess.createDomainObjectMatch(DomainObject.class, delegate);
+			QueryRecorder.recordAssignment(this, "TO_GENERIC", ret, QueryRecorder.literal(domainObjectTypeName));
 			return ret;
 		} catch (Throwable e) {
 			if (e instanceof RuntimeException)

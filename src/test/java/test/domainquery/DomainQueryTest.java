@@ -28,6 +28,7 @@ import iot.jcypher.domainquery.CountQueryResult;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.util.QueriesPrintObserver;
@@ -77,6 +78,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 	
 	@BeforeClass
 	public static void before() {
+		QueryRecorder.blockRecording.set(Boolean.TRUE);
 		domainName = "QTEST-DOMAIN";
 		Properties props = new Properties();
 		
@@ -162,6 +164,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		queriesStream = null;
 		QueriesPrintObserver.removeAllEnabledQueries();
 		QueriesPrintObserver.removeAllOutputStreams();
+		QueryRecorder.blockRecording.remove();
 	}
 	
 	@Test
@@ -2550,6 +2553,34 @@ public class DomainQueryTest extends AbstractTestSuite {
 		equals = CompareUtil.equalsList(intersectionPageComp, intersectionPageResult);
 		assertTrue(equals);
 		equals = CompareUtil.listHasIdentContent(intersectionPageComp, intersectionPageResult);
+		assertTrue(equals);
+		
+		/******************************************/
+		q = da1.createQuery();
+		smith_1 = q.createMatch(Subject.class);
+		q.WHERE(smith_1.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
+		q.WHERE(smith_1.stringAtttribute("firstName")).IN_list("Caroline", "Angelina");
+		
+		q.parameter("lastName").setValue("Smith");
+		
+		result = q.execute();
+		
+		smith_1Result = result.resultOf(smith_1);
+		equals = CompareUtil.equalsUnorderedList(population.getCaro_angie_smith(), smith_1Result);
+		assertTrue(equals);
+		
+		/******************************************/
+		q = da1.createQuery();
+		smith_1 = q.createMatch(Subject.class);
+		q.WHERE(smith_1.stringAtttribute("lastName")).EQUALS(q.parameter("lastName"));
+		q.WHERE(smith_1.stringAtttribute("firstName")).NOT().IN_list("John", "Jeremy");
+		
+		q.parameter("lastName").setValue("Smith");
+		
+		result = q.execute();
+		
+		smith_1Result = result.resultOf(smith_1);
+		equals = CompareUtil.equalsUnorderedList(population.getCaro_angie_smith(), smith_1Result);
 		assertTrue(equals);
 		
 		return;

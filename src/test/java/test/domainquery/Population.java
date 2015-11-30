@@ -58,6 +58,7 @@ public class Population {
 	private List<Object> smiths;
 	private List<Object> angelina_smith;
 	private List<Object> john_jery_smith;
+	private List<Object> caro_angie_smith;
 	private List<Object> angie_clark;
 	private List<Object> angies;
 	private List<Object> watson_company;
@@ -140,6 +141,10 @@ public class Population {
 
 	public List<Object> getJohn_jery_smith() {
 		return john_jery_smith;
+	}
+
+	public List<Object> getCaro_angie_smith() {
+		return caro_angie_smith;
 	}
 
 	public List<Object> getAngie_clark() {
@@ -348,6 +353,9 @@ public class Population {
 		this.john_jery_smith = new ArrayList<Object>();
 		this.john_jery_smith.add(john_smith);
 		this.john_jery_smith.add(jery_smith);
+		this.caro_angie_smith = new ArrayList<Object>();
+		this.caro_angie_smith.add(caroline_smith);
+		this.caro_angie_smith.add(angie_smith);
 		this.angies = new ArrayList<Object>();
 		this.angies.add(angie_smith);
 		this.smiths_christa_berghammer_globcom = new ArrayList<Object>();

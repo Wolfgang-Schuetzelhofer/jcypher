@@ -25,25 +25,39 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import iot.jcypher.domainquery.AbstractDomainQuery;
-import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.RecordedQuery.Invocation;
 import iot.jcypher.domainquery.internal.RecordedQuery.Statement;
+import iot.jcypher.query.values.MathFunctions;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
 
 public class QueryRecorder {
 	
+	public static final String QUERY_ID = "q";
+	
 	private static ThreadLocal<QueriesPerThread> queriesPerThread =
 			new ThreadLocal<QueriesPerThread>();
+	public static ThreadLocal<Boolean> blockRecording =
+			new ThreadLocal<Boolean>() {
+				@Override
+				protected Boolean initialValue() {
+					return Boolean.FALSE;
+				}
+		
+	};
 
 	public static void recordInvocation(Object on, String method, Object result, Object... params) {
+		if (blockRecording.get())
+			return;
 		recordInvocation(false, on, method, result, params);
 	}
 	
 	public static void recordAssignment(Object on, String method, Object result, Object... params) {
+		if (blockRecording.get())
+			return;
 		recordInvocation(true, on, method, result, params);
 	}
 	
@@ -63,13 +77,19 @@ public class QueryRecorder {
 			if (param instanceof Literal)
 				parameters.add(rqh.recordedQuery.literal(((Literal)param).value));
 			else if (param instanceof PlaceHolder) {
-				RecQueryHolder trqh = qpt.getHolderRef(((PlaceHolder)param).value);
-				if (trqh != null) {
-					List<Statement> adopted = adoptStatements(trqh, rqh);
-					parameters.addAll(adopted);
-					qpt.removeHolderRef(((PlaceHolder)param).value);
-				} else { // assume it is a literal (or a parameter)
-					parameters.add(rqh.recordedQuery.literal(((PlaceHolder)param).value));
+				Object val = ((PlaceHolder)param).value;
+				if (val instanceof DomainObjectMatch<?>) {
+					String oid = rqh.object2IdMap.get(val);
+					parameters.add(rqh.recordedQuery.doMatchRef(oid));
+				} else {
+					RecQueryHolder trqh = qpt.getHolderRef(val);
+					if (trqh != null) {
+						List<Statement> adopted = adoptStatements(trqh, rqh);
+						parameters.addAll(adopted);
+						qpt.removeHolderRef(val);
+					} else { // assume it is a literal (or a parameter)
+						parameters.add(rqh.recordedQuery.literal(val));
+					}
 				}
 			}
 		}
@@ -93,7 +113,7 @@ public class QueryRecorder {
 	private static void adoptStatement(RecQueryHolder from,
 			RecQueryHolder to, Statement s) {
 		if (s instanceof Invocation) {
-			String or = ((RecordedQuery<?>.Invocation)s).getOnObjectRef();
+			String or = ((RecordedQuery.Invocation)s).getOnObjectRef();
 			Object o = from.id2ObjectMap.get(or);
 			String id = to.object2IdMap.get(o);
 			if (id == null) {
@@ -101,9 +121,9 @@ public class QueryRecorder {
 				to.object2IdMap.put(o, id);
 				to.id2ObjectMap.put(id, o);
 			}
-			((RecordedQuery<?>.Invocation) s).setOnObjectRef(id);
+			((RecordedQuery.Invocation) s).setOnObjectRef(id);
 			
-			or = ((RecordedQuery<?>.Invocation)s).getReturnObjectRef();
+			or = ((RecordedQuery.Invocation)s).getReturnObjectRef();
 			o = from.id2ObjectMap.get(or);
 			id = to.object2IdMap.get(o);
 			if (id == null) {
@@ -111,10 +131,10 @@ public class QueryRecorder {
 				to.object2IdMap.put(o, id);
 				to.id2ObjectMap.put(id, o);
 			}
-			((RecordedQuery<?>.Invocation) s).setReturnObjectRef(id);
+			((RecordedQuery.Invocation) s).setReturnObjectRef(id);
 			
 			QueriesPerThread qpt = getCreateQueriesPerThread();
-			List<Statement> params = ((RecordedQuery<?>.Invocation) s).getParams();
+			List<Statement> params = ((RecordedQuery.Invocation) s).getParams();
 			for (Statement stmt : params) {
 				RecQueryHolder nextFrom = qpt.getHolderForQuery(stmt.getRecordedQuery());
 				if (nextFrom != null)
@@ -125,6 +145,8 @@ public class QueryRecorder {
 	}
 
 	public static void recordInvocationConditional(ValueElement on, String method, Object result, Object... params) {
+		if (blockRecording.get())
+			return;
 		QueriesPerThread qpt = queriesPerThread.get();
 		if (qpt != null && !qpt.isEmpty()) {
 			Object dom = ValueAccess.getAnyHint(on, APIAccess.hintKey_dom);
@@ -133,7 +155,21 @@ public class QueryRecorder {
 		}
 	}
 	
-	public static void recordInvocationReplace(DomainObjectMatch<?> on, Object toReplace) {
+	public static void recordInvocationConditional(MathFunctions on, String method, Object result, Object... params) {
+		if (blockRecording.get())
+			return;
+		QueriesPerThread qpt = queriesPerThread.get();
+		if (qpt != null && !qpt.isEmpty()) {
+			Object dom = ValueAccess.getAnyHint(ValueAccess.getArgument(on), APIAccess.hintKey_dom);
+			if (dom != null)
+				recordInvocation(on, method, result, params);
+		}
+	}
+	
+	public static void recordInvocationReplace(DomainObjectMatch<?> on, Object toReplace,
+			String methodName) {
+		if (blockRecording.get())
+			return;
 		QueriesPerThread qpt = getCreateQueriesPerThread();
 		RecQueryHolder trqh = qpt.getHolderRef(toReplace);
 		RecQueryHolder rqh = qpt.getHolderRef(on);
@@ -147,7 +183,8 @@ public class QueryRecorder {
 						trqh.object2IdMap.put(on, onId);
 						trqh.id2ObjectMap.put(onId, on);
 					}
-					((RecordedQuery<?>.Invocation)stmt).setOnObjectRef(onId);
+					((RecordedQuery.Invocation)stmt).setOnObjectRef(onId);
+					((RecordedQuery.Invocation)stmt).setMethod(methodName);
 				}
 			}
 			//qpt.removeHolderRef(toReplace);
@@ -159,13 +196,17 @@ public class QueryRecorder {
 	}
 	
 	public static void recordCreateQuery(AbstractDomainQuery query) {
-		RecordedQuery<?> rq = new RecordedQuery<AbstractDomainQuery>(query instanceof GDomainQuery);
+		if (blockRecording.get())
+			return;
+		RecordedQuery rq = new RecordedQuery(query instanceof GDomainQuery);
 		RecQueryHolder rqh = new RecQueryHolder(rq);
 		rqh.root = true;
 		getCreateQueriesPerThread().put(query, rqh);
 	}
 	
 	public static void queryCompleted(AbstractDomainQuery query) {
+		if (blockRecording.get())
+			return;
 		QueriesPerThread qpt = queriesPerThread.get();
 		if (qpt != null) {
 			RecQueryHolder rqh = qpt.queries.remove(query);
@@ -188,14 +229,13 @@ public class QueryRecorder {
 		}
 	}
 	
-	@SuppressWarnings("unchecked")
-	public static RecordedQuery<DomainQuery> getRecordedQuery(DomainQuery query) {
-		return (RecordedQuery<DomainQuery>) getRecQueryHolder(query).recordedQuery;
-	}
-	
-	@SuppressWarnings("unchecked")
-	public static RecordedQuery<GDomainQuery> getRecordedQuery(GDomainQuery query) {
-		return (RecordedQuery<GDomainQuery>) getRecQueryHolder(query).recordedQuery;
+	public static RecordedQuery getRecordedQuery(AbstractDomainQuery query) {
+		if (blockRecording.get())
+			return null;
+		RecQueryHolder rqh = getRecQueryHolder(query);
+		if (rqh != null)
+			return rqh.recordedQuery;
+		return null;
 	}
 	
 	public static Literal literal(Object value) {
@@ -212,7 +252,7 @@ public class QueryRecorder {
 	}
 	
 	private static RecQueryHolder createRecQueryHolder() {
-		RecQueryHolder rqh = new RecQueryHolder(new RecordedQuery<AbstractDomainQuery>(false));
+		RecQueryHolder rqh = new RecQueryHolder(new RecordedQuery(false));
 		return rqh;
 	}
 
@@ -229,13 +269,13 @@ public class QueryRecorder {
 	public static class QueriesPerThread {
 		private Map<AbstractDomainQuery, RecQueryHolder> queries;
 		private Map<Object, RecQueryHolder> recHolderRefs;
-		private Map<RecordedQuery<?>, RecQueryHolder> query2HolderMap;
+		private Map<RecordedQuery, RecQueryHolder> query2HolderMap;
 		
 		private QueriesPerThread() {
 			super();
 			this.queries = new HashMap<AbstractDomainQuery, RecQueryHolder>();
 			this.recHolderRefs = new IdentityHashMap<Object, RecQueryHolder>();
-			this.query2HolderMap = new HashMap<RecordedQuery<?>, RecQueryHolder>();
+			this.query2HolderMap = new HashMap<RecordedQuery, RecQueryHolder>();
 		}
 		
 		private void put(AbstractDomainQuery key, RecQueryHolder value) {
@@ -257,7 +297,7 @@ public class QueryRecorder {
 			return ret;
 		}
 		
-		private RecQueryHolder getHolderForQuery(RecordedQuery<?> key) {
+		private RecQueryHolder getHolderForQuery(RecordedQuery key) {
 			RecQueryHolder ret = this.query2HolderMap.get(key);
 			return ret;
 		}
@@ -303,14 +343,14 @@ public class QueryRecorder {
 		private static final String idPrefix = "obj";
 		
 		private boolean root;
-		private RecordedQuery<?> recordedQuery;
+		private RecordedQuery recordedQuery;
 		private Map<Object, String> object2IdMap;
 		private Map<String, Object> id2ObjectMap;
 		private List<RecQueryHolder> adopted;
 		private List<RecQueryHolder> replaced;
 		private int lastId;
 
-		private RecQueryHolder(RecordedQuery<?> recordedQuery) {
+		private RecQueryHolder(RecordedQuery recordedQuery) {
 			super();
 			this.recordedQuery = recordedQuery;
 			this.object2IdMap = new HashMap<Object, String>();
@@ -325,7 +365,7 @@ public class QueryRecorder {
 			String onId = this.object2IdMap.get(on);
 			if (onId == null) {
 				if (on instanceof  AbstractDomainQuery)
-					onId = "q";
+					onId = QUERY_ID;
 				else
 					onId = getNextId();
 				this.object2IdMap.put(on, onId);

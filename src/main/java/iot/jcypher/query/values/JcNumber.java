@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.values;
 
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
 import iot.jcypher.query.values.operators.OPERATOR;
 
@@ -66,7 +67,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber plus(Number val) {
-		return new JcNumber(val, this, OPERATOR.Number.PLUS);
+		JcNumber ret = new JcNumber(val, this, OPERATOR.Number.PLUS);
+		QueryRecorder.recordInvocationConditional(this, "plus", ret, QueryRecorder.literal(val));
+		return ret;
 	}
 	
 	/**
@@ -75,7 +78,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber plus(JcNumber val) {
-		return new JcNumber(val, this, OPERATOR.Number.PLUS);
+		JcNumber ret = new JcNumber(val, this, OPERATOR.Number.PLUS);
+		QueryRecorder.recordInvocationConditional(this, "plus", ret, QueryRecorder.placeHolder(val));
+		return ret;
 	}
 	
 	/**
@@ -84,7 +89,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber minus(Number val) {
-		return new JcNumber(val, this, OPERATOR.Number.MINUS);
+		JcNumber ret = new JcNumber(val, this, OPERATOR.Number.MINUS);
+		QueryRecorder.recordInvocationConditional(this, "minus", ret, QueryRecorder.literal(val));
+		return ret;
 	}
 	
 	/**
@@ -93,7 +100,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber minus(JcNumber val) {
-		return new JcNumber(val, this, OPERATOR.Number.MINUS);
+		JcNumber ret = new JcNumber(val, this, OPERATOR.Number.MINUS);
+		QueryRecorder.recordInvocationConditional(this, "minus", ret, QueryRecorder.placeHolder(val));
+		return ret;
 	}
 	
 	/**
@@ -102,7 +111,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber mult(Number val) {
-		return new JcNumber(val, this, OPERATOR.Number.MULT);
+		JcNumber ret = new JcNumber(val, this, OPERATOR.Number.MULT);
+		QueryRecorder.recordInvocationConditional(this, "mult", ret, QueryRecorder.literal(val));
+		return ret;
 	}
 	
 	/**
@@ -111,7 +122,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber mult(JcNumber val) {
-		return new JcNumber(val, this, OPERATOR.Number.MULT);
+		JcNumber ret = new JcNumber(val, this, OPERATOR.Number.MULT);
+		QueryRecorder.recordInvocationConditional(this, "mult", ret, QueryRecorder.placeHolder(val));
+		return ret;
 	}
 	
 	/**
@@ -120,7 +133,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber div(Number val) {
-		return new JcNumber(val, this, OPERATOR.Number.DIV);
+		JcNumber ret = new JcNumber(val, this, OPERATOR.Number.DIV);
+		QueryRecorder.recordInvocationConditional(this, "div", ret, QueryRecorder.literal(val));
+		return ret;
 	}
 	
 	/**
@@ -129,7 +144,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber div(JcNumber val) {
-		return new JcNumber(val, this, OPERATOR.Number.DIV);
+		JcNumber ret = new JcNumber(val, this, OPERATOR.Number.DIV);
+		QueryRecorder.recordInvocationConditional(this, "div", ret, QueryRecorder.placeHolder(val));
+		return ret;
 	}
 	
 	/**
@@ -138,7 +155,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber mod(Number val) {
-		return new JcNumber(val, this, OPERATOR.Number.MOD);
+		JcNumber ret = new JcNumber(val, this, OPERATOR.Number.MOD);
+		QueryRecorder.recordInvocationConditional(this, "mod", ret, QueryRecorder.literal(val));
+		return ret;
 	}
 	
 	/**
@@ -147,7 +166,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber mod(JcNumber val) {
-		return new JcNumber(val, this, OPERATOR.Number.MOD);
+		JcNumber ret = new JcNumber(val, this, OPERATOR.Number.MOD);
+		QueryRecorder.recordInvocationConditional(this, "mod", ret, QueryRecorder.placeHolder(val));
+		return ret;
 	}
 	
 	/**
@@ -156,7 +177,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber pow(Number exponent) {
-		return new JcNumber(exponent, this, OPERATOR.Number.POW);
+		JcNumber ret = new JcNumber(exponent, this, OPERATOR.Number.POW);
+		QueryRecorder.recordInvocationConditional(this, "pow", ret, QueryRecorder.literal(exponent));
+		return ret;
 	}
 	
 	/**
@@ -165,7 +188,9 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber pow(JcNumber exponent) {
-		return new JcNumber(exponent, this, OPERATOR.Number.POW);
+		JcNumber ret = new JcNumber(exponent, this, OPERATOR.Number.POW);
+		QueryRecorder.recordInvocationConditional(this, "pow", ret, QueryRecorder.placeHolder(exponent));
+		return ret;
 	}
 	
 	/**
@@ -176,8 +201,10 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcNumber enclose() {
-		return new JcNumber(null, this,
+		JcNumber ret = new JcNumber(null, this,
 				new FunctionInstance(FUNCTION.Common.ENCLOSE, 1));
+		QueryRecorder.recordInvocationConditional(this, "enclose", ret);
+		return ret;
 	}
 	
 	/**
@@ -186,6 +213,8 @@ public class JcNumber extends JcPrimitive {
 	 * <br/>
 	 */
 	public MathFunctions math() {
-		return new MathFunctions(this);
+		MathFunctions ret = new MathFunctions(this);
+		QueryRecorder.recordInvocationConditional(this, "math", ret);
+		return ret;
 	}
 }

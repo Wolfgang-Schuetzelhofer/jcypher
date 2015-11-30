@@ -246,6 +246,7 @@ public abstract class AbstractDomainQuery {
 		DomainObjectMatch<?> match = delegate != null ? delegate : toOrder;
 		OrderExpression oe = this.queryExecutor.getOrderFor(match);
 		Order ret = APIAccess.createOrder(oe);
+		QueryRecorder.recordInvocation(this, "ORDER", ret, QueryRecorder.placeHolder(toOrder));
 		return ret;
 	}
 	
@@ -260,6 +261,7 @@ public abstract class AbstractDomainQuery {
 		TraversalExpression te = new TraversalExpression(match, this.queryExecutor);
 		this.queryExecutor.addAstObject(te);
 		Traverse ret = APIAccess.createTraverse(te);
+		QueryRecorder.recordInvocation(this, "TRAVERSE_FROM", ret, QueryRecorder.placeHolder(start));
 		return ret;
 	}
 	

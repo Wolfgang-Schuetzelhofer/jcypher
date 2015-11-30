@@ -125,4 +125,8 @@ public class ValueAccess {
 	public static boolean isSame(JcValue val1, JcValue val2) {
 		return val1.getName() != null && val1.getName().equals(val2.getName());
 	}
+	
+	public static JcNumber getArgument(MathFunctions math) {
+		return math.getArgument();
+	}
 }

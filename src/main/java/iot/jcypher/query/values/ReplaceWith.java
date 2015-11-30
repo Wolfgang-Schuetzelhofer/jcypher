@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.values;
 
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
 import iot.jcypher.query.values.operators.OPERATOR;
 
@@ -38,8 +39,10 @@ public class ReplaceWith extends JcPrimitive {
 	 */
 	public JcString with(String with) {
 		JcString w = new JcString(with, this, OPERATOR.Common.COMMA_SEPARATOR);
-		return new JcString(null, w,
+		JcString ret = new JcString(null, w,
 				new FunctionInstance(FUNCTION.String.REPLACE, 3));
+		QueryRecorder.recordInvocationConditional(this, "with", ret, QueryRecorder.literal(with));
+		return ret;
 	}
 	
 	/**
@@ -48,8 +51,10 @@ public class ReplaceWith extends JcPrimitive {
 	 * <br/>
 	 */
 	public JcString with(JcString with) {
-		return new JcString(with, this,
+		JcString ret = new JcString(with, this,
 				new FunctionInstance(FUNCTION.String.REPLACE, 3));
+		QueryRecorder.recordInvocationConditional(this, "with", ret, QueryRecorder.placeHolder(with));
+		return ret;
 	}
 
 }

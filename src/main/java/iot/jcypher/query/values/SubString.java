@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.values;
 
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
 import iot.jcypher.query.values.operators.OPERATOR;
 
@@ -36,7 +37,9 @@ public class SubString extends JcString {
 	 */
 	public JcString subLength(int len) {
 		JcNumber sub = new JcNumber(len, this.getPredecessor(), OPERATOR.Common.COMMA_SEPARATOR); 
-		return new JcString(null, sub,
+		JcString ret = new JcString(null, sub,
 				new FunctionInstance(FUNCTION.String.SUBSTRING, 3));
+		QueryRecorder.recordInvocationConditional(this, "subLength", ret, QueryRecorder.literal(len));
+		return ret;
 	}
 }

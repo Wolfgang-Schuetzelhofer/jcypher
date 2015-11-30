@@ -46,6 +46,7 @@ public class BooleanOperation extends APIObject {
 	 */
 	public BooleanOperation NOT() {
 		getPredicateExpression().addNegation();
+		QueryRecorder.recordInvocation(this, "NOT", this);
 		return this;
 	}
 	
@@ -57,7 +58,9 @@ public class BooleanOperation extends APIObject {
 	public <E> TerminalResult LT(E value) {
 		getPredicateExpression().setOperator(Operator.LT);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createTerminalResult(this.getPredicateExpression());
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "LT", ret, QueryRecorder.placeHolder(value));
+		return ret;
 	}
 	
 	/**
@@ -68,7 +71,9 @@ public class BooleanOperation extends APIObject {
 	public <E> TerminalResult LTE(E value) {
 		getPredicateExpression().setOperator(Operator.LTE);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createTerminalResult(this.getPredicateExpression());
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "LTE", ret, QueryRecorder.placeHolder(value));
+		return ret;
 	}
 	
 	/**
@@ -79,7 +84,9 @@ public class BooleanOperation extends APIObject {
 	public <E> TerminalResult GT(E value) {
 		getPredicateExpression().setOperator(Operator.GT);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createTerminalResult(this.getPredicateExpression());
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "GT", ret, QueryRecorder.placeHolder(value));
+		return ret;
 	}
 	
 	/**
@@ -90,7 +97,9 @@ public class BooleanOperation extends APIObject {
 	public <E> TerminalResult GTE(E value) {
 		getPredicateExpression().setOperator(Operator.GTE);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createTerminalResult(this.getPredicateExpression());
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "GTE", ret, QueryRecorder.placeHolder(value));
+		return ret;
 	}
 	
 	/**
@@ -101,7 +110,9 @@ public class BooleanOperation extends APIObject {
 	public TerminalResult LIKE(String regex) {
 		getPredicateExpression().setOperator(Operator.LIKE);
 		getPredicateExpression().setValue_2(regex);
-		return APIAccess.createTerminalResult(this.getPredicateExpression());
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "LIKE", ret, QueryRecorder.literal(regex));
+		return ret;
 	}
 	
 	/**
@@ -111,7 +122,9 @@ public class BooleanOperation extends APIObject {
 	 */
 	public TerminalResult IS_NULL() {
 		getPredicateExpression().setOperator(Operator.IS_NULL);
-		return APIAccess.createTerminalResult(this.getPredicateExpression());
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "IS_NULL", ret);
+		return ret;
 	}
 	
 	/**
@@ -123,7 +136,9 @@ public class BooleanOperation extends APIObject {
 	public <E> TerminalResult IN_list(E... value) {
 		getPredicateExpression().setOperator(Operator.IN);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createTerminalResult(this.getPredicateExpression());
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "IN_list", ret, QueryRecorder.placeHolder(value));
+		return ret;
 	}
 	
 	/**
@@ -136,7 +151,9 @@ public class BooleanOperation extends APIObject {
 		DomainObjectMatch<?> match = delegate != null ? delegate : domainObjects;
 		getPredicateExpression().setOperator(Operator.IN);
 		getPredicateExpression().setValue_2(match);
-		return APIAccess.createTerminalResult(this.getPredicateExpression());
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "IN", ret, QueryRecorder.placeHolder(domainObjects));
+		return ret;
 	}
 	
 	/**
@@ -148,7 +165,9 @@ public class BooleanOperation extends APIObject {
 	public <E> TerminalResult CONTAINS_elements(E... value) {
 		getPredicateExpression().setOperator(Operator.CONTAINS);
 		getPredicateExpression().setValue_2(value);
-		return APIAccess.createTerminalResult(this.getPredicateExpression());
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "CONTAINS_elements", ret, QueryRecorder.placeHolder(value));
+		return ret;
 	}
 	
 	/**
@@ -169,7 +188,9 @@ public class BooleanOperation extends APIObject {
 		DomainObjectMatch<?> match = delegate != null ? delegate : domainObjects;
 		getPredicateExpression().setOperator(Operator.CONTAINS);
 		getPredicateExpression().setValue_2(match);
-		return APIAccess.createTerminalResult(this.getPredicateExpression());
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "CONTAINS", ret, QueryRecorder.placeHolder(domainObjects));
+		return ret;
 	}
 	
 	private PredicateExpression getPredicateExpression() {

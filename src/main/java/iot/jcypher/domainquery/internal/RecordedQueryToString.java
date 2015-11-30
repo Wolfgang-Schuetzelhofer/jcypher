@@ -16,17 +16,20 @@
 
 package iot.jcypher.domainquery.internal;
 
+import java.lang.reflect.Array;
 import java.util.List;
 
 import iot.jcypher.domainquery.internal.RecordedQuery.Assignment;
+import iot.jcypher.domainquery.internal.RecordedQuery.DOMatchRef;
 import iot.jcypher.domainquery.internal.RecordedQuery.Invocation;
 import iot.jcypher.domainquery.internal.RecordedQuery.Literal;
 import iot.jcypher.domainquery.internal.RecordedQuery.Statement;
-import iot.jcypher.query.writer.CypherWriter;
+import iot.jcypher.query.values.JcValue;
+import iot.jcypher.query.values.ValueAccess;
 
 public class RecordedQueryToString {
 
-	public static String queryToString(RecordedQuery<?> query) {
+	public static String queryToString(RecordedQuery query) {
 		Context context = new Context();
 		context.sb.append(query.isGeneric() ? "Generic-DomainQuery" : "DomainQuery");
 		context.sb.append("\n");
@@ -35,7 +38,6 @@ public class RecordedQueryToString {
 		return context.sb.toString();
 	}
 	
-	@SuppressWarnings("rawtypes")
 	private static void statementsToString(List<Statement> statements, Context context) {
 		Statement prev = null;
 		for(int i = 0; i < statements.size(); i++) {
@@ -67,11 +69,10 @@ public class RecordedQueryToString {
 		}
 	}
 	
-	@SuppressWarnings("rawtypes")
 	private static void statementToString(Statement statement, Context context) {
 		if (statement instanceof Literal) {
 			if (((Literal)statement).getValue() != null)
-				CypherWriter.PrimitiveCypherWriter.writePrimitiveValue(((Literal)statement).getValue(), null, context.sb);
+				PrimitiveWriter.writePrimitiveValue(((Literal)statement).getValue(), context.sb);
 			else
 				context.sb.append("null");
 		} else if (statement instanceof Assignment) {
@@ -80,16 +81,18 @@ public class RecordedQueryToString {
 			invocationToString((Assignment)statement, context);
 		} else if (statement instanceof Invocation) {
 			invocationToString((Invocation)statement, context);
+		} else if (statement instanceof DOMatchRef) {
+			context.sb.append(((DOMatchRef)statement).getRef());
 		}
 	}
 	
-	private static void invocationToString(RecordedQuery<?>.Invocation invocation, Context context) {
+	private static void invocationToString(RecordedQuery.Invocation invocation, Context context) {
 		context.sb.append(invocation.getOnObjectRef());
 		context.sb.append('.');
 		callToString(invocation, context);
 	}
 	
-	private static void callToString(RecordedQuery<?>.Invocation invocation, Context context) {
+	private static void callToString(RecordedQuery.Invocation invocation, Context context) {
 		context.sb.append(invocation.getMethod());
 		context.sb.append('(');
 		List<Statement> params = invocation.getParams();
@@ -150,5 +153,37 @@ public class RecordedQueryToString {
 		private Indent indent = new Indent();
 		private int callDepth = 0;
 		private StringBuilder sb = new StringBuilder();
+	}
+	
+	/****************************************/
+	private static class PrimitiveWriter {
+		
+		private static void writePrimitiveValue(Object val, StringBuilder sb) {
+			if (val instanceof Number) {
+				sb.append(val.toString());
+			} else if (val instanceof Boolean) {
+				sb.append(val.toString());
+			} else if (val instanceof List<?>) {
+				List<?> list = (List<?>)val;
+				for (int i = 0; i < list.size(); i++) {
+					if (i > 0)
+						sb.append(", ");
+					writePrimitiveValue(list.get(i), sb);
+				}
+			} else if (val.getClass().isArray()) {
+				int len = Array.getLength(val);
+				for (int i = 0; i < len; i++) {
+					if (i > 0)
+						sb.append(", ");
+					writePrimitiveValue(Array.get(val, i), sb);
+				}
+			} else if (val instanceof JcValue) {
+				sb.append(ValueAccess.getName((JcValue)val));
+			} else {
+				sb.append('\'');
+				sb.append(val.toString());
+				sb.append('\'');
+			}
+		}
 	}
 }

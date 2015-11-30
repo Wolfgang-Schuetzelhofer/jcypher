@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2015 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.values;
 
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
 
 public class MathFunctions {
@@ -36,8 +37,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber abs() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.ABS, 1));
+		QueryRecorder.recordInvocationConditional(this, "abs", ret);
+		return ret;
 	}
 	
 	/**
@@ -49,8 +52,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber acos() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.ACOS, 1));
+		QueryRecorder.recordInvocationConditional(this, "acos", ret);
+		return ret;
 	}
 	
 	/**
@@ -62,8 +67,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber asin() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.ASIN, 1));
+		QueryRecorder.recordInvocationConditional(this, "asin", ret);
+		return ret;
 	}
 	
 	/**
@@ -75,8 +82,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber atan() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.ATAN, 1));
+		QueryRecorder.recordInvocationConditional(this, "atan", ret);
+		return ret;
 	}
 	
 	/**
@@ -88,8 +97,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber cos() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.COS, 1));
+		QueryRecorder.recordInvocationConditional(this, "cos", ret);
+		return ret;
 	}
 	
 	/**
@@ -101,8 +112,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber cot() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.COT, 1));
+		QueryRecorder.recordInvocationConditional(this, "cot", ret);
+		return ret;
 	}
 	
 	/**
@@ -114,8 +127,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber degrees() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.DEGREES, 1));
+		QueryRecorder.recordInvocationConditional(this, "degrees", ret);
+		return ret;
 	}
 	
 	/**
@@ -127,8 +142,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber radians() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.RADIANS, 1));
+		QueryRecorder.recordInvocationConditional(this, "radians", ret);
+		return ret;
 	}
 	
 	/**
@@ -140,8 +157,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber exp() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.EXP, 1));
+		QueryRecorder.recordInvocationConditional(this, "exp", ret);
+		return ret;
 	}
 	
 	/**
@@ -153,8 +172,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber floor() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.FLOOR, 1));
+		QueryRecorder.recordInvocationConditional(this, "floor", ret);
+		return ret;
 	}
 	
 	/**
@@ -168,8 +189,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber haversin() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.HAVERSIN, 1));
+		QueryRecorder.recordInvocationConditional(this, "haversin", ret);
+		return ret;
 	}
 	
 	/**
@@ -181,8 +204,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber log() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.LOG, 1));
+		QueryRecorder.recordInvocationConditional(this, "log", ret);
+		return ret;
 	}
 	
 	/**
@@ -194,8 +219,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber log10() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.LOG10, 1));
+		QueryRecorder.recordInvocationConditional(this, "log10", ret);
+		return ret;
 	}
 	
 	/**
@@ -207,8 +234,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber round() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.ROUND, 1));
+		QueryRecorder.recordInvocationConditional(this, "round", ret);
+		return ret;
 	}
 	
 	/**
@@ -220,8 +249,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber sign() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.SIGN, 1));
+		QueryRecorder.recordInvocationConditional(this, "sign", ret);
+		return ret;
 	}
 	
 	/**
@@ -233,8 +264,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber sin() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.SIN, 1));
+		QueryRecorder.recordInvocationConditional(this, "sin", ret);
+		return ret;
 	}
 	
 	/**
@@ -246,8 +279,10 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber sqrt() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.SQRT, 1));
+		QueryRecorder.recordInvocationConditional(this, "sqrt", ret);
+		return ret;
 	}
 	
 	/**
@@ -259,7 +294,13 @@ public class MathFunctions {
 	 * <br/>
 	 */
 	public JcNumber tan() {
-		return new JcNumber(null, this.argument,
+		JcNumber ret = new JcNumber(null, this.argument,
 				new FunctionInstance(FUNCTION.Math.TAN, 1));
+		QueryRecorder.recordInvocationConditional(this, "tan", ret);
+		return ret;
+	}
+
+	JcNumber getArgument() {
+		return argument;
 	}
 }

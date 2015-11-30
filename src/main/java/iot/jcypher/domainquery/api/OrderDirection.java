@@ -17,6 +17,7 @@
 package iot.jcypher.domainquery.api;
 
 import iot.jcypher.domainquery.ast.OrderExpression.OrderBy;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 
 public class OrderDirection extends APIObject {
 
@@ -32,6 +33,7 @@ public class OrderDirection extends APIObject {
 	 */
 	public void DESCENDING() {
 		this.orderBy.setDirection(1);
+		QueryRecorder.recordInvocation(this, "DESCENDING", Void.TYPE);
 	}
 	
 }

@@ -22,4 +22,5 @@ public class Settings {
 
 	public static boolean strict = true;
 	public static final PlannerStrategy plannerStrategy = PlannerStrategy.RULE;
+	public static boolean TEST_MODE = false;
 }

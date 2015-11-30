@@ -116,7 +116,7 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		if (this.delegate != null)
 			return this.delegate.atttribute(name);
 		JcProperty ret = checkField_getJcVal(name, JcProperty.class);
-		QueryRecorder.recordInvocationReplace(this, ret);
+		QueryRecorder.recordInvocationReplace(this, ret, "atttribute");
 		return ret;
 	}
 	
@@ -129,7 +129,7 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		if (this.delegate != null)
 			return this.delegate.stringAtttribute(name);
 		JcString ret = checkField_getJcVal(name, JcString.class);
-		QueryRecorder.recordInvocationReplace(this, ret);
+		QueryRecorder.recordInvocationReplace(this, ret, "stringAtttribute");
 		return ret;
 	}
 	
@@ -142,7 +142,7 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		if (this.delegate != null)
 			return this.delegate.numberAtttribute(name);
 		JcNumber ret = checkField_getJcVal(name, JcNumber.class);
-		QueryRecorder.recordInvocationReplace(this, ret);
+		QueryRecorder.recordInvocationReplace(this, ret, "numberAtttribute");
 		return ret;
 	}
 	
@@ -155,7 +155,7 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		if (this.delegate != null)
 			return this.delegate.booleanAtttribute(name);
 		JcBoolean ret = checkField_getJcVal(name, JcBoolean.class);
-		QueryRecorder.recordInvocationReplace(this, ret);
+		QueryRecorder.recordInvocationReplace(this, ret, "booleanAtttribute");
 		return ret;
 	}
 	
@@ -168,7 +168,7 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 		if (this.delegate != null)
 			return this.delegate.collectionAtttribute(name);
 		JcCollection ret = checkField_getJcVal(name, JcCollection.class);
-		QueryRecorder.recordInvocationReplace(this, ret);
+		QueryRecorder.recordInvocationReplace(this, ret, "collectionAtttribute");
 		return ret;
 	}
 	
@@ -189,6 +189,8 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 				this.pageChanged = true;
 			}
 		}
+		QueryRecorder.recordInvocation(this, "setPage", Void.TYPE,
+				QueryRecorder.literal(offset), QueryRecorder.literal(length));
 	}
 
 	Class<T> getDomainObjectType() {
