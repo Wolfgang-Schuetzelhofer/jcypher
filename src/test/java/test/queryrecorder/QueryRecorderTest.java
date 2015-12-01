@@ -46,6 +46,7 @@ import test.domainquery.model.Address;
 import test.domainquery.model.NumberHolder;
 import test.domainquery.model.Person;
 import test.domainquery.model.Subject;
+import util.TestDataReader;
 
 public class QueryRecorderTest extends AbstractTestSuite {
 
@@ -73,13 +74,15 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
 		QueryRecorder.queryCompleted(q2);
 		assertTrue(qpt.isCleared());
 		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		return;
 	}
 	
 	@Test
@@ -98,7 +101,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -116,7 +119,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -133,7 +136,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -150,7 +153,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -180,7 +183,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -208,7 +211,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -245,7 +248,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -263,7 +266,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -288,7 +291,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -314,7 +317,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
 		QueryRecorder.queryCompleted(q2);
@@ -333,7 +336,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -351,7 +354,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -392,7 +395,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -413,7 +416,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -433,7 +436,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -453,7 +456,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		
-		System.out.println(recordedQuery.toString());
+		System.out.println("\n" + recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -497,6 +500,10 @@ public class QueryRecorderTest extends AbstractTestSuite {
 	
 	@AfterClass
 	public static void after() {
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_QueryRecorder_01.txt");
+		String testId = "UNION_06";
+		//assertEquals(testId, qCypher, tdr.getTestData(testId));
+		
 		if (dbAccess != null) {
 			dbAccess.close();
 			dbAccess = null;

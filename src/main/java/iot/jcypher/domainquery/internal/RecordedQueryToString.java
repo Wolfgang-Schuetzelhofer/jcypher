@@ -59,6 +59,8 @@ public class RecordedQueryToString {
 						context.sb.append(context.indent.getIndent());
 					}
 				}
+				if (context.callDepth == 0)
+					context.topStatementStart = context.sb.length();
 				statementToString(s, context);
 			} else // concatenate statements
 				callToString((Invocation)s, context); // must be an Invocation
@@ -75,10 +77,6 @@ public class RecordedQueryToString {
 				PrimitiveWriter.writePrimitiveValue(((Literal)statement).getValue(), context.sb);
 			else
 				context.sb.append("null");
-		} else if (statement instanceof Assignment) {
-			context.sb.append(((Assignment)statement).getReturnObjectRef());
-			context.sb.append(" = ");
-			invocationToString((Assignment)statement, context);
 		} else if (statement instanceof Invocation) {
 			invocationToString((Invocation)statement, context);
 		} else if (statement instanceof DOMatchRef) {
@@ -101,6 +99,10 @@ public class RecordedQueryToString {
 			statementsToString(params, context);
 		context.callDepth--;
 		context.sb.append(')');
+		if (invocation instanceof Assignment) {
+			context.sb.insert(context.topStatementStart, " = ");
+			context.sb.insert(context.topStatementStart, invocation.getReturnObjectRef());
+		}
 	}
 	
 	/******************************************/
@@ -152,6 +154,7 @@ public class RecordedQueryToString {
 	private static class Context {
 		private Indent indent = new Indent();
 		private int callDepth = 0;
+		private int topStatementStart;
 		private StringBuilder sb = new StringBuilder();
 	}
 	

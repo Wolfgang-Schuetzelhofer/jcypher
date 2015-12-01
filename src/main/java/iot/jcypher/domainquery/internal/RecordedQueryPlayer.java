@@ -153,18 +153,34 @@ public class RecordedQueryPlayer {
 	private Method findMethod(String methodName, Object on, Class<?>[] args, List<Object> params)
 			throws Throwable{
 		Method ret = null;
+		String mthdName = methodName;
 		if (methodName.equals("createMatch") && !this.generic) {
 			args[0] = Class.class;
 			Class<?> cls = Class.forName(params.remove(0).toString());
 			params.add(cls);
+		} else if (methodName.equals("TO")) {
+			if (!this.generic) {
+				args[0] = Class.class;
+				Class<?> cls = Class.forName(params.remove(0).toString());
+				params.add(cls);
+			} else {
+				mthdName = "TO_GENERIC";
+			}
+		} else if (methodName.equals("TO_GENERIC")) {
+			if (!this.generic) {
+				args[0] = Class.class;
+				Class<?> cls = Class.forName(params.remove(0).toString());
+				params.add(cls);
+				mthdName = "TO";
+			}
 		}
 		
 		try {
-			ret = on.getClass().getMethod(methodName, args);
+			ret = on.getClass().getMethod(mthdName, args);
 		} catch(NoSuchMethodException e) {
 			Method[] mthds = on.getClass().getMethods();
 			for (Method mthd : mthds) {
-				if (mthd.getName().equals(methodName)) {
+				if (mthd.getName().equals(mthdName)) {
 					Class<?>[] types = mthd.getParameterTypes();
 					if (types.length == args.length) {
 						boolean same = true;
