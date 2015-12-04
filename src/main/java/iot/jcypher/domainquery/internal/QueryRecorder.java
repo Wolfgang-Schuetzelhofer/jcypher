@@ -49,19 +49,56 @@ public class QueryRecorder {
 		
 	};
 
+	/**
+	 * invocations on domainQuery (q)
+	 * but stacked within e.g. a SELECT_FROM(...).ELEMENTS(...) statement.
+	 * Must not be directly added to the root RecordedQuery
+	 * but must be encapsulated in a sub statement
+	 * @param on
+	 * @param method
+	 * @param result
+	 * @param params
+	 */
+	public static void recordStackedInvocation(Object on, String method, Object result, Object... params) {
+		if (blockRecording.get())
+			return;
+		recordInvocation(false, true, on, method, result, params);
+	}
+	
+	/**
+	 * invocations on domainQuery (q)
+	 * but stacked within e.g. a SELECT_FROM(...).ELEMENTS(...) statement.
+	 * Must not be directly added to the root RecordedQuery
+	 * but must be encapsulated in a sub statement
+	 * @param on
+	 * @param method
+	 * @param result
+	 * @param params
+	 */
+	public static void recordStackedAssignment(Object on, String method, Object result, Object... params) {
+		if (blockRecording.get())
+			return;
+		recordInvocation(true, true, on, method, result, params);
+	}
+	
 	public static void recordInvocation(Object on, String method, Object result, Object... params) {
 		if (blockRecording.get())
 			return;
-		recordInvocation(false, on, method, result, params);
+		recordInvocation(false, false, on, method, result, params);
 	}
 	
 	public static void recordAssignment(Object on, String method, Object result, Object... params) {
 		if (blockRecording.get())
 			return;
-		recordInvocation(true, on, method, result, params);
+		recordInvocation(true, false, on, method, result, params);
 	}
 	
-	private static void recordInvocation(boolean assign, Object on, String method, Object result, Object... params) {
+	private static void recordInvocation(boolean assign, boolean subRoot, Object on, String method,
+			Object result, Object... params) {
+		// subRoot true means invocations on domainQuery (q)
+		// but stacked within e.g. a SELECT_FROM(...).ELEMENTS(...) statement.
+		// Must not be directly added to the root RecordedQuery
+		// but must be encapsulated in a sub statement
 		QueriesPerThread qpt = getCreateQueriesPerThread();
 		RecQueryHolder rqh = null;
 		if (on instanceof AbstractDomainQuery)
@@ -71,32 +108,38 @@ public class QueryRecorder {
 			if (rqh == null)
 				rqh = createRecQueryHolder();
 		}
-		List<Statement> parameters = new ArrayList<Statement>(params.length);
-		for (int i = 0; i < params.length; i++) {
-			Object param = params[i];
-			if (param instanceof Literal)
-				parameters.add(rqh.recordedQuery.literal(((Literal)param).value));
-			else if (param instanceof PlaceHolder) {
-				Object val = ((PlaceHolder)param).value;
-				if (val instanceof DomainObjectMatch<?>) {
-					String oid = rqh.object2IdMap.get(val);
-					parameters.add(rqh.recordedQuery.doMatchRef(oid));
-				} else {
-					RecQueryHolder trqh = qpt.getHolderRef(val);
-					if (trqh != null) {
-						List<Statement> adopted = adoptStatements(trqh, rqh);
-						parameters.addAll(adopted);
-						qpt.removeHolderRef(val);
-					} else { // assume it is a literal (or a parameter)
-						parameters.add(rqh.recordedQuery.literal(val));
+		
+		if (subRoot && rqh.root) {
+			// the parameters have already been adopted to the root
+			rqh.stackLastNStatements(assign, params == null ? 0 : params.length, on, method, result);
+		} else {
+			List<Statement> parameters = new ArrayList<Statement>(params.length);
+			for (int i = 0; i < params.length; i++) {
+				Object param = params[i];
+				if (param instanceof Literal)
+					parameters.add(rqh.recordedQuery.literal(((Literal)param).value));
+				else if (param instanceof PlaceHolder) {
+					Object val = ((PlaceHolder)param).value;
+					if (val instanceof DomainObjectMatch<?>) {
+						String oid = rqh.object2IdMap.get(val);
+						parameters.add(rqh.recordedQuery.doMatchRef(oid));
+					} else {
+						RecQueryHolder trqh = qpt.getHolderRef(val);
+						if (trqh != null) {
+							List<Statement> adopted = adoptStatements(trqh, rqh);
+							parameters.addAll(adopted);
+							qpt.removeHolderRef(val);
+						} else { // assume it is a literal (or a parameter)
+							parameters.add(rqh.recordedQuery.literal(val));
+						}
 					}
 				}
 			}
-		}
-		rqh.recordInvocation(assign, on, method, result, parameters);
-		qpt.putHolderRef(result, rqh);
-		if (rqh.root) {
-			qpt.removeFromQuery2HolderMap(rqh, null, false); // don't remove root
+			rqh.recordInvocation(assign, on, method, result, parameters);
+			qpt.putHolderRef(result, rqh);
+			if (rqh.root) {
+				qpt.removeFromQuery2HolderMap(rqh, null, false); // don't remove root
+			}
 		}
 		return;
 	}
@@ -362,6 +405,19 @@ public class QueryRecorder {
 		}
 		
 		private void recordInvocation(boolean assign, Object on, String method, Object result, List<Statement> parameters) {
+			String[] ids = getIds(on, result);
+			if (assign)
+				this.recordedQuery.addAssignment(ids[0], method, ids[1], parameters);
+			else
+				this.recordedQuery.addInvocation(ids[0], method, ids[1], parameters);
+		}
+		
+		/**
+		 * @param on
+		 * @param result
+		 * @return [onId, resId]
+		 */
+		private String[] getIds(Object on, Object result) {
 			String onId = this.object2IdMap.get(on);
 			if (onId == null) {
 				if (on instanceof  AbstractDomainQuery)
@@ -377,10 +433,7 @@ public class QueryRecorder {
 				this.object2IdMap.put(result, resId);
 				this.id2ObjectMap.put(resId, result);
 			}
-			if (assign)
-				this.recordedQuery.addAssignment(onId, method, resId, parameters);
-			else
-				this.recordedQuery.addInvocation(onId, method, resId, parameters);
+			return new String[]{onId, resId};
 		}
 		
 		private String getNextId() {
@@ -401,6 +454,51 @@ public class QueryRecorder {
 		private boolean inReplaced(RecQueryHolder rqh) {
 			int idx = this.replaced.indexOf(rqh);
 			return idx >= 0;
+		}
+		
+		private void stackLastNStatements(boolean assign, int n, Object on, String method, Object result) {
+			List<Statement> stmts = new ArrayList<Statement>(n);
+			if (n > 0) {
+				int addOffs = 0;
+				Statement stmt = null;
+				Statement following = null;
+				List<Statement> qstmts = this.recordedQuery.getStatements();
+				int offs = qstmts.size() - 1;
+				for (int i = 0; i < n +addOffs; i++) {
+					stmt = qstmts.remove(offs - i);
+					stmts.add(0, stmt);
+					// adjustment for concatenated statements
+					if (following instanceof Invocation && stmt instanceof Invocation) {
+						if (((Invocation)following).getOnObjectRef().equals(
+								((Invocation)stmt).getReturnObjectRef()))
+							addOffs++;
+					}
+					following = stmt;
+				}
+				// now follow the concatenations of the first stacked statement
+				offs = qstmts.size() - 1;
+				while (offs >= 0) {
+					Statement prev = qstmts.get(offs);
+					boolean goOn = false;
+					if (prev instanceof Invocation && stmt instanceof Invocation) {
+						if (((Invocation)stmt).getOnObjectRef().equals(
+								((Invocation)prev).getReturnObjectRef())) {
+							qstmts.remove(offs);
+							stmts.add(0, prev);
+							stmt = prev;
+							offs--;
+							goOn = true;
+						}
+					}
+					if (!goOn)
+						break;
+				}
+			}
+			String[] ids = getIds(on, result);
+			if (assign)
+				this.recordedQuery.addAssignment(ids[0], method, ids[1], stmts);
+			else
+				this.recordedQuery.addInvocation(ids[0], method, ids[1], stmts);
 		}
 
 		@Override

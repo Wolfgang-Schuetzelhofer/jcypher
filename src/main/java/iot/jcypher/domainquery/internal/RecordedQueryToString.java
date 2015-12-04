@@ -53,7 +53,12 @@ public class RecordedQueryToString {
 			if (!separator) { // start new statement
 				if (prev != null) {
 					if (context.callDepth > 0) {
-						context.sb.append(", ");
+						// if s is a stacked statement on the domain query
+						if (s instanceof Invocation && ((Invocation)s).getOnObjectRef().equals(QueryRecorder.QUERY_ID)) {
+							context.sb.append(",\n");
+							context.sb.append(context.indent.getIndent());
+						} else
+							context.sb.append(", ");
 					} else {
 						context.sb.append(";\n");
 						context.sb.append(context.indent.getIndent());

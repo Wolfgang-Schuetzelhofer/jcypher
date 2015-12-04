@@ -19,6 +19,8 @@ package test.queryrecorder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.List;
 import java.util.Properties;
 
@@ -42,9 +44,13 @@ import iot.jcypher.domainquery.internal.Settings;
 import iot.jcypher.util.QueriesPrintObserver;
 import test.AbstractTestSuite;
 import test.domainquery.Population;
+import test.domainquery.model.AbstractArea;
 import test.domainquery.model.Address;
+import test.domainquery.model.Area;
+import test.domainquery.model.AreaType;
 import test.domainquery.model.NumberHolder;
 import test.domainquery.model.Person;
+import test.domainquery.model.PointOfContact;
 import test.domainquery.model.Subject;
 import util.TestDataReader;
 
@@ -55,10 +61,143 @@ public class QueryRecorderTest extends AbstractTestSuite {
 	private static List<Object> storedDomainObjects;
 	
 	@Test
+	public void testRecordQuery_06() {
+		//DomainQueryTest.testDomainQuery_Traversals_02()
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_QueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_06";
+		StringBuilder sb = new StringBuilder();
+		
+		/** 01 ****************************************/
+		DomainQuery q = da1.createQuery();
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
+		RecordedQuery recordedQuery = QueryRecorder.getRecordedQuery(q);
+		DomainObjectMatch<Person> j_smith = q.createMatch(Person.class);
+		DomainObjectMatch<Area> europe = q.createMatch(Area.class);
+		
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Address> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Address.class);
+		DomainObjectMatch<Area> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+		
+//		q.WHERE(j_smith_Areas).CONTAINS(europe); // must throw exception
+		
+		DomainObjectMatch<Address> j_smith_FilteredAddresses =
+				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
+						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria"),
+						q.OR(),
+						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("USA"),
+						q.BR_OPEN(),
+							q.WHERE(j_smith_Addresses.atttribute("number")).EQUALS(32),
+							q.OR(),
+							q.WHERE(j_smith_Addresses.atttribute("number")).EQUALS(20),
+						q.BR_CLOSE()
+				);
+		
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n").append(recordedQuery.toString());
+		
+		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		return;
+	}
+	
+	@Test
+	public void testRecordQuery_05() {
+		//DomainQueryTest.testDomainQuery_Traversals_02()
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_QueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_05";
+		StringBuilder sb = new StringBuilder();
+		
+		/** 02 ****************************************/
+		DomainQuery q = da1.createQuery();
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
+		RecordedQuery recordedQuery = QueryRecorder.getRecordedQuery(q);
+		DomainObjectMatch<Area> europe = q.createMatch(Area.class);
+		DomainObjectMatch<Area> usa = q.createMatch(Area.class);
+		DomainObjectMatch<Subject> inEuropeAndUsa = q.createMatch(Subject.class);
+
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+		q.WHERE(usa.atttribute("name")).EQUALS("USA");
+		
+		DomainObjectMatch<Subject> inEurope = q.TRAVERSE_FROM(europe).BACK("partOf").DISTANCE(1, -1)
+				.BACK("area").BACK("pointsOfContact").TO(Subject.class);
+		DomainObjectMatch<Subject> inUsa = q.TRAVERSE_FROM(usa).BACK("partOf").DISTANCE(1, -1)
+				.BACK("area").BACK("pointsOfContact").TO(Subject.class);
+		
+		q.WHERE(inEuropeAndUsa).IN(inEurope);
+		q.WHERE(inEuropeAndUsa).IN(inUsa);
+		
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n").append(recordedQuery.toString());
+		
+		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		/** 03 ****************************************/
+		q = da1.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
+		DomainObjectMatch<Person> j_smithMatch = q.createMatch(Person.class);
+
+		// Constrain the set of Persons to contain
+		// John Smith only
+		q.WHERE(j_smithMatch.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smithMatch.atttribute("firstName")).EQUALS("John");
+		
+		// Start with 'John Smith'
+		// (j_smithMatch is constraint to match 'John Smith' only),
+		// navigate forward via attribute 'pointsOfContact',
+		// this will lead to 'John Smith's' Address(es),
+		// then navigate backward via attribute 'pointsOfContact',
+		// end matching objects of type Person.
+		// This will lead to all other persons living at 'John Smith's' Address(es).
+		DomainObjectMatch<Person> j_smith_residentsMatch =
+			q.TRAVERSE_FROM(j_smithMatch).FORTH("pointsOfContact")
+				.BACK("pointsOfContact").TO(Person.class);
+		
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
+		
+		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		assertEquals(testId, sb.toString(), tdr.getTestData(testId));
+		
+		return;
+	}
+	
+	@Test
 	public void testRecordQuery_04() {
 		//DomainQueryTest.testDomainQuery_Traversals_01()
-		
 		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_QueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_04";
+		StringBuilder sb = new StringBuilder();
 		
 		/** 01 ****************************************/
 		DomainQuery q = da1.createQuery();
@@ -75,6 +214,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n").append(recordedQuery.toString());
 		
 		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -82,14 +222,186 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		assertTrue(qpt.isCleared());
 		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
 		
+		/** 02 ****************************************/
+		q = da1.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
+		DomainObjectMatch<Subject> subs = q.createMatch(Subject.class);
+
+		q.WHERE(subs.atttribute("name")).EQUALS("Global Company");
+		q.OR();
+		q.BR_OPEN();
+			q.WHERE(subs.atttribute("lastName")).EQUALS("Smith");
+			q.WHERE(subs.atttribute("firstName")).EQUALS("John");
+		q.BR_CLOSE();
+		
+		DomainObjectMatch<PointOfContact> subs_Contacts =
+				q.TRAVERSE_FROM(subs).FORTH("pointsOfContact").TO(PointOfContact.class);
+		DomainObjectMatch<Area> areas = q.TRAVERSE_FROM(subs_Contacts).FORTH("area").TO(Area.class);
+		
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
+		
+		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		/** 03 ************** with pagination ********************/
+		q = da1.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
+		DomainObjectMatch<Subject> subs_1 = q.createMatch(Subject.class);
+
+		q.WHERE(subs_1.atttribute("name")).EQUALS("Global Company");
+		q.OR();
+		q.BR_OPEN();
+			q.WHERE(subs_1.atttribute("lastName")).EQUALS("Smith");
+			q.WHERE(subs_1.atttribute("firstName")).EQUALS("John");
+		q.BR_CLOSE();
+		subs_1.setPage(1, 1);
+		
+		DomainObjectMatch<PointOfContact> subs_1_Contacts =
+				q.TRAVERSE_FROM(subs_1).FORTH("pointsOfContact").TO(PointOfContact.class);
+		subs_1_Contacts.setPage(2, 2);
+		q.ORDER(subs_1_Contacts).BY("street");
+		DomainObjectMatch<Area> areas_1 = q.TRAVERSE_FROM(subs_1_Contacts).FORTH("area").TO(Area.class);
+		areas_1.setPage(0, 1);
+		q.ORDER(areas_1).BY("name").DESCENDING();
+		
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
+		
+		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		/** 04 ****************************************/
+		q = da1.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
+		DomainObjectMatch<Person> j_smith_1 = q.createMatch(Person.class);
+
+		q.WHERE(j_smith_1.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith_1.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Area> j_smith_1_Areas2 =
+				q.TRAVERSE_FROM(j_smith_1).FORTH("pointsOfContact")
+					.FORTH("area").FORTH("partOf").DISTANCE(1, -1).TO(Area.class);
+		
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
+		
+		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		/** 05 ****************************************/
+		q = da1.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
+		DomainObjectMatch<Subject> j_smith_comp = q.createMatch(Subject.class);
+
+		q.WHERE(j_smith_comp.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith_comp.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<PointOfContact> pocs = q.TRAVERSE_FROM(j_smith_comp)
+				.FORTH("pointsOfContact").TO(PointOfContact.class);
+		q.WHERE(pocs.atttribute("street")).LIKE("Mark.*");
+		
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
+		
+		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		/** 06 ****************************************/
+		q = da1.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
+		DomainObjectMatch<Subject> jer_smith_comp = q.createMatch(Subject.class);
+		areas = q.createMatch(Area.class);
+
+		q.WHERE(jer_smith_comp.atttribute("name")).EQUALS("Global Company");
+		q.OR();
+		q.BR_OPEN();
+			q.WHERE(jer_smith_comp.atttribute("lastName")).EQUALS("Smith");
+			q.WHERE(jer_smith_comp.atttribute("firstName")).EQUALS("John");
+		q.BR_CLOSE();
+		
+		areas_1 = q.TRAVERSE_FROM(jer_smith_comp)
+				.FORTH("pointsOfContact")
+				.FORTH("area")
+				.TO(Area.class);
+		DomainObjectMatch<Area> areas_2 = q.TRAVERSE_FROM(areas_1)
+				.FORTH("partOf").DISTANCE(1, -1)
+				.TO(Area.class);
+		
+		// build union of areas
+		q.BR_OPEN();
+			q.WHERE(areas).IN(areas_1);
+			q.OR();
+			q.WHERE(areas).IN(areas_2);
+		q.BR_CLOSE();
+		q.WHERE(areas.atttribute("areaType")).EQUALS(AreaType.CITY);
+		
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
+		
+		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		/** 08 ****************************************/
+		q = da1.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
+		j_smith = q.createMatch(Person.class);
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<AbstractArea> jsAreas = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+		
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
+		
+		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		assertEquals(testId, sb.toString(), tdr.getTestData(testId));
+		
 		return;
 	}
 	
 	@Test
 	public void testRecordQuery_03() {
 		//DomainQueryTest.testDomainQuery_Contains_01()
-		
 		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_QueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_03";
+		StringBuilder sb = new StringBuilder();
 		
 		/** 01 ****************************************/
 		DomainQuery q = da1.createQuery();
@@ -102,6 +414,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n").append(recordedQuery.toString());
 		
 		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -120,6 +433,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -137,6 +451,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -154,12 +469,15 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
 		QueryRecorder.queryCompleted(q2);
 		assertTrue(qpt.isCleared());
 		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		assertEquals(testId, sb.toString(), tdr.getTestData(testId));
 		
 		return;
 	}
@@ -168,6 +486,10 @@ public class QueryRecorderTest extends AbstractTestSuite {
 	public void testRecordQuery_02() {
 		//DomainQueryTest.testDomainQuery_01()
 		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_QueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_02";
+		StringBuilder sb = new StringBuilder();
 		
 		/******************************************/
 		DomainQuery q = da1.createQuery();
@@ -184,6 +506,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n").append(recordedQuery.toString());
 		
 		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -212,6 +535,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -249,6 +573,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -267,6 +592,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -292,12 +618,15 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
 		QueryRecorder.queryCompleted(q2);
 		assertTrue(qpt.isCleared());
 		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		assertEquals(testId, sb.toString(), tdr.getTestData(testId));
 		
 		return;
 	}
@@ -306,6 +635,10 @@ public class QueryRecorderTest extends AbstractTestSuite {
 	public void testRecordQuery_01() {
 		//DomainQueryTest.testDomainQuery_01()
 		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_QueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_01";
+		StringBuilder sb = new StringBuilder();
 		
 		/******************************************/
 		DomainQuery q = da1.createQuery();
@@ -318,6 +651,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		assertTrue(qpt.isCleared());
 		
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n").append(recordedQuery.toString());
 		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
 		QueryRecorder.queryCompleted(q2);
@@ -337,6 +671,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		assertTrue(qpt.isCleared());
 		
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -355,6 +690,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		assertTrue(qpt.isCleared());
 		
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -396,6 +732,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		assertTrue(qpt.isCleared());
 		
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -417,6 +754,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		assertTrue(qpt.isCleared());
 		
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -437,6 +775,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		assertTrue(qpt.isCleared());
 		
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
@@ -457,12 +796,15 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		assertTrue(qpt.isCleared());
 		
 		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
 		
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
 		QueryRecorder.queryCompleted(q2);
 		assertTrue(qpt.isCleared());
 		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		assertEquals(testId, sb.toString(), tdr.getTestData(testId));
 		
 		return;
 	}
@@ -500,10 +842,6 @@ public class QueryRecorderTest extends AbstractTestSuite {
 	
 	@AfterClass
 	public static void after() {
-		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_QueryRecorder_01.txt");
-		String testId = "UNION_06";
-		//assertEquals(testId, qCypher, tdr.getTestData(testId));
-		
 		if (dbAccess != null) {
 			dbAccess.close();
 			dbAccess = null;

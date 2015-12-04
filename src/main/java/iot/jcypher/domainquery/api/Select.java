@@ -16,6 +16,9 @@
 
 package iot.jcypher.domainquery.api;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.AbstractDomainQuery.IntAccess;
@@ -26,10 +29,8 @@ import iot.jcypher.domainquery.ast.IASTObject;
 import iot.jcypher.domainquery.ast.PredicateExpression;
 import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.UnionExpression;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.JcValue;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class Select<T> extends APIObject {
 
@@ -75,6 +76,17 @@ public class Select<T> extends APIObject {
 			ret = APIAccess.createDomainObjectMatch(se.getStartType(), selDom);
 		else
 			ret = (DomainObjectMatch<T>) selDom;
+		Object[] placeHolders = null;
+		if (where != null) {
+			placeHolders = new QueryRecorder.PlaceHolder[where.length];
+			for (int i = 0; i < where.length; i++) {
+				placeHolders[i] = QueryRecorder.placeHolder(where[i]);
+			}
+		}
+		if (placeHolders != null)
+			QueryRecorder.recordStackedAssignment(this, "ELEMENTS", ret, placeHolders);
+		else
+			QueryRecorder.recordStackedAssignment(this, "ELEMENTS", ret);
 		return ret;
 	}
 	

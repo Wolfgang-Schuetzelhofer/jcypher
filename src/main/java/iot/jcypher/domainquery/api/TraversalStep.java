@@ -36,7 +36,9 @@ public class TraversalStep extends APIObject {
 	public TraversalStep FORTH(String attributeName) {
 		TraversalExpression te = (TraversalExpression)this.astObject;
 		te.step(attributeName, 0);
-		return new TraversalStep(te);
+		TraversalStep ret = new TraversalStep(te);
+		QueryRecorder.recordInvocation(this, "FORTH", ret, QueryRecorder.literal(attributeName));
+		return ret;
 	}
 	
 	/**
@@ -47,7 +49,9 @@ public class TraversalStep extends APIObject {
 	public TraversalStep BACK(String attributeName) {
 		TraversalExpression te = (TraversalExpression)this.astObject;
 		te.step(attributeName, 1);
-		return new TraversalStep(te);
+		TraversalStep ret = new TraversalStep(te);
+		QueryRecorder.recordInvocation(this, "BACK", ret, QueryRecorder.literal(attributeName));
+		return ret;
 	}
 	
 	/**
@@ -63,6 +67,8 @@ public class TraversalStep extends APIObject {
 		Step step = te.getSteps().get(te.getSteps().size() - 1);
 		step.setMinDistance(minDistance);
 		step.setMaxDistance(maxDistance);
+		QueryRecorder.recordInvocation(this, "DISTANCE", this, QueryRecorder.literal(minDistance),
+				QueryRecorder.literal(maxDistance));
 		return this;
 	}
 	

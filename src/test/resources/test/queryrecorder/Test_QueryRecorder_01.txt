@@ -1,2 +1,231 @@
 ----RECORDED_QUERY_01:
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+q.WHERE(obj0.stringAtttribute('lastName')).EQUALS('Smith');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+q.WHERE(obj0.stringAtttribute('firstName').concat(obj0.stringAtttribute('lastName')).concat(obj0.stringAtttribute('firstName'))).EQUALS('JohnSmithJohn');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+q.WHERE(obj0.numberAtttribute('firstName').math().acos()).EQUALS(1);
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+obj1 = q.createMatch('test.domainquery.model.Subject');
+obj2 = q.createMatch('test.domainquery.model.Subject');
+obj3 = q.createMatch('test.domainquery.model.Subject');
+q.BR_OPEN();
+   q.WHERE(obj0.stringAtttribute('lastName')).EQUALS('Smith');
+   q.WHERE(obj0.stringAtttribute('matchString')).EQUALS('smith_family');
+   q.BR_OPEN();
+      q.WHERE(obj0.stringAtttribute('firstName')).EQUALS('Angelina');
+      q.OR();
+      q.WHERE(obj0.stringAtttribute('firstName')).EQUALS('Jeremy');
+   q.BR_CLOSE();
+   q.BR_OPEN();
+      q.WHERE(obj1.stringAtttribute('lastName')).EQUALS('Berghammer');
+      q.OR();
+      q.WHERE(obj1.stringAtttribute('matchString')).EQUALS('berghammer_family');
+   q.BR_CLOSE();
+q.BR_CLOSE();
+q.WHERE(obj3.stringAtttribute('firstName').concat(obj3.stringAtttribute('lastName'))).EQUALS('JohnSmith');
+q.WHERE(obj2.stringAtttribute('firstName')).EQUALS('Angelina');
+q.WHERE(obj2.stringAtttribute('matchString')).EQUALS('smith');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+q.WHERE(obj0.stringAtttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.stringAtttribute('firstName')).NOT().EQUALS('Caroline');
+q.WHERE(obj0.stringAtttribute('firstName')).NOT().EQUALS('Angelina');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+q.WHERE(obj0.stringAtttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.stringAtttribute('firstName')).IN_list('Caroline', 'Angelina');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+q.WHERE(obj0.stringAtttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.stringAtttribute('firstName')).NOT().IN_list('Caroline', 'Angelina');
+------------------------------------------------------------
+
+----RECORDED_QUERY_02:
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+obj1 = q.createMatch('test.domainquery.model.Subject');
+obj2 = q.createMatch('test.domainquery.model.Subject');
+q.WHERE(obj2.atttribute('lastName')).EQUALS('Clark');
+q.WHERE(obj0.atttribute('firstName')).EQUALS(obj2.atttribute('firstName'));
+q.WHERE(obj1.atttribute('firstName')).EQUALS(obj2.atttribute('firstName'));
+q.WHERE(obj1).NOT().IN(obj2);
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+obj1 = q.createMatch('test.domainquery.model.Subject');
+obj2 = q.createMatch('test.domainquery.model.Subject');
+obj3 = q.createMatch('test.domainquery.model.Subject');
+q.BR_OPEN();
+   q.WHERE(obj3.atttribute('lastName')).EQUALS('Watson');
+   q.OR();
+   q.WHERE(obj3.atttribute('name')).EQUALS('Global Company');
+q.BR_CLOSE();
+q.WHERE(obj1.atttribute('matchString')).EQUALS(obj3.atttribute('matchString'));
+q.WHERE(obj1).NOT().IN(obj3);
+q.WHERE(obj2.atttribute('matchString')).EQUALS(obj3.atttribute('matchString'));
+q.WHERE(obj2).IN(obj3);
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+obj1 = q.createMatch('test.domainquery.model.Subject');
+obj2 = q.createMatch('test.domainquery.model.Subject');
+q.BR_OPEN();
+   q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+   q.OR();
+   q.BR_OPEN();
+      q.WHERE(obj0.atttribute('lastName')).EQUALS('Berghammer');
+      q.WHERE(obj0.atttribute('firstName')).EQUALS('Christa');
+   q.BR_CLOSE();
+   q.OR();
+   q.WHERE(obj0.atttribute('name')).EQUALS('Global Company');
+q.BR_CLOSE();
+q.WHERE(obj1.atttribute('lastName')).EQUALS('Berghammer');
+q.OR();
+q.WHERE(obj1.atttribute('name')).EQUALS('Global Company');
+q.WHERE(obj2).IN(obj0);
+q.WHERE(obj2).IN(obj1);
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+q.ORDER(obj0).BY('lastName');
+q.ORDER(obj0).BY('firstName').DESCENDING();
+q.ORDER(obj0).BY('name').DESCENDING();
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+obj1 = q.createMatch('test.domainquery.model.Subject');
+obj1.setPage(5, 5);
+obj3 = q.createMatch('test.domainquery.model.Subject');
+obj4 = q.createMatch('test.domainquery.model.Subject');
+obj4.setPage(1, 5);
+q.WHERE(obj1).IN(obj0);
+q.WHERE(obj3).IN(obj0);
+q.WHERE(obj4).IN(obj1);
+q.WHERE(obj4).IN(obj3);
+------------------------------------------------------------
+
+----RECORDED_QUERY_03:
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.NumberHolder');
+q.WHERE(obj0.collectionAtttribute('numbers')).CONTAINS_elements(2);
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.NumberHolder');
+q.WHERE(obj0.collectionAtttribute('numbers')).CONTAINS_elements(2);
+q.WHERE(obj0.collectionAtttribute('numbers')).CONTAINS_elements(5);
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.NumberHolder');
+q.WHERE(obj0.collectionAtttribute('numbers')).CONTAINS_elements(2, 3);
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.NumberHolder');
+q.WHERE(obj0.collectionAtttribute('numbers').length()).EQUALS(3);
+------------------------------------------------------------
+
+----RECORDED_QUERY_04:
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Person');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj9 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO('test.domainquery.model.Address');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+q.WHERE(obj0.atttribute('name')).EQUALS('Global Company');
+q.OR();
+q.BR_OPEN();
+   q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+   q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+q.BR_CLOSE();
+obj15 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO('test.domainquery.model.PointOfContact');
+obj18 = q.TRAVERSE_FROM(obj15).FORTH('area').TO('test.domainquery.model.Area');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+q.WHERE(obj0.atttribute('name')).EQUALS('Global Company');
+q.OR();
+q.BR_OPEN();
+   q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+   q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+q.BR_CLOSE();
+obj0.setPage(1, 1);
+obj16 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO('test.domainquery.model.PointOfContact');
+obj16.setPage(2, 2);
+q.ORDER(obj16).BY('street');
+obj21 = q.TRAVERSE_FROM(obj16).FORTH('area').TO('test.domainquery.model.Area');
+obj21.setPage(0, 1);
+q.ORDER(obj21).BY('name').DESCENDING();
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Person');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj11 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').FORTH('area').FORTH('partOf').DISTANCE(1, -1).TO('test.domainquery.model.Area');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj9 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO('test.domainquery.model.PointOfContact');
+q.WHERE(obj9.atttribute('street')).LIKE('Mark.*');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+obj1 = q.createMatch('test.domainquery.model.Area');
+q.WHERE(obj0.atttribute('name')).EQUALS('Global Company');
+q.OR();
+q.BR_OPEN();
+   q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+   q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+q.BR_CLOSE();
+obj17 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').FORTH('area').TO('test.domainquery.model.Area');
+obj20 = q.TRAVERSE_FROM(obj17).FORTH('partOf').DISTANCE(1, -1).TO('test.domainquery.model.Area');
+q.BR_OPEN();
+   q.WHERE(obj1).IN(obj17);
+   q.OR();
+   q.WHERE(obj1).IN(obj20);
+q.BR_CLOSE();
+q.WHERE(obj1.atttribute('areaType')).EQUALS('CITY');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Person');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj11 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO('test.domainquery.model.AbstractArea');
+------------------------------------------------------------
+
+----RECORDED_QUERY_05:
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Area');
+obj1 = q.createMatch('test.domainquery.model.Area');
+obj2 = q.createMatch('test.domainquery.model.Subject');
+q.WHERE(obj0.atttribute('name')).EQUALS('Europe');
+q.WHERE(obj1.atttribute('name')).EQUALS('USA');
+obj13 = q.TRAVERSE_FROM(obj0).BACK('partOf').DISTANCE(1, -1).BACK('area').BACK('pointsOfContact').TO('test.domainquery.model.Subject');
+obj18 = q.TRAVERSE_FROM(obj1).BACK('partOf').DISTANCE(1, -1).BACK('area').BACK('pointsOfContact').TO('test.domainquery.model.Subject');
+q.WHERE(obj2).IN(obj13);
+q.WHERE(obj2).IN(obj18);
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Person');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj10 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').BACK('pointsOfContact').TO('test.domainquery.model.Person');
 ------------------------------------------------------------
