@@ -229,3 +229,35 @@ q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
 q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
 obj10 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').BACK('pointsOfContact').TO('test.domainquery.model.Person');
 ------------------------------------------------------------
+----RECORDED_QUERY_06:
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Person');
+obj1 = q.createMatch('test.domainquery.model.Area');
+q.WHERE(obj1.atttribute('name')).EQUALS('Europe');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj13 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO('test.domainquery.model.Address');
+obj17 = q.TRAVERSE_FROM(obj13).FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO('test.domainquery.model.Area');
+obj35 = q.SELECT_FROM(obj13).ELEMENTS(
+   q.WHERE(obj17.atttribute('name')).EQUALS('Austria'),
+   q.OR(),
+   q.WHERE(obj17.atttribute('name')).EQUALS('USA'),
+   q.BR_OPEN(),
+      q.WHERE(obj13.atttribute('number')).EQUALS(32),
+      q.OR(),
+      q.WHERE(obj13.atttribute('number')).EQUALS(20),
+   q.BR_CLOSE());
+obj36 = q.createMatch('test.domainquery.model.Person');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Person');
+obj1 = q.createMatch('test.domainquery.model.Area');
+q.WHERE(obj1.atttribute('name')).EQUALS('Europe');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj13 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO('test.domainquery.model.PointOfContact');
+obj17 = q.TRAVERSE_FROM(obj13).FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO('test.domainquery.model.Area');
+obj22 = q.SELECT_FROM(obj13).ELEMENTS(
+   q.WHERE(obj17.atttribute('name')).EQUALS('Austria'));
+------------------------------------------------------------

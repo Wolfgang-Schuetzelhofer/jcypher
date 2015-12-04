@@ -62,7 +62,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 	
 	@Test
 	public void testRecordQuery_06() {
-		//DomainQueryTest.testDomainQuery_Traversals_02()
+		//DomainQueryTest.testDomainQuery_Select_01()
 		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
 		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_QueryRecorder_01.txt");
@@ -99,6 +99,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 							q.WHERE(j_smith_Addresses.atttribute("number")).EQUALS(20),
 						q.BR_CLOSE()
 				);
+		DomainObjectMatch<Person> dummy = q.createMatch(Person.class);
 		
 		QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
@@ -110,6 +111,40 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q2);
 		assertTrue(qpt.isCleared());
 		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		/** 02 ****************************************/
+		q = da1.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
+		j_smith = q.createMatch(Person.class);
+		europe = q.createMatch(Area.class);
+		
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<PointOfContact> j_smith_PoCs =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(PointOfContact.class);
+		j_smith_Areas = q.TRAVERSE_FROM(j_smith_PoCs).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+		
+		DomainObjectMatch<PointOfContact> j_smith_FilteredPoCs =
+				q.SELECT_FROM(j_smith_PoCs).ELEMENTS(
+						q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria")
+				);
+		
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
+		
+		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		assertEquals(testId, sb.toString(), tdr.getTestData(testId));
 		
 		return;
 	}

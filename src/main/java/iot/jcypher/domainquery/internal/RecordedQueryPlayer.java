@@ -16,6 +16,7 @@
 
 package iot.jcypher.domainquery.internal;
 
+import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -181,7 +182,32 @@ public class RecordedQueryPlayer {
 			Method[] mthds = on.getClass().getMethods();
 			for (Method mthd : mthds) {
 				if (mthd.getName().equals(mthdName)) {
+					boolean matchVarTypes = false;
 					Class<?>[] types = mthd.getParameterTypes();
+					if (types.length != args.length || (types.length > 0 && types[types.length - 1].isArray())) { // handle variable arguments
+						if (types.length > 0 && types[types.length - 1].isArray()) {
+							if (args.length == 0 && types.length == 1)
+								matchVarTypes = true;
+							else if (args.length > 0) {
+								if (types[types.length - 1].getComponentType().isAssignableFrom(args[args.length - 1]))
+									matchVarTypes = true;
+								else if (equalPrimitives(types[types.length - 1].getComponentType(), args[args.length - 1]))
+									matchVarTypes = true;
+							}
+						}
+					}
+					if (matchVarTypes) {
+						// adjust variable parameters
+						int vparSize = params.size() - (types.length - 1);
+						Object paramsArray = Array.newInstance(types[types.length - 1].getComponentType(), vparSize);
+						for (int i = params.size() - 1; i >= types.length - 1; i--) {
+							int idx = i - (types.length - 1);
+							Array.set(paramsArray, idx, params.remove(i));
+						}
+						params.add(paramsArray);
+						ret = mthd;
+						break;
+					}
 					if (types.length == args.length) {
 						boolean same = true;
 						for (int i = 0; i < types.length; i++) {

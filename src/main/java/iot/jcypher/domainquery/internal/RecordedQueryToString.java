@@ -63,9 +63,15 @@ public class RecordedQueryToString {
 						context.sb.append(";\n");
 						context.sb.append(context.indent.getIndent());
 					}
+				} else if (context.callDepth > 0) {
+					// start of stacked statements
+					if (s instanceof Invocation && ((Invocation)s).getOnObjectRef().equals(QueryRecorder.QUERY_ID)) {
+						context.sb.append('\n');
+						context.sb.append(context.indent.getIndent());
+					}
 				}
 				if (context.callDepth == 0)
-					context.topStatementStart = context.sb.length();
+					context.topStatementStart = context.sb.length(); // needed for assignment statements
 				statementToString(s, context);
 			} else // concatenate statements
 				callToString((Invocation)s, context); // must be an Invocation
@@ -100,8 +106,10 @@ public class RecordedQueryToString {
 		context.sb.append('(');
 		List<Statement> params = invocation.getParams();
 		context.callDepth++;
+		context.indent.increment();
 		if (params != null)
 			statementsToString(params, context);
+		context.indent.decrement();
 		context.callDepth--;
 		context.sb.append(')');
 		if (invocation instanceof Assignment) {
@@ -125,24 +133,32 @@ public class RecordedQueryToString {
 		}
 
 		private void calcBefore(Statement statement, int callDepth) {
-			if (callDepth == 0) {
-				String hint = statement.getHint();
-				if (BR_CLOSE.equals(hint)) {
-					if (level > 0) {
-						level--;
-						buildIndent();
-					}
+			String hint = statement.getHint();
+			if (BR_CLOSE.equals(hint)) {
+				if (level > 0) {
+					level--;
+					buildIndent();
 				}
 			}
 		}
 		
 		private void calcAfter(Statement statement, int callDepth) {
-			if (callDepth == 0) {
-				String hint = statement.getHint();
-				if (BR_OPEN.equals(hint)) {
-					level++;
-					buildIndent();
-				}
+			String hint = statement.getHint();
+			if (BR_OPEN.equals(hint)) {
+				level++;
+				buildIndent();
+			}
+		}
+		
+		private void increment() {
+			level++;
+			buildIndent();
+		}
+		
+		private void decrement() {
+			if (level > 0) {
+				level--;
+				buildIndent();
 			}
 		}
 		
