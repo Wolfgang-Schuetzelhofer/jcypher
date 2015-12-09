@@ -18,11 +18,13 @@ package iot.jcypher.domainquery.internal;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
@@ -62,7 +64,7 @@ public class QueryRecorder {
 	public static void recordStackedInvocation(Object on, String method, Object result, Object... params) {
 		if (blockRecording.get())
 			return;
-		recordInvocation(false, true, on, method, result, params);
+		recordInvocation(false, true, false, on, method, result, params);
 	}
 	
 	/**
@@ -78,22 +80,28 @@ public class QueryRecorder {
 	public static void recordStackedAssignment(Object on, String method, Object result, Object... params) {
 		if (blockRecording.get())
 			return;
-		recordInvocation(true, true, on, method, result, params);
+		recordInvocation(true, true, false, on, method, result, params);
 	}
 	
 	public static void recordInvocation(Object on, String method, Object result, Object... params) {
 		if (blockRecording.get())
 			return;
-		recordInvocation(false, false, on, method, result, params);
+		recordInvocation(false, false, false, on, method, result, params);
+	}
+	
+	public static void recordInvocationNoConcat(Object on, String method, Object result, Object... params) {
+		if (blockRecording.get())
+			return;
+		recordInvocation(false, false, true, on, method, result, params);
 	}
 	
 	public static void recordAssignment(Object on, String method, Object result, Object... params) {
 		if (blockRecording.get())
 			return;
-		recordInvocation(true, false, on, method, result, params);
+		recordInvocation(true, false, false, on, method, result, params);
 	}
 	
-	private static void recordInvocation(boolean assign, boolean subRoot, Object on, String method,
+	private static void recordInvocation(boolean assign, boolean subRoot, boolean noConcat, Object on, String method,
 			Object result, Object... params) {
 		// subRoot true means invocations on domainQuery (q)
 		// but stacked within e.g. a SELECT_FROM(...).ELEMENTS(...) statement.
@@ -101,12 +109,16 @@ public class QueryRecorder {
 		// but must be encapsulated in a sub statement
 		QueriesPerThread qpt = getCreateQueriesPerThread();
 		RecQueryHolder rqh = null;
-		if (on instanceof AbstractDomainQuery)
-			rqh = getRecQueryHolder((AbstractDomainQuery)on);
-		else {
-			rqh = qpt.getHolderRef(on);
-			if (rqh == null)
-				rqh = createRecQueryHolder();
+		if (noConcat) {
+			rqh = createRecQueryHolder();
+		} else {
+			if (on instanceof AbstractDomainQuery)
+				rqh = getRecQueryHolder((AbstractDomainQuery)on);
+			else {
+				rqh = qpt.getHolderRef(on);
+				if (rqh == null)
+					rqh = createRecQueryHolder();
+			}
 		}
 		
 		if (subRoot && rqh.root) {
@@ -138,7 +150,7 @@ public class QueryRecorder {
 			rqh.recordInvocation(assign, on, method, result, parameters);
 			qpt.putHolderRef(result, rqh);
 			if (rqh.root) {
-				qpt.removeFromQuery2HolderMap(rqh, null, false); // don't remove root
+				qpt.removeFromQuery2HolderMap(rqh, null, false, null); // don't remove root
 			}
 		}
 		return;
@@ -254,7 +266,7 @@ public class QueryRecorder {
 		if (qpt != null) {
 			RecQueryHolder rqh = qpt.queries.remove(query);
 			if (rqh != null) {
-				qpt.removeFromQuery2HolderMap(rqh, null, true); // also remove root
+				qpt.removeFromQuery2HolderMap(rqh, null, true, null); // also remove root
 				List<Object> toRemove = new ArrayList<Object>();
 				Iterator<Entry<Object, RecQueryHolder>> it = qpt.recHolderRefs.entrySet().iterator();
 				while(it.hasNext()) {
@@ -352,7 +364,10 @@ public class QueryRecorder {
 		}
 		
 		private void removeFromQuery2HolderMap(RecQueryHolder rqh, RecQueryHolder par,
-				boolean removeRoot) {
+				boolean removeRoot, Set<RecQueryHolder> recursionSet) {
+			if (recursionSet == null)
+				recursionSet = new HashSet<RecQueryHolder>();
+			recursionSet.add(rqh);
 			if (!rqh.root || removeRoot) {
 				this.query2HolderMap.remove(rqh.recordedQuery);
 				if (par != null)
@@ -361,7 +376,8 @@ public class QueryRecorder {
 			ArrayList<RecQueryHolder> adopted = new ArrayList<RecQueryHolder>();
 			adopted.addAll(rqh.adopted);
 			for (RecQueryHolder qh : adopted) {
-				this.removeFromQuery2HolderMap(qh, rqh, removeRoot);
+				if (!recursionSet.contains(qh))
+					this.removeFromQuery2HolderMap(qh, rqh, removeRoot, recursionSet);
 			}
 		}
 		

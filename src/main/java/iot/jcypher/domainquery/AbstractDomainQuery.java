@@ -296,6 +296,7 @@ public abstract class AbstractDomainQuery {
 		this.queryExecutor.addAstObject(se);
 		this.astObjectsContainer = se;
 		Select<T> ret = APIAccess.createSelect(se, getIntAccess());
+		QueryRecorder.recordInvocation(this, "REJECT_FROM", ret, QueryRecorder.placeHolder(start));
 		return ret;
 	}
 	

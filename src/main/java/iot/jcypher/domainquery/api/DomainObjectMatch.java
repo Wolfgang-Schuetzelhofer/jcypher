@@ -104,7 +104,10 @@ public class DomainObjectMatch<T> implements IPredicateOperand1 {
 	public Count COUNT() {
 		if (this.delegate != null)
 			return this.delegate.COUNT();
-		return APIAccess.createCount(this);
+		Count ret = APIAccess.createCount(this);
+		//QueryRecorder.recordInvocationReplace(this, ret, "COUNT");
+		QueryRecorder.recordInvocationNoConcat(this, "COUNT", ret);
+		return ret;
 	}
 	
 	/**

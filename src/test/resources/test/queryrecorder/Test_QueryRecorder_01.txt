@@ -261,3 +261,61 @@ obj17 = q.TRAVERSE_FROM(obj13).FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO(
 obj22 = q.SELECT_FROM(obj13).ELEMENTS(
    q.WHERE(obj17.atttribute('name')).EQUALS('Austria'));
 ------------------------------------------------------------
+
+----RECORDED_QUERY_07:
+
+DomainQuery
+obj0 = q.createMatch('java.lang.Object');
+obj1 = q.createMatch('java.lang.Object');
+q.WHERE(obj1.atttribute('name')).EQUALS('Europe');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj13 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO('java.lang.Object');
+obj17 = q.TRAVERSE_FROM(obj13).FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO('java.lang.Object');
+obj21 = q.SELECT_FROM(obj13).ELEMENTS(
+   q.WHERE(obj17).CONTAINS(obj1));
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+obj3 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO('java.lang.Object');
+obj8 = q.SELECT_FROM(obj0).ELEMENTS(
+   q.WHERE(obj3.COUNT()).EQUALS(4));
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Subject');
+obj1 = q.createMatch('java.lang.Object');
+q.WHERE(obj1.atttribute('name')).EQUALS('Europe');
+obj7 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO('java.lang.Object');
+obj12 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO('test.domainquery.model.Area');
+obj19 = q.SELECT_FROM(obj0).ELEMENTS(
+   q.WHERE(obj7.COUNT()).EQUALS(4),
+   q.WHERE(obj12).CONTAINS(obj1));
+------------------------------------------------------------
+
+----RECORDED_QUERY_08:
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Person');
+obj1 = q.createMatch('test.domainquery.model.Area');
+obj2 = q.createMatch('test.domainquery.model.Person');
+q.WHERE(obj2.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj2.atttribute('firstName')).EQUALS('John');
+q.WHERE(obj1.atttribute('name')).EQUALS('Europe');
+obj14 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO('java.lang.Object');
+obj19 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO('test.domainquery.model.AbstractArea');
+obj27 = q.SELECT_FROM(obj0).ELEMENTS(
+   q.WHERE(obj14.COUNT()).EQUALS(4),
+   q.WHERE(obj19.COUNT()).EQUALS(9));
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Person');
+obj3 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO('java.lang.Object');
+obj8 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO('test.domainquery.model.AbstractArea');
+obj22 = q.SELECT_FROM(obj0).ELEMENTS(
+   q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith'),
+   q.BR_OPEN(),
+      q.WHERE(obj3.COUNT()).EQUALS(4),
+      q.OR(),
+      q.WHERE(obj8.COUNT()).EQUALS(9),
+   q.BR_CLOSE());
+------------------------------------------------------------
