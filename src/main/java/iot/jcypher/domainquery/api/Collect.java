@@ -17,6 +17,7 @@
 package iot.jcypher.domainquery.api;
 
 import iot.jcypher.domainquery.ast.CollectExpression;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 
 public class Collect extends APIObject {
 
@@ -37,6 +38,7 @@ public class Collect extends APIObject {
 				ce.getQueryExecutor().getMappingInfo());
 		ce.setEnd(ret);
 		ce.getQueryExecutor().getDomainObjectMatches().add(ret);
+		QueryRecorder.recordAssignment(this, "AS", ret, QueryRecorder.literal(domainObjectType.getName()));
 		return ret;
 	}
 }

@@ -17,6 +17,8 @@
 package iot.jcypher.domainquery.internal;
 
 import java.lang.reflect.Array;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 
 import iot.jcypher.domainquery.internal.RecordedQuery.Assignment;
@@ -29,6 +31,9 @@ import iot.jcypher.query.values.ValueAccess;
 
 public class RecordedQueryToString {
 
+	private static SimpleDateFormat dateFormat = new SimpleDateFormat(
+			"dd.MM.yyyy HH:mm:ss.SSS");
+	
 	public static String queryToString(RecordedQuery query) {
 		Context context = new Context();
 		context.sb.append(query.isGeneric() ? "Generic-DomainQuery" : "DomainQuery");
@@ -203,6 +208,8 @@ public class RecordedQueryToString {
 				}
 			} else if (val instanceof JcValue) {
 				sb.append(ValueAccess.getName((JcValue)val));
+			} else if (val instanceof Date) {
+				sb.append(dateFormat.format((Date)val));
 			} else {
 				sb.append('\'');
 				sb.append(val.toString());

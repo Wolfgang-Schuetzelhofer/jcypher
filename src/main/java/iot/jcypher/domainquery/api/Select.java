@@ -62,6 +62,8 @@ public class Select<T> extends APIObject {
 		se.resetAstObjectsContainer();
 		se.setEnd(selDom);
 		if (se.isReject()) {
+			Boolean br_old = QueryRecorder.blockRecording.get();
+			QueryRecorder.blockRecording.set(Boolean.TRUE);
 			// remove it from the return statement
 			// it is only temporary
 			APIAccess.setPartOfReturn(selDom, false);
@@ -71,6 +73,7 @@ public class Select<T> extends APIObject {
 			q.WHERE(rejectDom).IN(se.getStart());
 			q.WHERE(rejectDom).NOT().IN(selDom);
 			selDom = rejectDom;
+			QueryRecorder.blockRecording.set(br_old);
 		}
 		if (se.getStartType().equals(DomainObject.class)) // generic domain object match
 			ret = APIAccess.createDomainObjectMatch(se.getStartType(), selDom);

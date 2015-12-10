@@ -681,7 +681,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		q.WHERE(bergHammerMatch.atttribute("lastName")).EQUALS("Berghammer");
 		
-		DomainObjectMatch<Subject> intersectionMatch = q.INTERSECTION(smithMatch, bergHammerMatch);
+		DomainObjectMatch<Subject> intersectionMatch = q.INTERSECTION(smith_ChristaMatch, bergHammerMatch);
 		
 		result = q.execute();
 		

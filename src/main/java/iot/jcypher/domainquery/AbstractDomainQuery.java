@@ -309,6 +309,7 @@ public abstract class AbstractDomainQuery {
 		CollectExpression ce = new CollectExpression(attribute, this.getIntAccess());
 		Collect coll = APIAccess.createCollect(ce);
 		this.queryExecutor.addAstObject(ce);
+		QueryRecorder.recordInvocation(this, "COLLECT", coll, QueryRecorder.placeHolder(attribute));
 		return coll;
 	}
 	
@@ -319,7 +320,12 @@ public abstract class AbstractDomainQuery {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> DomainObjectMatch<T> UNION(DomainObjectMatch<T>... set) {
-		return this.union_Intersection(true, set);
+		DomainObjectMatch<T> ret = this.union_Intersection(true, set);
+		Object[] placeHolders = new Object[set.length];
+		for (int i = 0; i < set.length; i++)
+			placeHolders[i] = QueryRecorder.placeHolder(set[i]);
+		QueryRecorder.recordAssignment(this, "UNION", ret, placeHolders);
+		return ret;
 	}
 	
 	/**
@@ -329,7 +335,12 @@ public abstract class AbstractDomainQuery {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> DomainObjectMatch<T> INTERSECTION(DomainObjectMatch<T>... set) {
-		return this.union_Intersection(false, set);
+		DomainObjectMatch<T> ret = this.union_Intersection(false, set);
+		Object[] placeHolders = new Object[set.length];
+		for (int i = 0; i < set.length; i++)
+			placeHolders[i] = QueryRecorder.placeHolder(set[i]);
+		QueryRecorder.recordAssignment(this, "INTERSECTION", ret, placeHolders);
+		return ret;
 	}
 	
 	/**
@@ -359,6 +370,8 @@ public abstract class AbstractDomainQuery {
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private <T> DomainObjectMatch<T> union_Intersection(boolean union, DomainObjectMatch<T>... set) {
+		Boolean br_old = QueryRecorder.blockRecording.get();
+		QueryRecorder.blockRecording.set(Boolean.TRUE);
 		DomainObjectMatch<T> ret;
 		DomainObjectMatch[] newSet = set;
 		boolean isGeneric = set.length > 0 && APIAccess.getDelegate(set[0]) != null;
@@ -377,6 +390,7 @@ public abstract class AbstractDomainQuery {
 			ret = (DomainObjectMatch<T>) APIAccess.createDomainObjectMatch(DomainObject.class, newMatch);
 		else
 			ret = newMatch;
+		QueryRecorder.blockRecording.set(br_old);
 		return ret;
 	}
 	

@@ -49,8 +49,11 @@ public class RecordedQueryPlayer {
 	 * @return
 	 */
 	public DomainQuery replayQuery(RecordedQuery recordedQuery, IDomainAccess domainAccess) {
-		if (!Settings.TEST_MODE)
+		Boolean br_old = null;
+		if (!Settings.TEST_MODE) {
+			br_old = QueryRecorder.blockRecording.get();
 			QueryRecorder.blockRecording.set(Boolean.TRUE);
+		}
 		this.generic = false;
 		DomainQuery query = domainAccess.createQuery();
 		this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
@@ -60,7 +63,7 @@ public class RecordedQueryPlayer {
 		}
 		
 		if (!Settings.TEST_MODE)
-			QueryRecorder.blockRecording.remove();
+			QueryRecorder.blockRecording.set(br_old);
 		return query;
 	}
 	
@@ -71,8 +74,11 @@ public class RecordedQueryPlayer {
 	 * @return
 	 */
 	public GDomainQuery replayGenericQuery(RecordedQuery recordedQuery, IGenericDomainAccess domainAccess) {
-		if (!Settings.TEST_MODE)
+		Boolean br_old = null;
+		if (!Settings.TEST_MODE) {
+			br_old = QueryRecorder.blockRecording.get();
 			QueryRecorder.blockRecording.set(Boolean.TRUE);
+		}
 		this.generic = true;
 		GDomainQuery query = domainAccess.createQuery();
 		this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
@@ -82,7 +88,7 @@ public class RecordedQueryPlayer {
 		}
 		
 		if (!Settings.TEST_MODE)
-			QueryRecorder.blockRecording.remove();
+			QueryRecorder.blockRecording.set(br_old);
 		return query;
 	}
 	
@@ -174,6 +180,10 @@ public class RecordedQueryPlayer {
 				params.add(cls);
 				mthdName = "TO";
 			}
+		} else if (methodName.equals("AS")) {
+			args[0] = Class.class;
+			Class<?> cls = Class.forName(params.remove(0).toString());
+			params.add(cls);
 		}
 		
 		try {
