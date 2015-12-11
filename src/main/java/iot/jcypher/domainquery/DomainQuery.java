@@ -49,7 +49,8 @@ public class DomainQuery extends AbstractDomainQuery {
 	public <T> DomainObjectMatch<T> createMatchFor(List<T> domainObjects,
 			Class<T> domainObjectType) {
 		DomainObjectMatch<T> ret = createMatchForInternal(domainObjects, domainObjectType);
-		QueryRecorder.recordAssignment(this, "createMatchFor", ret);
+		QueryRecorder.recordAssignment(this, "createMatchFor", ret,
+				QueryRecorder.reference(domainObjects), QueryRecorder.literal(domainObjectType.getName()));
 		return ret;
 	}
 

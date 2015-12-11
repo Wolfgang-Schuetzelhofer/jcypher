@@ -38,6 +38,7 @@ import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domainquery.DomainQuery;
+import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.domainquery.internal.QueryRecorder.QueriesPerThread;
@@ -63,6 +64,89 @@ public class QueryRecorderTest extends AbstractTestSuite {
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	
+	@Test
+	public void testRecordQuery_13() {
+		//DomainQueryTest.testDomainQuery_Concatenation_01()
+		//DomainQueryTest.testDomainQuery_Concatenation_02()
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_QueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_13";
+		StringBuilder sb = new StringBuilder();
+		
+		/** 01 ****************************************/
+		DomainQuery q = da1.createQuery();
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
+		RecordedQuery recordedQuery = QueryRecorder.getRecordedQuery(q);
+		DomainObjectMatch<Person> smith = q.createMatch(Person.class);
+		
+		q.WHERE(smith.atttribute("lastName")).EQUALS("Smith");
+		//q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		//result = q.execute();
+		
+		DomainQuery q1 = da1.createQuery();
+		RecordedQuery recordedQuery_1 = QueryRecorder.getRecordedQuery(q1);
+		DomainObjectMatch<Person> j_smith = q1.createMatchFrom(smith);
+		q1.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		QueryRecorder.queryCompleted(q);
+		QueryRecorder.queryCompleted(q1);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n").append(recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery_1.toString());
+		
+		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		DomainQuery q3 = new RecordedQueryPlayer().replayQuery(recordedQuery_1, da1);
+		RecordedQuery recordedQuery3 = QueryRecorder.getRecordedQuery(q3);
+		QueryRecorder.queryCompleted(q3);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery_1.toString(), recordedQuery3.toString());
+		
+		//DomainQueryTest.testDomainQuery_Concatenation_02()
+		/** 01 ****************************************/
+		q = da1.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
+		smith = q.createMatch(Person.class);
+		
+		q.WHERE(smith.atttribute("lastName")).EQUALS("Smith");
+		//q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		DomainQueryResult result = q.execute();
+		
+		List<Person> smithResult = result.resultOf(smith);
+		
+		q1 = da1.createQuery();
+		recordedQuery_1 = QueryRecorder.getRecordedQuery(q1);
+		j_smith = q1.createMatchFor(smithResult, Person.class);
+		q1.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		QueryRecorder.queryCompleted(q);
+		QueryRecorder.queryCompleted(q1);
+//		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery_1.toString());
+		
+		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+//		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		q3 = new RecordedQueryPlayer().replayQuery(recordedQuery_1, da1);
+		recordedQuery3 = QueryRecorder.getRecordedQuery(q3);
+		QueryRecorder.queryCompleted(q3);
+//		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery_1.toString(), recordedQuery3.toString());
+		
+		return;
+	}
 	
 	@Test
 	public void testRecordQuery_12() {

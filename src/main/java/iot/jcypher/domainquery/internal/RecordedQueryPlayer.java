@@ -30,6 +30,7 @@ import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.domainquery.internal.RecordedQuery.DOMatchRef;
 import iot.jcypher.domainquery.internal.RecordedQuery.Invocation;
 import iot.jcypher.domainquery.internal.RecordedQuery.Literal;
+import iot.jcypher.domainquery.internal.RecordedQuery.Reference;
 import iot.jcypher.domainquery.internal.RecordedQuery.Statement;
 
 public class RecordedQueryPlayer {
@@ -98,9 +99,12 @@ public class RecordedQueryPlayer {
 			ret = ((Literal)stmt).getValue();
 		else if (stmt instanceof Invocation) {
 			ret = replayInvocation((Invocation) stmt);
-		}else if (stmt instanceof DOMatchRef) {
+		} else if (stmt instanceof DOMatchRef) {
 			String oid = ((DOMatchRef)stmt).getRef();
 			ret = this.id2ObjectMap.get(oid);
+		} else if (stmt instanceof Reference) {
+			ret = ((Reference)stmt).getValue();
+			this.id2ObjectMap.put(((Reference)stmt).getRefId(), ret);
 		}
 		return ret;
 	}
@@ -184,6 +188,12 @@ public class RecordedQueryPlayer {
 			args[0] = Class.class;
 			Class<?> cls = Class.forName(params.remove(0).toString());
 			params.add(cls);
+		} else if (methodName.equals("createMatchFor") && !this.generic) {
+			if (args.length == 2) {
+				args[1] = Class.class;
+				Class<?> cls = Class.forName(params.remove(1).toString());
+				params.add(cls);
+			}
 		}
 		
 		try {

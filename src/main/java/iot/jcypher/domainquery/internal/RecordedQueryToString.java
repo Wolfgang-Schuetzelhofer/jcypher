@@ -25,6 +25,7 @@ import iot.jcypher.domainquery.internal.RecordedQuery.Assignment;
 import iot.jcypher.domainquery.internal.RecordedQuery.DOMatchRef;
 import iot.jcypher.domainquery.internal.RecordedQuery.Invocation;
 import iot.jcypher.domainquery.internal.RecordedQuery.Literal;
+import iot.jcypher.domainquery.internal.RecordedQuery.Reference;
 import iot.jcypher.domainquery.internal.RecordedQuery.Statement;
 import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
@@ -97,6 +98,8 @@ public class RecordedQueryToString {
 			invocationToString((Invocation)statement, context);
 		} else if (statement instanceof DOMatchRef) {
 			context.sb.append(((DOMatchRef)statement).getRef());
+		} else if (statement instanceof Reference) {
+			context.sb.append(((Reference)statement).getRefId());
 		}
 	}
 	

@@ -145,6 +145,9 @@ public class QueryRecorder {
 							parameters.add(rqh.recordedQuery.literal(val));
 						}
 					}
+				} else if (param instanceof Reference) {
+					Object val = ((Reference)param).value;
+					parameters.add(rqh.recordedQuery.reference(val, rqh.getNextRefId()));
 				}
 			}
 			rqh.recordInvocation(assign, on, method, result, parameters);
@@ -301,6 +304,10 @@ public class QueryRecorder {
 		return new PlaceHolder(value);
 	}
 	
+	public static Reference reference(Object value) {
+		return new Reference(value);
+	}
+	
 	private static RecQueryHolder getRecQueryHolder(AbstractDomainQuery on) {
 		QueriesPerThread qpt = getCreateQueriesPerThread();
 		return qpt.get(on);
@@ -400,6 +407,7 @@ public class QueryRecorder {
 	private static class RecQueryHolder {
 		
 		private static final String idPrefix = "obj";
+		private static final String refIdPrefix = "ref_";
 		
 		private boolean root;
 		private RecordedQuery recordedQuery;
@@ -408,6 +416,7 @@ public class QueryRecorder {
 		private List<RecQueryHolder> adopted;
 		private List<RecQueryHolder> replaced;
 		private int lastId;
+		private int lastRefId;
 
 		private RecQueryHolder(RecordedQuery recordedQuery) {
 			super();
@@ -417,6 +426,7 @@ public class QueryRecorder {
 			this.adopted = new ArrayList<RecQueryHolder>();
 			this.replaced = new ArrayList<RecQueryHolder>();
 			this.lastId = -1;
+			this.lastRefId = -1;
 			this.root = false;
 		}
 		
@@ -426,6 +436,16 @@ public class QueryRecorder {
 				this.recordedQuery.addAssignment(ids[0], method, ids[1], parameters);
 			else
 				this.recordedQuery.addInvocation(ids[0], method, ids[1], parameters);
+		}
+		
+		private String getRefId(Object ref) {
+			String refId = this.object2IdMap.get(ref);
+			if (refId == null) {
+				refId = getNextRefId();
+				this.object2IdMap.put(ref, refId);
+				this.id2ObjectMap.put(refId, ref);
+			}
+			return refId;
 		}
 		
 		/**
@@ -455,6 +475,11 @@ public class QueryRecorder {
 		private String getNextId() {
 			this.lastId++;
 			return idPrefix.concat(String.valueOf(this.lastId));
+		}
+		
+		private String getNextRefId() {
+			this.lastRefId++;
+			return refIdPrefix.concat(String.valueOf(this.lastRefId));
 		}
 		
 		private void addAdopted(RecQueryHolder qh) {
@@ -540,6 +565,16 @@ public class QueryRecorder {
 		private Object value;
 
 		public PlaceHolder(Object value) {
+			super();
+			this.value = value;
+		}
+	}
+	
+	/*********************************/
+	public static class Reference {
+		private Object value;
+
+		public Reference(Object value) {
 			super();
 			this.value = value;
 		}

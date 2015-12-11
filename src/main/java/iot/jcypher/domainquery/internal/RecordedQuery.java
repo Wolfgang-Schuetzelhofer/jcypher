@@ -46,6 +46,10 @@ public class RecordedQuery {
 		return new Literal(value);
 	}
 	
+	public Reference reference(Object value, String refId) {
+		return new Reference(value, refId);
+	}
+	
 	public DOMatchRef doMatchRef(String ref) {
 		return new DOMatchRef(ref);
 	}
@@ -188,5 +192,37 @@ public class RecordedQuery {
 		public RecordedQuery getRecordedQuery() {
 			return RecordedQuery.this;
 		}
+	}
+	
+	/**************************************/
+	public class Reference implements Statement {
+
+		private Object value;
+		private String refId;
+
+		public Reference(Object value, String refId) {
+			super();
+			this.value = value;
+			this.refId= refId;
+		}
+		
+		public Object getValue() {
+			return value;
+		}
+
+		public String getRefId() {
+			return refId;
+		}
+
+		@Override
+		public String getHint() {
+			return "_Reference_";
+		}
+
+		@Override
+		public RecordedQuery getRecordedQuery() {
+			return RecordedQuery.this;
+		}
+		
 	}
 }

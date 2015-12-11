@@ -100,6 +100,8 @@ public abstract class AbstractDomainQuery {
 					ret, domainObjectMatch);
 		}
 		this.queryExecutor.addAstObject(pqe);
+		QueryRecorder.recordAssignment(this, "createMatchFrom", ret,
+				QueryRecorder.reference(domainObjectMatch));
 		return ret;
 	}
 	
