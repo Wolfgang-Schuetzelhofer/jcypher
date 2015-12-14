@@ -16,8 +16,9 @@
 
 package test;
 
+import org.junit.Test;
+
 import iot.jcypher.query.api.IClause;
-import iot.jcypher.query.api.collection.DoConcat;
 import iot.jcypher.query.factories.JC;
 import iot.jcypher.query.factories.clause.CASE;
 import iot.jcypher.query.factories.clause.CREATE;
@@ -29,9 +30,13 @@ import iot.jcypher.query.factories.clause.ELSE;
 import iot.jcypher.query.factories.clause.END;
 import iot.jcypher.query.factories.clause.FOR_EACH;
 import iot.jcypher.query.factories.clause.MATCH;
+import iot.jcypher.query.factories.clause.MERGE;
 import iot.jcypher.query.factories.clause.NATIVE;
+import iot.jcypher.query.factories.clause.ON_CREATE;
+import iot.jcypher.query.factories.clause.ON_MATCH;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.factories.clause.UNION;
 import iot.jcypher.query.factories.clause.USING;
@@ -51,15 +56,12 @@ import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.writer.Format;
-
-import org.junit.Test;
-
 import util.TestDataReader;
 
 //@Ignore
 public class ClauseTest extends AbstractTestSuite {
 	
-	@Test
+	//@Test
 	public void testExperimental() {
 		JcRelation r_0 = new JcRelation("r_0");
 		JcRelation r_1 = new JcRelation("r_1");
@@ -77,6 +79,42 @@ public class ClauseTest extends AbstractTestSuite {
 				RETURN.value(sum)
 		};
 		String result = print(clauses, Format.PRETTY_1);
+		return;
+	}
+	
+	@Test
+	public void testMerge_01() {
+		String result;
+		String testId;
+		setDoPrint(true);
+		setDoAssert(true);
+		
+		TestDataReader tdr = new TestDataReader("/test/Test_MERGE_01.txt");
+		
+		/*******************************/
+		JcNode n = new JcNode("n");
+		JcNode s = new JcNode("s");
+		JcRelation r = new JcRelation("r");
+		IClause[] clauses = new IClause[] {
+				// match nodes (in this sample for 'John' and 'Song_1')
+				MATCH.node(n).label("Member").property("name").value("John"),
+				MATCH.node(s).label("Song").property("name").value("Song_1"),
+				// match (or create if not exists) a relation
+				MERGE.node(n).relation(r).out().type("PLAYED").node(s),
+				
+				// initialize the 'views' property to 1
+				ON_CREATE.SET(r.property("views")).to(1),
+				ON_CREATE.SET(r.property("created")).byExpression(JC.timeStamp()),
+				
+				// increment the 'views' property
+				ON_MATCH.SET(r.property("views")).byExpression(
+						r.numberProperty("views").plus(1)),
+		};
+		
+		result = print(clauses, Format.PRETTY_1);
+		testId = "MERGE_01";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
 		return;
 	}
 	
@@ -1515,6 +1553,28 @@ public class ClauseTest extends AbstractTestSuite {
 
 		result = print(set, Format.PRETTY_1);
 		testId = "SET_06";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		JcRelation r = new JcRelation("r");
+		IClause[] clauses = new IClause[] {
+				DO.SET(r.property("views")).to(1),
+				DO.SET(r.property("created")).byExpression(JC.timeStamp()),
+		};
+		
+		result = print(clauses, Format.PRETTY_1);
+		testId = "SET_07";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		clauses = new IClause[] {
+				DO.SET(r.property("views")).to(1),
+				SEPARATE.nextClause(),
+				DO.SET(r.property("created")).byExpression(JC.timeStamp())
+		};
+		
+		result = print(clauses, Format.PRETTY_1);
+		testId = "SET_08";
 		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 	

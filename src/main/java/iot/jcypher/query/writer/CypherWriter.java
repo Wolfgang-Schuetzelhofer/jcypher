@@ -253,6 +253,20 @@ public class CypherWriter {
 			PatternCypherWriter.toCypherExpression((PatternExpression)astNode, context);
 		}
 		
+		/*** MERGE CLAUSE **************************************/
+		else if (clauseType == ClauseType.MERGE) {
+			if (context.previousClause != ClauseType.MERGE) { // otherwise concat multiple merges
+				if (hasStart)
+					Pretty.writePreClauseSeparator(context, context.buffer);
+				context.buffer.append("MERGE");
+				Pretty.writePostClauseSeparator(context, context.buffer);
+			} else {
+				context.buffer.append(',');
+				Pretty.writeStatementSeparator(context, context.buffer);
+			}
+			PatternCypherWriter.toCypherExpression((PatternExpression)astNode, context);
+		}
+		
 		/*** RETURN CLAUSE **************************************/
 		else if (clauseType == ClauseType.RETURN) {
 			if (context.previousClause != ClauseType.RETURN) { // otherwise concat multiple returns
@@ -269,10 +283,15 @@ public class CypherWriter {
 		
 		/*** SET CLAUSE **************************************/
 		else if (clauseType == ClauseType.SET) {
-			if (hasStart)
-				Pretty.writePreClauseSeparator(context, context.buffer);
-			context.buffer.append("SET");
-			Pretty.writePostClauseSeparator(context, context.buffer);
+			if (context.previousClause != ClauseType.SET) { // otherwise concat multiple removes
+				if (hasStart)
+					Pretty.writePreClauseSeparator(context, context.buffer);
+				context.buffer.append("SET");
+				Pretty.writePostClauseSeparator(context, context.buffer);
+			} else {
+				context.buffer.append(',');
+				Pretty.writeStatementSeparator(context, context.buffer);
+			}
 			STCypherWriter.toCypherExpression((ModifyExpression)astNode, context);
 		}
 		
@@ -368,6 +387,20 @@ public class CypherWriter {
 			context.buffer.append(clauseType.name());
 			Pretty.writePostClauseSeparator(context, context.buffer);
 			CaseCypherWriter.toEndExpression((CaseExpression)astNode, context);
+		}
+		
+		/*** ON_CREATE, ON_MATCH CLAUSEs **************************************/
+		else if (clauseType != null && clauseType.getDisplay() != null) {
+			if (context.previousClause != clauseType) { // otherwise concat
+				if (hasStart)
+					Pretty.writePreClauseSeparator(context, context.buffer);
+				context.buffer.append(clauseType.getDisplay());
+				Pretty.writePostClauseSeparator(context, context.buffer);
+			} else {
+				context.buffer.append(',');
+				Pretty.writeStatementSeparator(context, context.buffer);
+			}
+			STCypherWriter.toCypherExpression((ModifyExpression)astNode, context);
 		}
 		
 		context.previousClause = context.currentClause;
@@ -540,13 +573,14 @@ public class CypherWriter {
 		private static void writeInnerClauses(IClause[] innerClauses, WriterContext context) {
 			Format orgFormat = context.cypherFormat;
 			ClauseType curClause = context.currentClause;
-			ClauseType prevClause = context.previousClause;
+			//ClauseType prevClause = context.previousClause;
 			context.cypherFormat = Format.NONE;
 			context.previousClause = null;
 			context.currentClause = null;
 			CypherWriter.toCypherExpression(innerClauses, 0, context);
 			context.cypherFormat = orgFormat;
-			context.previousClause = prevClause;
+			//context.previousClause = prevClause;
+			context.previousClause = null; // to avoid unwanted concatenation
 			context.currentClause = curClause;
 		}
 	}

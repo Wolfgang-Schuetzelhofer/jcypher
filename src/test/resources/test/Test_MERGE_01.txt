@@ -1,0 +1,6 @@
+----MERGE_01:
+MATCH (n:Member{name:'John'}), (s:Song{name:'Song_1'})
+MERGE (n)-[r:PLAYED]->(s)
+ON CREATE SET r.views = 1, r.created = timestamp()
+ON MATCH SET r.views = r.views + 1
+------------------------------------------------------------

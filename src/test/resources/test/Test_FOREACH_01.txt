@@ -1,5 +1,5 @@
 ----FOREACH_01:
-FOREACH (n IN nodes(p) | SET n.marked = true SET n.name = 'John')
+FOREACH (n IN nodes(p) | SET n.marked = true, n.name = 'John')
 ------------------------------------------------------------
 
 ----FOREACH_02:
