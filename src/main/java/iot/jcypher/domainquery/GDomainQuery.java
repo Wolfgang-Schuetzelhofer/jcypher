@@ -22,6 +22,7 @@ import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.QueryRecorder;
+import iot.jcypher.domainquery.internal.RecordedQuery;
 
 import java.util.List;
 

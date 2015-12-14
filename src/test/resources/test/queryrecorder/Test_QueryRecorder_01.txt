@@ -398,3 +398,30 @@ obj9 = q.INTERSECTION(obj4, obj8);
 obj14 = q.SELECT_FROM(obj0).ELEMENTS(
    q.WHERE(obj9.COUNT()).GTE(2));
 ------------------------------------------------------------
+
+----RECORDED_QUERY_13:
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Person');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+
+DomainQuery
+obj0 = q.createMatchFrom(ref_0);
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Person');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+
+DomainQuery
+obj0 = q.createMatchFor(ref_0, 'test.domainquery.model.Person');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+
+DomainQuery
+obj0 = q.createMatch('test.domainquery.model.Person');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+
+DomainQuery
+obj0 = q.createMatchFor(ref_0);
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+------------------------------------------------------------

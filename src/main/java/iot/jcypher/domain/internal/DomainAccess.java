@@ -63,6 +63,8 @@ import iot.jcypher.domain.mapping.surrogate.Surrogate2MapEntry;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.domainquery.internal.QueryRecorder;
+import iot.jcypher.domainquery.internal.RecordedQuery;
+import iot.jcypher.domainquery.internal.ReplayedQueryContext;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
@@ -234,6 +236,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	public DomainQuery createQuery() {
 		DomainQuery ret = new DomainQuery(this);
 		QueryRecorder.recordCreateQuery(ret);
+		iot.jcypher.domainquery.InternalAccess.recordQuery(ret, QueryRecorder.getRecordedQuery(ret));
+		return ret;
+	}
+	
+	public DomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
+		DomainQuery ret = new DomainQuery(this);
+		QueryRecorder.recordCreateQuery(ret);
+		iot.jcypher.domainquery.InternalAccess.replayQuery(ret, rqc);
 		return ret;
 	}
 
@@ -430,6 +440,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		public GDomainQuery createQuery() {
 			GDomainQuery ret = new GDomainQuery(DomainAccess.this);
 			QueryRecorder.recordCreateQuery(ret);
+			iot.jcypher.domainquery.InternalAccess.recordQuery(ret, QueryRecorder.getRecordedQuery(ret));
+			return ret;
+		}
+		
+		public GDomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
+			GDomainQuery ret = new GDomainQuery(DomainAccess.this);
+			QueryRecorder.recordCreateQuery(ret);
+			iot.jcypher.domainquery.InternalAccess.replayQuery(ret, rqc);
 			return ret;
 		}
 

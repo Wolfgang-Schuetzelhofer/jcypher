@@ -14,28 +14,29 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.domainquery;
+package iot.jcypher.domainquery.internal;
+
+import java.util.HashMap;
+import java.util.Map;
 
 import iot.jcypher.domainquery.api.DomainObjectMatch;
-import iot.jcypher.domainquery.internal.RecordedQuery;
-import iot.jcypher.domainquery.internal.ReplayedQueryContext;
 
-/**
- * For internal use only
- * @author wolfgang
- *
- */
-public class InternalAccess {
+public class ReplayedQueryContext {
+	
+	private RecordedQuery recordedQuery;
+	private Map<String, DomainObjectMatch<?>> id2DomainObjectMatch;
 
-	public static <T> DomainObjectMatch<T> createMatch(AbstractDomainQuery query, Class<T> domainObjectType) {
-		return query.createMatchInternal(domainObjectType);
+	ReplayedQueryContext(RecordedQuery rq) {
+		super();
+		this.recordedQuery = rq;
+		this.id2DomainObjectMatch = new HashMap<String, DomainObjectMatch<?>>();
+	}
+
+	void addDomainObjectMatch(String id, DomainObjectMatch<?> dom) {
+		this.id2DomainObjectMatch.put(id, dom);
 	}
 	
-	public static void recordQuery(AbstractDomainQuery query, RecordedQuery rq) {
-		query.recordQuery(rq);
-	}
-	
-	public static void replayQuery(AbstractDomainQuery query, ReplayedQueryContext rqc) {
-		query.replayQuery(rqc);
+	public DomainObjectMatch<?> getById(String id) {
+		return this.id2DomainObjectMatch.get(id);
 	}
 }

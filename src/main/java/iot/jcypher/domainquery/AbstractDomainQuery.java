@@ -16,6 +16,9 @@
 
 package iot.jcypher.domainquery;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.genericmodel.InternalAccess;
@@ -43,21 +46,32 @@ import iot.jcypher.domainquery.ast.UnionExpression;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
 import iot.jcypher.domainquery.internal.QueryExecutor;
 import iot.jcypher.domainquery.internal.QueryRecorder;
+import iot.jcypher.domainquery.internal.QueryRecorder.QueriesPerThread;
+import iot.jcypher.domainquery.internal.RecordedQuery;
+import iot.jcypher.domainquery.internal.ReplayedQueryContext;
 import iot.jcypher.query.values.JcProperty;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public abstract class AbstractDomainQuery {
 
 	protected QueryExecutor queryExecutor;
 	private IASTObjectsContainer astObjectsContainer;
 	private IntAccess intAccess;
+	private RecordedQueryContext recordedQueryContext;
+	private ReplayedQueryContext replayedQueryContext;
 	
 	public AbstractDomainQuery(IDomainAccess domainAccess) {
 		super();
 		this.queryExecutor = new QueryExecutor(domainAccess);
 		this.astObjectsContainer = this.queryExecutor;
+	}
+	
+	void recordQuery(RecordedQuery rq) {
+		this.recordedQueryContext = new RecordedQueryContext(rq,
+				rq != null ? QueryRecorder.getQueriesPerThread() : null);
+	}
+	
+	void replayQuery(ReplayedQueryContext rqc) {
+		this.replayedQueryContext = rqc;
 	}
 	
 	/**
@@ -112,16 +126,20 @@ public abstract class AbstractDomainQuery {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> DomainObjectMatch<T> createMatchFor(T domainObject) {
+		DomainObjectMatch<T> ret;
 		if (domainObject.getClass().equals(DomainObject.class)) { // generic model
 			List<DomainObject> source = new ArrayList<DomainObject>();
 			source.add((DomainObject) domainObject);
 			String typeName = ((DomainObject)domainObject).getDomainObjectType().getName();
-			return (DomainObjectMatch<T>) createGenMatchForInternal(source, typeName);
+			ret = (DomainObjectMatch<T>) createGenMatchForInternal(source, typeName);
 		} else {
 			List<T> source = new ArrayList<T>();
 			source.add(domainObject);
-			return this.createMatchForInternal(source, (Class<T>)domainObject.getClass());
+			ret = this.createMatchForInternal(source, (Class<T>)domainObject.getClass());
 		}
+		QueryRecorder.recordAssignment(this, "createMatchFor", ret,
+				QueryRecorder.reference(domainObject));
+		return ret;
 	}
 	
 	/**
@@ -350,6 +368,8 @@ public abstract class AbstractDomainQuery {
 	 * @return a DomainQueryResult
 	 */
 	public DomainQueryResult execute() {
+		if (this.recordedQueryContext != null)
+			this.recordedQueryContext.queryCompleted();
 		DomainQueryResult ret = new DomainQueryResult(this);
 		this.queryExecutor.execute();
 		return ret;
@@ -361,11 +381,22 @@ public abstract class AbstractDomainQuery {
 	 * @return a CountQueryResult
 	 */
 	public CountQueryResult executeCount() {
+		if (this.recordedQueryContext != null)
+			this.recordedQueryContext.queryCompleted();
 		CountQueryResult ret = new CountQueryResult(this);
 		this.queryExecutor.executeCount();
 		return ret;
 	}
 	
+	/**
+	 * Answer the context containing DomainObjectMatch(es) of a replayed query.
+	 * <br/>Answer null, if this is not a replayed query.
+	 * @return
+	 */
+	public ReplayedQueryContext getReplayedQueryContext() {
+		return replayedQueryContext;
+	}
+
 	QueryExecutor getQueryExecutor() {
 		return this.queryExecutor;
 	}
@@ -429,6 +460,23 @@ public abstract class AbstractDomainQuery {
 		if (this.intAccess == null)
 			this.intAccess = new IntAccess();
 		return this.intAccess;
+	}
+	
+	/****************************************************/
+	private class RecordedQueryContext {
+		private RecordedQuery recordedQuery;
+		private QueriesPerThread queriesPerThread;
+		
+		private RecordedQueryContext(RecordedQuery recordedQuery, QueriesPerThread queriesPerThread) {
+			super();
+			this.recordedQuery = recordedQuery;
+			this.queriesPerThread = queriesPerThread;
+		}
+		
+		private void queryCompleted() {
+			if (this.queriesPerThread != null)
+				this.queriesPerThread.queryCompleted(AbstractDomainQuery.this);
+		}
 	}
 	
 	/****************************************************/

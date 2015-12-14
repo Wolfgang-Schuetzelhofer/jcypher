@@ -191,6 +191,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 	}
 	
 	private void executeInternal(boolean execCount) {
+		Boolean br_old = QueryRecorder.blockRecording.get();
+		QueryRecorder.blockRecording.set(Boolean.TRUE);
 		QueryContext context = new QueryContext(execCount);
 		QueryBuilder qb = new QueryBuilder();
 		List<JcQuery> queries = qb.buildQueries(context);
@@ -199,6 +201,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 														execute(queries);
 		List<JcError> errors = Util.collectErrors(results);
 		if (errors.size() > 0) {
+			QueryRecorder.blockRecording.set(br_old);
 			throw new JcResultException(errors);
 		}
 //		Util.printResults(results, execCount ? "COUNT QUERY" : "DOM QUERY", Format.PRETTY_1);
@@ -210,6 +213,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 			context.queryExecuted();
 			this.queryResult = context;
 		}
+		QueryRecorder.blockRecording.set(br_old);
 	}
 	
 	public MappingInfo getMappingInfo() {

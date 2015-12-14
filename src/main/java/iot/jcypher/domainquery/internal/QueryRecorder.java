@@ -267,23 +267,7 @@ public class QueryRecorder {
 			return;
 		QueriesPerThread qpt = queriesPerThread.get();
 		if (qpt != null) {
-			RecQueryHolder rqh = qpt.queries.remove(query);
-			if (rqh != null) {
-				qpt.removeFromQuery2HolderMap(rqh, null, true, null); // also remove root
-				List<Object> toRemove = new ArrayList<Object>();
-				Iterator<Entry<Object, RecQueryHolder>> it = qpt.recHolderRefs.entrySet().iterator();
-				while(it.hasNext()) {
-					Entry<Object, RecQueryHolder> e = it.next();
-					if (e.getValue() == rqh)
-						toRemove.add(e.getKey());
-					else {
-						if (rqh.inReplaced(e.getValue()))
-							toRemove.add(e.getKey());
-					}
-				}
-				for (Object o : toRemove) 
-					qpt.recHolderRefs.remove(o);
-			}
+			qpt.queryCompleted(query);
 		}
 	}
 	
@@ -325,6 +309,10 @@ public class QueryRecorder {
 			queriesPerThread.set(qpt);
 		}
 		return qpt;
+	}
+	
+	public static QueriesPerThread getQueriesPerThread() {
+		return queriesPerThread.get();
 	}
 	
 	/*******************************/
@@ -400,6 +388,26 @@ public class QueryRecorder {
 			return this.queries.isEmpty() &&
 					this.recHolderRefs.isEmpty() &&
 					this.query2HolderMap.isEmpty();
+		}
+		
+		public void queryCompleted(AbstractDomainQuery query) {
+			RecQueryHolder rqh = this.queries.remove(query);
+			if (rqh != null) {
+				this.removeFromQuery2HolderMap(rqh, null, true, null); // also remove root
+				List<Object> toRemove = new ArrayList<Object>();
+				Iterator<Entry<Object, RecQueryHolder>> it = this.recHolderRefs.entrySet().iterator();
+				while(it.hasNext()) {
+					Entry<Object, RecQueryHolder> e = it.next();
+					if (e.getValue() == rqh)
+						toRemove.add(e.getKey());
+					else {
+						if (rqh.inReplaced(e.getValue()))
+							toRemove.add(e.getKey());
+					}
+				}
+				for (Object o : toRemove) 
+					this.recHolderRefs.remove(o);
+			}
 		}
 	}
 	

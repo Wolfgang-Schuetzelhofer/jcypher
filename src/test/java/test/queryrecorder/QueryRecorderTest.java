@@ -45,6 +45,8 @@ import iot.jcypher.domainquery.internal.QueryRecorder.QueriesPerThread;
 import iot.jcypher.domainquery.internal.RecordedQuery;
 import iot.jcypher.domainquery.internal.RecordedQueryPlayer;
 import iot.jcypher.domainquery.internal.Settings;
+import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.util.QueriesPrintObserver;
 import test.AbstractTestSuite;
 import test.domainquery.Population;
@@ -57,6 +59,7 @@ import test.domainquery.model.NumberHolder;
 import test.domainquery.model.Person;
 import test.domainquery.model.PointOfContact;
 import test.domainquery.model.Subject;
+import test.domainquery.util.CompareUtil;
 import util.TestDataReader;
 
 public class QueryRecorderTest extends AbstractTestSuite {
@@ -64,6 +67,37 @@ public class QueryRecorderTest extends AbstractTestSuite {
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	private static RecordedQuery reccordedQuery_14;
+	
+	@Test
+	public void testRecordQuery_14() {
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_QueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_14";
+		StringBuilder sb = new StringBuilder();
+		
+		Population population = new Population();
+		List<Object> domObjects = population.createPopulation();
+		
+		/************************************************/
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
+		DomainQuery q2 = new RecordedQueryPlayer().replayQuery(reccordedQuery_14, da1);
+		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		
+		DomainQueryResult result = q2.execute();
+		
+		DomainObjectMatch<?> j_smith_FilteredPocs = q2.getReplayedQueryContext().getById("obj25");
+		List<?> j_smith_FilteredPoCsResult = result.resultOf(j_smith_FilteredPocs);
+		
+		assertEquals(1, j_smith_FilteredPoCsResult.size());
+		boolean equals = CompareUtil.equalsObjects(population.getMarketStreet_20(), j_smith_FilteredPoCsResult.get(0));
+		assertTrue(equals);
+		
+		return;
+	}
 	
 	@Test
 	public void testRecordQuery_13() {
@@ -128,7 +162,7 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		
 		QueryRecorder.queryCompleted(q);
 		QueryRecorder.queryCompleted(q1);
-//		assertTrue(qpt.isCleared());
+		assertTrue(qpt.isCleared());
 		System.out.println("\n" + recordedQuery.toString());
 		sb.append("\n\n").append(recordedQuery.toString());
 		sb.append("\n\n").append(recordedQuery_1.toString());
@@ -136,14 +170,51 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
 		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
 		QueryRecorder.queryCompleted(q2);
-//		assertTrue(qpt.isCleared());
+		assertTrue(qpt.isCleared());
 		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
 		
 		q3 = new RecordedQueryPlayer().replayQuery(recordedQuery_1, da1);
 		recordedQuery3 = QueryRecorder.getRecordedQuery(q3);
 		QueryRecorder.queryCompleted(q3);
-//		assertTrue(qpt.isCleared());
+		assertTrue(qpt.isCleared());
 		assertEquals(recordedQuery_1.toString(), recordedQuery3.toString());
+		
+		/** new: test empty queries per thread with execute query *********/
+		q = da1.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
+		smith = q.createMatch(Person.class);
+		
+		q.WHERE(smith.atttribute("lastName")).EQUALS("Smith");
+		//q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		result = q.execute();
+		
+		smithResult = result.resultOf(smith);
+		
+		q1 = da1.createQuery();
+		recordedQuery_1 = QueryRecorder.getRecordedQuery(q1);
+		j_smith = q1.createMatchFor(smithResult.get(0));
+		q1.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		QueryRecorder.queryCompleted(q);
+		QueryRecorder.queryCompleted(q1);
+		assertTrue(qpt.isCleared());
+		System.out.println("\n" + recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery.toString());
+		sb.append("\n\n").append(recordedQuery_1.toString());
+		
+		q2 = new RecordedQueryPlayer().replayQuery(recordedQuery, da1);
+		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		q3 = new RecordedQueryPlayer().replayQuery(recordedQuery_1, da1);
+		recordedQuery3 = QueryRecorder.getRecordedQuery(q3);
+		QueryRecorder.queryCompleted(q3);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery_1.toString(), recordedQuery3.toString());
+		
+		assertEquals(testId, tdr.getTestData(testId), sb.toString());
 		
 		return;
 	}
@@ -1372,6 +1443,41 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		return;
 	}
 	
+	private static void initTest_14() {
+		//DomainQueryTest.testDomainQuery_Union_Intersection_01()
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 04 ****************************************/
+		DomainQuery q = da1.createQuery();
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
+		reccordedQuery_14 = QueryRecorder.getRecordedQuery(q);
+		DomainObjectMatch<Object> j_smith = q.createMatch(Object.class);
+		DomainObjectMatch<Object> sf = q.createMatch(Object.class);
+		
+		q.WHERE(sf.atttribute("name")).EQUALS("San Francisco");
+
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
+		
+		DomainObjectMatch<Object> j_smith_Addresses =
+				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Object.class);
+		DomainObjectMatch<Object> j_smith_d_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.TO(Object.class);
+		DomainObjectMatch<Object> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
+				.FORTH("partOf").DISTANCE(0, -1).TO(Object.class);
+		DomainObjectMatch<Object> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
+		
+		DomainObjectMatch<Object> j_smith_FilteredPocs =
+				q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
+						q.WHERE(j_smith_all_Areas).CONTAINS(sf)
+				);
+		
+		DomainQueryResult result = q.execute(); // queries per thread should be cleared
+		assertTrue(qpt.isCleared());
+		
+		return;
+	}
+	
 	@BeforeClass
 	public static void before() {
 		Settings.TEST_MODE = true;
@@ -1383,24 +1489,26 @@ public class QueryRecorderTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 //		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
 		
 		// init db
 		Population population = new Population();
 		storedDomainObjects = population.createPopulation();
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-//		errors = da.store(storedDomainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		errors = da.store(storedDomainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		initTest_14();
 	}
 	
 	@AfterClass

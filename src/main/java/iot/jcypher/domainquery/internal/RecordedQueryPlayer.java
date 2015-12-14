@@ -25,8 +25,11 @@ import java.util.Map;
 
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
+import iot.jcypher.domain.internal.DomainAccess;
+import iot.jcypher.domain.internal.DomainAccess.GenericDomainAccess;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
+import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.RecordedQuery.DOMatchRef;
 import iot.jcypher.domainquery.internal.RecordedQuery.Invocation;
 import iot.jcypher.domainquery.internal.RecordedQuery.Literal;
@@ -36,6 +39,7 @@ import iot.jcypher.domainquery.internal.RecordedQuery.Statement;
 public class RecordedQueryPlayer {
 
 	private Map<String, Object> id2ObjectMap;
+	private ReplayedQueryContext replayedQueryContext;
 	private boolean generic;
 	
 	public RecordedQueryPlayer() {
@@ -56,7 +60,8 @@ public class RecordedQueryPlayer {
 			QueryRecorder.blockRecording.set(Boolean.TRUE);
 		}
 		this.generic = false;
-		DomainQuery query = domainAccess.createQuery();
+		this.replayedQueryContext = new ReplayedQueryContext(recordedQuery);
+		DomainQuery query = ((DomainAccess)domainAccess).createRecordedQuery(this.replayedQueryContext);
 		this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
 		
 		for (Statement stmt : recordedQuery.getStatements()) {
@@ -81,7 +86,8 @@ public class RecordedQueryPlayer {
 			QueryRecorder.blockRecording.set(Boolean.TRUE);
 		}
 		this.generic = true;
-		GDomainQuery query = domainAccess.createQuery();
+		this.replayedQueryContext = new ReplayedQueryContext(recordedQuery);
+		GDomainQuery query = ((GenericDomainAccess)domainAccess).createRecordedQuery(this.replayedQueryContext);
 		this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
 		
 		for (Statement stmt : recordedQuery.getStatements()) {
@@ -104,7 +110,7 @@ public class RecordedQueryPlayer {
 			ret = this.id2ObjectMap.get(oid);
 		} else if (stmt instanceof Reference) {
 			ret = ((Reference)stmt).getValue();
-			this.id2ObjectMap.put(((Reference)stmt).getRefId(), ret);
+			addToId2ObjectMap(((Reference)stmt).getRefId(), ret);
 		}
 		return ret;
 	}
@@ -124,7 +130,7 @@ public class RecordedQueryPlayer {
 			Object on = this.id2ObjectMap.get(invocation.getOnObjectRef());
 			Method mthd = findMethod(invocation.getMethod(), on, args, params);
 			Object ret = mthd.invoke(on, params.toArray());
-			this.id2ObjectMap.put(invocation.getReturnObjectRef(), ret);
+			addToId2ObjectMap(invocation.getReturnObjectRef(), ret);
 			return ret;
 		} catch(Throwable e) {
 			if (e instanceof RuntimeException)
@@ -267,5 +273,11 @@ public class RecordedQueryPlayer {
 				return Boolean.TYPE == prim1;
 		}
 		return false;
+	}
+	
+	private void addToId2ObjectMap(String id, Object value) {
+		this.id2ObjectMap.put(id, value);
+		if (value instanceof DomainObjectMatch<?>)
+			this.replayedQueryContext.addDomainObjectMatch(id, (DomainObjectMatch<?>) value);
 	}
 }

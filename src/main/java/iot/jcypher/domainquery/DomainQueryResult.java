@@ -16,11 +16,11 @@
 
 package iot.jcypher.domainquery;
 
-import iot.jcypher.domain.genericmodel.DomainObject;
+import java.util.List;
+
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
-
-import java.util.List;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 
 public class DomainQueryResult {
 	
@@ -38,13 +38,17 @@ public class DomainQueryResult {
 	 */
 	@SuppressWarnings("unchecked")
 	public <T> List<T> resultOf(DomainObjectMatch<T> match) {
+		List<T> ret;
+		Boolean br_old = QueryRecorder.blockRecording.get();
+		QueryRecorder.blockRecording.set(Boolean.TRUE);
 		DomainObjectMatch<?> delegate = APIAccess.getDelegate(match);
 		if (delegate != null) { // this is a generic domain query
 			List<?> dobjs = this.domainQuery.getQueryExecutor().loadResult(delegate);
-			List<DomainObject> ret = this.domainQuery.getQueryExecutor().getMappingInfo()
+			ret = (List<T>) this.domainQuery.getQueryExecutor().getMappingInfo()
 				.getInternalDomainAccess().getGenericDomainObjects(dobjs);
-			return (List<T>) ret;
 		} else
-			return this.domainQuery.getQueryExecutor().loadResult(match);
+			ret = this.domainQuery.getQueryExecutor().loadResult(match);
+		QueryRecorder.blockRecording.set(br_old);
+		return ret;
 	}
 }

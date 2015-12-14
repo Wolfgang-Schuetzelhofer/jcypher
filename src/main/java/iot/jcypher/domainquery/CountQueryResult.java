@@ -18,6 +18,7 @@ package iot.jcypher.domainquery;
 
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 
 public class CountQueryResult {
 	
@@ -34,10 +35,15 @@ public class CountQueryResult {
 	 * @return the number of domain objects
 	 */
 	public long countOf(DomainObjectMatch<?> match) {
+		Boolean br_old = QueryRecorder.blockRecording.get();
+		QueryRecorder.blockRecording.set(Boolean.TRUE);
 		DomainObjectMatch<?> delegate = APIAccess.getDelegate(match);
+		long ret;
 		if (delegate != null) // this is a generic domain query
-			return this.domainQuery.getQueryExecutor().getCountResult(delegate);
+			ret = this.domainQuery.getQueryExecutor().getCountResult(delegate);
 		else
-			return this.domainQuery.getQueryExecutor().getCountResult(match);
+			ret = this.domainQuery.getQueryExecutor().getCountResult(match);
+		QueryRecorder.blockRecording.set(br_old);
+		return ret;
 	}
 }
