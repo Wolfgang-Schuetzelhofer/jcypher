@@ -16,6 +16,17 @@
 
 package iot.jcypher.domainquery.internal;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.SyncInfo;
 import iot.jcypher.domain.internal.CurrentDomain;
@@ -29,6 +40,7 @@ import iot.jcypher.domain.mapping.MappingUtil;
 import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domain.mapping.surrogate.Array;
 import iot.jcypher.domain.mapping.surrogate.Collection;
+import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.Count;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -47,6 +59,7 @@ import iot.jcypher.domainquery.ast.SelectExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression;
 import iot.jcypher.domainquery.ast.TraversalExpression.Step;
 import iot.jcypher.domainquery.ast.UnionExpression;
+import iot.jcypher.domainquery.internal.QueryRecorder.QueriesPerThread;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.APIObject;
@@ -84,17 +97,6 @@ import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 import iot.jcypher.util.Util;
 
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
 public class QueryExecutor implements IASTObjectsContainer {
 
 	private static final String idPrefix = "id_";
@@ -113,6 +115,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 	private MappingInfo mappingInfo;
 	private QueryContext queryResult;
 	private QueryContext countResult;
+	private RecordedQueryContext recordedQueryContext;
+	private ReplayedQueryContext replayedQueryContext;
 	
 	public QueryExecutor(IDomainAccess domainAccess) {
 		super();
@@ -191,6 +195,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 	}
 	
 	private void executeInternal(boolean execCount) {
+		if (this.recordedQueryContext != null)
+			this.recordedQueryContext.queryCompleted();
 		Boolean br_old = QueryRecorder.blockRecording.get();
 		QueryRecorder.blockRecording.set(Boolean.TRUE);
 		QueryContext context = new QueryContext(execCount);
@@ -313,6 +319,32 @@ public class QueryExecutor implements IASTObjectsContainer {
 			executeCount();
 		}
 		return this.countResult;
+	}
+	
+	public void recordQuery(RecordedQuery rq, AbstractDomainQuery q) {
+		this.recordedQueryContext = new RecordedQueryContext(rq,
+				rq != null ? QueryRecorder.getQueriesPerThread() : null,
+						q);
+	}
+	
+	public void replayQuery(ReplayedQueryContext rqc) {
+		this.replayedQueryContext = rqc;
+	}
+	
+	/**
+	 * Answer the context containing DomainObjectMatch(es) of a replayed query.
+	 * <br/>Answer null, if this is not a replayed query.
+	 * @return
+	 */
+	public ReplayedQueryContext getReplayedQueryContext() {
+		return replayedQueryContext;
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
+		if (this.recordedQueryContext != null)
+			this.recordedQueryContext.queryCompleted();
+		super.finalize();
 	}
 	
 	/************************************/
@@ -2934,6 +2966,26 @@ public class QueryExecutor implements IASTObjectsContainer {
 	/*************************************/
 	private enum State {
 		INIT, HAS_XPRESSION
+	}
+	
+	/****************************************************/
+	private class RecordedQueryContext {
+		private RecordedQuery recordedQuery;
+		private QueriesPerThread queriesPerThread;
+		private AbstractDomainQuery domainQuery;
+		
+		private RecordedQueryContext(RecordedQuery recordedQuery, QueriesPerThread queriesPerThread,
+				AbstractDomainQuery q) {
+			super();
+			this.recordedQuery = recordedQuery;
+			this.queriesPerThread = queriesPerThread;
+			this.domainQuery = q;
+		}
+		
+		private void queryCompleted() {
+			if (this.queriesPerThread != null)
+				this.queriesPerThread.queryCompleted(this.domainQuery);
+		}
 	}
 	
 	/************************************/

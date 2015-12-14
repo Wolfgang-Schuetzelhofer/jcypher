@@ -46,7 +46,6 @@ import iot.jcypher.domainquery.ast.UnionExpression;
 import iot.jcypher.domainquery.internal.IASTObjectsContainer;
 import iot.jcypher.domainquery.internal.QueryExecutor;
 import iot.jcypher.domainquery.internal.QueryRecorder;
-import iot.jcypher.domainquery.internal.QueryRecorder.QueriesPerThread;
 import iot.jcypher.domainquery.internal.RecordedQuery;
 import iot.jcypher.domainquery.internal.ReplayedQueryContext;
 import iot.jcypher.query.values.JcProperty;
@@ -56,8 +55,6 @@ public abstract class AbstractDomainQuery {
 	protected QueryExecutor queryExecutor;
 	private IASTObjectsContainer astObjectsContainer;
 	private IntAccess intAccess;
-	private RecordedQueryContext recordedQueryContext;
-	private ReplayedQueryContext replayedQueryContext;
 	
 	public AbstractDomainQuery(IDomainAccess domainAccess) {
 		super();
@@ -66,12 +63,11 @@ public abstract class AbstractDomainQuery {
 	}
 	
 	void recordQuery(RecordedQuery rq) {
-		this.recordedQueryContext = new RecordedQueryContext(rq,
-				rq != null ? QueryRecorder.getQueriesPerThread() : null);
+		this.queryExecutor.recordQuery(rq, this);
 	}
 	
 	void replayQuery(ReplayedQueryContext rqc) {
-		this.replayedQueryContext = rqc;
+		this.queryExecutor.replayQuery(rqc);
 	}
 	
 	/**
@@ -217,7 +213,7 @@ public abstract class AbstractDomainQuery {
 		PredicateExpression pe = new PredicateExpression(pVal, this.astObjectsContainer);
 		this.astObjectsContainer.addAstObject(pe);
 		BooleanOperation ret = APIAccess.createBooleanOperation(pe);
-		QueryRecorder.recordInvocation(this, "WHERE", ret, QueryRecorder.placeHolder(value));
+		QueryRecorder.recordInvocation(this, "WHERE", ret, QueryRecorder.placeHolder(pVal));
 		return ret;
 	}
 	
@@ -266,7 +262,7 @@ public abstract class AbstractDomainQuery {
 		DomainObjectMatch<?> match = delegate != null ? delegate : toOrder;
 		OrderExpression oe = this.queryExecutor.getOrderFor(match);
 		Order ret = APIAccess.createOrder(oe);
-		QueryRecorder.recordInvocation(this, "ORDER", ret, QueryRecorder.placeHolder(toOrder));
+		QueryRecorder.recordInvocation(this, "ORDER", ret, QueryRecorder.placeHolder(match));
 		return ret;
 	}
 	
@@ -281,7 +277,7 @@ public abstract class AbstractDomainQuery {
 		TraversalExpression te = new TraversalExpression(match, this.queryExecutor);
 		this.queryExecutor.addAstObject(te);
 		Traverse ret = APIAccess.createTraverse(te);
-		QueryRecorder.recordInvocation(this, "TRAVERSE_FROM", ret, QueryRecorder.placeHolder(start));
+		QueryRecorder.recordInvocation(this, "TRAVERSE_FROM", ret, QueryRecorder.placeHolder(match));
 		return ret;
 	}
 	
@@ -298,7 +294,7 @@ public abstract class AbstractDomainQuery {
 		this.queryExecutor.addAstObject(se);
 		this.astObjectsContainer = se;
 		Select<T> ret = APIAccess.createSelect(se, getIntAccess());
-		QueryRecorder.recordInvocation(this, "SELECT_FROM", ret, QueryRecorder.placeHolder(start));
+		QueryRecorder.recordInvocation(this, "SELECT_FROM", ret, QueryRecorder.placeHolder(match));
 		return ret;
 	}
 	
@@ -316,7 +312,7 @@ public abstract class AbstractDomainQuery {
 		this.queryExecutor.addAstObject(se);
 		this.astObjectsContainer = se;
 		Select<T> ret = APIAccess.createSelect(se, getIntAccess());
-		QueryRecorder.recordInvocation(this, "REJECT_FROM", ret, QueryRecorder.placeHolder(start));
+		QueryRecorder.recordInvocation(this, "REJECT_FROM", ret, QueryRecorder.placeHolder(match));
 		return ret;
 	}
 	
@@ -368,8 +364,6 @@ public abstract class AbstractDomainQuery {
 	 * @return a DomainQueryResult
 	 */
 	public DomainQueryResult execute() {
-		if (this.recordedQueryContext != null)
-			this.recordedQueryContext.queryCompleted();
 		DomainQueryResult ret = new DomainQueryResult(this);
 		this.queryExecutor.execute();
 		return ret;
@@ -381,8 +375,6 @@ public abstract class AbstractDomainQuery {
 	 * @return a CountQueryResult
 	 */
 	public CountQueryResult executeCount() {
-		if (this.recordedQueryContext != null)
-			this.recordedQueryContext.queryCompleted();
 		CountQueryResult ret = new CountQueryResult(this);
 		this.queryExecutor.executeCount();
 		return ret;
@@ -394,7 +386,7 @@ public abstract class AbstractDomainQuery {
 	 * @return
 	 */
 	public ReplayedQueryContext getReplayedQueryContext() {
-		return replayedQueryContext;
+		return this.queryExecutor.getReplayedQueryContext();
 	}
 
 	QueryExecutor getQueryExecutor() {
@@ -460,23 +452,6 @@ public abstract class AbstractDomainQuery {
 		if (this.intAccess == null)
 			this.intAccess = new IntAccess();
 		return this.intAccess;
-	}
-	
-	/****************************************************/
-	private class RecordedQueryContext {
-		private RecordedQuery recordedQuery;
-		private QueriesPerThread queriesPerThread;
-		
-		private RecordedQueryContext(RecordedQuery recordedQuery, QueriesPerThread queriesPerThread) {
-			super();
-			this.recordedQuery = recordedQuery;
-			this.queriesPerThread = queriesPerThread;
-		}
-		
-		private void queryCompleted() {
-			if (this.queriesPerThread != null)
-				this.queriesPerThread.queryCompleted(AbstractDomainQuery.this);
-		}
 	}
 	
 	/****************************************************/

@@ -1,0 +1,48 @@
+----RECORDED_QUERY_01:
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Person');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj9 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO_GENERIC('iot.jcypher.samples.domain.people.model.PointOfContact');
+q.ORDER(obj9).BY('street').DESCENDING();
+------------------------------------------------------------
+
+----RECORDED_QUERY_02:
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Person');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj10 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').BACK('pointsOfContact').TO_GENERIC('iot.jcypher.samples.domain.people.model.Person');
+q.ORDER(obj10).BY('lastName');
+q.ORDER(obj10).BY('firstName');
+------------------------------------------------------------
+
+----RECORDED_QUERY_03:
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Person');
+obj1 = q.createMatch('iot.jcypher.samples.domain.people.model.Area');
+q.WHERE(obj1.atttribute('name')).EQUALS('Europe');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj13 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO_GENERIC('iot.jcypher.samples.domain.people.model.PointOfContact');
+obj17 = q.TRAVERSE_FROM(obj13).FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO_GENERIC('iot.jcypher.samples.domain.people.model.Area');
+obj21 = q.SELECT_FROM(obj13).ELEMENTS(
+   q.WHERE(obj17).CONTAINS(obj1));
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Person');
+obj1 = q.createMatch('iot.jcypher.samples.domain.people.model.Subject');
+q.ORDER(obj1).BY('lastName');
+q.ORDER(obj1).BY('firstName');
+obj8 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO_GENERIC('iot.jcypher.samples.domain.people.model.PointOfContact');
+obj13 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO_GENERIC('iot.jcypher.samples.domain.people.model.Area');
+obj22 = q.SELECT_FROM(obj0).ELEMENTS(
+   q.WHERE(obj8.atttribute('number')).EQUALS(20),
+   q.OR(),
+   q.WHERE(obj13.atttribute('name')).EQUALS('Europe'));
+q.ORDER(obj22).BY('lastName');
+q.ORDER(obj22).BY('firstName');
+------------------------------------------------------------

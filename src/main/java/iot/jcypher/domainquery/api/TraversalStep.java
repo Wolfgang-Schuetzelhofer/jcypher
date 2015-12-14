@@ -100,9 +100,12 @@ public class TraversalStep extends APIObject {
 			InternalDomainAccess iAccess = te.getQueryExecutor().getMappingInfo().getInternalDomainAccess();
 			iAccess.loadDomainInfoIfNeeded();
 			Class<?> clazz = iAccess.getClassForName(domainObjectTypeName);
+			Boolean br_old = QueryRecorder.blockRecording.get();
+			QueryRecorder.blockRecording.set(Boolean.TRUE);
 			DomainObjectMatch<?> delegate = TO(clazz);
+			QueryRecorder.blockRecording.set(br_old);
 			DomainObjectMatch<DomainObject> ret = APIAccess.createDomainObjectMatch(DomainObject.class, delegate);
-			QueryRecorder.recordAssignment(this, "TO_GENERIC", ret, QueryRecorder.literal(domainObjectTypeName));
+			QueryRecorder.recordAssignment(this, "TO_GENERIC", delegate, QueryRecorder.literal(domainObjectTypeName));
 			return ret;
 		} catch (Throwable e) {
 			if (e instanceof RuntimeException)

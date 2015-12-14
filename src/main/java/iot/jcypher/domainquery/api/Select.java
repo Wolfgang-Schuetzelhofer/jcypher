@@ -86,10 +86,12 @@ public class Select<T> extends APIObject {
 				placeHolders[i] = QueryRecorder.placeHolder(where[i]);
 			}
 		}
+		DomainObjectMatch<?> delegate = APIAccess.getDelegate(ret);
+		DomainObjectMatch<?> match = delegate != null ? delegate : ret;
 		if (placeHolders != null)
-			QueryRecorder.recordStackedAssignment(this, "ELEMENTS", ret, placeHolders);
+			QueryRecorder.recordStackedAssignment(this, "ELEMENTS", match, placeHolders);
 		else
-			QueryRecorder.recordStackedAssignment(this, "ELEMENTS", ret);
+			QueryRecorder.recordStackedAssignment(this, "ELEMENTS", match);
 		return ret;
 	}
 	

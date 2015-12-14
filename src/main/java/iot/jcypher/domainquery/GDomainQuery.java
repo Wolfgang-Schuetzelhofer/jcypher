@@ -50,7 +50,7 @@ public class GDomainQuery extends AbstractDomainQuery {
 			Class<?> clazz = iAccess.getClassForName(domainObjectTypeName);
 			DomainObjectMatch<?> delegate = createMatchInternal(clazz);
 			DomainObjectMatch<DomainObject> ret = APIAccess.createDomainObjectMatch(DomainObject.class, delegate);
-			QueryRecorder.recordAssignment(this, "createMatch", ret, QueryRecorder.literal(domainObjectTypeName));
+			QueryRecorder.recordAssignment(this, "createMatch", delegate, QueryRecorder.literal(domainObjectTypeName));
 			return ret;
 		} catch (Throwable e) {
 			if (e instanceof RuntimeException)

@@ -385,6 +385,10 @@ public class QueryRecorder {
 		 * @return
 		 */
 		public boolean isCleared() {
+			if (Settings.TEST_MODE) {
+				System.gc();
+				System.runFinalization();
+			}
 			return this.queries.isEmpty() &&
 					this.recHolderRefs.isEmpty() &&
 					this.query2HolderMap.isEmpty();

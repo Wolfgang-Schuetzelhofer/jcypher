@@ -152,7 +152,7 @@ public class BooleanOperation extends APIObject {
 		getPredicateExpression().setOperator(Operator.IN);
 		getPredicateExpression().setValue_2(match);
 		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
-		QueryRecorder.recordInvocation(this, "IN", ret, QueryRecorder.placeHolder(domainObjects));
+		QueryRecorder.recordInvocation(this, "IN", ret, QueryRecorder.placeHolder(match));
 		return ret;
 	}
 	
@@ -189,7 +189,7 @@ public class BooleanOperation extends APIObject {
 		getPredicateExpression().setOperator(Operator.CONTAINS);
 		getPredicateExpression().setValue_2(match);
 		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
-		QueryRecorder.recordInvocation(this, "CONTAINS", ret, QueryRecorder.placeHolder(domainObjects));
+		QueryRecorder.recordInvocation(this, "CONTAINS", ret, QueryRecorder.placeHolder(match));
 		return ret;
 	}
 	
