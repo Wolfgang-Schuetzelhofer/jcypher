@@ -92,6 +92,7 @@ public abstract class AbstractDomainQuery {
 	public <T> DomainObjectMatch<T> createMatchFrom(DomainObjectMatch<T> domainObjectMatch) {
 		DomainObjectMatch<T> ret;
 		FromPreviousQueryExpression pqe;
+		DomainObjectMatch<?> match;
 		DomainObjectMatch<?> delegate = APIAccess.getDelegate(domainObjectMatch);
 		if (delegate != null) { // generic model
 			DomainObjectMatch<?> newDelegate = APIAccess.createDomainObjectMatch(delegate,
@@ -101,6 +102,7 @@ public abstract class AbstractDomainQuery {
 			pqe = new FromPreviousQueryExpression(
 					newDelegate, delegate);
 			ret = (DomainObjectMatch<T>) APIAccess.createDomainObjectMatch(DomainObject.class, newDelegate);
+			match = newDelegate;
 		} else {
 			ret = APIAccess.createDomainObjectMatch(domainObjectMatch,
 					this.queryExecutor.getDomainObjectMatches().size(),
@@ -108,9 +110,10 @@ public abstract class AbstractDomainQuery {
 			this.queryExecutor.getDomainObjectMatches().add(ret);
 			pqe = new FromPreviousQueryExpression(
 					ret, domainObjectMatch);
+			match = ret;
 		}
 		this.queryExecutor.addAstObject(pqe);
-		QueryRecorder.recordAssignment(this, "createMatchFrom", ret,
+		QueryRecorder.recordAssignment(this, "createMatchFrom", match,
 				QueryRecorder.reference(domainObjectMatch));
 		return ret;
 	}

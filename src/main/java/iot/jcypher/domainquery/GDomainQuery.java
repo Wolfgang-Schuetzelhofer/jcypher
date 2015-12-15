@@ -70,7 +70,9 @@ public class GDomainQuery extends AbstractDomainQuery {
 	public DomainObjectMatch<DomainObject> createMatchFor(List<DomainObject> domainObjects,
 			String domainObjectTypeName) {
 		DomainObjectMatch<DomainObject> ret = createGenMatchForInternal(domainObjects, domainObjectTypeName);
-		QueryRecorder.recordAssignment(this, "createMatchFor", ret,
+		DomainObjectMatch<?> delegate = APIAccess.getDelegate(ret);
+		DomainObjectMatch<?> match = delegate != null ? delegate : ret;
+		QueryRecorder.recordAssignment(this, "createMatchFor", match,
 				QueryRecorder.reference(domainObjects), QueryRecorder.literal(domainObjectTypeName));
 		return ret;
 	}
