@@ -338,9 +338,16 @@ public abstract class AbstractDomainQuery {
 	public <T> DomainObjectMatch<T> UNION(DomainObjectMatch<T>... set) {
 		DomainObjectMatch<T> ret = this.union_Intersection(true, set);
 		Object[] placeHolders = new Object[set.length];
-		for (int i = 0; i < set.length; i++)
-			placeHolders[i] = QueryRecorder.placeHolder(set[i]);
-		QueryRecorder.recordAssignment(this, "UNION", ret, placeHolders);
+		DomainObjectMatch<?> delegate;
+		DomainObjectMatch<?> match;
+		for (int i = 0; i < set.length; i++) {
+			delegate = APIAccess.getDelegate(set[i]);
+			match = delegate != null ? delegate : set[i];
+			placeHolders[i] = QueryRecorder.placeHolder(match);
+		}
+		delegate = APIAccess.getDelegate(ret);
+		match = delegate != null ? delegate : ret;
+		QueryRecorder.recordAssignment(this, "UNION", match, placeHolders);
 		return ret;
 	}
 	
@@ -353,9 +360,16 @@ public abstract class AbstractDomainQuery {
 	public <T> DomainObjectMatch<T> INTERSECTION(DomainObjectMatch<T>... set) {
 		DomainObjectMatch<T> ret = this.union_Intersection(false, set);
 		Object[] placeHolders = new Object[set.length];
-		for (int i = 0; i < set.length; i++)
-			placeHolders[i] = QueryRecorder.placeHolder(set[i]);
-		QueryRecorder.recordAssignment(this, "INTERSECTION", ret, placeHolders);
+		DomainObjectMatch<?> delegate;
+		DomainObjectMatch<?> match;
+		for (int i = 0; i < set.length; i++) {
+			delegate = APIAccess.getDelegate(set[i]);
+			match = delegate != null ? delegate : set[i];
+			placeHolders[i] = QueryRecorder.placeHolder(match);
+		}
+		delegate = APIAccess.getDelegate(ret);
+		match = delegate != null ? delegate : ret;
+		QueryRecorder.recordAssignment(this, "INTERSECTION", match, placeHolders);
 		return ret;
 	}
 	

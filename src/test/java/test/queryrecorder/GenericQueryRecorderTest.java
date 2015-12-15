@@ -202,10 +202,14 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
 		GDomainQuery q;
 		
-		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENQUERY_03.txt");
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_GenericQueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_07";
+		StringBuilder sb = new StringBuilder();
 		
 		/** 01 ****************************************/
 		q = gda.createQuery();
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
+		RecordedQuery recordedQuery = QueryRecorder.getRecordedQuery(q);
 		DomainObjectMatch<DomainObject> personsMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Person");
 
 		DomainObjectMatch<DomainObject> m_childrenMatch = q.TRAVERSE_FROM(personsMatch).FORTH("mother")
@@ -231,10 +235,16 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 		q.ORDER(siblings1PlusMatch).BY("lastName");
 		q.ORDER(siblings1PlusMatch).BY("firstName");
 		DomainQueryResult result = q.execute();
+		assertTrue(qpt.isCleared());
 		
-		List<DomainObject> siblings1 = result.resultOf(siblings1Match);
-		List<DomainObject> siblings2 = result.resultOf(siblings2Match);
-		List<DomainObject> siblings1Plus = result.resultOf(siblings1PlusMatch);
+		sb.append("\n").append(recordedQuery.toString());
+		GDomainQuery q2 = new RecordedQueryPlayer().replayGenericQuery(recordedQuery, gda);
+		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
+		
+		assertEquals(testId, tdr.getTestData(testId), sb.toString());
 		
 		return;
 	}
@@ -243,13 +253,14 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 	public void testGenericQueryUnion_01() {
 		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
 		GDomainQuery q;
-		String testId;
-		
-		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENQUERY_03.txt");
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_GenericQueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_06";
+		StringBuilder sb = new StringBuilder();
 		
 		/** 01 ****************************************/
-		testId = "UNION_01";
 		q = gda.createQuery();
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
+		RecordedQuery recordedQuery = QueryRecorder.getRecordedQuery(q);
 		DomainObjectMatch<DomainObject> smithMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
 		DomainObjectMatch<DomainObject> bergHammerMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
 		
@@ -260,21 +271,20 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 		q.ORDER(unionMatch).BY("firstName");
 		
 		DomainQueryResult result = q.execute();
+		assertTrue(qpt.isCleared());
 		
-		List<DomainObject> smith = result.resultOf(smithMatch);
-		List<DomainObject> bergHammer = result.resultOf(bergHammerMatch);
-		List<DomainObject> union = result.resultOf(unionMatch);
-		
-		assertEquals(4, smith.size());
-		assertEquals(6, bergHammer.size());
-		assertEquals(10, union.size());
+		sb.append("\n").append(recordedQuery.toString());
+		GDomainQuery q2 = new RecordedQueryPlayer().replayGenericQuery(recordedQuery, gda);
+		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
 		
 		/** 02 ****************************************/
-		addAddress();
 		gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
-		testId = "UNION_02";
 		
 		q = gda.createQuery();
+		recordedQuery = QueryRecorder.getRecordedQuery(q);
 		DomainObjectMatch<DomainObject> j_smith = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
 
 		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
@@ -300,18 +310,16 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 					q.WHERE(j_smith_all_Areas.COUNT()).EQUALS(5)
 			);
 		result = q.execute();
+		assertTrue(qpt.isCleared());
 		
-		List<DomainObject> j_smith_Addresses = result.resultOf(j_smith_AddressesMatch);
-		List<DomainObject> j_smith_allAreas = result.resultOf(j_smith_all_Areas);
-		List<DomainObject> j_smith_Filtered_4Result = result.resultOf(j_smith_Filtered_4);
-		List<DomainObject> j_smith_Filtered_5Result = result.resultOf(j_smith_Filtered_5);
+		sb.append("\n\n").append(recordedQuery.toString());
+		q2 = new RecordedQueryPlayer().replayGenericQuery(recordedQuery, gda);
+		recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
 		
-		assertEquals(4, j_smith_Addresses.size());
-		assertEquals(11, j_smith_allAreas.size());
-		assertEquals(1, j_smith_Filtered_4Result.size());
-		assertEquals(2, j_smith_Filtered_5Result.size());
-		
-		initDB();
+		assertEquals(testId, tdr.getTestData(testId), sb.toString());
 		
 		return;
 	}
@@ -321,9 +329,15 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
 		GDomainQuery q;
 		
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_GenericQueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_05";
+		StringBuilder sb = new StringBuilder();
+		
 		/** 01 ****************************************/
 		
 		q = gda.createQuery();
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
+		RecordedQuery recordedQuery = QueryRecorder.getRecordedQuery(q);
 		DomainObjectMatch<DomainObject> subjectsMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
 		DomainObjectMatch<DomainObject> subjectsMatch2 = q.createMatch("iot.jcypher.samples.domain.people.model.Subject");
 		
@@ -337,19 +351,16 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 		
 		CountQueryResult countResult = q.executeCount();
 		DomainQueryResult result = q.execute();
+		assertTrue(qpt.isCleared());
 		
-		long numFirstNames = countResult.countOf(firstNamesMatch);
-		long numLastNames = countResult.countOf(lastNamesMatch);
-		long numSubjects = countResult.countOf(subjectsMatch);
-		List<String> firstNames = result.resultOf(firstNamesMatch);
-		List<String> lastNames = result.resultOf(lastNamesMatch);
+		sb.append("\n").append(recordedQuery.toString());
+		GDomainQuery q2 = new RecordedQueryPlayer().replayGenericQuery(recordedQuery, gda);
+		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
 		
-		assertEquals(14, numFirstNames);
-		assertEquals(6, numLastNames);
-		assertEquals(17, numSubjects);
-		
-		assertEquals("[Angelina, Caroline, Christa, Clark, Fritz]", firstNames.toString());
-		assertEquals("[Watson, Smith, Maier, Kent, Clark, Berghammer]", lastNames.toString());
+		assertEquals(testId, tdr.getTestData(testId), sb.toString());
 		
 		return;
 	}
@@ -358,12 +369,14 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 	public void testGenericQueryReject_01() {
 		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
 		GDomainQuery q;
-		String testId;
-		
-		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENQUERY_02.txt");
+		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_GenericQueryRecorder_01.txt");
+		String testId = "RECORDED_QUERY_04";
+		StringBuilder sb = new StringBuilder();
 		
 		/** 01 ****************************************/
 		q = gda.createQuery();
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
+		RecordedQuery recordedQuery = QueryRecorder.getRecordedQuery(q);
 		DomainObjectMatch<DomainObject> j_smith_p = q.createMatch("iot.jcypher.samples.domain.people.model.Person");
 		DomainObjectMatch<DomainObject> europe_a = q.createMatch("iot.jcypher.samples.domain.people.model.Area");
 		
@@ -384,11 +397,17 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 		);
 		
 		DomainQueryResult result = q.execute();
+		assertTrue(qpt.isCleared());
 		
-		List<DomainObject> j_smith_Addresses_pResult = result.resultOf(j_smith_Addresses_p);
-		List<DomainObject> j_smith_FilteredPoCs_pResult = result.resultOf(j_smith_FilteredPocs_p);
+		sb.append("\n").append(recordedQuery.toString());
+		GDomainQuery q2 = new RecordedQueryPlayer().replayGenericQuery(recordedQuery, gda);
+		RecordedQuery recordedQuery2 = QueryRecorder.getRecordedQuery(q2);
+		QueryRecorder.queryCompleted(q2);
+		assertTrue(qpt.isCleared());
+		assertEquals(recordedQuery.toString(), recordedQuery2.toString());
 		
-		testId = "GENQUERY_2_01";
+		assertEquals(testId, tdr.getTestData(testId), sb.toString());
+		
 		return;
 	}
 	

@@ -37,7 +37,6 @@ public class RecordedQueryToString {
 	
 	public static String queryToString(RecordedQuery query) {
 		Context context = new Context();
-		context.generic = query.isGeneric();
 		context.sb.append(query.isGeneric() ? "Generic-DomainQuery" : "DomainQuery");
 		context.sb.append("\n");
 		List<Statement> stmts = query.getStatements();
@@ -185,7 +184,6 @@ public class RecordedQueryToString {
 		private Indent indent = new Indent();
 		private int callDepth = 0;
 		private int topStatementStart;
-		private boolean generic;
 		private StringBuilder sb = new StringBuilder();
 	}
 	

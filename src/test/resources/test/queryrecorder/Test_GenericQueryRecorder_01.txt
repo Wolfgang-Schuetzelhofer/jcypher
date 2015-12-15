@@ -46,3 +46,76 @@ obj22 = q.SELECT_FROM(obj0).ELEMENTS(
 q.ORDER(obj22).BY('lastName');
 q.ORDER(obj22).BY('firstName');
 ------------------------------------------------------------
+
+----RECORDED_QUERY_04:
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Person');
+obj1 = q.createMatch('iot.jcypher.samples.domain.people.model.Area');
+q.WHERE(obj1.atttribute('name')).EQUALS('Europe');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj13 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO_GENERIC('iot.jcypher.samples.domain.people.model.Address');
+q.ORDER(obj13).BY('street');
+obj19 = q.TRAVERSE_FROM(obj13).FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO_GENERIC('iot.jcypher.samples.domain.people.model.Area');
+obj23 = q.REJECT_FROM(obj13).ELEMENTS(
+   q.WHERE(obj19).CONTAINS(obj1));
+------------------------------------------------------------
+
+----RECORDED_QUERY_05:
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Subject');
+obj1 = q.createMatch('iot.jcypher.samples.domain.people.model.Subject');
+q.ORDER(obj0).BY('firstName');
+q.ORDER(obj1).BY('lastName').DESCENDING();
+obj9 = q.COLLECT(obj0.atttribute('firstName')).AS('java.lang.String');
+obj9.setPage(0, 5);
+obj12 = q.COLLECT(obj1.atttribute('lastName')).AS('java.lang.String');
+------------------------------------------------------------
+
+----RECORDED_QUERY_06:
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Subject');
+obj1 = q.createMatch('iot.jcypher.samples.domain.people.model.Subject');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj1.atttribute('lastName')).EQUALS('Berghammer');
+obj8 = q.UNION(obj0, obj1);
+q.ORDER(obj8).BY('lastName');
+q.ORDER(obj8).BY('firstName');
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Subject');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+obj9 = q.TRAVERSE_FROM(obj0).FORTH('pointsOfContact').TO_GENERIC('iot.jcypher.samples.domain.people.model.PointOfContact');
+obj12 = q.TRAVERSE_FROM(obj9).FORTH('area').TO_GENERIC('iot.jcypher.samples.domain.people.model.Area');
+obj16 = q.TRAVERSE_FROM(obj9).FORTH('area').FORTH('partOf').DISTANCE(0, -1).TO_GENERIC('iot.jcypher.samples.domain.people.model.Area');
+obj17 = q.UNION(obj12, obj16);
+obj22 = q.SELECT_FROM(obj9).ELEMENTS(
+   q.WHERE(obj17.COUNT()).EQUALS(4));
+obj27 = q.SELECT_FROM(obj9).ELEMENTS(
+   q.WHERE(obj17.COUNT()).EQUALS(5));
+------------------------------------------------------------
+
+----RECORDED_QUERY_07:
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Person');
+obj4 = q.TRAVERSE_FROM(obj0).FORTH('mother').BACK('mother').TO_GENERIC('iot.jcypher.samples.domain.people.model.Person');
+obj8 = q.TRAVERSE_FROM(obj0).FORTH('father').BACK('father').TO_GENERIC('iot.jcypher.samples.domain.people.model.Person');
+obj9 = q.INTERSECTION(obj4, obj8);
+obj14 = q.SELECT_FROM(obj0).ELEMENTS(
+   q.WHERE(obj9.COUNT()).EQUALS(1));
+q.ORDER(obj14).BY('lastName');
+q.ORDER(obj14).BY('firstName');
+obj23 = q.SELECT_FROM(obj0).ELEMENTS(
+   q.WHERE(obj9.COUNT()).EQUALS(2));
+q.ORDER(obj23).BY('lastName');
+q.ORDER(obj23).BY('firstName');
+obj32 = q.SELECT_FROM(obj0).ELEMENTS(
+   q.WHERE(obj9.COUNT()).GTE(1));
+q.ORDER(obj32).BY('lastName');
+q.ORDER(obj32).BY('firstName');
+------------------------------------------------------------
