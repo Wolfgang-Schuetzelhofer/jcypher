@@ -56,6 +56,58 @@ public class ConcurrencyTest extends AbstractTestSuite {
 	private static List<Object> storedDomainObjects;
 
 	@Test
+	public void testRelConcurrency_05() {
+		// second client deletes relation
+		// first client tries to change relations
+		
+		// work with domain model and domain queries
+
+		Locking lockingStrategy = Locking.OPTIMISTIC;
+		initDB(lockingStrategy);
+
+		/******* first client loading j_smith ******/
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess,
+				domainName).setLockingStrategy(lockingStrategy);
+
+		Person j_smith = findPerson(da1, "Smith", "John");
+		
+		/******* second client loading j_smith ******/
+		IDomainAccess da2 = DomainAccessFactory.createDomainAccess(dbAccess,
+				domainName).setLockingStrategy(lockingStrategy);
+
+		Person j_smith2 = findPerson(da2, "Smith", "John");
+		
+		/******* second client deleting relation ******/
+		List<PointOfContact> pocs2 = j_smith2.getPointsOfContact();
+		pocs2.remove(0);
+		
+		List<JcError> errors = da2.store(j_smith2);
+		assertTrue(errors.isEmpty());
+		if (errors.size() > 0) {
+			printErrors(errors);
+			// throw new JcResultException(errors);
+		}
+		
+		/******* first client modifying j_smith ******/
+		List<PointOfContact> pocs = j_smith.getPointsOfContact();
+		PointOfContact poc = pocs.remove(0);
+		pocs.add(poc);
+
+		errors = da1.store(j_smith);
+		assertTrue(!errors.isEmpty());
+		if (errors.size() > 0) {
+			printErrors(errors);
+			JcError error = errors.get(0);
+			assertEquals(
+					"Optimistic locking failed (an element was deleted by another client)",
+					error.getMessage());
+			// throw new JcResultException(errors);
+		}
+		
+		return;
+	}
+	
+	@Test
 	public void testRelConcurrency_04() {
 
 		// second client deletes object

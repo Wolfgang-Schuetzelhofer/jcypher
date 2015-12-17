@@ -53,6 +53,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
+import test.genericmodel.DOToString;
 import test.genericmodel.LoadUtil;
 import util.TestDataReader;
 
@@ -61,6 +62,7 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
 	public static String domainName;
+	private static RecordedQuery recordedQuery;
 	
 	@BeforeClass
 	public static void before() {
@@ -85,6 +87,8 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 		
 		// init db
 		initDB();
+		
+		createQueryForReplay();
 		return;
 	}
 	
@@ -108,45 +112,69 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 		LoadUtil.loadPeopleDomain(dbAccess);
 	}
 	
-	private void addAddress() {
+	private static void createQueryForReplay() {
 		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
-		GDomainQuery q = gda.createQuery();
+		GDomainQuery q;
+		
+		/** 01 ****************************************/
+		q = gda.createQuery();
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
 		DomainObjectMatch<DomainObject> j_smithMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Person");
-		DomainObjectMatch<DomainObject> munichMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Area");
 		q.WHERE(j_smithMatch.atttribute("lastName")).EQUALS("Smith");
 		q.WHERE(j_smithMatch.atttribute("firstName")).EQUALS("John");
-		q.WHERE(munichMatch.atttribute("name")).EQUALS("Munich");
+		
+		DomainObjectMatch<DomainObject> j_smith_AddressesMatch =
+				q.TRAVERSE_FROM(j_smithMatch).FORTH("pointsOfContact")
+					.TO_GENERIC("iot.jcypher.samples.domain.people.model.PointOfContact");
+		q.ORDER(j_smith_AddressesMatch).BY("street").DESCENDING();
+		
+		q.execute();
+		assertTrue(qpt.isCleared());
+		
+		recordedQuery = q.getRecordedQuery();
+	}
+	
+	@Test
+	public void testReplayedQuery_01() {
+		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		GDomainQuery q;
+		String testId;
+		
+		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENQUERY_01.txt");
+		
+		/** 01 ****************************************/
+		testId = "GENQUERY_01";
+		QueriesPerThread qpt = QueryRecorder.getQueriesPerThread();
+		Settings.TEST_MODE = false;
+		q = new RecordedQueryPlayer().replayGenericQuery(recordedQuery, gda);
+		Settings.TEST_MODE = true;
 		
 		DomainQueryResult result = q.execute();
+		assertTrue(qpt.isCleared());
 		
-		DomainObject j_smith = result.resultOf(j_smithMatch).get(0);
-		DomainObject munich = result.resultOf(munichMatch).get(0);
+		DomainObjectMatch<?> j_smithMatch = q.getReplayedQueryContext().getById("obj0");
+		DomainObjectMatch<?> j_smith_AddressesMatch = q.getReplayedQueryContext().getById("obj9");
 		
-		DOType addressType = gda.getDomainObjectType("iot.jcypher.samples.domain.people.model.Address");
-		DomainObject address = new DomainObject(addressType);
-		address.setFieldValue("street", "Karlsplatz Stachus");
-		address.setFieldValue("number", 1);
-		address.setFieldValue("area", munich);
+		List<DomainObject> j_smith = (List<DomainObject>) result.resultOf(j_smithMatch);
+		List<DomainObject> j_smith_Addresses = (List<DomainObject>) result.resultOf(j_smith_AddressesMatch);
 		
-		j_smith.addListFieldValue("pointsOfContact", address);
+		DOToString doToString = new DOToString(Format.PRETTY_1);
+		DOWalker walker = new DOWalker( j_smith, doToString);
+		walker.walkDOGraph();
+		String str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
 		
-		List<JcError> errors = gda.store(j_smith);
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
+		assertEquals(tdr.getTestData(testId), str);
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-//		errors = da.store(storedDomainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
+		testId = "GENQUERY_02";
+		doToString = new DOToString(Format.PRETTY_1);
+		walker = new DOWalker( j_smith_Addresses, doToString);
+		walker.walkDOGraph();
+		str = doToString.getBuffer().toString();
+		//System.out.println("\nObjectGraph:" + str);
+		
+		assertEquals(tdr.getTestData(testId), str);
+		
 		return;
 	}
 	
@@ -260,6 +288,8 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 		QueryRecorder.queryCompleted(q3);
 		assertTrue(qpt.isCleared());
 		assertEquals(recordedQuery_1.toString(), recordedQuery_3.toString());
+		
+		assertEquals(testId, tdr.getTestData(testId), sb.toString());
 		
 		return;
 	}
@@ -614,7 +644,7 @@ public class GenericQueryRecorderTest extends AbstractTestSuite {
 		GDomainQuery q;
 		
 		TestDataReader tdr = new TestDataReader("/test/queryrecorder/Test_GenericQueryRecorder_01.txt");
-		String testId = "RECORDED_QUERY_02";
+		String testId = "RECORDED_QUERY_01";
 		StringBuilder sb = new StringBuilder();
 		
 		/** 01 ****************************************/

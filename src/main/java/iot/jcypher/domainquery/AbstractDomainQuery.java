@@ -136,7 +136,9 @@ public abstract class AbstractDomainQuery {
 			source.add(domainObject);
 			ret = this.createMatchForInternal(source, (Class<T>)domainObject.getClass());
 		}
-		QueryRecorder.recordAssignment(this, "createMatchFor", ret,
+		DomainObjectMatch<?> delegate = APIAccess.getDelegate(ret);
+		DomainObjectMatch<?> match = delegate != null ? delegate : ret;
+		QueryRecorder.recordAssignment(this, "createMatchFor", match,
 				QueryRecorder.reference(domainObject));
 		return ret;
 	}
@@ -404,6 +406,14 @@ public abstract class AbstractDomainQuery {
 	 */
 	public ReplayedQueryContext getReplayedQueryContext() {
 		return this.queryExecutor.getReplayedQueryContext();
+	}
+	
+	/**
+	 * Answer the recorded query. May return null.
+	 * @return
+	 */
+	public RecordedQuery getRecordedQuery() {
+		return this.queryExecutor.getRecordedQuery();
 	}
 
 	QueryExecutor getQueryExecutor() {

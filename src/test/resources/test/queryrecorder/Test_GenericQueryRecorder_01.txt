@@ -119,3 +119,32 @@ obj32 = q.SELECT_FROM(obj0).ELEMENTS(
 q.ORDER(obj32).BY('lastName');
 q.ORDER(obj32).BY('firstName');
 ------------------------------------------------------------
+
+----RECORDED_QUERY_08:
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Person');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+
+Generic-DomainQuery
+obj0 = q.createMatchFrom(ref_0);
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Subject');
+q.ORDER(obj0).BY('firstName');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+
+Generic-DomainQuery
+obj0 = q.createMatchFor(ref_0, 'iot.jcypher.samples.domain.people.model.Subject');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+
+Generic-DomainQuery
+obj0 = q.createMatch('iot.jcypher.samples.domain.people.model.Subject');
+q.WHERE(obj0.atttribute('lastName')).EQUALS('Smith');
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+
+Generic-DomainQuery
+obj0 = q.createMatchFor(ref_0);
+q.WHERE(obj0.atttribute('firstName')).EQUALS('John');
+------------------------------------------------------------

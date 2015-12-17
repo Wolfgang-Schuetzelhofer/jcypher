@@ -340,6 +340,16 @@ public class QueryExecutor implements IASTObjectsContainer {
 		return replayedQueryContext;
 	}
 	
+	/**
+	 * Answer the recorded query. May return null.
+	 * @return
+	 */
+	public RecordedQuery getRecordedQuery() {
+		if (this.recordedQueryContext != null)
+			return this.recordedQueryContext.recordedQuery;
+		return null;
+	}
+	
 	@Override
 	protected void finalize() throws Throwable {
 		if (this.recordedQueryContext != null)
