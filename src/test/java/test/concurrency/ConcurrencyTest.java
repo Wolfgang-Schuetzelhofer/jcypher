@@ -643,7 +643,6 @@ public class ConcurrencyTest extends AbstractTestSuite {
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props,
 		// "neo4j", "jcypher");
 
-		// init db
 		Population population = new Population();
 
 		storedDomainObjects = population.createPopulation();

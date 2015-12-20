@@ -35,15 +35,18 @@ public class CountQueryResult {
 	 * @return the number of domain objects
 	 */
 	public long countOf(DomainObjectMatch<?> match) {
-		Boolean br_old = QueryRecorder.blockRecording.get();
-		QueryRecorder.blockRecording.set(Boolean.TRUE);
-		DomainObjectMatch<?> delegate = APIAccess.getDelegate(match);
 		long ret;
-		if (delegate != null) // this is a generic domain query
-			ret = this.domainQuery.getQueryExecutor().getCountResult(delegate);
-		else
-			ret = this.domainQuery.getQueryExecutor().getCountResult(match);
-		QueryRecorder.blockRecording.set(br_old);
+		Boolean br_old = QueryRecorder.blockRecording.get();
+		try {
+			QueryRecorder.blockRecording.set(Boolean.TRUE);
+			DomainObjectMatch<?> delegate = APIAccess.getDelegate(match);
+			if (delegate != null) // this is a generic domain query
+				ret = this.domainQuery.getQueryExecutor().getCountResult(delegate);
+			else
+				ret = this.domainQuery.getQueryExecutor().getCountResult(match);
+		} finally {
+			QueryRecorder.blockRecording.set(br_old);
+		}
 		return ret;
 	}
 }

@@ -72,6 +72,7 @@ public class TransactionTest extends AbstractTestSuite {
 		
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.COUNT_QUERY, ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOM_QUERY, ContentToObserve.CYPHER);
+		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO, ContentToObserve.CYPHER);
 	}
 	
 	@AfterClass
@@ -115,6 +116,7 @@ public class TransactionTest extends AbstractTestSuite {
 		errors = tx.close();
 		assertEquals(0, errors.size());
 		
+		//da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		q = da.createQuery();
 		DomainObjectMatch<Person> bergammerMatch = q.createMatch(Person.class);
 		DomainObjectMatch<Company> companiesMatch = q.createMatch(Company.class);

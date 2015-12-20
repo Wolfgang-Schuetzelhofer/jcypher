@@ -16,6 +16,22 @@
 
 package iot.jcypher.domain.internal;
 
+import java.lang.reflect.Constructor;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+
 import iot.jcypher.concurrency.Locking;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
@@ -63,7 +79,6 @@ import iot.jcypher.domain.mapping.surrogate.Surrogate2MapEntry;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.domainquery.internal.QueryRecorder;
-import iot.jcypher.domainquery.internal.RecordedQuery;
 import iot.jcypher.domainquery.internal.ReplayedQueryContext;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
@@ -77,13 +92,14 @@ import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.api.pattern.Node;
 import iot.jcypher.query.factories.clause.CASE;
-import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.DO;
 import iot.jcypher.query.factories.clause.ELSE;
 import iot.jcypher.query.factories.clause.END;
 import iot.jcypher.query.factories.clause.FOR_EACH;
 import iot.jcypher.query.factories.clause.MATCH;
+import iot.jcypher.query.factories.clause.MERGE;
 import iot.jcypher.query.factories.clause.NATIVE;
+import iot.jcypher.query.factories.clause.ON_CREATE;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
@@ -104,22 +120,6 @@ import iot.jcypher.transaction.ITransaction;
 import iot.jcypher.transaction.internal.AbstractTransaction;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 import iot.jcypher.util.Util;
-
-import java.lang.reflect.Constructor;
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 
 public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	
@@ -475,6 +475,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private static final String DomainInfoFieldComponentTypeProperty = "componentTypeMap";
 		private static final String DomainInfoConcreteFieldTypeProperty = "fieldTypeMap";
 		private static final String DomainInfoUseDomainLabelProperty = "useDomainLabels";
+		private static final String DomainInfoVersionProperty = "_i_version";
+		private static final String DomainInfoModelVersionProperty = "_m_version";
 		private static final String KeyProperty = "key";
 		private static final String ValueProperty = "value";
 		private static final String KeyTypeProperty = "keyType";
@@ -1497,14 +1499,15 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		
 		private DomainInfo loadDomainInfoIfNeeded() {
 			if (this.domainInfo == null) {
-				JcQuery query = ((DBAccessWrapper)this.dbAccess).createDomainInfoSyncQuery();
+				ExecContext ctxt = new ExecContext();
+				JcQuery query = ((DBAccessWrapper)this.dbAccess).createDomainInfoSyncQuery(ctxt);
 				JcQueryResult result = ((DBAccessWrapper)this.dbAccess)
 						.delegate.execute(query);
 				List<JcError> errors = Util.collectErrors(result);
 				if (errors.isEmpty()) {
 //					Util.printResult(result, "DOMAIN INFO", Format.PRETTY_1);
 					((DBAccessWrapper)this.dbAccess)
-						.updateDomainInfo(result);
+						.updateDomainInfo(result, ctxt);
 				} else
 					throw new JcResultException(errors);
 				
@@ -1652,7 +1655,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 			@Override
 			public JcQueryResult execute(JcQuery query) {
-				JcQuery infoQuery = createDomainInfoSyncQuery();
+				ExecContext ctxt = new ExecContext();
+				JcQuery infoQuery = createDomainInfoSyncQuery(ctxt);
 				if (infoQuery != null) {
 					List<JcQuery> queries = new ArrayList<JcQuery>(2);
 					queries.add(query);
@@ -1660,7 +1664,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					List<JcQueryResult> results = this.delegate.execute(queries);
 					List<JcError> errors = Util.collectErrors(results);
 					if (errors.isEmpty()) {
-						updateDomainInfo(results.get(1));
+						updateDomainInfo(results.get(1), ctxt);
 					}
 					return results.get(0);
 				} else
@@ -1669,7 +1673,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 			@Override
 			public List<JcQueryResult> execute(List<JcQuery> queries) {
-				JcQuery infoQuery = createDomainInfoSyncQuery();
+				ExecContext ctxt = new ExecContext();
+				JcQuery infoQuery = createDomainInfoSyncQuery(ctxt);
 				if (infoQuery != null) {
 					List<JcQuery> extQueries = new ArrayList<JcQuery>(queries.size() + 1);
 					extQueries.addAll(queries);
@@ -1678,7 +1683,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 //					Util.printResults(results, "DOMAIN INFO", Format.PRETTY_1);
 					List<JcError> errors = Util.collectErrors(results);
 					if (errors.isEmpty()) {
-						updateDomainInfo(results.get(queries.size()));
+						updateDomainInfo(results.get(queries.size()), ctxt);
 					}
 					return results.subList(0, queries.size());
 				} else
@@ -1715,8 +1720,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				this.delegate.close();
 			}
 
-			private void updateDomainInfo(JcQueryResult result) {
-				if (DomainAccessHandler.this.domainInfo == null) { // initial load
+			private void updateDomainInfo(JcQueryResult result, ExecContext context) {
+				if (context.dInfo == Exec.INIT_LOADED) { // initial load
 					JcNode mdl = new JcNode("mdl");
 					List<GrNode> mdlInfos = result.resultOf(mdl);
 					domainModel.loadFrom(mdlInfos);
@@ -1725,50 +1730,90 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					List<GrNode> rInfos = result.resultOf(info);
 					DomainInfo dInfo;
 					GrNode rInfo;
-					if (rInfos.size() > 0 && (rInfo = rInfos.get(0)) != null) { // DomainInfo was found in the graph
-						rInfo = rInfos.get(0);
-						dInfo = new DomainInfo(rInfo.getId());
-						dInfo.initFrom(rInfo);
-						DomainAccessHandler.this.domainInfo = dInfo;
-					} else { // DomainInfo not found
-						DomainAccessHandler.this.domainInfo = new DomainInfo(-1);
+					rInfo = rInfos.get(0);
+					dInfo = new DomainInfo(rInfo.getId());
+					dInfo.initFrom(rInfo);
+					DomainAccessHandler.this.domainInfo = dInfo;
+					GrProperty prop = rInfo.getProperty(DomainInfoUseDomainLabelProperty);
+					if (prop == null) { // domain info was newly created in graph
+						// AUTO is the default setting
 						if (DomainAccessHandler.this.domainLabelUse == DomainLabelUse.AUTO) {
 							JcNumber infos = new JcNumber("infos");
 							List<BigDecimal> cInfos = result.resultOf(infos);
 							// set to true if there exist other domain info nodes
 							DomainAccessHandler.this.domainInfo.useDomainLabels =
-									cInfos.size() > 0 && cInfos.get(0).intValue() > 0;
+									cInfos.get(0).intValue() > 1;
 						} else
 							DomainAccessHandler.this.domainInfo.useDomainLabels =
 									DomainAccessHandler.this.domainLabelUse == DomainLabelUse.ALWAYS;
 						
 						// the default is false, set changed only if default was changed
 						if (DomainAccessHandler.this.domainInfo.useDomainLabels)
-							DomainAccessHandler.this.domainInfo.changed = true;
-							
+							DomainAccessHandler.this.domainInfo.setChanged(true);
 					}
-				} else if (DomainAccessHandler.this.domainInfo.isChanged() ||
-						DomainAccessHandler.this.domainModel.hasChanged()) { // update info to graph
-					if (DomainAccessHandler.this.domainInfo.isChanged()) {
-						DomainAccessHandler.this.domainInfo.graphUdated();
-						if (DomainAccessHandler.this.domainInfo.nodeId == -1) {
-							// new DomainInfo node was stored in the db
-							// we have to set the returned node id
-							JcNumber nid = new JcNumber("NID");
-							BigDecimal rNid = result.resultOf(nid).get(0);
-							DomainAccessHandler.this.domainInfo.setNodeId(rNid.longValue());
+				} else if (context.dInfo == Exec.TRIED_STORE || context.dModel == Exec.TRIED_STORE) { // update info to graph
+					JcNumber rDi = new JcNumber("retDi");
+					JcNumber rDm = new JcNumber("retDm");
+					int retDi = ((Number)result.resultOf(rDi).get(0)).intValue();
+					int retDm = ((Number)result.resultOf(rDm).get(0)).intValue();
+					if (retDi + retDm == 0) { // successfully stored
+						if (context.dInfo == Exec.TRIED_STORE)
+							DomainAccessHandler.this.domainInfo.graphUdated();
+						if (context.dModel == Exec.TRIED_STORE) {
+							int idx = 0;
+							for (DOType t : DomainAccessHandler.this.domainModel.getUnsaved()) {
+								JcNumber nid = new JcNumber("nid_".concat(String.valueOf(idx)));
+								BigDecimal rNid = result.resultOf(nid).get(0);
+								InternalAccess.setNodeId(t, rNid.longValue());
+								idx++;
+							}
+							domainModel.updatedToGraph();
 						}
+					} else {
+						domainModel.updatedToGraph(); // model was stored in any case
+						ExecContext ctxt = new ExecContext();
+						if (retDi != 0) // domain info was concurrently changed
+							ctxt.dInfo = Exec.RELOAD;
+						if (retDm != 0) // domain model was concurrently changed
+							ctxt.dModel = Exec.RELOAD;
+						this.storeDomainInfo_Model(ctxt); // reload and merge
 					}
-					if (DomainAccessHandler.this.domainModel.hasChanged()) {
-						int idx = 0;
-						for (DOType t : DomainAccessHandler.this.domainModel.getUnsaved()) {
-							JcNumber nid = new JcNumber("nid_".concat(String.valueOf(idx)));
-							BigDecimal rNid = result.resultOf(nid).get(0);
-							InternalAccess.setNodeId(t, rNid.longValue());
-							idx++;
+				} else if (context.dInfo == Exec.RELOADED || context.dModel == Exec.RELOADED) { // merge
+					ExecContext ctxt = new ExecContext();
+					// need  to load the model first (important for generic model)
+					int v = 0;
+					if (context.dModel == Exec.RELOADED) { // model reloaded after concurrent change
+						JcNode mdl = new JcNode("mdl");
+						List<GrNode> mdlInfos = result.resultOf(mdl);
+						domainModel.mergeFrom(mdlInfos);
+						// get stored model version
+						if (context.dInfo != Exec.RELOADED) {
+							JcNumber m_version = new JcNumber("mv");
+							v = result.resultOf(m_version).get(0).intValue();
+						} else {
+							JcNode info = new JcNode("info");
+							v = ((Number)result.resultOf(info).get(0).getProperty(DomainInfoModelVersionProperty).getValue()).intValue();
 						}
-						domainModel.updatedToGraph();
+						// we have stored additional model elements
+						// and need to increment the stored model version by 1
+						v++;
 					}
+					
+					if (context.dInfo == Exec.RELOADED) { // domain info reloaded after concurrent change
+						JcNode info = new JcNode("info");
+						GrNode rInfo = result.resultOf(info).get(0);
+						DomainInfo di = new DomainInfo(domainInfo.nodeId);
+						di.initFrom(rInfo);
+						domainInfo.updateFrom(di);
+						domainInfo.version = di.version + 1;
+						domainInfo.changed = true;
+					} else
+						ctxt.dInfo = Exec.STORE_VERSIONS;
+					
+					if (context.dModel == Exec.RELOADED)
+						domainModel.setVersion(v);
+						
+					this.storeDomainInfo_Model(ctxt); // we still have to store our own changes (if there are any)
 				}
 				
 				if (this.temporaryDomainInfo != null) {
@@ -1776,21 +1821,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					this.temporaryDomainInfo = null;
 				}
 				
-				// make sure that stiil pending changes are committed to the database
-				// can happen in certain scenarios with the first domain query executed
-				JcQuery query = this.createDomainInfoSyncQuery();
-				if (query != null) {
-					JcQueryResult uResult = this.delegate.execute(query);
-					List<JcError> errors = Util.collectErrors(uResult);
-					if (errors.isEmpty()) {
-						updateDomainInfo(uResult);
-					} else {
-						throw new JcResultException(errors, "Error on update of Domain Info!");
-					}
-				}
+				this.storeDomainInfo_Model(null); // make sure that still pending changes are committed to the database
 			}
 
-			private JcQuery createDomainInfoSyncQuery() {
+			private JcQuery createDomainInfoSyncQuery(ExecContext context) {
 				JcQuery query = null;
 				String pLab = CurrentDomain.label.get();
 				CurrentDomain.setDomainLabel(null);
@@ -1801,9 +1835,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						JcNode mdl = new JcNode("mdl");
 						query = new JcQuery();
 						query.setClauses(new IClause[] {
-								OPTIONAL_MATCH.node(info).label(DomainInfoNodeLabel),
-								WHERE.valueOf(info.property(DomainInfoNameProperty))
-									.EQUALS(DomainAccessHandler.this.domainName),
+								MERGE.node(info).label(DomainInfoNodeLabel)
+									.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName),
+								ON_CREATE.SET(info.property(DomainInfoVersionProperty)).to(0),
+								ON_CREATE.SET(info.property(DomainInfoModelVersionProperty)).to(0),
+								WITH.value(info),
 								OPTIONAL_MATCH.node(infos).label(DomainInfoNodeLabel),
 								SEPARATE.nextClause(),
 								OPTIONAL_MATCH.node(mdl).label(domainModel.getTypeNodeName()),
@@ -1811,50 +1847,97 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 								RETURN.value(mdl),
 								RETURN.count().value(infos).AS(new JcNumber("infos"))
 						});
+						context.dInfo = Exec.INIT_LOADED;
+						context.dModel = Exec.INIT_LOADED;
+					} else if (context.dInfo == Exec.RELOAD || context.dModel == Exec.RELOAD) {
+						// reload and merge
+						List<IClause> clauses = new ArrayList<IClause>();
+						List<IClause> returnClauses = new ArrayList<IClause>();
+						if (context.dInfo == Exec.RELOAD) {
+							JcNode info = new JcNode("info");
+							clauses.addAll(createDomainInfoStartClause(info));
+							clauses.add(WITH.value(info)); // only needed with MERGE as start clause
+							returnClauses.add(RETURN.value(info));
+							context.dInfo = Exec.RELOADED;
+						}
+						if (context.dModel == Exec.RELOAD) {
+							JcNode mdl = new JcNode("mdl");
+							clauses.add(OPTIONAL_MATCH.node(mdl).label(domainModel.getTypeNodeName()));
+							returnClauses.add(RETURN.value(mdl));
+							if (context.dInfo != Exec.RELOADED) { // need to know the stored model version
+								JcNode info = new JcNode("info");
+								JcNumber m_version = new JcNumber("mv");
+								clauses.add(0, WITH.value(info)); // only needed with MERGE as start clause
+								clauses.addAll(0, createDomainInfoStartClause(info));
+								returnClauses.add(RETURN.value(info.property(DomainInfoModelVersionProperty)).AS(m_version));
+							}
+							context.dModel = Exec.RELOADED;
+						}
+						clauses.addAll(returnClauses);
+						query = new JcQuery();
+						query.setClauses(clauses.toArray(new IClause[clauses.size()]));
+					} else if (context.dInfo == Exec.STORE_VERSIONS) {
+						// only store version properties in domain info
+						List<IClause> diClauses = new ArrayList<IClause>();
+						List<IClause> clauses = new ArrayList<IClause>();
+						List<IClause> diReturn = new ArrayList<IClause>();
+						int[] versions = createDomainInfoStoreClauses(diClauses);
+						// build return info: 0 ... OK, 1 ... ERROR (info was concurrently changed)
+						createReturnCodeClauses(clauses, diReturn, versions);
+						
+						// add domain info clauses as second because they change
+						// the stored version properties when they write to the db
+						clauses.addAll(diClauses);
+
+						// add return clauses
+						clauses.addAll(diReturn);
+						query = new JcQuery();
+						query.setClauses(clauses.toArray(new IClause[clauses.size()]));
+						
+						context.dInfo = Exec.TRIED_STORE;
 					} else if (DomainAccessHandler.this.domainInfo.isChanged() ||
 							DomainAccessHandler.this.domainModel.hasChanged()) { // update info to graph
-						IClause diReturn = null;
-						List<IClause> diClauses = null;
+						List<IClause> diClauses = new ArrayList<IClause>();
+						List<IClause> diReturn = new ArrayList<IClause>();
 						List<IClause>[] dmClauses = null;
-						if (DomainAccessHandler.this.domainInfo.isChanged()) {
-							List<String> class2LabelList = DomainAccessHandler.this.domainInfo.getLabel2ClassNameStringList();
-							List<String> fieldComponentTypeList =
-									DomainAccessHandler.this.domainInfo.getFieldComponentTypeStringList();
-							List<String> concreteFieldTypeList =
-									DomainAccessHandler.this.domainInfo.getConcreteFieldTypeStringList();
-							JcNode info = new JcNode("info");
-							diClauses = new ArrayList<IClause>();
-							if (DomainAccessHandler.this.domainInfo.nodeId != -1) { // DominInfo was loaded from graph
-									diClauses.add(START.node(info).byId(DomainAccessHandler.this.domainInfo.nodeId));
-									diClauses.add(DO.SET(info.property(DomainInfoLabel2ClassProperty)).to(class2LabelList));
-									diClauses.add(DO.SET(info.property(DomainInfoFieldComponentTypeProperty)).to(fieldComponentTypeList));
-									diClauses.add(DO.SET(info.property(DomainInfoConcreteFieldTypeProperty)).to(concreteFieldTypeList));
-									diClauses.add(DO.SET(info.property(DomainInfoUseDomainLabelProperty))
-										.to(DomainAccessHandler.this.domainInfo.useDomainLabels));
-							} else { // new DomainInfo node must be stored in the db
-								JcNumber nid = new JcNumber("NID");
-								diClauses.add(CREATE.node(info).label(DomainInfoNodeLabel)
-										.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName)
-										.property(DomainInfoLabel2ClassProperty).value(class2LabelList)
-										.property(DomainInfoFieldComponentTypeProperty).value(fieldComponentTypeList)
-										.property(DomainInfoConcreteFieldTypeProperty).value(concreteFieldTypeList)
-										.property(DomainInfoUseDomainLabelProperty)
-											.value(DomainAccessHandler.this.domainInfo.useDomainLabels));
-									diReturn = RETURN.value(info.id()).AS(nid);
-							}
-						}
+
+						int[] versions = createDomainInfoStoreClauses(diClauses);
+						
 						if (DomainAccessHandler.this.domainModel.hasChanged()) {
 							dmClauses = domainModel.getChangeClauses();
 						}
-						List<IClause> clauses = diClauses != null ? diClauses : new ArrayList<IClause>();
-						if (dmClauses != null)
+						
+						// now collect all clauses
+						List<IClause> clauses = new ArrayList<IClause>();
+						// build return info: 0 ... OK, 1 ... ERROR (info was concurrently changed)
+						createReturnCodeClauses(clauses, diReturn, versions);
+						
+						if (dmClauses != null) {
 							clauses.addAll(dmClauses[0]);
-						if (diReturn != null)
-							clauses.add(diReturn);
+							// add with clauses
+							
+							// the following WITH clauses are only needed when using START instead of MERGE as start clause
+//							JcNumber retDi = new JcNumber("retDi");
+//							JcNumber retDm = new JcNumber("retDm");
+//							clauses.add(WITH.value(retDi));
+//							clauses.add(WITH.value(retDm));
+//							clauses.addAll(dmClauses[2]);
+						}
+						
+						// add domain info clauses as second because they change
+						// the stored version properties when they write to the db
+						clauses.addAll(diClauses);
+
+						// add return clauses
+						clauses.addAll(diReturn);
 						if (dmClauses != null)
 							clauses.addAll(dmClauses[1]);
 						query = new JcQuery();
 						query.setClauses(clauses.toArray(new IClause[clauses.size()]));
+						
+						context.dInfo = Exec.TRIED_STORE;
+						if (dmClauses != null)
+							context.dModel = Exec.TRIED_STORE;
 					}
 				} finally {
 					CurrentDomain.setDomainLabel(pLab);
@@ -1863,6 +1946,112 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					Util.printQuery(query, QueryToObserve.DOMAIN_INFO, Format.PRETTY_1);
 
 				return query;
+			}
+			
+			private void createReturnCodeClauses(List<IClause> clauses, List<IClause> diReturn, int[] versions) {
+				// build return info: 0 ... OK, 1 ... ERROR (info was concurrently changed)
+				JcNode info1 = new JcNode("info1");
+				clauses.addAll(createDomainInfoStartClause(info1));
+				JcNumber retDi = new JcNumber("retDi");
+				JcNumber retDm = new JcNumber("retDm");
+				clauses.add(WITH.collection(C.CREATE(
+						new IClause[]{
+								CASE.result(),
+								WHEN.valueOf(info1.property(DomainInfoVersionProperty)).EQUALS(versions[0]),
+								NATIVE.cypher("0"),
+								ELSE.perform(),
+								NATIVE.cypher("1"),
+								END.caseXpr().AS(retDi)
+						})));
+				clauses.add(WITH.collection(C.CREATE(
+						new IClause[]{
+								CASE.result(),
+								WHEN.valueOf(info1.property(DomainInfoModelVersionProperty)).EQUALS(versions[1]),
+								NATIVE.cypher("0"),
+								ELSE.perform(),
+								NATIVE.cypher("1"),
+								END.caseXpr().AS(retDm)
+						})));
+				diReturn.add(RETURN.value(retDi));
+				diReturn.add(RETURN.value(retDm));
+			}
+			
+			/**
+			 * @param diClauses
+			 * @return [domainInfoVersion, domainModelVersion]
+			 */
+			private int[] createDomainInfoStoreClauses(List<IClause> diClauses) {
+				JcNode info = new JcNode("info");
+				if (DomainAccessHandler.this.domainInfo.isChanged()) {
+					List<String> class2LabelList = DomainAccessHandler.this.domainInfo.getLabel2ClassNameStringList();
+					List<String> fieldComponentTypeList =
+							DomainAccessHandler.this.domainInfo.getFieldComponentTypeStringList();
+					List<String> concreteFieldTypeList =
+							DomainAccessHandler.this.domainInfo.getConcreteFieldTypeStringList();
+					diClauses.add(DO.SET(info.property(DomainInfoLabel2ClassProperty)).to(class2LabelList));
+					diClauses.add(DO.SET(info.property(DomainInfoFieldComponentTypeProperty)).to(fieldComponentTypeList));
+					diClauses.add(DO.SET(info.property(DomainInfoConcreteFieldTypeProperty)).to(concreteFieldTypeList));
+					diClauses.add(DO.SET(info.property(DomainInfoUseDomainLabelProperty))
+						.to(DomainAccessHandler.this.domainInfo.useDomainLabels));
+				}
+				// always write version properties to domainInfo
+				diClauses.add(DO.SET(info.property(DomainInfoVersionProperty)).to(
+						DomainAccessHandler.this.domainInfo.getVersion()));
+				diClauses.add(DO.SET(info.property(DomainInfoModelVersionProperty)).to(
+						DomainAccessHandler.this.domainModel.getVersion()));
+				
+				// calc versions that should be found in the db if no concurrent changes were done
+				int i_version = DomainAccessHandler.this.domainInfo.getVersion();
+				i_version = i_version > 0 ? i_version - 1 : i_version;
+				int m_version = DomainAccessHandler.this.domainModel.getVersion();
+				m_version = m_version > 0 ? m_version - 1 : m_version;
+				
+				// conditionally perform modifications
+				IClause[] clausesArray = diClauses.toArray(new IClause[diClauses.size()]);
+				diClauses.clear();
+				diClauses.addAll(createDomainInfoStartClause(info));
+				JcValue x = new JcValue("x");
+				IClause clause = FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+						CASE.result(),
+						WHEN.valueOf(info.property(DomainInfoVersionProperty)).EQUALS(i_version)
+								.AND().valueOf(info.property(DomainInfoModelVersionProperty)).EQUALS(m_version),
+							NATIVE.cypher("[1]"),
+						ELSE.perform(),
+							NATIVE.cypher("[]"),
+						END.caseXpr()
+				})).DO(clausesArray);
+				diClauses.add(clause);
+				
+				return new int[] {i_version, m_version};
+			}
+			
+			/**
+			 * store if needed
+			 */
+			private void storeDomainInfo_Model(ExecContext context) {
+				// make sure that still pending changes are committed to the database
+				// can happen in certain scenarios with the first domain query executed
+				ExecContext ctxt = context == null ? new ExecContext() : context;
+				JcQuery query = this.createDomainInfoSyncQuery(ctxt);
+				if (query != null) {
+					JcQueryResult uResult = this.delegate.execute(query);
+					List<JcError> errors = Util.collectErrors(uResult);
+					if (errors.isEmpty()) {
+						updateDomainInfo(uResult, ctxt);
+					} else {
+						throw new JcResultException(errors, "Error on update of Domain Info!");
+					}
+				}
+			}
+			
+			private List<IClause> createDomainInfoStartClause(JcNode info) {
+				List<IClause> ret = new ArrayList<IClause>();
+//				ret.add(START.node(info).byId(DomainAccessHandler.this.domainInfo.nodeId));
+				ret.add(MERGE.node(info).label(DomainInfoNodeLabel)
+						.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName));
+				ret.add(ON_CREATE.SET(info.property(DomainInfoVersionProperty)).to(0));
+				ret.add(ON_CREATE.SET(info.property(DomainInfoModelVersionProperty)).to(0));
+				return ret;
 			}
 		}
 	}
@@ -3197,6 +3386,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private Map<Class<?>, List<BackwardField>> componentTypeBackward;
 		private Map<Class<?>, List<BackwardField>> fieldTypeBackward;
 		private boolean useDomainLabels;
+		private int version;
+		
 		private DomainInfo(long nid) {
 			super();
 			this.changed = false;
@@ -3208,6 +3399,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.componentTypeBackward = new HashMap<Class<?>, List<BackwardField>>();
 			this.fieldTypeBackward = new HashMap<Class<?>, List<BackwardField>>();
 			this.useDomainLabels = false;
+			this.version = -1;
+		}
+
+		private int getVersion() {
+			return version;
 		}
 
 		@SuppressWarnings("unchecked")
@@ -3271,7 +3467,19 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					}
 				}
 			}
-			this.changed = false;
+			
+			prop = rInfo.getProperty(DomainAccessHandler.DomainInfoVersionProperty);
+			if (prop != null)
+				this.version = ((Number)prop.getValue()).intValue();
+			else
+				this.version = 0;
+			prop = rInfo.getProperty(DomainAccessHandler.DomainInfoModelVersionProperty);
+			if (prop != null)
+				DomainAccess.this.domainAccessHandler.domainModel.setVersion(((Number)prop.getValue()).intValue());
+			else
+				DomainAccess.this.domainAccessHandler.domainModel.setVersion(0);
+			
+			this.setChanged(false);
 		}
 
 		private void updateFrom(DomainInfo dInfo) {
@@ -3302,33 +3510,30 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 		}
 		
-		private void setNodeId(long nodeId) {
-			if (this.nodeId == -1) {
-				ITransaction tx = domainAccessHandler.dbAccess.getTX();
-				if (tx != null)
-					((AbstractTransaction)tx).setNoInfoNodeId();
-			}
-			this.nodeId = nodeId;
-		}
-
 		private boolean isChanged() {
 			return changed;
 		}
 		
+		private void setChanged(boolean changed) {
+			if (!this.changed && changed)
+				this.version++;
+			this.changed = changed;
+		}
+
 		private void graphUdated() {
 			if (this.changed) {
 				ITransaction tx = domainAccessHandler.dbAccess.getTX();
 				if (tx != null)
 					((AbstractTransaction)tx).setDomainInfoChanged();
 			}
-			this.changed = false;
+			this.setChanged(false);
 		}
 		
 		private void addClassLabel(Class<?> clazz, String label) {
 			if (!this.class2labelMap.containsKey(clazz)) {
 				this.class2labelMap.put(clazz, label);
 				this.label2ClassMap.put(label, clazz);
-				this.changed = true;
+				this.setChanged(true);
 			}
 		}
 		
@@ -3337,10 +3542,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			if (cType == null) {
 				cType = new CompoundObjectType(clazz);
 				this.fieldComponentTypeMap.put(classField, cType);
-				this.changed = true;
+				this.setChanged(true);
 			} else {
 				boolean added = cType.addType(clazz);
-				this.changed = this.changed || added;
+				this.setChanged(this.changed || added);
 			}
 			// add for backward navigation
 			BackwardField bwf = new BackwardField(classField);
@@ -3370,10 +3575,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			if (cType == null) {
 				cType = new CompoundObjectType(clazz);
 				this.concreteFieldTypeMap.put(classField, cType);
-				this.changed = true;
+				this.setChanged(true);
 			} else {
 				boolean added = cType.addType(clazz);
-				this.changed = this.changed || added;
+				this.setChanged(this.changed || added);
 			}
 			// add for backward navigation
 			BackwardField bwf = new BackwardField(classField);
@@ -3521,6 +3726,17 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		}
 	}
 	
+	/**********************************/
+	private enum Exec {
+		INIT_LOADED, TRIED_STORE, RELOAD, RELOADED, STORE_VERSIONS
+	}
+	
+	/**********************************/
+	private class ExecContext {
+		private Exec dInfo;
+		private Exec dModel;
+	}
+
 	/************************************/
 	public interface IRecursionExit {
 		public void addRecursionExitObject(Object obj, int resolvedDepth);
@@ -3664,7 +3880,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						domainAccessHandler.domainState = ds;
 					} else { // failed (rollBack)
 						if (domainInfoChanged) {
-							domainAccessHandler.domainInfo.changed = true;
+							domainAccessHandler.domainInfo.setChanged(true);
 							if (noInfoNodeId)
 								domainAccessHandler.domainInfo.nodeId = -1;
 						}
@@ -3699,6 +3915,16 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		 */
 		public String domainModelAsString() {
 			return domainAccessHandler.domainModel.asString();
+		}
+		
+		/**
+		 * For Testing
+		 * @return
+		 */
+		public int getDomainInfoVersion() {
+			if (domainAccessHandler.domainInfo == null)
+				return -1;
+			return domainAccessHandler.domainInfo.version;
 		}
 		
 		/**

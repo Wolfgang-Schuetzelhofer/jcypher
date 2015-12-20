@@ -198,28 +198,31 @@ public class QueryExecutor implements IASTObjectsContainer {
 		if (this.recordedQueryContext != null)
 			this.recordedQueryContext.queryCompleted();
 		Boolean br_old = QueryRecorder.blockRecording.get();
-		QueryRecorder.blockRecording.set(Boolean.TRUE);
-		QueryContext context = new QueryContext(execCount);
-		QueryBuilder qb = new QueryBuilder();
-		List<JcQuery> queries = qb.buildQueries(context);
-		Util.printQueries(queries, execCount ? QueryToObserve.COUNT_QUERY : QueryToObserve.DOM_QUERY, Format.PRETTY_1);
-		List<JcQueryResult> results = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().
-														execute(queries);
-		List<JcError> errors = Util.collectErrors(results);
-		if (errors.size() > 0) {
+		try {
+			QueryRecorder.blockRecording.set(Boolean.TRUE);
+			QueryContext context = new QueryContext(execCount);
+			QueryBuilder qb = new QueryBuilder();
+			List<JcQuery> queries = qb.buildQueries(context);
+			Util.printQueries(queries, execCount ? QueryToObserve.COUNT_QUERY : QueryToObserve.DOM_QUERY, Format.PRETTY_1);
+			List<JcQueryResult> results = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().
+															execute(queries);
+			List<JcError> errors = Util.collectErrors(results);
+			if (errors.size() > 0) {
+				QueryRecorder.blockRecording.set(br_old);
+				throw new JcResultException(errors);
+			}
+	//		Util.printResults(results, execCount ? "COUNT QUERY" : "DOM QUERY", Format.PRETTY_1);
+			if (context.execCount) {
+				qb.extractCounts(results, context.resultsPerType);
+				this.countResult = context;
+			} else {
+				qb.extractUniqueIds(results, context.resultsPerType);
+				context.queryExecuted();
+				this.queryResult = context;
+			}
+		} finally {
 			QueryRecorder.blockRecording.set(br_old);
-			throw new JcResultException(errors);
 		}
-//		Util.printResults(results, execCount ? "COUNT QUERY" : "DOM QUERY", Format.PRETTY_1);
-		if (context.execCount) {
-			qb.extractCounts(results, context.resultsPerType);
-			this.countResult = context;
-		} else {
-			qb.extractUniqueIds(results, context.resultsPerType);
-			context.queryExecuted();
-			this.queryResult = context;
-		}
-		QueryRecorder.blockRecording.set(br_old);
 	}
 	
 	public MappingInfo getMappingInfo() {

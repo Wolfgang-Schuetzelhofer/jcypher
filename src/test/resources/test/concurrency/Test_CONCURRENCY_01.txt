@@ -1,0 +1,310 @@
+----CONCURRENCY_01:
+_OPTIONAL_
+MERGE (info:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info._i_version = 0, info._m_version = 0
+WITH info
+OPTIONAL MATCH (infs:DomainInfo)
+OPTIONAL MATCH (mdl:QTEST_DOMAIN_mdl)
+RETURN info, mdl, count(infs) AS infos
+------------------------------------------------------------
+
+----MODEL_01:
+QTEST-DOMAIN (DomainModel Version: 1, DomainInfo Version: 1) {
+   java.lang.Enum {   }
+   java.lang.Object {   }
+   ABSTRACT_CLASS test.domainquery.model.AbstractArea extends java.lang.Object {
+      areaType : test.domainquery.model.AreaType (buildIn: false)
+      partOf : test.domainquery.model.AbstractArea (buildIn: false)   }
+   CLASS test.domainquery.model.Address extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      street : java.lang.String (buildIn: true)
+      number : int (buildIn: true)
+      area : test.domainquery.model.Area (buildIn: false)   }
+   CLASS test.domainquery.model.Addressee extends java.lang.Object {
+      name : java.lang.String (buildIn: true)
+      pointsOfContact : test.domainquery.model.PointOfContact (buildIn: false)   }
+   CLASS test.domainquery.model.Area extends test.domainquery.model.AbstractArea {
+      areaCode : java.lang.String (buildIn: true)
+      name : java.lang.String (buildIn: true)   }
+   ENUM test.domainquery.model.AreaType extends java.lang.Enum {
+      DISTRICT : test.domainquery.model.AreaType (buildIn: false)
+      URBAN_DISTRICT : test.domainquery.model.AreaType (buildIn: false)
+      CITY : test.domainquery.model.AreaType (buildIn: false)
+      VILLAGE : test.domainquery.model.AreaType (buildIn: false)
+      STATE : test.domainquery.model.AreaType (buildIn: false)
+      COUNTRY : test.domainquery.model.AreaType (buildIn: false)
+      CONTINENT : test.domainquery.model.AreaType (buildIn: false)
+      PLANET : test.domainquery.model.AreaType (buildIn: false)
+      ELECTRONIC : test.domainquery.model.AreaType (buildIn: false)   }
+   CLASS test.domainquery.model.Company extends test.domainquery.model.Subject {
+      name : java.lang.String (buildIn: true)   }
+   CLASS test.domainquery.model.EArea extends test.domainquery.model.AbstractArea {
+      region : java.lang.String (buildIn: true)   }
+   CLASS test.domainquery.model.EContact extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      type : test.domainquery.model.EContact$EContactType (buildIn: false)
+      eAddress : java.lang.String (buildIn: true)
+      area : test.domainquery.model.EArea (buildIn: false)   }
+   ENUM test.domainquery.model.EContact$EContactType extends java.lang.Enum {
+      EMAIL : test.domainquery.model.EContact$EContactType (buildIn: false)
+      TELEPHONE : test.domainquery.model.EContact$EContactType (buildIn: false)   }
+   ENUM test.domainquery.model.Gender extends java.lang.Enum {
+      FEMALE : test.domainquery.model.Gender (buildIn: false)
+      MALE : test.domainquery.model.Gender (buildIn: false)   }
+   CLASS test.domainquery.model.Person extends test.domainquery.model.Subject {
+      firstName : java.lang.String (buildIn: true)
+      lastName : java.lang.String (buildIn: true)
+      gender : test.domainquery.model.Gender (buildIn: false)
+      father : test.domainquery.model.Person (buildIn: false)
+      mother : test.domainquery.model.Person (buildIn: false)   }
+   INTERFACE test.domainquery.model.PointOfContact {   }
+   ABSTRACT_CLASS test.domainquery.model.Subject extends java.lang.Object {
+      matchString : java.lang.String (buildIn: true)
+      pointsOfContact : java.util.List (buildIn: true)[test.domainquery.model.PointOfContact]   }
+}
+------------------------------------------------------------
+
+----CONCURRENCY_02:
+_OPTIONAL_ //CYPHER planner=rule
+MERGE (info1:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info1._i_version = 0, info1._m_version = 0
+WITH CASE  WHEN info1._i_version = 1 THEN 0 ELSE 1 END  AS retDi, CASE  WHEN info1._m_version = 1 THEN 0 ELSE 1 END  AS retDm
+MERGE (n_0:QTEST_DOMAIN_mdl{typeName:'test.domainquery.model.PoBox'})
+SET n_0.kind = 'CLASS', n_0.superTypeName = 'java.lang.Object', n_0.interfaceNames = ['test.domainquery.model.PointOfContact'], n_0.fields = ['number:int']
+MERGE (info:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info._i_version = 0, info._m_version = 0
+FOREACH (x IN CASE  WHEN info._i_version = 1 AND info._m_version = 1 THEN [1] ELSE [] END  | SET info.label2ClassMap = ['Address=test.domainquery.model.Address', 'Addressee=test.domainquery.model.Addressee', 'Area=test.domainquery.model.Area', 'Collection=iot.jcypher.domain.mapping.surrogate.Collection', 'Company=test.domainquery.model.Company', 'EArea=test.domainquery.model.EArea', 'EContact=test.domainquery.model.EContact', 'Person=test.domainquery.model.Person', 'PoBox=test.domainquery.model.PoBox'], info.componentTypeMap = ['iot.jcypher.domain.mapping.surrogate.Collection|c_content=test.domainquery.model.Address, test.domainquery.model.EContact, test.domainquery.model.PoBox'], info.fieldTypeMap = ['iot.jcypher.domain.mapping.surrogate.Collection|c_content=java.util.ArrayList', 'test.domainquery.model.AbstractArea|areaType=test.domainquery.model.AreaType', 'test.domainquery.model.AbstractArea|partOf=test.domainquery.model.Area, test.domainquery.model.EArea', 'test.domainquery.model.Addressee|name=java.lang.String', 'test.domainquery.model.Addressee|pointsOfContact=test.domainquery.model.Address', 'test.domainquery.model.Address|area=test.domainquery.model.Area', 'test.domainquery.model.Address|number=java.lang.Integer', 'test.domainquery.model.Address|street=java.lang.String', 'test.domainquery.model.Area|areaCode=java.lang.String', 'test.domainquery.model.Area|name=java.lang.String', 'test.domainquery.model.Company|name=java.lang.String', 'test.domainquery.model.EArea|region=java.lang.String', 'test.domainquery.model.EContact|area=test.domainquery.model.EArea', 'test.domainquery.model.EContact|eAddress=java.lang.String', 'test.domainquery.model.EContact|type=test.domainquery.model.EContact$EContactType', 'test.domainquery.model.Person|father=test.domainquery.model.Person', 'test.domainquery.model.Person|firstName=java.lang.String', 'test.domainquery.model.Person|gender=test.domainquery.model.Gender', 'test.domainquery.model.Person|lastName=java.lang.String', 'test.domainquery.model.Person|mother=test.domainquery.model.Person', 'test.domainquery.model.PoBox|number=java.lang.Integer', 'test.domainquery.model.Subject|matchString=java.lang.String', 'test.domainquery.model.Subject|pointsOfContact=iot.jcypher.domain.mapping.surrogate.Collection'], info.useDomainLabels = false, info._i_version = 2, info._m_version = 2)
+RETURN retDi, retDm, id(n_0) AS nid_0
+------------------------------------------------------------
+
+----MODEL_02:
+QTEST-DOMAIN (DomainModel Version: 2, DomainInfo Version: 2) {
+   java.lang.Enum {   }
+   java.lang.Object {   }
+   ABSTRACT_CLASS test.domainquery.model.AbstractArea extends java.lang.Object {
+      areaType : test.domainquery.model.AreaType (buildIn: false)
+      partOf : test.domainquery.model.AbstractArea (buildIn: false)   }
+   CLASS test.domainquery.model.Address extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      street : java.lang.String (buildIn: true)
+      number : int (buildIn: true)
+      area : test.domainquery.model.Area (buildIn: false)   }
+   CLASS test.domainquery.model.Addressee extends java.lang.Object {
+      name : java.lang.String (buildIn: true)
+      pointsOfContact : test.domainquery.model.PointOfContact (buildIn: false)   }
+   CLASS test.domainquery.model.Area extends test.domainquery.model.AbstractArea {
+      areaCode : java.lang.String (buildIn: true)
+      name : java.lang.String (buildIn: true)   }
+   ENUM test.domainquery.model.AreaType extends java.lang.Enum {
+      DISTRICT : test.domainquery.model.AreaType (buildIn: false)
+      URBAN_DISTRICT : test.domainquery.model.AreaType (buildIn: false)
+      CITY : test.domainquery.model.AreaType (buildIn: false)
+      VILLAGE : test.domainquery.model.AreaType (buildIn: false)
+      STATE : test.domainquery.model.AreaType (buildIn: false)
+      COUNTRY : test.domainquery.model.AreaType (buildIn: false)
+      CONTINENT : test.domainquery.model.AreaType (buildIn: false)
+      PLANET : test.domainquery.model.AreaType (buildIn: false)
+      ELECTRONIC : test.domainquery.model.AreaType (buildIn: false)   }
+   CLASS test.domainquery.model.Company extends test.domainquery.model.Subject {
+      name : java.lang.String (buildIn: true)   }
+   CLASS test.domainquery.model.EArea extends test.domainquery.model.AbstractArea {
+      region : java.lang.String (buildIn: true)   }
+   CLASS test.domainquery.model.EContact extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      type : test.domainquery.model.EContact$EContactType (buildIn: false)
+      eAddress : java.lang.String (buildIn: true)
+      area : test.domainquery.model.EArea (buildIn: false)   }
+   ENUM test.domainquery.model.EContact$EContactType extends java.lang.Enum {
+      EMAIL : test.domainquery.model.EContact$EContactType (buildIn: false)
+      TELEPHONE : test.domainquery.model.EContact$EContactType (buildIn: false)   }
+   ENUM test.domainquery.model.Gender extends java.lang.Enum {
+      FEMALE : test.domainquery.model.Gender (buildIn: false)
+      MALE : test.domainquery.model.Gender (buildIn: false)   }
+   CLASS test.domainquery.model.Person extends test.domainquery.model.Subject {
+      firstName : java.lang.String (buildIn: true)
+      lastName : java.lang.String (buildIn: true)
+      gender : test.domainquery.model.Gender (buildIn: false)
+      father : test.domainquery.model.Person (buildIn: false)
+      mother : test.domainquery.model.Person (buildIn: false)   }
+   CLASS test.domainquery.model.PoBox extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      number : int (buildIn: true)   }
+   INTERFACE test.domainquery.model.PointOfContact {   }
+   ABSTRACT_CLASS test.domainquery.model.Subject extends java.lang.Object {
+      matchString : java.lang.String (buildIn: true)
+      pointsOfContact : java.util.List (buildIn: true)[test.domainquery.model.PointOfContact]   }
+}
+------------------------------------------------------------
+
+----CONCURRENCY_03:
+# Try Store
+_OPTIONAL_ //CYPHER planner=rule
+MERGE (info1:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info1._i_version = 0, info1._m_version = 0
+WITH CASE  WHEN info1._i_version = 1 THEN 0 ELSE 1 END  AS retDi, CASE  WHEN info1._m_version = 1 THEN 0 ELSE 1 END  AS retDm
+MERGE (n_0:QTEST_DOMAIN_mdl{typeName:'test.domainquery.model.PoBox'})
+SET n_0.kind = 'CLASS', n_0.superTypeName = 'java.lang.Object', n_0.interfaceNames = ['test.domainquery.model.PointOfContact'], n_0.fields = ['number:int']
+MERGE (info:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info._i_version = 0, info._m_version = 0
+FOREACH (x IN CASE  WHEN info._i_version = 1 AND info._m_version = 1 THEN [1] ELSE [] END  | SET info.label2ClassMap = ['Address=test.domainquery.model.Address', 'Addressee=test.domainquery.model.Addressee', 'Area=test.domainquery.model.Area', 'Collection=iot.jcypher.domain.mapping.surrogate.Collection', 'Company=test.domainquery.model.Company', 'EArea=test.domainquery.model.EArea', 'EContact=test.domainquery.model.EContact', 'Person=test.domainquery.model.Person', 'PoBox=test.domainquery.model.PoBox'], info.componentTypeMap = ['iot.jcypher.domain.mapping.surrogate.Collection|c_content=test.domainquery.model.Address, test.domainquery.model.EContact, test.domainquery.model.PoBox'], info.fieldTypeMap = ['iot.jcypher.domain.mapping.surrogate.Collection|c_content=java.util.ArrayList', 'test.domainquery.model.AbstractArea|areaType=test.domainquery.model.AreaType', 'test.domainquery.model.AbstractArea|partOf=test.domainquery.model.Area, test.domainquery.model.EArea', 'test.domainquery.model.Addressee|name=java.lang.String', 'test.domainquery.model.Addressee|pointsOfContact=test.domainquery.model.Address', 'test.domainquery.model.Address|area=test.domainquery.model.Area', 'test.domainquery.model.Address|number=java.lang.Integer', 'test.domainquery.model.Address|street=java.lang.String', 'test.domainquery.model.Area|areaCode=java.lang.String', 'test.domainquery.model.Area|name=java.lang.String', 'test.domainquery.model.Company|name=java.lang.String', 'test.domainquery.model.EArea|region=java.lang.String', 'test.domainquery.model.EContact|area=test.domainquery.model.EArea', 'test.domainquery.model.EContact|eAddress=java.lang.String', 'test.domainquery.model.EContact|type=test.domainquery.model.EContact$EContactType', 'test.domainquery.model.Person|father=test.domainquery.model.Person', 'test.domainquery.model.Person|firstName=java.lang.String', 'test.domainquery.model.Person|gender=test.domainquery.model.Gender', 'test.domainquery.model.Person|lastName=java.lang.String', 'test.domainquery.model.Person|mother=test.domainquery.model.Person', 'test.domainquery.model.PoBox|number=java.lang.Integer', 'test.domainquery.model.Subject|matchString=java.lang.String', 'test.domainquery.model.Subject|pointsOfContact=iot.jcypher.domain.mapping.surrogate.Collection'], info.useDomainLabels = false, info._i_version = 2, info._m_version = 2)
+RETURN retDi, retDm, id(n_0) AS nid_0
+
+# Reload
+_OPTIONAL_ //CYPHER planner=rule
+MERGE (info:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info._i_version = 0, info._m_version = 0
+WITH info
+OPTIONAL MATCH (mdl:QTEST_DOMAIN_mdl)
+RETURN info, mdl
+
+# "Try Store again (model has already been stored (merged))"
+_OPTIONAL_ //CYPHER planner=rule
+MERGE (info1:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info1._i_version = 0, info1._m_version = 0
+WITH CASE  WHEN info1._i_version = 2 THEN 0 ELSE 1 END  AS retDi, CASE  WHEN info1._m_version = 2 THEN 0 ELSE 1 END  AS retDm
+MERGE (info:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info._i_version = 0, info._m_version = 0
+FOREACH (x IN CASE  WHEN info._i_version = 2 AND info._m_version = 2 THEN [1] ELSE [] END  | SET info.label2ClassMap = ['Address=test.domainquery.model.Address', 'Addressee=test.domainquery.model.Addressee', 'Area=test.domainquery.model.Area', 'Collection=iot.jcypher.domain.mapping.surrogate.Collection', 'Company=test.domainquery.model.Company', 'EArea=test.domainquery.model.EArea', 'EContact=test.domainquery.model.EContact', 'Person=test.domainquery.model.Person', 'PoBox=test.domainquery.model.PoBox'], info.componentTypeMap = ['iot.jcypher.domain.mapping.surrogate.Collection|c_content=test.domainquery.model.Address, test.domainquery.model.EContact, test.domainquery.model.PoBox'], info.fieldTypeMap = ['iot.jcypher.domain.mapping.surrogate.Collection|c_content=java.util.ArrayList', 'test.domainquery.model.AbstractArea|areaType=test.domainquery.model.AreaType', 'test.domainquery.model.AbstractArea|partOf=test.domainquery.model.Area, test.domainquery.model.EArea', 'test.domainquery.model.Addressee|name=java.lang.String', 'test.domainquery.model.Addressee|pointsOfContact=test.domainquery.model.Address', 'test.domainquery.model.Address|area=test.domainquery.model.Area', 'test.domainquery.model.Address|number=java.lang.Integer', 'test.domainquery.model.Address|street=java.lang.String', 'test.domainquery.model.Area|areaCode=java.lang.String', 'test.domainquery.model.Area|name=java.lang.String', 'test.domainquery.model.Company|name=java.lang.String', 'test.domainquery.model.EArea|region=java.lang.String', 'test.domainquery.model.EContact|area=test.domainquery.model.EArea', 'test.domainquery.model.EContact|eAddress=java.lang.String', 'test.domainquery.model.EContact|type=test.domainquery.model.EContact$EContactType', 'test.domainquery.model.Person|father=test.domainquery.model.Person', 'test.domainquery.model.Person|firstName=java.lang.String', 'test.domainquery.model.Person|gender=test.domainquery.model.Gender', 'test.domainquery.model.Person|lastName=java.lang.String', 'test.domainquery.model.Person|mother=test.domainquery.model.Person', 'test.domainquery.model.PoBox|number=java.lang.Integer', 'test.domainquery.model.Subject|matchString=java.lang.String', 'test.domainquery.model.Subject|pointsOfContact=iot.jcypher.domain.mapping.surrogate.Collection'], info.useDomainLabels = false, info._i_version = 3, info._m_version = 3)
+RETURN retDi, retDm
+------------------------------------------------------------
+
+----CONCURRENCY_04:
+# Try Store
+_OPTIONAL_ //CYPHER planner=rule
+MERGE (info1:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info1._i_version = 0, info1._m_version = 0
+WITH CASE  WHEN info1._i_version = 1 THEN 0 ELSE 1 END  AS retDi, CASE  WHEN info1._m_version = 1 THEN 0 ELSE 1 END  AS retDm
+MERGE (n_0:QTEST_DOMAIN_mdl{typeName:'test.domainquery.model.VirtualAddress'})
+SET n_0.kind = 'CLASS', n_0.superTypeName = 'java.lang.Object', n_0.interfaceNames = ['test.domainquery.model.PointOfContact'], n_0.fields = ['addressName:java.lang.String']
+MERGE (info:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info._i_version = 0, info._m_version = 0
+FOREACH (x IN CASE  WHEN info._i_version = 1 AND info._m_version = 1 THEN [1] ELSE [] END  | SET info.label2ClassMap = ['Address=test.domainquery.model.Address', 'Addressee=test.domainquery.model.Addressee', 'Area=test.domainquery.model.Area', 'Collection=iot.jcypher.domain.mapping.surrogate.Collection', 'Company=test.domainquery.model.Company', 'EArea=test.domainquery.model.EArea', 'EContact=test.domainquery.model.EContact', 'Person=test.domainquery.model.Person', 'VirtualAddress=test.domainquery.model.VirtualAddress'], info.componentTypeMap = ['iot.jcypher.domain.mapping.surrogate.Collection|c_content=test.domainquery.model.Address, test.domainquery.model.EContact, test.domainquery.model.VirtualAddress'], info.fieldTypeMap = ['iot.jcypher.domain.mapping.surrogate.Collection|c_content=java.util.ArrayList', 'test.domainquery.model.AbstractArea|areaType=test.domainquery.model.AreaType', 'test.domainquery.model.AbstractArea|partOf=test.domainquery.model.Area, test.domainquery.model.EArea', 'test.domainquery.model.Addressee|name=java.lang.String', 'test.domainquery.model.Addressee|pointsOfContact=test.domainquery.model.Address', 'test.domainquery.model.Address|area=test.domainquery.model.Area', 'test.domainquery.model.Address|number=java.lang.Integer', 'test.domainquery.model.Address|street=java.lang.String', 'test.domainquery.model.Area|areaCode=java.lang.String', 'test.domainquery.model.Area|name=java.lang.String', 'test.domainquery.model.Company|name=java.lang.String', 'test.domainquery.model.EArea|region=java.lang.String', 'test.domainquery.model.EContact|area=test.domainquery.model.EArea', 'test.domainquery.model.EContact|eAddress=java.lang.String', 'test.domainquery.model.EContact|type=test.domainquery.model.EContact$EContactType', 'test.domainquery.model.Person|father=test.domainquery.model.Person', 'test.domainquery.model.Person|firstName=java.lang.String', 'test.domainquery.model.Person|gender=test.domainquery.model.Gender', 'test.domainquery.model.Person|lastName=java.lang.String', 'test.domainquery.model.Person|mother=test.domainquery.model.Person', 'test.domainquery.model.Subject|matchString=java.lang.String', 'test.domainquery.model.Subject|pointsOfContact=iot.jcypher.domain.mapping.surrogate.Collection', 'test.domainquery.model.VirtualAddress|addressName=java.lang.String'], info.useDomainLabels = false, info._i_version = 2, info._m_version = 2)
+RETURN retDi, retDm, id(n_0) AS nid_0
+
+# Reload
+_OPTIONAL_ //CYPHER planner=rule
+MERGE (info:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info._i_version = 0, info._m_version = 0
+WITH info
+OPTIONAL MATCH (mdl:QTEST_DOMAIN_mdl)
+RETURN info, mdl
+
+# Try Store again (model has already been stored (merged))
+_OPTIONAL_ //CYPHER planner=rule
+MERGE (info1:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info1._i_version = 0, info1._m_version = 0
+WITH CASE  WHEN info1._i_version = 3 THEN 0 ELSE 1 END  AS retDi, CASE  WHEN info1._m_version = 3 THEN 0 ELSE 1 END  AS retDm
+MERGE (info:DomainInfo{name:'QTEST-DOMAIN'})
+ON CREATE SET info._i_version = 0, info._m_version = 0
+FOREACH (x IN CASE  WHEN info._i_version = 3 AND info._m_version = 3 THEN [1] ELSE [] END  | SET info.label2ClassMap = ['Address=test.domainquery.model.Address', 'Addressee=test.domainquery.model.Addressee', 'Area=test.domainquery.model.Area', 'Collection=iot.jcypher.domain.mapping.surrogate.Collection', 'Company=test.domainquery.model.Company', 'EArea=test.domainquery.model.EArea', 'EContact=test.domainquery.model.EContact', 'Person=test.domainquery.model.Person', 'PoBox=test.domainquery.model.PoBox', 'VirtualAddress=test.domainquery.model.VirtualAddress'], info.componentTypeMap = ['iot.jcypher.domain.mapping.surrogate.Collection|c_content=test.domainquery.model.Address, test.domainquery.model.EContact, test.domainquery.model.VirtualAddress, test.domainquery.model.PoBox'], info.fieldTypeMap = ['iot.jcypher.domain.mapping.surrogate.Collection|c_content=java.util.ArrayList', 'test.domainquery.model.AbstractArea|areaType=test.domainquery.model.AreaType', 'test.domainquery.model.AbstractArea|partOf=test.domainquery.model.Area, test.domainquery.model.EArea', 'test.domainquery.model.Addressee|name=java.lang.String', 'test.domainquery.model.Addressee|pointsOfContact=test.domainquery.model.Address', 'test.domainquery.model.Address|area=test.domainquery.model.Area', 'test.domainquery.model.Address|number=java.lang.Integer', 'test.domainquery.model.Address|street=java.lang.String', 'test.domainquery.model.Area|areaCode=java.lang.String', 'test.domainquery.model.Area|name=java.lang.String', 'test.domainquery.model.Company|name=java.lang.String', 'test.domainquery.model.EArea|region=java.lang.String', 'test.domainquery.model.EContact|area=test.domainquery.model.EArea', 'test.domainquery.model.EContact|eAddress=java.lang.String', 'test.domainquery.model.EContact|type=test.domainquery.model.EContact$EContactType', 'test.domainquery.model.Person|father=test.domainquery.model.Person', 'test.domainquery.model.Person|firstName=java.lang.String', 'test.domainquery.model.Person|gender=test.domainquery.model.Gender', 'test.domainquery.model.Person|lastName=java.lang.String', 'test.domainquery.model.Person|mother=test.domainquery.model.Person', 'test.domainquery.model.PoBox|number=java.lang.Integer', 'test.domainquery.model.Subject|matchString=java.lang.String', 'test.domainquery.model.Subject|pointsOfContact=iot.jcypher.domain.mapping.surrogate.Collection', 'test.domainquery.model.VirtualAddress|addressName=java.lang.String'], info.useDomainLabels = false, info._i_version = 4, info._m_version = 4)
+RETURN retDi, retDm
+------------------------------------------------------------
+
+----MODEL_03:
+QTEST-DOMAIN (DomainModel Version: 4, DomainInfo Version: 4) {
+   java.lang.Enum {   }
+   java.lang.Object {   }
+   ABSTRACT_CLASS test.domainquery.model.AbstractArea extends java.lang.Object {
+      areaType : test.domainquery.model.AreaType (buildIn: false)
+      partOf : test.domainquery.model.AbstractArea (buildIn: false)   }
+   CLASS test.domainquery.model.Address extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      street : java.lang.String (buildIn: true)
+      number : int (buildIn: true)
+      area : test.domainquery.model.Area (buildIn: false)   }
+   CLASS test.domainquery.model.Addressee extends java.lang.Object {
+      name : java.lang.String (buildIn: true)
+      pointsOfContact : test.domainquery.model.PointOfContact (buildIn: false)   }
+   CLASS test.domainquery.model.Area extends test.domainquery.model.AbstractArea {
+      areaCode : java.lang.String (buildIn: true)
+      name : java.lang.String (buildIn: true)   }
+   ENUM test.domainquery.model.AreaType extends java.lang.Enum {
+      DISTRICT : test.domainquery.model.AreaType (buildIn: false)
+      URBAN_DISTRICT : test.domainquery.model.AreaType (buildIn: false)
+      CITY : test.domainquery.model.AreaType (buildIn: false)
+      VILLAGE : test.domainquery.model.AreaType (buildIn: false)
+      STATE : test.domainquery.model.AreaType (buildIn: false)
+      COUNTRY : test.domainquery.model.AreaType (buildIn: false)
+      CONTINENT : test.domainquery.model.AreaType (buildIn: false)
+      PLANET : test.domainquery.model.AreaType (buildIn: false)
+      ELECTRONIC : test.domainquery.model.AreaType (buildIn: false)   }
+   CLASS test.domainquery.model.Company extends test.domainquery.model.Subject {
+      name : java.lang.String (buildIn: true)   }
+   CLASS test.domainquery.model.EArea extends test.domainquery.model.AbstractArea {
+      region : java.lang.String (buildIn: true)   }
+   CLASS test.domainquery.model.EContact extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      type : test.domainquery.model.EContact$EContactType (buildIn: false)
+      eAddress : java.lang.String (buildIn: true)
+      area : test.domainquery.model.EArea (buildIn: false)   }
+   ENUM test.domainquery.model.EContact$EContactType extends java.lang.Enum {
+      EMAIL : test.domainquery.model.EContact$EContactType (buildIn: false)
+      TELEPHONE : test.domainquery.model.EContact$EContactType (buildIn: false)   }
+   ENUM test.domainquery.model.Gender extends java.lang.Enum {
+      FEMALE : test.domainquery.model.Gender (buildIn: false)
+      MALE : test.domainquery.model.Gender (buildIn: false)   }
+   CLASS test.domainquery.model.Person extends test.domainquery.model.Subject {
+      firstName : java.lang.String (buildIn: true)
+      lastName : java.lang.String (buildIn: true)
+      gender : test.domainquery.model.Gender (buildIn: false)
+      father : test.domainquery.model.Person (buildIn: false)
+      mother : test.domainquery.model.Person (buildIn: false)   }
+   CLASS test.domainquery.model.PoBox extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      number : int (buildIn: true)   }
+   INTERFACE test.domainquery.model.PointOfContact {   }
+   ABSTRACT_CLASS test.domainquery.model.Subject extends java.lang.Object {
+      matchString : java.lang.String (buildIn: true)
+      pointsOfContact : java.util.List (buildIn: true)[test.domainquery.model.PointOfContact]   }
+   CLASS test.domainquery.model.VirtualAddress extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      addressName : java.lang.String (buildIn: true)   }
+}
+------------------------------------------------------------
+
+----MODEL_04:
+QTEST-DOMAIN (DomainModel Version: 3, DomainInfo Version: 3) {
+   java.lang.Enum {   }
+   java.lang.Object {   }
+   ABSTRACT_CLASS test.domainquery.model.AbstractArea extends java.lang.Object {
+      areaType : test.domainquery.model.AreaType (buildIn: false)
+      partOf : test.domainquery.model.AbstractArea (buildIn: false)   }
+   CLASS test.domainquery.model.Address extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      street : java.lang.String (buildIn: true)
+      number : int (buildIn: true)
+      area : test.domainquery.model.Area (buildIn: false)   }
+   CLASS test.domainquery.model.Addressee extends java.lang.Object {
+      name : java.lang.String (buildIn: true)
+      pointsOfContact : test.domainquery.model.PointOfContact (buildIn: false)   }
+   CLASS test.domainquery.model.Area extends test.domainquery.model.AbstractArea {
+      areaCode : java.lang.String (buildIn: true)
+      name : java.lang.String (buildIn: true)   }
+   ENUM test.domainquery.model.AreaType extends java.lang.Enum {
+      DISTRICT : test.domainquery.model.AreaType (buildIn: false)
+      URBAN_DISTRICT : test.domainquery.model.AreaType (buildIn: false)
+      CITY : test.domainquery.model.AreaType (buildIn: false)
+      VILLAGE : test.domainquery.model.AreaType (buildIn: false)
+      STATE : test.domainquery.model.AreaType (buildIn: false)
+      COUNTRY : test.domainquery.model.AreaType (buildIn: false)
+      CONTINENT : test.domainquery.model.AreaType (buildIn: false)
+      PLANET : test.domainquery.model.AreaType (buildIn: false)
+      ELECTRONIC : test.domainquery.model.AreaType (buildIn: false)   }
+   CLASS test.domainquery.model.Company extends test.domainquery.model.Subject {
+      name : java.lang.String (buildIn: true)   }
+   CLASS test.domainquery.model.EArea extends test.domainquery.model.AbstractArea {
+      region : java.lang.String (buildIn: true)   }
+   CLASS test.domainquery.model.EContact extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      type : test.domainquery.model.EContact$EContactType (buildIn: false)
+      eAddress : java.lang.String (buildIn: true)
+      area : test.domainquery.model.EArea (buildIn: false)   }
+   ENUM test.domainquery.model.EContact$EContactType extends java.lang.Enum {
+      EMAIL : test.domainquery.model.EContact$EContactType (buildIn: false)
+      TELEPHONE : test.domainquery.model.EContact$EContactType (buildIn: false)   }
+   ENUM test.domainquery.model.Gender extends java.lang.Enum {
+      FEMALE : test.domainquery.model.Gender (buildIn: false)
+      MALE : test.domainquery.model.Gender (buildIn: false)   }
+   CLASS test.domainquery.model.Person extends test.domainquery.model.Subject {
+      firstName : java.lang.String (buildIn: true)
+      lastName : java.lang.String (buildIn: true)
+      gender : test.domainquery.model.Gender (buildIn: false)
+      father : test.domainquery.model.Person (buildIn: false)
+      mother : test.domainquery.model.Person (buildIn: false)   }
+   CLASS test.domainquery.model.PoBox extends java.lang.Object implements test.domainquery.model.PointOfContact {
+      number : int (buildIn: true)   }
+   INTERFACE test.domainquery.model.PointOfContact {   }
+   ABSTRACT_CLASS test.domainquery.model.Subject extends java.lang.Object {
+      matchString : java.lang.String (buildIn: true)
+      pointsOfContact : java.util.List (buildIn: true)[test.domainquery.model.PointOfContact]   }
+}
+------------------------------------------------------------

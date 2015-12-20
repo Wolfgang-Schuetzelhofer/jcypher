@@ -210,6 +210,34 @@ public class DOType {
 	long getNodeId() {
 		return nodeId;
 	}
+	
+	void addDeclaredFieldUnique(DOField field) {
+		if (!containsDeclaredField(field.getName()))
+			getDeclaredFields().add(field);
+	}
+	
+	private boolean containsDeclaredField(String fieldName) {
+		List<DOField> flds = this.getDeclaredFields();
+		for (DOField f : flds) {
+			if (f.getName().equals(fieldName))
+				return true;
+		}
+		return false;
+	}
+	
+	void addInterfaceUnique(DOType intf) {
+		if (!containsInterface(intf.getName()))
+			getInterfaces().add(intf);
+	}
+	
+	private boolean containsInterface(String fName) {
+		List<DOType> ifs = this.getInterfaces();
+		for (DOType intf : ifs) {
+			if (intf.getName().equals(fName))
+				return true;
+		}
+		return false;
+	}
 
 	void setNodeId(long nodeId) {
 		this.nodeId = nodeId;
@@ -324,7 +352,7 @@ public class DOType {
 		public void addInterface(DOType anInterface) {
 			if (anInterface.getKind() != Kind.INTERFACE)
 				throw new RuntimeException("must be a kind of Interface");
-			getInterfaces().add(anInterface);
+			addInterfaceUnique(anInterface);
 		}
 		
 		/**
@@ -333,7 +361,7 @@ public class DOType {
 		 * @param builder
 		 */
 		public void addInterfaceBuilder(DOInterfaceBuilder builder) {
-			getInterfaces().add(builder.build());
+			addInterfaceUnique(builder.build());
 		}
 		
 		/**
@@ -342,7 +370,7 @@ public class DOType {
 		 * @param typeName qualified type name
 		 */
 		public void addField(String name, String typeName) {
-			getDeclaredFields().add(new DOField(name, typeName, false, DOType.this));
+			addDeclaredFieldUnique(new DOField(name, typeName, false, DOType.this));
 		}
 		
 		/**
@@ -351,7 +379,7 @@ public class DOType {
 		 * @param componentTypeName if null, java.lang.Object will be taken as component type
 		 */
 		public void addListField(String name, String componentTypeName) {
-			getDeclaredFields().add(new DOField(name, componentTypeName, true, DOType.this));
+			addDeclaredFieldUnique(new DOField(name, componentTypeName, true, DOType.this));
 		}
 	}
 	
@@ -369,7 +397,7 @@ public class DOType {
 		public void addInterface(DOType anInterface) {
 			if (superType.getKind() != Kind.INTERFACE)
 				throw new RuntimeException("must be a kind of Interface");
-			getInterfaces().add(anInterface);
+			addInterfaceUnique(anInterface);
 		}
 		
 		/**
@@ -378,7 +406,7 @@ public class DOType {
 		 * @param builder
 		 */
 		public void addInterfaceBuilder(DOInterfaceBuilder builder) {
-			getInterfaces().add(builder.build());
+			addInterfaceUnique(builder.build());
 		}
 	}
 	
@@ -414,7 +442,7 @@ public class DOType {
 		 * @param name
 		 */
 		public void addEnumValue(String name) {
-			getDeclaredFields().add(new DOField(name, DOType.this.name, false, DOType.this));
+			addDeclaredFieldUnique(new DOField(name, DOType.this.name, false, DOType.this));
 		}
 	}
 	

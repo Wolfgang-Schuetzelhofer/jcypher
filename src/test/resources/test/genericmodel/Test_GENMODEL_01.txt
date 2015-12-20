@@ -1,5 +1,5 @@
 ----GENMODEL_01:
-PEOPLE-DOMAIN {
+PEOPLE-DOMAIN (DomainModel Version: 1, DomainInfo Version: 1) {
    CLASS iot.jcypher.samples.domain.people.model.Address extends java.lang.Object implements iot.jcypher.samples.domain.people.model.PointOfContact {
       street : java.lang.String (buildIn: true)
       number : int (buildIn: true)

@@ -55,21 +55,25 @@ public class RecordedQueryPlayer {
 	 */
 	public DomainQuery replayQuery(RecordedQuery recordedQuery, IDomainAccess domainAccess) {
 		Boolean br_old = null;
-		if (!Settings.TEST_MODE) {
-			br_old = QueryRecorder.blockRecording.get();
-			QueryRecorder.blockRecording.set(Boolean.TRUE);
+		DomainQuery query;
+		try {
+			if (!Settings.TEST_MODE) {
+				br_old = QueryRecorder.blockRecording.get();
+				QueryRecorder.blockRecording.set(Boolean.TRUE);
+			}
+			this.generic = false;
+			this.replayedQueryContext = new ReplayedQueryContext(recordedQuery);
+			query = ((DomainAccess)domainAccess).createRecordedQuery(this.replayedQueryContext);
+			this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
+			
+			for (Statement stmt : recordedQuery.getStatements()) {
+				replayStatement(stmt);
+			}
+		} finally {
+			if (!Settings.TEST_MODE)
+				QueryRecorder.blockRecording.set(br_old);
 		}
-		this.generic = false;
-		this.replayedQueryContext = new ReplayedQueryContext(recordedQuery);
-		DomainQuery query = ((DomainAccess)domainAccess).createRecordedQuery(this.replayedQueryContext);
-		this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
 		
-		for (Statement stmt : recordedQuery.getStatements()) {
-			replayStatement(stmt);
-		}
-		
-		if (!Settings.TEST_MODE)
-			QueryRecorder.blockRecording.set(br_old);
 		return query;
 	}
 	
@@ -81,21 +85,25 @@ public class RecordedQueryPlayer {
 	 */
 	public GDomainQuery replayGenericQuery(RecordedQuery recordedQuery, IGenericDomainAccess domainAccess) {
 		Boolean br_old = null;
-		if (!Settings.TEST_MODE) {
-			br_old = QueryRecorder.blockRecording.get();
-			QueryRecorder.blockRecording.set(Boolean.TRUE);
+		GDomainQuery query;
+		try {
+			if (!Settings.TEST_MODE) {
+				br_old = QueryRecorder.blockRecording.get();
+				QueryRecorder.blockRecording.set(Boolean.TRUE);
+			}
+			this.generic = true;
+			this.replayedQueryContext = new ReplayedQueryContext(recordedQuery);
+			query = ((GenericDomainAccess)domainAccess).createRecordedQuery(this.replayedQueryContext);
+			this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
+			
+			for (Statement stmt : recordedQuery.getStatements()) {
+				replayStatement(stmt);
+			}
+		} finally {
+			if (!Settings.TEST_MODE)
+				QueryRecorder.blockRecording.set(br_old);
 		}
-		this.generic = true;
-		this.replayedQueryContext = new ReplayedQueryContext(recordedQuery);
-		GDomainQuery query = ((GenericDomainAccess)domainAccess).createRecordedQuery(this.replayedQueryContext);
-		this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
 		
-		for (Statement stmt : recordedQuery.getStatements()) {
-			replayStatement(stmt);
-		}
-		
-		if (!Settings.TEST_MODE)
-			QueryRecorder.blockRecording.set(br_old);
 		return query;
 	}
 	

@@ -422,27 +422,30 @@ public abstract class AbstractDomainQuery {
 	
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private <T> DomainObjectMatch<T> union_Intersection(boolean union, DomainObjectMatch<T>... set) {
-		Boolean br_old = QueryRecorder.blockRecording.get();
-		QueryRecorder.blockRecording.set(Boolean.TRUE);
 		DomainObjectMatch<T> ret;
-		DomainObjectMatch[] newSet = set;
-		boolean isGeneric = set.length > 0 && APIAccess.getDelegate(set[0]) != null;
-		if (isGeneric) {
-			newSet = new DomainObjectMatch[set.length];
-			for (int i = 0; i < set.length; i++) {
-				DomainObjectMatch<?> delegate = APIAccess.getDelegate(set[i]);
-				if (delegate != null) // generic model
-					newSet[i] = delegate;
-				else
-					newSet[i] = set[i];
+		Boolean br_old = QueryRecorder.blockRecording.get();
+		try {
+			QueryRecorder.blockRecording.set(Boolean.TRUE);
+			DomainObjectMatch[] newSet = set;
+			boolean isGeneric = set.length > 0 && APIAccess.getDelegate(set[0]) != null;
+			if (isGeneric) {
+				newSet = new DomainObjectMatch[set.length];
+				for (int i = 0; i < set.length; i++) {
+					DomainObjectMatch<?> delegate = APIAccess.getDelegate(set[i]);
+					if (delegate != null) // generic model
+						newSet[i] = delegate;
+					else
+						newSet[i] = set[i];
+				}
 			}
+			DomainObjectMatch newMatch = build_union_Intersection(union, newSet);
+			if (isGeneric)
+				ret = (DomainObjectMatch<T>) APIAccess.createDomainObjectMatch(DomainObject.class, newMatch);
+			else
+				ret = newMatch;
+		} finally {
+			QueryRecorder.blockRecording.set(br_old);
 		}
-		DomainObjectMatch newMatch = build_union_Intersection(union, newSet);
-		if (isGeneric)
-			ret = (DomainObjectMatch<T>) APIAccess.createDomainObjectMatch(DomainObject.class, newMatch);
-		else
-			ret = newMatch;
-		QueryRecorder.blockRecording.set(br_old);
 		return ret;
 	}
 	

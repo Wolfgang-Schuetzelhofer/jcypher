@@ -95,12 +95,13 @@ public class TraversalStep extends APIObject {
 	 * @return a DomainObjectMatch
 	 */
 	public DomainObjectMatch<DomainObject> TO_GENERIC(String domainObjectTypeName) {
+		Boolean br_old = null;
 		try {
 			TraversalExpression te = (TraversalExpression)this.astObject;
 			InternalDomainAccess iAccess = te.getQueryExecutor().getMappingInfo().getInternalDomainAccess();
 			iAccess.loadDomainInfoIfNeeded();
 			Class<?> clazz = iAccess.getClassForName(domainObjectTypeName);
-			Boolean br_old = QueryRecorder.blockRecording.get();
+			br_old = QueryRecorder.blockRecording.get();
 			QueryRecorder.blockRecording.set(Boolean.TRUE);
 			DomainObjectMatch<?> delegate = TO(clazz);
 			QueryRecorder.blockRecording.set(br_old);
@@ -112,6 +113,9 @@ public class TraversalStep extends APIObject {
 				throw (RuntimeException)e;
 			else
 				throw new RuntimeException(e);
+		} finally {
+			if (br_old != null)
+				QueryRecorder.blockRecording.set(br_old);
 		}
 	}
 }

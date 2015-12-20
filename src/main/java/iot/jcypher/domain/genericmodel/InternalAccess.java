@@ -88,4 +88,12 @@ public class InternalAccess {
 	public static Object getFieldValueInternal(DomainObject domainObject, String fieldName) {
 		return domainObject.getFieldValue(fieldName, true);
 	}
+	
+	public static void addDeclaredFieldUnique(DOType typ, DOField field) {
+		typ.addDeclaredFieldUnique(field);
+	}
+	
+	public static void addInterfaceUnique(DOType typ, DOType intf) {
+		typ.addInterfaceUnique(intf);
+	}
 }

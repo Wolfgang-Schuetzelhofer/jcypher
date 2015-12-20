@@ -309,6 +309,10 @@ public class CreateGenericModelTest extends AbstractTestSuite {
 			assertEquals("[mytest.model.Address(1)]", nursery_2);
 			
 			String domModel_2 = ((IIntDomainAccess)gda.getDomainAccess()).getInternalDomainAccess().domainModelAsString();
+			
+			// remove model version info
+			domModel_1 = domModel_1.substring(domModel_1.indexOf('{'), domModel_1.length());
+			domModel_2 = domModel_2.substring(domModel_2.indexOf('{'), domModel_2.length());
 			assertEquals(domModel_1, domModel_2);
 			
 			List<DomainObject> objects = gda.loadByType("mytest.model.Person", -1, 0, -1);

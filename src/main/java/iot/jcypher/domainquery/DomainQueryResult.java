@@ -40,15 +40,18 @@ public class DomainQueryResult {
 	public <T> List<T> resultOf(DomainObjectMatch<T> match) {
 		List<T> ret;
 		Boolean br_old = QueryRecorder.blockRecording.get();
-		QueryRecorder.blockRecording.set(Boolean.TRUE);
-		DomainObjectMatch<?> delegate = APIAccess.getDelegate(match);
-		if (delegate != null) { // this is a generic domain query
-			List<?> dobjs = this.domainQuery.getQueryExecutor().loadResult(delegate);
-			ret = (List<T>) this.domainQuery.getQueryExecutor().getMappingInfo()
-				.getInternalDomainAccess().getGenericDomainObjects(dobjs);
-		} else
-			ret = this.domainQuery.getQueryExecutor().loadResult(match);
-		QueryRecorder.blockRecording.set(br_old);
+		try {
+			QueryRecorder.blockRecording.set(Boolean.TRUE);
+			DomainObjectMatch<?> delegate = APIAccess.getDelegate(match);
+			if (delegate != null) { // this is a generic domain query
+				List<?> dobjs = this.domainQuery.getQueryExecutor().loadResult(delegate);
+				ret = (List<T>) this.domainQuery.getQueryExecutor().getMappingInfo()
+					.getInternalDomainAccess().getGenericDomainObjects(dobjs);
+			} else
+				ret = this.domainQuery.getQueryExecutor().loadResult(match);
+		} finally {
+			QueryRecorder.blockRecording.set(br_old);
+		}
 		return ret;
 	}
 }
