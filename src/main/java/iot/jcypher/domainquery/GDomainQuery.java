@@ -16,15 +16,14 @@
 
 package iot.jcypher.domainquery;
 
+import java.util.List;
+
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.QueryRecorder;
-import iot.jcypher.domainquery.internal.RecordedQuery;
-
-import java.util.List;
 
 /**
  * Allows to formulate a query against a generic domain model

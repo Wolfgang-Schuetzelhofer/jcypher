@@ -27,6 +27,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import iot.jcypher.concurrency.QExecution;
+import iot.jcypher.concurrency.QExecution.ExecType;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.SyncInfo;
 import iot.jcypher.domain.internal.CurrentDomain;
@@ -41,6 +43,8 @@ import iot.jcypher.domain.mapping.ObjectMapping;
 import iot.jcypher.domain.mapping.surrogate.Array;
 import iot.jcypher.domain.mapping.surrogate.Collection;
 import iot.jcypher.domainquery.AbstractDomainQuery;
+import iot.jcypher.domainquery.CountQueryResult;
+import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.Count;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -175,11 +179,28 @@ public class QueryExecutor implements IASTObjectsContainer {
 	 */
 	public void execute() {
 		String pLab = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().setDomainLabel();
+		QExecution qExec = ((IIntDomainAccess)this.domainAccess).getInternalDomainAccess().getQExecution();
+		QExecution myQExec = null;
+		boolean doReplay = false;
+		if (qExec == null) {
+			myQExec = new QExecution(ExecType.execute);
+			((IIntDomainAccess)this.domainAccess).getInternalDomainAccess()
+				.setQExecution(myQExec);
+		}
 		try {
 			executeInternal(false);
+		} catch(RuntimeException e) {
+			if (myQExec != null && isReplayQuery(e))
+				doReplay = true;
+			else
+				throw e;
 		} finally {
 			CurrentDomain.setDomainLabel(pLab);
+			if (qExec == null)
+				((IIntDomainAccess)this.domainAccess).getInternalDomainAccess().setQExecution(null);
 		}
+		if (doReplay)
+			replayQuery(myQExec);
 	}
 	
 	/**
@@ -187,13 +208,58 @@ public class QueryExecutor implements IASTObjectsContainer {
 	 */
 	public void executeCount() {
 		String pLab = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().setDomainLabel();
+		QExecution qExec = ((IIntDomainAccess)this.domainAccess).getInternalDomainAccess().getQExecution();
+		QExecution myQExec = null;
+		boolean doReplay = false;
+		if (qExec == null) {
+			myQExec = new QExecution(ExecType.executeCount);
+			((IIntDomainAccess)this.domainAccess).getInternalDomainAccess()
+				.setQExecution(myQExec);
+		}
 		try {
 			executeInternal(true);
+		} catch(RuntimeException e) {
+			if (myQExec != null && isReplayQuery(e))
+				doReplay = true;
+			else
+				throw e;
 		} finally {
 			CurrentDomain.setDomainLabel(pLab);
+			if (qExec == null)
+				((IIntDomainAccess)this.domainAccess).getInternalDomainAccess().setQExecution(null);
 		}
+		if (doReplay)
+			replayQuery(myQExec);
 	}
 	
+	private void replayQuery(QExecution myQExec) {
+		if (this.recordedQueryContext != null) {
+			RecordedQueryPlayer qp = new RecordedQueryPlayer();
+			AbstractDomainQuery q;
+			if (this.recordedQueryContext.recordedQuery.isGeneric())
+				q = qp.replayGenericQuery(this.recordedQueryContext.recordedQuery, domainAccess.getGenericDomainAccess());
+			else
+				q = qp.replayQuery(this.recordedQueryContext.recordedQuery, domainAccess);
+			if (myQExec.geExecType() == ExecType.execute)
+				this.recordedQueryContext.queryResult = q.execute();
+			else if (myQExec.geExecType() == ExecType.executeCount)
+				this.recordedQueryContext.countResult = q.executeCount();
+			String tst = null;
+		}
+		
+	}
+
+	private boolean isReplayQuery(Throwable e) {
+		if (e instanceof JcResultException) {
+			List<JcError> errs = ((JcResultException)e).getErrors();
+			for (JcError err : errs) {
+				if (err.getCodeOrType().equals(QExecution.REPLAY_QUERY))
+					return true;
+			}
+		}
+		return false;
+	}
+
 	private void executeInternal(boolean execCount) {
 		if (this.recordedQueryContext != null)
 			this.recordedQueryContext.queryCompleted();
@@ -2986,6 +3052,9 @@ public class QueryExecutor implements IASTObjectsContainer {
 		private RecordedQuery recordedQuery;
 		private QueriesPerThread queriesPerThread;
 		private AbstractDomainQuery domainQuery;
+		private Map<Object, String> object2IdMap;
+		private DomainQueryResult queryResult;
+		private CountQueryResult countResult;
 		
 		private RecordedQueryContext(RecordedQuery recordedQuery, QueriesPerThread queriesPerThread,
 				AbstractDomainQuery q) {
@@ -2996,8 +3065,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 		}
 		
 		private void queryCompleted() {
-			if (this.queriesPerThread != null)
+			if (this.queriesPerThread != null) {
+				this.object2IdMap = this.queriesPerThread.getObject2IdMap(this.domainQuery);
 				this.queriesPerThread.queryCompleted(this.domainQuery);
+			}
 		}
 	}
 	

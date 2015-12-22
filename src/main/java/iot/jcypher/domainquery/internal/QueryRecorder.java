@@ -413,6 +413,13 @@ public class QueryRecorder {
 					this.recHolderRefs.remove(o);
 			}
 		}
+		
+		public Map<Object, String> getObject2IdMap(AbstractDomainQuery q) {
+			RecQueryHolder rqh = this.get(q);
+			if (rqh != null)
+				return rqh.object2IdMap;
+			return null;
+		}
 	}
 	
 	/*******************************/

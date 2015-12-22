@@ -33,6 +33,7 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import iot.jcypher.concurrency.Locking;
+import iot.jcypher.concurrency.QExecution;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.IDomainAccess;
@@ -126,6 +127,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	private DomainAccessHandler domainAccessHandler;
 	private InternalDomainAccess internalDomainAccess;
 	private GenericDomainAccess genericDomainAccess;
+	private static ThreadLocal<QExecution> qExecution = new ThreadLocal<QExecution>();
 
 	/**
 	 * @param dbAccess the graph database connection
@@ -1656,6 +1658,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			@Override
 			public JcQueryResult execute(JcQuery query) {
 				ExecContext ctxt = new ExecContext();
+				QExecution qExec = DomainAccess.qExecution.get();
 				JcQuery infoQuery = createDomainInfoSyncQuery(ctxt);
 				if (infoQuery != null) {
 					List<JcQuery> queries = new ArrayList<JcQuery>(2);
@@ -1666,14 +1669,39 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					if (errors.isEmpty()) {
 						updateDomainInfo(results.get(1), ctxt);
 					}
+					if (qExec != null)
+						qExec.setCheckedReloadModel(true);
 					return results.get(0);
-				} else
-					return this.delegate.execute(query);
+				} else {
+					List<JcQuery> queries = new ArrayList<JcQuery>();
+					queries.add(query);
+					boolean doCheck = false;
+					if (qExec != null && qExec.geExecType().shouldCheckForReload() && !qExec.isCheckedReloadModel()) {
+						int[] versions = new int[]{domainAccessHandler.domainInfo.version,
+								domainAccessHandler.domainModel.getVersion()};
+						queries.add(createCheckInfoVersionQuery(versions));
+						doCheck = true;
+					}
+					List<JcQueryResult> results = this.delegate.execute(queries);
+					if (doCheck) {
+						// check for need of reload
+						if (Util.collectErrors(results).isEmpty()) {
+							boolean reloaded = reloadInfo_ModelIfNeeded(results.get(1));
+							if (reloaded) { // need to replay query
+								JcQueryResult r = results.get(0);
+								JcError err = new JcError(QExecution.REPLAY_QUERY, null, null);
+								r.addGeneralError(err);
+							}
+						}
+					}
+					return results.get(0);
+				}
 			}
 
 			@Override
 			public List<JcQueryResult> execute(List<JcQuery> queries) {
 				ExecContext ctxt = new ExecContext();
+				QExecution qExec = DomainAccess.qExecution.get();
 				JcQuery infoQuery = createDomainInfoSyncQuery(ctxt);
 				if (infoQuery != null) {
 					List<JcQuery> extQueries = new ArrayList<JcQuery>(queries.size() + 1);
@@ -1685,9 +1713,35 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					if (errors.isEmpty()) {
 						updateDomainInfo(results.get(queries.size()), ctxt);
 					}
+					if (qExec != null)
+						qExec.setCheckedReloadModel(true);
 					return results.subList(0, queries.size());
-				} else
-					return this.delegate.execute(queries);
+				} else {
+					boolean doCheck = false;
+					List<JcQuery> extQueries;
+					if (qExec != null && qExec.geExecType().shouldCheckForReload() && !qExec.isCheckedReloadModel()) {
+						int[] versions = new int[]{domainAccessHandler.domainInfo.version,
+								domainAccessHandler.domainModel.getVersion()};
+						extQueries = new ArrayList<JcQuery>(queries.size() + 1);
+						extQueries.addAll(queries);
+						extQueries.add(createCheckInfoVersionQuery(versions));
+						doCheck = true;
+					} else
+						extQueries = queries;
+					List<JcQueryResult> results = this.delegate.execute(extQueries);
+					if (doCheck) {
+						// check for need of reload
+						if (Util.collectErrors(results).isEmpty()) {
+							boolean reloaded = reloadInfo_ModelIfNeeded(results.get(results.size() - 1));
+							if (reloaded) { // need to replay query
+								JcQueryResult r = results.get(0);
+								JcError err = new JcError(QExecution.REPLAY_QUERY, null, null);
+								r.addGeneralError(err);
+							}
+						}
+					}
+					return results.subList(0, queries.size());
+				}
 			}
 
 			@Override
@@ -1773,21 +1827,21 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						domainModel.updatedToGraph(); // model was stored in any case
 						ExecContext ctxt = new ExecContext();
 						if (retDi != 0) // domain info was concurrently changed
-							ctxt.dInfo = Exec.RELOAD;
+							ctxt.dInfo = Exec.RELOAD_STORE;
 						if (retDm != 0) // domain model was concurrently changed
-							ctxt.dModel = Exec.RELOAD;
-						this.storeDomainInfo_Model(ctxt); // reload and merge
+							ctxt.dModel = Exec.RELOAD_STORE;
+						this.handleDomainInfo_Model(ctxt); // reload and merge
 					}
-				} else if (context.dInfo == Exec.RELOADED || context.dModel == Exec.RELOADED) { // merge
+				} else if (context.dInfo == Exec.RELOADED_STORE || context.dModel == Exec.RELOADED_STORE) { // merge
 					ExecContext ctxt = new ExecContext();
 					// need  to load the model first (important for generic model)
 					int v = 0;
-					if (context.dModel == Exec.RELOADED) { // model reloaded after concurrent change
+					if (context.dModel == Exec.RELOADED_STORE) { // model reloaded after concurrent change
 						JcNode mdl = new JcNode("mdl");
 						List<GrNode> mdlInfos = result.resultOf(mdl);
 						domainModel.mergeFrom(mdlInfos);
 						// get stored model version
-						if (context.dInfo != Exec.RELOADED) {
+						if (context.dInfo != Exec.RELOADED_STORE) {
 							JcNumber m_version = new JcNumber("mv");
 							v = result.resultOf(m_version).get(0).intValue();
 						} else {
@@ -1799,7 +1853,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						v++;
 					}
 					
-					if (context.dInfo == Exec.RELOADED) { // domain info reloaded after concurrent change
+					if (context.dInfo == Exec.RELOADED_STORE) { // domain info reloaded after concurrent change
 						JcNode info = new JcNode("info");
 						GrNode rInfo = result.resultOf(info).get(0);
 						DomainInfo di = new DomainInfo(domainInfo.nodeId);
@@ -1810,10 +1864,27 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					} else
 						ctxt.dInfo = Exec.STORE_VERSIONS;
 					
-					if (context.dModel == Exec.RELOADED)
+					if (context.dModel == Exec.RELOADED_STORE)
 						domainModel.setVersion(v);
 						
-					this.storeDomainInfo_Model(ctxt); // we still have to store our own changes (if there are any)
+					this.handleDomainInfo_Model(ctxt); // we still have to store our own changes (if there are any)
+				} else if (context.dInfo == Exec.RELOADED || context.dModel == Exec.RELOADED) { // merge
+					// need  to load the model first (important for generic model)
+					if (context.dModel == Exec.RELOADED) { // model reloaded after concurrent change
+						JcNode mdl = new JcNode("mdl");
+						List<GrNode> mdlInfos = result.resultOf(mdl);
+						domainModel.mergeFrom(mdlInfos);
+					}
+					
+					if (context.dInfo == Exec.RELOADED) { // domain info reloaded after concurrent change
+						JcNode info = new JcNode("info");
+						GrNode rInfo = result.resultOf(info).get(0);
+						DomainInfo di = new DomainInfo(domainInfo.nodeId);
+						di.initFrom(rInfo);
+						domainInfo.updateFrom(di);
+						domainInfo.version = di.version;
+						domainInfo.changed = false;
+					}
 				}
 				
 				if (this.temporaryDomainInfo != null) {
@@ -1821,7 +1892,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					this.temporaryDomainInfo = null;
 				}
 				
-				this.storeDomainInfo_Model(null); // make sure that still pending changes are committed to the database
+				this.handleDomainInfo_Model(null); // make sure that still pending changes are committed to the database
 			}
 
 			private JcQuery createDomainInfoSyncQuery(ExecContext context) {
@@ -1850,28 +1921,52 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						context.dInfo = Exec.INIT_LOADED;
 						context.dModel = Exec.INIT_LOADED;
 					} else if (context.dInfo == Exec.RELOAD || context.dModel == Exec.RELOAD) {
-						// reload and merge
+						// reload
 						List<IClause> clauses = new ArrayList<IClause>();
 						List<IClause> returnClauses = new ArrayList<IClause>();
+						JcNode info = new JcNode("info");
 						if (context.dInfo == Exec.RELOAD) {
-							JcNode info = new JcNode("info");
-							clauses.addAll(createDomainInfoStartClause(info));
-							clauses.add(WITH.value(info)); // only needed with MERGE as start clause
+							clauses.add(MERGE.node(info).label(DomainInfoNodeLabel)
+									.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName));
+							clauses.add(ON_CREATE.SET(info.property(DomainInfoVersionProperty)).to(0));
+							clauses.add(ON_CREATE.SET(info.property(DomainInfoModelVersionProperty)).to(0));
 							returnClauses.add(RETURN.value(info));
 							context.dInfo = Exec.RELOADED;
 						}
 						if (context.dModel == Exec.RELOAD) {
 							JcNode mdl = new JcNode("mdl");
+							if (context.dInfo == Exec.RELOADED)
+								clauses.add(WITH.value(info));
 							clauses.add(OPTIONAL_MATCH.node(mdl).label(domainModel.getTypeNodeName()));
 							returnClauses.add(RETURN.value(mdl));
-							if (context.dInfo != Exec.RELOADED) { // need to know the stored model version
+							context.dModel = Exec.RELOADED;
+						}
+						clauses.addAll(returnClauses);
+						query = new JcQuery();
+						query.setClauses(clauses.toArray(new IClause[clauses.size()]));
+					} else if (context.dInfo == Exec.RELOAD_STORE || context.dModel == Exec.RELOAD_STORE) {
+						// reload and merge
+						List<IClause> clauses = new ArrayList<IClause>();
+						List<IClause> returnClauses = new ArrayList<IClause>();
+						if (context.dInfo == Exec.RELOAD_STORE) {
+							JcNode info = new JcNode("info");
+							clauses.addAll(createDomainInfoStartClause(info));
+							clauses.add(WITH.value(info)); // only needed with MERGE as start clause
+							returnClauses.add(RETURN.value(info));
+							context.dInfo = Exec.RELOADED_STORE;
+						}
+						if (context.dModel == Exec.RELOAD_STORE) {
+							JcNode mdl = new JcNode("mdl");
+							clauses.add(OPTIONAL_MATCH.node(mdl).label(domainModel.getTypeNodeName()));
+							returnClauses.add(RETURN.value(mdl));
+							if (context.dInfo != Exec.RELOADED_STORE) { // need to know the stored model version
 								JcNode info = new JcNode("info");
 								JcNumber m_version = new JcNumber("mv");
 								clauses.add(0, WITH.value(info)); // only needed with MERGE as start clause
 								clauses.addAll(0, createDomainInfoStartClause(info));
 								returnClauses.add(RETURN.value(info.property(DomainInfoModelVersionProperty)).AS(m_version));
 							}
-							context.dModel = Exec.RELOADED;
+							context.dModel = Exec.RELOADED_STORE;
 						}
 						clauses.addAll(returnClauses);
 						query = new JcQuery();
@@ -2028,7 +2123,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			/**
 			 * store if needed
 			 */
-			private void storeDomainInfo_Model(ExecContext context) {
+			private void handleDomainInfo_Model(ExecContext context) {
 				// make sure that still pending changes are committed to the database
 				// can happen in certain scenarios with the first domain query executed
 				ExecContext ctxt = context == null ? new ExecContext() : context;
@@ -2052,6 +2147,60 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				ret.add(ON_CREATE.SET(info.property(DomainInfoVersionProperty)).to(0));
 				ret.add(ON_CREATE.SET(info.property(DomainInfoModelVersionProperty)).to(0));
 				return ret;
+			}
+			
+			private JcQuery createCheckInfoVersionQuery(int[] versions) {
+				List<IClause> clauses = new ArrayList<IClause>();
+				JcNode info1 = new JcNode("info1");
+				clauses.addAll(createDomainInfoStartClause(info1));
+				JcNumber retDi = new JcNumber("retDi");
+				JcNumber retDm = new JcNumber("retDm");
+				clauses.add(WITH.collection(C.CREATE(
+						new IClause[]{
+								CASE.result(),
+								WHEN.valueOf(info1.property(DomainInfoVersionProperty)).EQUALS(versions[0]),
+								NATIVE.cypher("0"),
+								ELSE.perform(),
+								NATIVE.cypher("1"),
+								END.caseXpr().AS(retDi)
+						})));
+				clauses.add(WITH.collection(C.CREATE(
+						new IClause[]{
+								CASE.result(),
+								WHEN.valueOf(info1.property(DomainInfoModelVersionProperty)).EQUALS(versions[1]),
+								NATIVE.cypher("0"),
+								ELSE.perform(),
+								NATIVE.cypher("1"),
+								END.caseXpr().AS(retDm)
+						})));
+				clauses.add(RETURN.value(retDi));
+				clauses.add(RETURN.value(retDm));
+				JcQuery query = new JcQuery();
+				query.setClauses(clauses.toArray(new IClause[clauses.size()]));
+				return query;
+			}
+			
+			/**
+			 * answer true if model and / or info was reloaded
+			 * @param result
+			 * @return
+			 */
+			private boolean reloadInfo_ModelIfNeeded(JcQueryResult result) {
+				JcNumber rDi = new JcNumber("retDi");
+				JcNumber rDm = new JcNumber("retDm");
+				int retDi = ((Number)result.resultOf(rDi).get(0)).intValue();
+				int retDm = ((Number)result.resultOf(rDm).get(0)).intValue();
+				if (retDi + retDm == 0) // don't need to reload
+					return false;
+				else { // need to reload
+					ExecContext ctxt = new ExecContext();
+					if (retDi > 0)
+						ctxt.dInfo = Exec.RELOAD;
+					if (retDm > 0)
+						ctxt.dModel = Exec.RELOAD;
+					handleDomainInfo_Model(ctxt);
+					return true;
+				}
 			}
 		}
 	}
@@ -3728,7 +3877,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	
 	/**********************************/
 	private enum Exec {
-		INIT_LOADED, TRIED_STORE, RELOAD, RELOADED, STORE_VERSIONS
+		INIT_LOADED, TRIED_STORE, RELOAD_STORE, RELOADED_STORE,
+		RELOAD, RELOADED, STORE_VERSIONS
 	}
 	
 	/**********************************/
@@ -3900,6 +4050,17 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		
 		public DomainObject getGenericDomainObject(Object object) {
 			return genericDomainAccess.getDomainObject(object);
+		}
+		
+		public void setQExecution(QExecution qExecution) {
+			if (qExecution == null)
+				DomainAccess.qExecution.remove();
+			else
+				DomainAccess.qExecution.set(qExecution);
+		}
+		
+		public QExecution getQExecution() {
+			return DomainAccess.qExecution.get();
 		}
 		
 		/**
