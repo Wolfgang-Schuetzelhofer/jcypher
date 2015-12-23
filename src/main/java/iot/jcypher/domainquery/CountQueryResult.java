@@ -36,17 +36,25 @@ public class CountQueryResult {
 	 */
 	public long countOf(DomainObjectMatch<?> match) {
 		long ret;
-		Boolean br_old = QueryRecorder.blockRecording.get();
-		try {
-			QueryRecorder.blockRecording.set(Boolean.TRUE);
-			DomainObjectMatch<?> delegate = APIAccess.getDelegate(match);
-			if (delegate != null) // this is a generic domain query
-				ret = this.domainQuery.getQueryExecutor().getCountResult(delegate);
-			else
-				ret = this.domainQuery.getQueryExecutor().getCountResult(match);
-		} finally {
-			QueryRecorder.blockRecording.set(br_old);
+		if (this.domainQuery.getQueryExecutor().hasBeenReplayed()) {
+			ret = this.domainQuery.getQueryExecutor().getReplayedCountResult(match);
+		} else {
+			Boolean br_old = QueryRecorder.blockRecording.get();
+			try {
+				QueryRecorder.blockRecording.set(Boolean.TRUE);
+				DomainObjectMatch<?> delegate = APIAccess.getDelegate(match);
+				if (delegate != null) // this is a generic domain query
+					ret = this.domainQuery.getQueryExecutor().getCountResult(delegate);
+				else
+					ret = this.domainQuery.getQueryExecutor().getCountResult(match);
+			} finally {
+				QueryRecorder.blockRecording.set(br_old);
+			}
 		}
 		return ret;
+	}
+	
+	AbstractDomainQuery getDomainQuery() {
+		return this.domainQuery;
 	}
 }

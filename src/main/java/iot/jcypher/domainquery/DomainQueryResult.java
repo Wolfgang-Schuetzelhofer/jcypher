@@ -30,28 +30,56 @@ public class DomainQueryResult {
 		super();
 		this.domainQuery = domainQuery;
 	}
-
+	
 	/**
 	 * Answer the matching domain objects
 	 * @param match
 	 * @return a list of matching domain objects
 	 */
-	@SuppressWarnings("unchecked")
 	public <T> List<T> resultOf(DomainObjectMatch<T> match) {
+		return resultOf(match, false);
+	}
+
+	/**
+	 * Answer the matching domain objects
+	 * @param match
+	 * @param forceResolve force resolving domain objects even if they have been resolved prevoiusly
+	 * @return a list of matching domain objects
+	 */
+	@SuppressWarnings("unchecked")
+	public <T> List<T> resultOf(DomainObjectMatch<T> match, boolean forceResolve) {
 		List<T> ret;
-		Boolean br_old = QueryRecorder.blockRecording.get();
 		try {
-			QueryRecorder.blockRecording.set(Boolean.TRUE);
-			DomainObjectMatch<?> delegate = APIAccess.getDelegate(match);
-			if (delegate != null) { // this is a generic domain query
-				List<?> dobjs = this.domainQuery.getQueryExecutor().loadResult(delegate);
-				ret = (List<T>) this.domainQuery.getQueryExecutor().getMappingInfo()
-					.getInternalDomainAccess().getGenericDomainObjects(dobjs);
-			} else
-				ret = this.domainQuery.getQueryExecutor().loadResult(match);
+			if (forceResolve)
+				this.domainQuery.getQueryExecutor().getMappingInfo()
+					.getInternalDomainAccess().startReResolve();
+			
+			if (this.domainQuery.getQueryExecutor().hasBeenReplayed()) {
+				ret = this.domainQuery.getQueryExecutor().loadReplayedResult(match);
+			} else {
+				Boolean br_old = QueryRecorder.blockRecording.get();
+				try {
+					QueryRecorder.blockRecording.set(Boolean.TRUE);
+					DomainObjectMatch<?> delegate = APIAccess.getDelegate(match);
+					if (delegate != null) { // this is a generic domain query
+						List<?> dobjs = this.domainQuery.getQueryExecutor().loadResult(delegate);
+						ret = (List<T>) this.domainQuery.getQueryExecutor().getMappingInfo()
+							.getInternalDomainAccess().getGenericDomainObjects(dobjs);
+					} else
+						ret = this.domainQuery.getQueryExecutor().loadResult(match);
+				} finally {
+					QueryRecorder.blockRecording.set(br_old);
+				}
+			}
 		} finally {
-			QueryRecorder.blockRecording.set(br_old);
+			if (forceResolve)
+				this.domainQuery.getQueryExecutor().getMappingInfo()
+					.getInternalDomainAccess().endReResolve();
 		}
 		return ret;
+	}
+	
+	AbstractDomainQuery getDomainQuery() {
+		return this.domainQuery;
 	}
 }

@@ -414,10 +414,27 @@ public class QueryRecorder {
 			}
 		}
 		
-		public Map<Object, String> getObject2IdMap(AbstractDomainQuery q) {
+		/**
+		 * answer a map of DomainObjectMatch(es) to recorded query ids.
+		 * <br/>Note: this destroys the original object2IdMap and may be called
+		 * <br/>only after query recording has been completed.
+		 * @param q
+		 * @return
+		 */
+		public Map<Object, String> getDOM2IdMap(AbstractDomainQuery q) {
 			RecQueryHolder rqh = this.get(q);
-			if (rqh != null)
+			if (rqh != null) {
+				List<Object> remove = new ArrayList<Object>();
+				Iterator<Object> it = rqh.object2IdMap.keySet().iterator();
+				while(it.hasNext()) {
+					Object o = it.next();
+					if (!(o instanceof DomainObjectMatch<?>))
+						remove.add(o);
+				}
+				for(Object o : remove)
+					rqh.object2IdMap.remove(o);
 				return rqh.object2IdMap;
+			}
 			return null;
 		}
 	}

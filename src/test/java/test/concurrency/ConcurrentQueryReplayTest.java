@@ -58,10 +58,11 @@ public class ConcurrentQueryReplayTest extends AbstractTestSuite {
 		String qCypher;
 		Locking lockingStrategy = Locking.OPTIMISTIC;
 		
-		/******* first client loading j_smith ******/
+		/******* first client loading smith ******/
 		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess,
 				domainName).setLockingStrategy(lockingStrategy);
-		Person j_smith = ConcurrencyTest.findPerson(da1, "Smith", "John");
+		Person a_smith = ConcurrencyTest.findPerson(da1, "Smith", "Angelina");
+		Person j_smith1 = ConcurrencyTest.findPerson(da1, "Smith", "John");
 		
 		/******* second client loading j_smith ******/
 		IDomainAccess da2 = DomainAccessFactory.createDomainAccess(dbAccess,
@@ -85,7 +86,7 @@ public class ConcurrentQueryReplayTest extends AbstractTestSuite {
 		assertFalse(domModel2.equals(domModel1));
 		
 		/******* first client performing a query ******/
-		Person j_smith_next = ConcurrencyTest.findPerson(da1, "Smith", "John");
+		Person j_smith = ConcurrencyTest.findPerson(da1, "Smith", "John");
 		
 		String domModel11 = ((IIntDomainAccess)da1).getInternalDomainAccess().domainModelAsString();
 		assertEquals(domModel2, domModel11);
@@ -120,6 +121,8 @@ public class ConcurrentQueryReplayTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO,
 				ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOM_QUERY,
+				ContentToObserve.CYPHER);
+		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.CLOSURE_QUERY,
 				ContentToObserve.CYPHER);
 		
 		initDB(Locking.OPTIMISTIC);

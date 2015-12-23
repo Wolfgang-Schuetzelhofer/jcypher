@@ -45,6 +45,7 @@ import iot.jcypher.domain.mapping.surrogate.Collection;
 import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.CountQueryResult;
 import iot.jcypher.domainquery.DomainQueryResult;
+import iot.jcypher.domainquery.InternalAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.Count;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -178,6 +179,13 @@ public class QueryExecutor implements IASTObjectsContainer {
 	 * Execute the domain query
 	 */
 	public void execute() {
+		if (hasBeenReplayed()) { // delegate to the replayed query
+			if (this.recordedQueryContext.queryResult == null) // only count query has been executed
+				this.recordedQueryContext.queryResult =
+					InternalAccess.getDomainQuery(this.recordedQueryContext.countResult)
+						.execute();
+			return;
+		}
 		String pLab = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().setDomainLabel();
 		QExecution qExec = ((IIntDomainAccess)this.domainAccess).getInternalDomainAccess().getQExecution();
 		QExecution myQExec = null;
@@ -207,6 +215,13 @@ public class QueryExecutor implements IASTObjectsContainer {
 	 * Execute the count query
 	 */
 	public void executeCount() {
+		if (hasBeenReplayed()) { // delegate to the replayed query
+			if (this.recordedQueryContext.countResult == null) // only dom query has been executed
+				this.recordedQueryContext.countResult =
+					InternalAccess.getDomainQuery(this.recordedQueryContext.queryResult)
+						.executeCount();
+			return;
+		}
 		String pLab = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().setDomainLabel();
 		QExecution qExec = ((IIntDomainAccess)this.domainAccess).getInternalDomainAccess().getQExecution();
 		QExecution myQExec = null;
@@ -232,6 +247,18 @@ public class QueryExecutor implements IASTObjectsContainer {
 			replayQuery(myQExec);
 	}
 	
+	/**
+	 * answer true if this query has been replayed and therefore contains the replayed query result
+	 * @return
+	 */
+	public boolean hasBeenReplayed() {
+		if (this.recordedQueryContext != null) {
+			return this.recordedQueryContext.queryResult != null ||
+					this.recordedQueryContext.countResult != null;
+		}
+		return false;
+	}
+	
 	private void replayQuery(QExecution myQExec) {
 		if (this.recordedQueryContext != null) {
 			RecordedQueryPlayer qp = new RecordedQueryPlayer();
@@ -244,9 +271,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 				this.recordedQueryContext.queryResult = q.execute();
 			else if (myQExec.geExecType() == ExecType.executeCount)
 				this.recordedQueryContext.countResult = q.executeCount();
-			String tst = null;
 		}
-		
 	}
 
 	private boolean isReplayQuery(Throwable e) {
@@ -347,6 +372,13 @@ public class QueryExecutor implements IASTObjectsContainer {
 		return ret;
 	}
 	
+	@SuppressWarnings("unchecked")
+	public <T> List<T> loadReplayedResult(DomainObjectMatch<T> match) {
+		DomainObjectMatch<?> matching = this.recordedQueryContext.findMatchingTo(match);
+		List<T> ret = (List<T>) this.recordedQueryContext.queryResult.resultOf(matching, true); // force reload
+		return ret;
+	}
+	
 	public long getCountResult(DomainObjectMatch<?> match) {
 		long res = 0;
 		if (this.countResult == null)
@@ -358,6 +390,11 @@ public class QueryExecutor implements IASTObjectsContainer {
 			res = res + resPerType.count;
 		}
 		return res;
+	}
+	
+	public long getReplayedCountResult(DomainObjectMatch<?> match) {
+		DomainObjectMatch<?> matching = this.recordedQueryContext.findMatchingTo(match);
+		return this.recordedQueryContext.countResult.countOf(matching);
 	}
 	
 	private List<Long> getIdsFor(DomainObjectMatch<?> match, Class<?> type) {
@@ -3066,9 +3103,24 @@ public class QueryExecutor implements IASTObjectsContainer {
 		
 		private void queryCompleted() {
 			if (this.queriesPerThread != null) {
-				this.object2IdMap = this.queriesPerThread.getObject2IdMap(this.domainQuery);
+				this.object2IdMap = this.queriesPerThread.getDOM2IdMap(this.domainQuery);
 				this.queriesPerThread.queryCompleted(this.domainQuery);
 			}
+		}
+		
+		private DomainObjectMatch<?> findMatchingTo(DomainObjectMatch<?> dom) {
+			String oid = this.object2IdMap.get(dom);
+			ReplayedQueryContext rctxt = InternalAccess.getQueryExecutor(getReplayedQuery()).getReplayedQueryContext();
+			DomainObjectMatch<?> match = rctxt.getById(oid);
+			return match;
+		}
+		
+		private AbstractDomainQuery getReplayedQuery() {
+			if (this.queryResult != null)
+				return InternalAccess.getDomainQuery(this.queryResult);
+			else if (this.countResult != null)
+				return InternalAccess.getDomainQuery(this.countResult);
+			return null;
 		}
 	}
 	

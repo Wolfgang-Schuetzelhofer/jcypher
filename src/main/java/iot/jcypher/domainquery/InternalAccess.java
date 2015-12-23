@@ -17,6 +17,7 @@
 package iot.jcypher.domainquery;
 
 import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.domainquery.internal.QueryExecutor;
 import iot.jcypher.domainquery.internal.RecordedQuery;
 import iot.jcypher.domainquery.internal.ReplayedQueryContext;
 
@@ -37,5 +38,17 @@ public class InternalAccess {
 	
 	public static void replayQuery(AbstractDomainQuery query, ReplayedQueryContext rqc) {
 		query.replayQuery(rqc);
+	}
+	
+	public static AbstractDomainQuery getDomainQuery(DomainQueryResult qr) {
+		return qr.getDomainQuery();
+	}
+	
+	public static AbstractDomainQuery getDomainQuery(CountQueryResult qr) {
+		return qr.getDomainQuery();
+	}
+	
+	public static QueryExecutor getQueryExecutor(AbstractDomainQuery q) {
+		return q.getQueryExecutor();
 	}
 }

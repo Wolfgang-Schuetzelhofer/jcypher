@@ -494,6 +494,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private IDBAccess dbAccess;
 		private DomainState domainState;
 		private ThreadLocal<DomainState> transactionState;
+		private ThreadLocal<ReResolve> reResolve;
 		private Locking lockingStrategy;
 		private Map<Class<?>, ObjectMapping> mappings;
 		
@@ -515,6 +516,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			this.mappings = new HashMap<Class<?>, ObjectMapping>();
 			this.type2CompoundTypeMap = new HashMap<Class<?>, CompoundObjectType>();
 			this.transactionState = new ThreadLocal<DomainState>();
+			this.reResolve = new ThreadLocal<ReResolve>();
 			this.lockingStrategy = Locking.NONE;
 			this.domainModel = iot.jcypher.domain.genericmodel.internal.InternalAccess
 					.createDomainModel(this.domainName, getDomainLabel(), DomainAccess.this);
@@ -1192,7 +1194,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 			
 			if (queries.size() > 0) { // at least one node has to be (re)loaded
-//				Util.printQueries(queries, "CLOSURE", Format.PRETTY_1);
+				Util.printQueries(queries, QueryToObserve.CLOSURE_QUERY, Format.PRETTY_1);
 				List<JcQueryResult> results = this.dbAccess.execute(queries);
 				List<JcError> errors = Util.collectErrors(results);
 				if (errors.size() > 0) {
@@ -1513,20 +1515,24 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				} else
 					throw new JcResultException(errors);
 				
-				// update the type2CompoundTypeMap
-				Set<Class<?>> classes = this.domainInfo.getAllStoredDomainClasses();
-				Iterator<Class<?>> it = classes.iterator();
-				while(it.hasNext()) {
-					Class<?> clazz = it.next();
-					ObjectMapping objectMapping = this.mappings.get(clazz);
-					if (objectMapping == null) {
-						objectMapping = createObjectMappingFor(clazz);
-						this.mappings.put(clazz, objectMapping);
-						this.updateCompoundTypeMapWith(clazz);
-					}
-				}
+				updateClassMapping(this.domainInfo);
 			}
 			return this.domainInfo;
+		}
+		
+		private void updateClassMapping(DomainInfo di) {
+			// update the type2CompoundTypeMap
+			Set<Class<?>> classes = di.getAllStoredDomainClasses();
+			Iterator<Class<?>> it = classes.iterator();
+			while(it.hasNext()) {
+				Class<?> clazz = it.next();
+				ObjectMapping objectMapping = this.mappings.get(clazz);
+				if (objectMapping == null) {
+					objectMapping = createObjectMappingFor(clazz);
+					this.mappings.put(clazz, objectMapping);
+					this.updateCompoundTypeMapWith(clazz);
+				}
+			}
 		}
 		
 		private DomainInfo getAvailableDomainInfo() {
@@ -1861,6 +1867,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						domainInfo.updateFrom(di);
 						domainInfo.version = di.version + 1;
 						domainInfo.changed = true;
+						updateClassMapping(domainInfo);
 					} else
 						ctxt.dInfo = Exec.STORE_VERSIONS;
 					
@@ -1884,6 +1891,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						domainInfo.updateFrom(di);
 						domainInfo.version = di.version;
 						domainInfo.changed = false;
+						updateClassMapping(domainInfo);
 					}
 				}
 				
@@ -2723,6 +2731,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 									}
 								} else {
 									// domainObject has at least been shallowly mapped
+									boolean forceMapProperties = this.handleReResolve(domainObject, ds);
 									if (ds.getResolutionDepth(domainObject) !=
 												ResolutionDepth.DEEP) {
 										boolean removed = false;
@@ -2732,7 +2741,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 										}
 										if (resolveDeep) {
 											performMapping = true;
-											mapProperties = false; // properties have already been mapped
+											mapProperties = forceMapProperties; // properties have already been mapped
+													// but may be forced to be re-mapped
 											ds.getLoadInfoFrom_Object2IdMap(domainObject)
 												.setResolutionDepth(ResolutionDepth.DEEP);
 											if (!removed)
@@ -2927,6 +2937,20 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					context.resolveInnerClasses = false;
 			}
 			
+			private boolean handleReResolve(Object domainObject, DomainState ds) {
+				boolean ret = false;
+				ReResolve rer = DomainAccess.this.domainAccessHandler.reResolve.get();
+				if (rer != null) {
+					if (!rer.reResolved.contains(domainObject)) {
+						rer.reResolved.add(domainObject);
+						LoadInfo li = ds.getLoadInfoFrom_Object2IdMap(domainObject);
+						li.setResolutionDepth(ResolutionDepth.SHALLOW);
+						ret = true;
+					}
+				}
+				return ret;
+			}
+
 			@SuppressWarnings("unchecked")
 			private <T> SurrogateContent checkForSurrogates(FillModelContext<T> context, FieldMapping fm,
 					FieldKind fieldKind, CompoundObjectType compoundType) {
@@ -3044,10 +3068,13 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					});
 				}
 				for (KeyedRelation irel : toResort) {
-					if (coll != null)
-						coll.add(irel.getEnd());
-					else
-						array.add(irel.getEnd());
+					if (coll != null) {
+						if (!coll.contains(irel.getEnd()))
+							coll.add(irel.getEnd());
+					} else {
+						if (!array.contains(irel.getEnd()))
+							array.add(irel.getEnd());
+					}
 				}
 			}
 			
@@ -3886,6 +3913,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		private Exec dInfo;
 		private Exec dModel;
 	}
+	
+	/**********************************/
+	private class ReResolve {
+		private Set<Object> reResolved = new HashSet<>();
+	}
 
 	/************************************/
 	public interface IRecursionExit {
@@ -4061,6 +4093,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		
 		public QExecution getQExecution() {
 			return DomainAccess.qExecution.get();
+		}
+		
+		public void startReResolve() {
+			domainAccessHandler.reResolve.set(new ReResolve());
+		}
+		
+		public void endReResolve() {
+			domainAccessHandler.reResolve.remove();
 		}
 		
 		/**
