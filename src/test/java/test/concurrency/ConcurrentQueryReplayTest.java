@@ -70,6 +70,7 @@ public class ConcurrentQueryReplayTest extends AbstractTestSuite {
 		Person j_smith2 = ConcurrencyTest.findPerson(da2, "Smith", "John");
 		
 		/******* second client extending model ******/
+		//j_smith2.setFirstName("Johnny");
 		PoBox poBox = new PoBox();
 		poBox.setNumber(12345);
 		List<PointOfContact> pocs = j_smith2.getPointsOfContact();
@@ -85,11 +86,27 @@ public class ConcurrentQueryReplayTest extends AbstractTestSuite {
 		
 		assertFalse(domModel2.equals(domModel1));
 		
+		/******* temp client loading smith ******/
+		IDomainAccess da3 = DomainAccessFactory.createDomainAccess(dbAccess,
+				domainName).setLockingStrategy(lockingStrategy);
+		Person j_smithTemp = ConcurrencyTest.findPerson(da3, "Smith", "John");
+		
+		assertTrue(j_smith1.getPointsOfContact().size() == 4);
+		assertTrue(j_smithTemp.getPointsOfContact().size() == 5);
+		assertTrue(j_smithTemp.getPointsOfContact().get(4) instanceof PoBox);
+		assertTrue(((PoBox)j_smithTemp.getPointsOfContact().get(4)).getNumber() == 12345);
+		
 		/******* first client performing a query ******/
 		Person j_smith = ConcurrencyTest.findPerson(da1, "Smith", "John");
 		
 		String domModel11 = ((IIntDomainAccess)da1).getInternalDomainAccess().domainModelAsString();
 		assertEquals(domModel2, domModel11);
+		
+		assertTrue(j_smith1 == j_smith);
+		assertTrue(j_smith.getPointsOfContact().size() == 5);
+		assertTrue(j_smith.getPointsOfContact().get(4) instanceof PoBox);
+		assertTrue(((PoBox)j_smith.getPointsOfContact().get(4)).getNumber() == 12345);
+		
 		
 		// remove model version info
 //		domModel11 = domModel11.substring(domModel11.indexOf('{'), domModel11.length());
@@ -108,7 +125,7 @@ public class ConcurrentQueryReplayTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 	
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props,
 		// "neo4j", "jcypher");
 	

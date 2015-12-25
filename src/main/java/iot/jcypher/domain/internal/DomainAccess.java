@@ -2960,15 +2960,15 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
 						ret.collection = ((iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject).getContent();
 					}
+					String classFieldName = fm.getClassFieldName();
+					ret.compoundType = MappingUtil.internalDomainAccess.get()
+							.getFieldComponentType(classFieldName);
 					if (ret.collection == null) {
-						String classFieldName = fm.getClassFieldName();
 						// select the first concrete type in the CompoundType to instantiate.
 						// Most certainly there will only be one type in the CompoundType,
 						// anyway it must be instantiable as it has earlier been stored to the graph
 						ret.collection = (Collection<Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
 								.getConcreteFieldType(classFieldName).getType());
-						ret.compoundType = MappingUtil.internalDomainAccess.get()
-								.getFieldComponentType(classFieldName);
 						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
 							((iot.jcypher.domain.mapping.surrogate.Collection)context.parentObject)
 								.setContent(ret.collection);
@@ -2981,11 +2981,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Array) {
 						ret.array = ((iot.jcypher.domain.mapping.surrogate.Array)context.parentObject).getListContent();
 					}
+					String classFieldName = fm.getClassFieldName();
+					ret.compoundType = MappingUtil.internalDomainAccess.get()
+							.getFieldComponentType(classFieldName);
 					if (ret.array == null) {
-						String classFieldName = fm.getClassFieldName();
 						ret.array = new ObservableList<Object>();
-						ret.compoundType = MappingUtil.internalDomainAccess.get()
-								.getFieldComponentType(classFieldName);
 						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Array) {
 							((iot.jcypher.domain.mapping.surrogate.Array)context.parentObject)
 								.setListContent(ret.array);
@@ -2995,15 +2995,15 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
 						ret.map = ((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject).getContent();
 					}
+					String classFieldName = fm.getClassFieldName();
+					ret.compoundType = MappingUtil.internalDomainAccess.get()
+							.getFieldComponentType(classFieldName);
 					if (ret.map == null) {
-						String classFieldName = fm.getClassFieldName();
 						// select the first concrete type in the CompoundType to instantiate.
 						// Most certainly there will only be one type in the CompoundType,
 						// anyway it must be instantiable as it has earlier been stored to the graph
 						ret.map = (Map<Object, Object>) domainAccessHandler.createInstance(MappingUtil.internalDomainAccess.get()
 								.getConcreteFieldType(classFieldName).getType());
-						ret.compoundType = MappingUtil.internalDomainAccess.get()
-								.getFieldComponentType(classFieldName);
 						if (context.parentObject instanceof iot.jcypher.domain.mapping.surrogate.Map) {
 							((iot.jcypher.domain.mapping.surrogate.Map)context.parentObject)
 								.setContent(ret.map);
