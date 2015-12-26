@@ -73,7 +73,8 @@ public class QueriesPrintObserver {
 		CLOSURE_QUERY("CLOSURE"),
 		UPDATE_QUERY("UPDATE"),
 		QUERY_CONCRETE_TYPE("Query concrete type"),
-		LOAD_BY_TYPE_QUERY("LOAD-BY-TYPE");
+		LOAD_BY_TYPE_QUERY("LOAD-BY-TYPE"),
+		DOMAINACCESS_EXECUTE_INTERNAL("EXEC_INT");
 		
 		private String title;
 

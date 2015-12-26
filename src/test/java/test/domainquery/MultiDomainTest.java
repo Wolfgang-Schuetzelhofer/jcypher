@@ -87,7 +87,9 @@ public class MultiDomainTest extends AbstractTestSuite {
 		
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.COUNT_QUERY, ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOM_QUERY, ContentToObserve.CYPHER);
-//		QueriesPrintObserver.addToEnabledQueries("DOMAIN INFO", ContentToObserve.CYPHER);
+		
+//		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO, ContentToObserve.CYPHER);
+//		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAINACCESS_EXECUTE_INTERNAL, ContentToObserve.CYPHER);
 		
 		clearDB();
 		before(domainName, DomainLabelUse.AUTO);

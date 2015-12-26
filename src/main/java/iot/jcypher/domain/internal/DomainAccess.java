@@ -1670,6 +1670,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					List<JcQuery> queries = new ArrayList<JcQuery>(2);
 					queries.add(query);
 					queries.add(infoQuery);
+					Util.printQueries(queries, QueryToObserve.DOMAINACCESS_EXECUTE_INTERNAL, Format.PRETTY_1);
 					List<JcQueryResult> results = this.delegate.execute(queries);
 					List<JcError> errors = Util.collectErrors(results);
 					if (errors.isEmpty()) {
@@ -1688,6 +1689,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						queries.add(createCheckInfoVersionQuery(versions));
 						doCheck = true;
 					}
+					Util.printQueries(queries, QueryToObserve.DOMAINACCESS_EXECUTE_INTERNAL, Format.PRETTY_1);
 					List<JcQueryResult> results = this.delegate.execute(queries);
 					if (doCheck) {
 						// check for need of reload
@@ -1713,6 +1715,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 					List<JcQuery> extQueries = new ArrayList<JcQuery>(queries.size() + 1);
 					extQueries.addAll(queries);
 					extQueries.add(infoQuery);
+					Util.printQueries(extQueries, QueryToObserve.DOMAINACCESS_EXECUTE_INTERNAL, Format.PRETTY_1);
 					List<JcQueryResult> results = this.delegate.execute(extQueries);
 //					Util.printResults(results, "DOMAIN INFO", Format.PRETTY_1);
 					List<JcError> errors = Util.collectErrors(results);
@@ -1734,6 +1737,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						doCheck = true;
 					} else
 						extQueries = queries;
+					Util.printQueries(extQueries, QueryToObserve.DOMAINACCESS_EXECUTE_INTERNAL, Format.PRETTY_1);
 					List<JcQueryResult> results = this.delegate.execute(extQueries);
 					if (doCheck) {
 						// check for need of reload
@@ -2148,12 +2152,18 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 			
 			private List<IClause> createDomainInfoStartClause(JcNode info) {
+				String pLab = CurrentDomain.label.get();
+				CurrentDomain.setDomainLabel(null);
 				List<IClause> ret = new ArrayList<IClause>();
-//				ret.add(START.node(info).byId(DomainAccessHandler.this.domainInfo.nodeId));
-				ret.add(MERGE.node(info).label(DomainInfoNodeLabel)
-						.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName));
-				ret.add(ON_CREATE.SET(info.property(DomainInfoVersionProperty)).to(0));
-				ret.add(ON_CREATE.SET(info.property(DomainInfoModelVersionProperty)).to(0));
+				try {
+	//				ret.add(START.node(info).byId(DomainAccessHandler.this.domainInfo.nodeId));
+					ret.add(MERGE.node(info).label(DomainInfoNodeLabel)
+							.property(DomainInfoNameProperty).value(DomainAccessHandler.this.domainName));
+					ret.add(ON_CREATE.SET(info.property(DomainInfoVersionProperty)).to(0));
+					ret.add(ON_CREATE.SET(info.property(DomainInfoModelVersionProperty)).to(0));
+				} finally {
+					CurrentDomain.setDomainLabel(pLab);
+				}
 				return ret;
 			}
 			
