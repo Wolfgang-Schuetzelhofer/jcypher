@@ -25,8 +25,11 @@ import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domain.IGenericDomainAccess;
+import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
+import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.query.result.JcError;
@@ -626,6 +629,20 @@ public class ConcurrencyTest extends AbstractTestSuite {
 		DomainQueryResult result = q.execute();
 
 		Person person = result.resultOf(personMatch).get(0);
+		return person;
+	}
+	
+	public static DomainObject findGenericPerson(IGenericDomainAccess da, String lastName,
+			String firstName) {
+		GDomainQuery q = da.createQuery();
+		DomainObjectMatch<DomainObject> personMatch = q.createMatch("iot.jcypher.samples.domain.people.model.Person");
+
+		q.WHERE(personMatch.atttribute("lastName")).EQUALS(lastName);
+		q.WHERE(personMatch.atttribute("firstName")).EQUALS(firstName);
+
+		DomainQueryResult result = q.execute();
+
+		DomainObject person = result.resultOf(personMatch).get(0);
 		return person;
 	}
 

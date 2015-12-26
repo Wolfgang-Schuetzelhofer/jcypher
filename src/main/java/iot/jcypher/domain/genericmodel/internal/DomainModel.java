@@ -73,12 +73,13 @@ public class DomainModel {
 	private static final String propInterfaceNames = "interfaceNames";
 	private static final String propFields = "fields";
 	private static final String propKind = "kind";
+	
+	private static Map<String, ClassPool> classPools = new HashMap<String, ClassPool>();
 
 	private String domainName;
 	private String typeNodeName;
 	private Map<String, DOType> doTypes;
 	private List<DOType> unsaved;
-	private ClassPool classPool;
 	private TypeBuilderFactory typeBuilderFactory;
 	private DomainAccess domainAccess;
 	private Map<Object, DomainObject> nursery;
@@ -500,9 +501,12 @@ public class DomainModel {
 	}
 
 	private ClassPool getClassPool() {
-		if (this.classPool == null)
-			this.classPool = new ClassPool(true);
-		return this.classPool;
+		ClassPool cp = classPools.get(this.getDomainName());
+		if (cp == null) {
+			cp = new ClassPool(true);
+			classPools.put(this.getDomainName(), cp);
+		}
+		return cp;
 	}
 	
 	void addDOTypeIfNeeded(DOType doType) {
@@ -553,7 +557,7 @@ public class DomainModel {
 			TransactionState txState = new TransactionState();
 			txState.unsaved = (List<DOType>) ((ArrayList<DOType>) this.unsaved).clone();
 			if (this.nursery != null)
-				txState.nursery = (Map<Object, DomainObject>) ((HashMap<Object, DomainObject>)this.nursery).clone();
+				txState.nursery = (Map<Object, DomainObject>) ((IdentityHashMap<Object, DomainObject>)this.nursery).clone();
 			txState.version = this.version;
 			this.transactionState.set(txState);
 		}

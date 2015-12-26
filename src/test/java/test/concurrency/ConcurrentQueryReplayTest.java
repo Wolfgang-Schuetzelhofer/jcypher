@@ -55,7 +55,6 @@ public class ConcurrentQueryReplayTest extends AbstractTestSuite {
 	
 	@Test
 	public void replayQuery_01() {
-		String qCypher;
 		Locking lockingStrategy = Locking.OPTIMISTIC;
 		
 		/******* first client loading smith ******/
