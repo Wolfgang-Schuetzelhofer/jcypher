@@ -35,9 +35,17 @@ import test.AbstractTestSuite;
 public class LoadUtil {
 
 	public static void loadPeopleDomain(IDBAccess dbAccess) {
+		loadPeopleDomain(dbAccess, "/test/load/people_domain.txt");
+	}
+	
+	public static void loadPeopleDomainExtension(IDBAccess dbAccess) {
+		loadPeopleDomain(dbAccess, "/test/load/people_domain_extension.txt");
+	}
+	
+	private static void loadPeopleDomain(IDBAccess dbAccess, String resource) {
 		InputStreamReader ir = null;
 		try {
-			InputStream in = GenericQueryTest.class.getResourceAsStream("/test/load/people_domain.txt");
+			InputStream in = GenericQueryTest.class.getResourceAsStream(resource);
 			ir = new InputStreamReader(in);
 			
 			LineNumberReader lnr = new LineNumberReader(ir);

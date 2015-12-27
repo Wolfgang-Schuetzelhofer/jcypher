@@ -886,6 +886,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			return ds;
 		}
 		
+		private DomainModel getDomainModel() {
+			this.loadDomainInfoIfNeeded();
+			return domainModel;
+		}
+
 		private Map<Class<?>, List<Long>> queryConcreteTypes(long[] ids) {
 			JcQuery query = new JcQuery();
 			JcNode n = new JcNode("n");
@@ -4125,7 +4130,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		 * @return
 		 */
 		public String domainModelAsString() {
-			return domainAccessHandler.domainModel.asString();
+			return domainAccessHandler.getDomainModel().asString();
 		}
 		
 		/**

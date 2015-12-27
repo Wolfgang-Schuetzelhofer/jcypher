@@ -3109,7 +3109,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 		}
 		
 		private DomainObjectMatch<?> findMatchingTo(DomainObjectMatch<?> dom) {
-			String oid = this.object2IdMap.get(dom);
+			DomainObjectMatch<?> om = APIAccess.getDelegate(dom); // handle generic model
+			if (om == null)
+				om = dom;
+			String oid = this.object2IdMap.get(om);
 			ReplayedQueryContext rctxt = InternalAccess.getQueryExecutor(getReplayedQuery()).getReplayedQueryContext();
 			DomainObjectMatch<?> match = rctxt.getById(oid);
 			return match;

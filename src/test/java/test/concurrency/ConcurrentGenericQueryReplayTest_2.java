@@ -50,13 +50,13 @@ import test.AbstractTestSuite;
 import test.genericmodel.DOToString;
 import test.genericmodel.LoadUtil;
 
-public class ConcurrentGenericQueryReplayTest extends AbstractTestSuite {
+public class ConcurrentGenericQueryReplayTest_2 extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	
 	@Test
-	public void replayGenericQuery_01() {
+	public void replayGenericQuery_02() {
 		Locking lockingStrategy = Locking.OPTIMISTIC;
 		
 		/******* first client loading smith ******/
@@ -76,66 +76,28 @@ public class ConcurrentGenericQueryReplayTest extends AbstractTestSuite {
 		walker.walkDOGraph();
 		String str_1 = doToString.getBuffer().toString();
 		
-		/******* second client loading j_smith ******/
-		IGenericDomainAccess da2 = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName)
-				.setLockingStrategy(lockingStrategy);
-		DomainObject j_smith2 = ConcurrencyTest.findGenericPerson(da2, "Smith", "John");
-		
-		/******* second client extending model ******/
+		/******* another client extending model ******/
 		//j_smith2.setFirstName("Johnny");
-		DOType pointOfContact = da2.getDomainObjectType("iot.jcypher.samples.domain.people.model.PointOfContact");
-		
-		DOTypeBuilderFactory tpf = da2.getTypeBuilderFactory();
-		
-		DOClassBuilder poBoxBuilder = tpf.createClassBuilder("mytest.model.PoBox");
-		poBoxBuilder.addInterface(pointOfContact);
-		poBoxBuilder.addField("number", int.class.getName());
-		DOType poBoxType = poBoxBuilder.build();
-		
-		DomainObject poBox = new DomainObject(poBoxType);
-		poBox.setFieldValue("number", 12345);
-		
-		int pocLength = j_smith2.getListFieldLength("pointsOfContact");
-		j_smith2.addListFieldValue("pointsOfContact", poBox);
-		
-		pocLength = j_smith2.getListFieldLength("pointsOfContact");
-		assertTrue(pocLength == 4);
-		
-		List<JcError> errors = da2.store(j_smith2);
-		assertTrue(errors.isEmpty());
-		if (errors.size() > 0) {
-			printErrors(errors);
-			// throw new JcResultException(errors);
-		}
-		String domModel2 = ((IIntDomainAccess)da2.getDomainAccess()).getInternalDomainAccess().domainModelAsString();
-		String domModel1 = ((IIntDomainAccess)da1.getDomainAccess()).getInternalDomainAccess().domainModelAsString();
-		
-		assertFalse(domModel2.equals(domModel1));
-		
-		/******* temp client loading smith ******/
-		IGenericDomainAccess da3 = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName)
-					.setLockingStrategy(lockingStrategy);
-		DomainObject j_smithTemp = ConcurrencyTest.findGenericPerson(da3, "Smith", "John");
-		
-		assertTrue(j_smith1.getListFieldLength("pointsOfContact") == 3);
-		assertTrue(j_smithTemp.getListFieldLength("pointsOfContact") == 4);
-		assertTrue(((DomainObject)j_smithTemp.getListFieldValue("pointsOfContact", 3)).getDomainObjectType().getName()
-				.equals("mytest.model.PoBox"));
-		assertTrue(((Number)((DomainObject)j_smithTemp.getListFieldValue("pointsOfContact", 3))
-				.getFieldValue("number")).intValue() == 12345);
+		LoadUtil.loadPeopleDomainExtension(dbAccess);
 		
 		/******* first client performing a query ******/
 		DomainObject j_smith = ConcurrencyTest.findGenericPerson(da1, "Smith", "John");
 		
 		String domModel11 = ((IIntDomainAccess)da1.getDomainAccess()).getInternalDomainAccess().domainModelAsString();
-		assertEquals(domModel2, domModel11);
 		
 		assertTrue(j_smith1 == j_smith);
 		assertTrue(j_smith.getListFieldLength("pointsOfContact") == 4);
 		assertTrue(((DomainObject)j_smith.getListFieldValue("pointsOfContact", 3)).getDomainObjectType().getName()
-				.equals("mytest.model.PoBox"));
-		assertTrue(((Number)((DomainObject)j_smith.getListFieldValue("pointsOfContact", 3))
-				.getFieldValue("number")).intValue() == 12345);
+				.equals("mytest.model.VirtualAddress"));
+		assertTrue(((String)((DomainObject)j_smith.getListFieldValue("pointsOfContact", 3))
+				.getFieldValue("addressName")).equals("a virtual address"));
+		
+		/******* temp client loading model ******/
+		IGenericDomainAccess da3 = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName)
+					.setLockingStrategy(lockingStrategy);
+
+		String domModel3 = ((IIntDomainAccess)da3.getDomainAccess()).getInternalDomainAccess().domainModelAsString();
+		assertEquals(domModel3, domModel11);
 		
 		return;
 	}
@@ -158,7 +120,6 @@ public class ConcurrentGenericQueryReplayTest extends AbstractTestSuite {
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.COUNT_QUERY, ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOM_QUERY, ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO, ContentToObserve.CYPHER);
-		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.UPDATE_QUERY, ContentToObserve.CYPHER);
 		
 		// init db
 		List<JcError> errors = dbAccess.clearDatabase();
