@@ -97,7 +97,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 			//throw new JcResultException(errors);
 		}
 		
-		boolean del = testDeleted(relId, dbAccess);
+		boolean del = testDeletedRelation(relId, dbAccess);
 		assertTrue(del);
 		
 		/******* first client deleting relation ******/
@@ -113,7 +113,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 			//throw new JcResultException(errors);
 		}
 		
-		del = testDeleted(relId, dbAccess);
+		del = testDeletedRelation(relId, dbAccess);
 		assertTrue(del);
 		
 		return;
@@ -166,7 +166,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 			//throw new JcResultException(errors);
 		}
 		
-		del = testDeleted(relId, dbAccess);
+		del = testDeletedRelation(relId, dbAccess);
 		assertTrue(del);
 		
 		return;
@@ -279,7 +279,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 			//throw new JcResultException(errors);
 		}
 		
-		boolean del = testDeleted(res.relations.get(0).getId(), dbAccess);
+		boolean del = testDeletedRelation(res.relations.get(0).getId(), dbAccess);
 		assertTrue(del);
 		
 		return;
@@ -318,7 +318,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 			//throw new JcResultException(errors);
 		}
 		
-		boolean del = testDeleted(relId, dbAccess);
+		boolean del = testDeletedRelation(relId, dbAccess);
 		assertTrue(del);
 		
 		/******* first client modifying relation ******/
@@ -336,7 +336,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 			//throw new JcResultException(errors);
 		}
 		
-		del = testDeleted(res.relations.get(0).getId(), dbAccess);
+		del = testDeletedRelation(res.relations.get(0).getId(), dbAccess);
 		assertTrue(del);
 		
 		return;
@@ -379,7 +379,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 			//throw new JcResultException(errors);
 		}
 		
-		boolean del = testDeleted(relId, dbAccess);
+		boolean del = testDeletedRelation(relId, dbAccess);
 		assertTrue(del);
 		
 		/******* first client modifying relation ******/
@@ -394,7 +394,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 			//throw new JcResultException(errors);
 		}
 		
-		del = testDeleted(res.relations.get(0).getId(), dbAccess);
+		del = testDeletedRelation(res.relations.get(0).getId(), dbAccess);
 		assertTrue(del);
 		
 		return;

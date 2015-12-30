@@ -140,7 +140,7 @@ public class ConcurrencyTest extends AbstractTestSuite {
 			// throw new JcResultException(errors);
 		}
 
-		boolean del = ConcurrencyGraphTest.testDeleted(relId, dbAccess);
+		boolean del = ConcurrencyGraphTest.testDeletedRelation(relId, dbAccess);
 		assertTrue(del);
 
 		/******* first client modifying j_smith ******/
@@ -192,7 +192,7 @@ public class ConcurrencyTest extends AbstractTestSuite {
 			// throw new JcResultException(errors);
 		}
 
-		boolean del = ConcurrencyGraphTest.testDeleted(relId, dbAccess);
+		boolean del = ConcurrencyGraphTest.testDeletedRelation(relId, dbAccess);
 		assertTrue(del);
 
 		/******* first client modifying j_smith ******/
