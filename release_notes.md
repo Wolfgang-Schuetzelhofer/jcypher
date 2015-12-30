@@ -2,6 +2,11 @@ Release Notes
 =======
 
 ## 3.1.0
+**New**
+- Concurrency support - multi client access to the database, optimistic locking.
+- Query DSL - MERGE, ON_CREATE, ON_MATCH
+- Query DSL - CASE, WHEN, ELSE, END
+
 **Fixed**
 - Bug in close transaction when working with generic graph model.
 
