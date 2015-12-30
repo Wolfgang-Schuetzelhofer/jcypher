@@ -65,7 +65,7 @@ public class DomainModel {
 	private static final String JavaPkg = "java.";
 	private static final String[] primitives = new String[] { "int", "boolean",
 			"long", "float", "double" };
-	private static final String EnumVals = "ENUM$VALUES";
+	private static final String EnumVals = "$VALUES"; // "ENUM$VALUES";
 	private static final String TypeNodePostfix = "_mdl";
 	private static final String Colon = ":";
 	private static final String propTypeName = "typeName";
@@ -147,7 +147,7 @@ public class DomainModel {
 		for (int i = 0; i < fields.length; i++) {
 			if (!Modifier.isTransient(fields[i].getModifiers())) {
 				if (builder.build().getKind() == Kind.ENUM
-						&& fields[i].getName().equals(EnumVals))
+						&& fields[i].getName().indexOf(EnumVals) >= 0)
 					continue;
 				Class<?> fTyp = fields[i].getType();
 				String tName = fTyp.getName();
