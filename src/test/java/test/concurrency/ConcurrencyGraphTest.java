@@ -36,6 +36,7 @@ import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
@@ -151,7 +152,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 			//throw new JcResultException(errors);
 		}
 		
-		boolean del = testDeleted(relId, dbAccess);
+		boolean del = testDeletedRelation(relId, dbAccess);
 		assertTrue(del);
 		
 		/******* first client deleting relation ******/
@@ -1132,6 +1133,24 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 		JcQueryResult result = dba.execute(query);
 		List<GrNode> ares = result.resultOf(a);
 		return ares.size() == 1 && ares.get(0) == null;
+	}
+	
+	static boolean testDeletedRelation(long relId, IDBAccess dba) {
+		JcRelation a = new JcRelation("a");
+		IClause[] clauses = new IClause[] {
+				START.relation(a).byId(relId),
+				RETURN.ALL()
+		};
+		JcQuery query = new JcQuery();
+		query.setClauses(clauses);
+		//String qStr = print(query, Format.PRETTY_1);
+		JcQueryResult result = dba.execute(query);
+		try {
+			 List<GrRelation> ares = result.resultOf(a);
+			return ares.size() == 1 && ares.get(0) == null;
+		} catch (IndexOutOfBoundsException e) {
+			return true;
+		}
 	}
 	
 	static void assertVersions(int nodeVersion, QResult qResult, int... relationVersions) {
