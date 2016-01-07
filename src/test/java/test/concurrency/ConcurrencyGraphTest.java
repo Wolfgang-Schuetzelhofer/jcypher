@@ -1147,7 +1147,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 		JcQueryResult result = dba.execute(query);
 		try {
 			 List<GrRelation> ares = result.resultOf(a);
-			return ares.size() == 1 && ares.get(0) == null;
+			return ares.size() == 0 || (ares.size() == 1 && ares.get(0) == null);
 		} catch (IndexOutOfBoundsException e) {
 			return true;
 		}
