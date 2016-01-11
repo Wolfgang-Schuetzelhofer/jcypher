@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -680,6 +680,12 @@ public class CypherWriter {
 				return ">=";
 			else if (operator == Operator.REGEX)
 				return "=~";
+			else if (operator == Operator.STARTS_WITH)
+				return "STARTS WITH";
+			else if (operator == Operator.ENDS_WITH)
+				return "ENDS WITH";
+			else if (operator == Operator.CONTAINS)
+				return "CONTAINS";
 			throw new RuntimeException("Operator: " + operator + " not yet implemented");
 		}
 		

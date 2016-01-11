@@ -53,3 +53,7 @@ WHERE r IN relationships(p)
 ----WHERE_14:
 WHERE tobias.labelProp IN labels(n)
 ------------------------------------------------------------
+
+----WHERE_15:
+WHERE charlie.firstName STARTS WITH 'ch' OR charlie.lastName ENDS WITH 'en' OR charlie.lastName CONTAINS 'ee'
+------------------------------------------------------------

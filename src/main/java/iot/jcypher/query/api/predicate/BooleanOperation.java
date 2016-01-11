@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -101,6 +101,39 @@ public class BooleanOperation extends APIObject implements ICollection<Concatena
 	public <E> Concatenator GTE(E value) {
 		getBooleanOp().setOperator(Operator.GTE);
 		return this.operateOn(value);
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>case-sensitive matching on the start of strings</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. ...valueOf(n.property("name")).<b>STARTS_WITH("An")</b></i></div>
+	 * <br/>
+	 */
+	public Concatenator STARTS_WITH(String string) {
+		getBooleanOp().setOperator(Operator.STARTS_WITH);
+		return this.operateOn(string);
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>case-sensitive matching on the end of strings</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. ...valueOf(n.property("name")).<b>ENDS_WITH("ne")</b></i></div>
+	 * <br/>
+	 */
+	public Concatenator ENDS_WITH(String string) {
+		getBooleanOp().setOperator(Operator.ENDS_WITH);
+		return this.operateOn(string);
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>case-sensitive matching regardless of location in strings</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. ...valueOf(n.property("name")).<b>CONTAINS("nn")</b></i></div>
+	 * <br/>
+	 */
+	public Concatenator CONTAINS(String string) {
+		getBooleanOp().setOperator(Operator.CONTAINS);
+		return this.operateOn(string);
 	}
 	
 	/**

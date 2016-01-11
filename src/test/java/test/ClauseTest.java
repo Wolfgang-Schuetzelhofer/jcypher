@@ -678,6 +678,16 @@ public class ClauseTest extends AbstractTestSuite {
 		result = print(where, Format.PRETTY_1);
 		testId = "WHERE_14";
 		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		where = WHERE.valueOf(charlie.property("firstName"))
+				.STARTS_WITH("ch").OR().valueOf(charlie.property("lastName"))
+				.ENDS_WITH("en").OR().valueOf(charlie
+				.property("lastName")).CONTAINS("ee");
+		
+		result = print(where, Format.PRETTY_1);
+		testId = "WHERE_15";
+		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 
 	@Test

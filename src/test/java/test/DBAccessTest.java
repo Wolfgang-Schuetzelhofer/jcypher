@@ -20,6 +20,7 @@ import static org.junit.Assert.assertFalse;
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
+import iot.jcypher.database.DBVersion;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
@@ -137,7 +138,11 @@ public class DBAccessTest extends AbstractTestSuite {
 		setDoPrint(true);
 		setDoAssert(true);
 
-		TestDataReader tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01.txt");
+		TestDataReader tdr;
+		if (!DBVersion.Neo4j_Version.equals("2.2.x") && !DBVersion.Neo4j_Version.equals("2.1.x"))
+			tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01_23x.txt");
+		else
+			tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01.txt");
 		
 		JcNode movie = new JcNode("movie");
 		JcNode n = new JcNode("n");

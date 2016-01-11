@@ -1,6 +1,10 @@
 Release Notes
 =======
 
+## 3.2.0 (under development)
+**New**
+- Query DSL - String Operators: STARTS_WITH, CONTAINS, ENDS_WITH
+
 ## 3.1.0
 **New**
 - Concurrency support - multi client access to the database, optimistic locking.
