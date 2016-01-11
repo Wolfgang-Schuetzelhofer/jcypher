@@ -60,6 +60,11 @@
                         </div>
                         <br/>
                         <div>
+                            <div class="fz-when">January 2016</div>
+                            <div class="fz-header">JCypher as a Service</div>
+                            <div class="fz-paragraph">JCypher provides quite a couple of powerful features, especially concerning the handling of complex business domains. With these functional features and with non-functional features like transactions and concurrency support in place, it seems to make sense to extend JCypher's design, enabling JCypher to be run as a service.<br/>By providing a RESTful interface, it shall be possible to deploy and use JCypher in a distributed, possibly heterogeneous environment.</div>
+                            <div class="fz-paragraph">A first step in that direction was done by implementing a 'Generic- (Dynamic-) Domain Model' (please see the previous post), which was introduced with release 3.0.0. The next step will be to implement a 'JSON-Facade' which can be invoked by a service-capsule, in order to provide a RESTful service interface to JCypher.</div>
+                            <div class="fz-paragraph">After the 'JSON-Facade' is in place, I plan to introduce a new project 'JCypher-Server', which will provide a server-side implementation of JCypher together with a browser interface, allowing to explore and work with 'domain graphs' based on JCypher features.</div>
                             <div class="fz-when">July 2015</div>
                             <div class="fz-header">Generic- (Dynamic-) Domain Model</div>
                             <div class="fz-paragraph">The domain model, i.e. the model of a domain graph (graph of Java objects) which is stored to / retrieved from a Neo4j graph database by means of JCypher 'Domain Mapping' or JCypher 'Domain Queries' respectively, is specified by those object's classes.</div>
