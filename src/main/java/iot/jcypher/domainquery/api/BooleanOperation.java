@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -99,6 +99,45 @@ public class BooleanOperation extends APIObject {
 		getPredicateExpression().setValue_2(value);
 		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
 		QueryRecorder.recordInvocation(this, "GTE", ret, QueryRecorder.placeHolder(value));
+		return ret;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>case-sensitive matching on the start of strings</i></div>
+	 * <br/>
+	 */
+	public TerminalResult STARTS_WITH(String string) {
+		getPredicateExpression().setOperator(Operator.STARTS_WITH);
+		getPredicateExpression().setValue_2(string);
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "STARTS_WITH", ret, QueryRecorder.literal(string));
+		return ret;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>case-sensitive matching on the end of strings</i></div>
+	 * <br/>
+	 */
+	public TerminalResult ENDS_WITH(String string) {
+		getPredicateExpression().setOperator(Operator.ENDS_WITH);
+		getPredicateExpression().setValue_2(string);
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "ENDS_WITH", ret, QueryRecorder.literal(string));
+		return ret;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>case-sensitive matching regardless of location in strings</i></div>
+	 * <br/>
+	 */
+	public TerminalResult CONTAINS_string(String string) {
+		getPredicateExpression().setOperator(Operator.CONTAINS_STRING);
+		getPredicateExpression().setValue_2(string);
+		TerminalResult ret = APIAccess.createTerminalResult(this.getPredicateExpression());
+		QueryRecorder.recordInvocation(this, "CONTAINS_string", ret, QueryRecorder.literal(string));
 		return ret;
 	}
 	

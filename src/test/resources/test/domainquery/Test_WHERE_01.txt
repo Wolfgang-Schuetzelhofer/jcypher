@@ -1,0 +1,20 @@
+----WHERE_01:
+_OPTIONAL_
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.lastName = 'Smith' AND n_0_1.firstName STARTS WITH 'J'
+RETURN DISTINCT id(n_0_1) AS id_0_1
+------------------------------------------------------------
+
+----WHERE_02:
+_OPTIONAL_
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.lastName = 'Smith' AND n_0_1.firstName ENDS WITH 'hn'
+RETURN DISTINCT id(n_0_1) AS id_0_1
+------------------------------------------------------------
+
+----WHERE_03:
+_OPTIONAL_
+OPTIONAL MATCH (n_0_1:Person)
+WHERE n_0_1.lastName = 'Smith' AND n_0_1.firstName CONTAINS 'gel'
+RETURN DISTINCT id(n_0_1) AS id_0_1
+------------------------------------------------------------

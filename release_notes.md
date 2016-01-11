@@ -3,7 +3,7 @@ Release Notes
 
 ## 3.2.0 (under development)
 **New**
-- Query DSL - String Operators: STARTS_WITH, CONTAINS, ENDS_WITH
+- Query DSL and Domain Query - String Operators: STARTS_WITH, CONTAINS (CONTAINS_string), ENDS_WITH
 
 ## 3.1.0
 **New**

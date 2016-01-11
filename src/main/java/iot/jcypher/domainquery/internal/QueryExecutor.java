@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -1545,6 +1545,12 @@ public class QueryExecutor implements IASTObjectsContainer {
 							ret = booleanOp.LT(val_2);
 						else if (op == Operator.LTE)
 							ret = booleanOp.LTE(val_2);
+						else if (op == Operator.STARTS_WITH)
+							ret = booleanOp.STARTS_WITH(val_2.toString());
+						else if (op == Operator.ENDS_WITH)
+							ret = booleanOp.ENDS_WITH(val_2.toString());
+						else if (op == Operator.CONTAINS_STRING)
+							ret = booleanOp.CONTAINS(val_2.toString());
 						
 						if (i < cnt - 1)
 							booleanOp = ret.OR().valueOf(val_1);

@@ -2281,6 +2281,79 @@ public class DomainQueryTest extends AbstractTestSuite {
 	}
 	
 	@Test
+	public void testDomainQuery_WHERE_01() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+		Population population = new Population();
+		population.createPopulation();
+		
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_WHERE_01.txt");
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 01 ****************************************/
+		testId = "WHERE_01";
+		queriesStream.reset();
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> smith_0 = q.createMatch(Subject.class);
+		q.WHERE(smith_0.stringAtttribute("lastName")).EQUALS("Smith");
+		q.WHERE(smith_0.stringAtttribute("firstName")).STARTS_WITH("J");
+		
+		result = q.execute();
+		
+		List<Subject> smith_0Result = result.resultOf(smith_0);
+		assertTrue(smith_0Result.size() == 2);
+		equals = CompareUtil.equalsUnorderedList(population.getJohn_jery_smith(), smith_0Result);
+		assertTrue(equals);
+		
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 02 ****************************************/
+		testId = "WHERE_02";
+		queriesStream.reset();
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> smith_1 = q.createMatch(Subject.class);
+		q.WHERE(smith_1.stringAtttribute("lastName")).EQUALS("Smith");
+		q.WHERE(smith_1.stringAtttribute("firstName")).ENDS_WITH("hn");
+		
+		result = q.execute();
+		
+		List<Subject> smith_1Result = result.resultOf(smith_1);
+		assertTrue(smith_1Result.size() == 1);
+		equals = CompareUtil.equalsObjects(population.getJohn_smith(), smith_1Result.get(0));
+		assertTrue(equals);
+		
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		/** 03 ****************************************/
+		testId = "WHERE_03";
+		queriesStream.reset();
+		q = da1.createQuery();
+		DomainObjectMatch<Subject> smith_2 = q.createMatch(Subject.class);
+		q.WHERE(smith_2.stringAtttribute("lastName")).EQUALS("Smith");
+		q.WHERE(smith_2.stringAtttribute("firstName")).CONTAINS_string("gel");
+		
+		result = q.execute();
+		
+		List<Subject> smith_2Result = result.resultOf(smith_2);
+		assertTrue(smith_2Result.size() == 1);
+		equals = CompareUtil.equalsList(population.getAngelina_smith(), smith_2Result);
+		assertTrue(equals);
+		
+		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
+		assertQuery(testId, qCypher, tdr.getTestData(testId));
+		
+		return;
+	}
+	
+	@Test
 	public void testDomainQuery_01() {
 		IDomainAccess da1;
 		DomainQuery q;
