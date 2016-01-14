@@ -31,6 +31,8 @@ public class TestDataReader {
 	private static final String TEST_START = "----";
 	private static final String COMMENT = "#";
 	private static final String TEST_END = "--------------------";
+	public static final String TEST_CHOICE_START = "_CHOICE_START_";
+	public static final String TEST_CHOICE_END = "_CHOICE_END_";
 	
 	private static final int STATE_START = 0;
 	private static final int STATE_IN_DATA = 1;

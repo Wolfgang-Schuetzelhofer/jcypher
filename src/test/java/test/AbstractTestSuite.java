@@ -18,10 +18,12 @@ package test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.io.CharArrayReader;
 import java.io.IOException;
 import java.io.LineNumberReader;
+import java.util.ArrayList;
 import java.util.List;
 
 import util.TestDataReader;
@@ -59,40 +61,86 @@ public class AbstractTestSuite {
 			LineNumberReader lrt = new LineNumberReader(new CharArrayReader(testData.toCharArray()));
 			boolean opt = false;
 			boolean optPlusOne = false;
+			boolean inChoice = false;
 			String tLine;
 			String qLine = "";
+			List<String> tChoiseLines = null;
+			List<String> qChoiseLines = null;
 			while ((tLine = this.readLine(lrt)) != null) {
-				if (opt) {
-					opt = false;
-					if (tLine.equals(qLine)) { // optional line is not there
+				if (tLine.startsWith(TestDataReader.TEST_CHOICE_START)) {
+					tChoiseLines = new ArrayList<String>();
+					qChoiseLines = new ArrayList<String>();
+					inChoice = true;
+				} else if (inChoice) {
+					if (tLine.startsWith(TestDataReader.TEST_CHOICE_END)) {
+						inChoice = false;
+						assertLines(tChoiseLines, qChoiseLines);
+					} else {
+						tChoiseLines.add(tLine);
+						qChoiseLines.add(this.readLine(lrq));
+					}
+				} else {
+					if (opt) {
+						opt = false;
+						if (tLine.equals(qLine)) { // optional line is not there
+							continue;
+						}
+						if (tLine.startsWith(TestDataReader.TEST_IGNORE_LINE)) {
+							qLine = this.readLine(lrq);
+							optPlusOne = true;
+							continue;
+						}
+					}
+					if (optPlusOne) {
+						optPlusOne = false;
+						if (tLine.equals(qLine))
+							continue;
+					}
+					qLine = this.readLine(lrq);
+					assertNotNull(qLine);
+					if (tLine.startsWith(TestDataReader.TEST_OPTIONAL_LINE)) {
+						opt = true;
 						continue;
 					}
-					if (tLine.startsWith(TestDataReader.TEST_IGNORE_LINE)) {
-						qLine = this.readLine(lrq);
-						optPlusOne = true;
-						continue;
-					}
-				}
-				if (optPlusOne) {
-					optPlusOne = false;
-					if (tLine.equals(qLine))
-						continue;
-				}
-				qLine = this.readLine(lrq);
-				assertNotNull(qLine);
-				if (tLine.startsWith(TestDataReader.TEST_OPTIONAL_LINE)) {
-					opt = true;
-					continue;
-				}
-				if (!tLine.startsWith(TestDataReader.TEST_IGNORE_LINE)) {
-					if (!tLine.equals(qLine)) {
-						assertEquals(testId, testData, query);
+					if (!tLine.startsWith(TestDataReader.TEST_IGNORE_LINE)) {
+						if (!tLine.equals(qLine)) {
+							assertEquals(testId, testData, query);
+						}
 					}
 				}
 			}
 		}
 	}
 	
+	private void assertLines(List<String> tChoiseLines, List<String> qChoiseLines) {
+		boolean res = tChoiseLines.size() == qChoiseLines.size();
+		if (res) {
+			for (String tLine : tChoiseLines) {
+				res = false;
+				for (String qLine : qChoiseLines) {
+					if (tLine.equals(qLine)) {
+						res = true;
+						break;
+					} else if (Math.abs(qLine.length() - tLine.length()) == 1) { // they differ by one, might be the comma at the end
+								// we will ignore that
+						boolean tres;
+						if (qLine.length() > tLine.length())
+							tres = tLine.equals(qLine.substring(0, qLine.length() - 1));
+						else
+							tres = qLine.equals(tLine.substring(0, tLine.length() - 1));
+						if (tres) {
+							res = true;
+							break;
+						}
+					}
+				}
+				if (!res)
+					break;
+			}
+		}
+		assertTrue(res);
+	}
+
 	private String readLine(LineNumberReader lnr) {
 		String ret;
 		try {
