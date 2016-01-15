@@ -27,6 +27,7 @@ import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.internal.DomainAccess;
 import iot.jcypher.domain.internal.DomainAccess.GenericDomainAccess;
+import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
@@ -63,7 +64,7 @@ public class RecordedQueryPlayer {
 			}
 			this.generic = false;
 			this.replayedQueryContext = new ReplayedQueryContext(recordedQuery);
-			query = ((DomainAccess)domainAccess).createRecordedQuery(this.replayedQueryContext);
+			query = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().createRecordedQuery(this.replayedQueryContext);
 			this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
 			
 			for (Statement stmt : recordedQuery.getStatements()) {
@@ -93,7 +94,7 @@ public class RecordedQueryPlayer {
 			}
 			this.generic = true;
 			this.replayedQueryContext = new ReplayedQueryContext(recordedQuery);
-			query = ((GenericDomainAccess)domainAccess).createRecordedQuery(this.replayedQueryContext);
+			query = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().createRecordedGenQuery(this.replayedQueryContext);
 			this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
 			
 			for (Statement stmt : recordedQuery.getStatements()) {

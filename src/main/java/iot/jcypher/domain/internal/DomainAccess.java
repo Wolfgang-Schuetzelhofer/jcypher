@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -242,7 +242,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		return ret;
 	}
 	
-	public DomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
+	private DomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
 		DomainQuery ret = new DomainQuery(this);
 		QueryRecorder.recordCreateQuery(ret);
 		iot.jcypher.domainquery.InternalAccess.replayQuery(ret, rqc);
@@ -282,7 +282,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	}
 
 	/**********************************************************************/
-	public class GenericDomainAccess implements IGenericDomainAccess {
+	public class GenericDomainAccess implements IGenericDomainAccess, IIntDomainAccess {
 
 		@Override
 		public List<JcError> store(DomainObject domainObject) {
@@ -446,7 +446,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			return ret;
 		}
 		
-		public GDomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
+		private GDomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
 			GDomainQuery ret = new GDomainQuery(DomainAccess.this);
 			QueryRecorder.recordCreateQuery(ret);
 			iot.jcypher.domainquery.InternalAccess.replayQuery(ret, rqc);
@@ -462,6 +462,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		public IGenericDomainAccess setLockingStrategy(Locking locking) {
 			domainAccessHandler.lockingStrategy = locking;
 			return this;
+		}
+
+		@Override
+		public InternalDomainAccess getInternalDomainAccess() {
+			return DomainAccess.this.getInternalDomainAccess();
 		}
 		
 	}
@@ -4123,6 +4128,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		 */
 		public void loadDomainInfoIfNeeded() {
 			domainAccessHandler.loadDomainInfoIfNeeded();
+		}
+		
+		public DomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
+			return DomainAccess.this.createRecordedQuery(rqc);
+		}
+		
+		public GDomainQuery createRecordedGenQuery(ReplayedQueryContext rqc) {
+			return ((GenericDomainAccess)DomainAccess.this.getGenericDomainAccess()).createRecordedQuery(rqc);
 		}
 		
 		/**

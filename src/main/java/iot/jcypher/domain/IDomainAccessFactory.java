@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,22 +18,21 @@ package iot.jcypher.domain;
 
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.IDomainAccess.DomainLabelUse;
+import iot.jcypher.domain.internal.DomainAccessFactoryImpl;
+import iot.jcypher.domain.internal.DomainAccessFactoryImpl.SyncType;
 
-/**
- * A Factory for creating domain accessors.
- *
- */
-public class DomainAccessFactory {
+public interface IDomainAccessFactory {
 
+	public static final IDomainAccessFactory INSTANCE = new DomainAccessFactoryImpl(SyncType.NONE);
+	public static final IDomainAccessFactory INSTANCE_SYNCHRONIZED = new DomainAccessFactoryImpl(SyncType.SYNCHRONIZED);
+	
 	/**
 	 * Create a domain accessor.
 	 * @param dbAccess the graph database connection
 	 * @param domainName
 	 * @return
 	 */
-	public static IDomainAccess createDomainAccess(IDBAccess dbAccess, String domainName) {
-		return IDomainAccessFactory.INSTANCE.createDomainAccess(dbAccess, domainName);
-	}
+	public IDomainAccess createDomainAccess(IDBAccess dbAccess, String domainName);
 	
 	/**
 	 * Create a domain accessor.
@@ -43,10 +42,8 @@ public class DomainAccessFactory {
 	 * on different creations of DomainAccess to the same domain.
 	 * @return
 	 */
-	public static IDomainAccess createDomainAccess(IDBAccess dbAccess, String domainName,
-			DomainLabelUse domainLabelUse) {
-		return IDomainAccessFactory.INSTANCE.createDomainAccess(dbAccess, domainName, domainLabelUse);
-	}
+	public IDomainAccess createDomainAccess(IDBAccess dbAccess, String domainName,
+			DomainLabelUse domainLabelUse);
 	
 	/**
 	 * Create a domain accessor which works with a generic domain model.
@@ -54,9 +51,7 @@ public class DomainAccessFactory {
 	 * @param domainName
 	 * @return
 	 */
-	public static IGenericDomainAccess createGenericDomainAccess(IDBAccess dbAccess, String domainName) {
-		return IDomainAccessFactory.INSTANCE.createGenericDomainAccess(dbAccess, domainName);
-	}
+	public IGenericDomainAccess createGenericDomainAccess(IDBAccess dbAccess, String domainName);
 	
 	/**
 	 * Create a domain accessor which works with a generic domain model.
@@ -66,8 +61,6 @@ public class DomainAccessFactory {
 	 * on different creations of DomainAccess to the same domain.
 	 * @return
 	 */
-	public static IGenericDomainAccess createGenericDomainAccess(IDBAccess dbAccess, String domainName,
-			DomainLabelUse domainLabelUse) {
-		return IDomainAccessFactory.INSTANCE.createGenericDomainAccess(dbAccess, domainName, domainLabelUse);
-	}
+	public IGenericDomainAccess createGenericDomainAccess(IDBAccess dbAccess, String domainName,
+			DomainLabelUse domainLabelUse);
 }
