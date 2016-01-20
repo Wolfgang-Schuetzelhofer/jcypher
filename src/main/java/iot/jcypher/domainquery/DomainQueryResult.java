@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,21 @@ public class DomainQueryResult {
 	 * @param forceResolve force resolving domain objects even if they have been resolved prevoiusly
 	 * @return a list of matching domain objects
 	 */
-	@SuppressWarnings("unchecked")
 	public <T> List<T> resultOf(DomainObjectMatch<T> match, boolean forceResolve) {
+		List<T> ret;
+		Object so = InternalAccess.getQueryExecutor(this.domainQuery).getMappingInfo()
+				.getInternalDomainAccess().getSyncObject();
+		if (so != null) {
+			synchronized (so) {
+				ret = intResultOf(match, forceResolve);
+			}
+		} else
+			ret = intResultOf(match, forceResolve);
+		return ret;
+	}
+	
+	@SuppressWarnings("unchecked")
+	private <T> List<T> intResultOf(DomainObjectMatch<T> match, boolean forceResolve) {
 		List<T> ret;
 		try {
 			if (forceResolve)

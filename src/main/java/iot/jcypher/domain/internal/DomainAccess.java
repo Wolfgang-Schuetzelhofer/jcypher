@@ -1512,6 +1512,18 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		}
 		
 		private DomainInfo loadDomainInfoIfNeeded() {
+			DomainInfo ret;
+			Object so = getInternalDomainAccess().getSyncObject();
+			if (so != null) {
+				synchronized (so) {
+					ret = intLoadDomainInfoIfNeeded();
+				}
+			} else
+				ret = intLoadDomainInfoIfNeeded();
+			return ret;
+		}
+		
+		private DomainInfo intLoadDomainInfoIfNeeded() {
 			if (this.domainInfo == null) {
 				ExecContext ctxt = new ExecContext();
 				JcQuery query = ((DBAccessWrapper)this.dbAccess).createDomainInfoSyncQuery(ctxt);
@@ -3947,6 +3959,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	/***********************************/
 	public class InternalDomainAccess {
 
+		private Object syncObject;
+		
 		private InternalDomainAccess() {
 			super();
 		}
@@ -4138,6 +4152,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			return ((GenericDomainAccess)DomainAccess.this.getGenericDomainAccess()).createRecordedQuery(rqc);
 		}
 		
+		public Object getSyncObject() {
+			return syncObject;
+		}
+
+		public void setSyncObject(Object syncObject) {
+			this.syncObject = syncObject;
+		}
+
 		/**
 		 * For Testing
 		 * @return

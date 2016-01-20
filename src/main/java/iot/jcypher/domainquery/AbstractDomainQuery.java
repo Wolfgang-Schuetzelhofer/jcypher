@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -384,7 +384,13 @@ public abstract class AbstractDomainQuery {
 	 */
 	public DomainQueryResult execute() {
 		DomainQueryResult ret = new DomainQueryResult(this);
-		this.queryExecutor.execute();
+		Object so = this.queryExecutor.getMappingInfo().getInternalDomainAccess().getSyncObject();
+		if (so != null) {
+			synchronized (so) {
+				this.queryExecutor.execute();
+			}
+		} else
+			this.queryExecutor.execute();
 		return ret;
 	}
 	
@@ -395,7 +401,13 @@ public abstract class AbstractDomainQuery {
 	 */
 	public CountQueryResult executeCount() {
 		CountQueryResult ret = new CountQueryResult(this);
-		this.queryExecutor.executeCount();
+		Object so = this.queryExecutor.getMappingInfo().getInternalDomainAccess().getSyncObject();
+		if (so != null) {
+			synchronized (so) {
+				this.queryExecutor.executeCount();
+			}
+		} else
+			this.queryExecutor.executeCount();
 		return ret;
 	}
 	

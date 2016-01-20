@@ -49,6 +49,7 @@ public class DomainAccessSync implements IDomainAccess, IIntDomainAccess {
 		super();
 		this.syncType = st;
 		this.delegate = new DomainAccess(dbAccess, domainName, domainLabelUse);
+		getInternalDomainAccess(); // to initialize with syncObject
 	}
 
 	@Override
@@ -121,7 +122,9 @@ public class DomainAccessSync implements IDomainAccess, IIntDomainAccess {
 
 	@Override
 	public InternalDomainAccess getInternalDomainAccess() {
-		return getDelegate().getInternalDomainAccess();
+		InternalDomainAccess ret = getDelegate().getInternalDomainAccess();
+		ret.setSyncObject(this);
+		return ret;
 	}
 
 	private DomainAccess getDelegate() {
@@ -209,7 +212,9 @@ public class DomainAccessSync implements IDomainAccess, IIntDomainAccess {
 
 		@Override
 		public InternalDomainAccess getInternalDomainAccess() {
-			return DomainAccessSync.this.getInternalDomainAccess();
+			InternalDomainAccess ret = getDelegate().getInternalDomainAccess();
+			ret.setSyncObject(this);
+			return ret;
 		}
 		
 	}
