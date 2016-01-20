@@ -28,13 +28,16 @@ import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcPath;
+import iot.jcypher.query.values.JcPrimitive;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.JcValue;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.json.JsonArray;
 import javax.json.JsonObject;
@@ -102,6 +105,30 @@ public class JcQueryResult {
 	
 	public List<?> resultOf(JcValue val) {
 		return this.resultHandler.getObjects(val);
+	}
+	
+	/**
+	 * answer a list of literal maps containing result values for the given keys 
+	 * @param key a variable number of keys which are used to calculate result-values to fill the resulting maps 
+	 * @return a list of LiteralMap(s)
+	 */
+	public List<LiteralMap> resultMapOf(JcPrimitive... key) {
+		List<List<?>> results = new ArrayList<List<?>>();
+		List<LiteralMap> ret = new ArrayList<LiteralMap>();
+		for (JcPrimitive k : key) {
+			List<?> r = this.resultOf(k);
+			results.add(r);
+			for (int i = 0; i < r.size(); i++) {
+				LiteralMap map;
+				if (i > ret.size() - 1) {
+					map = new LiteralMap();
+					ret.add(map);
+				} else
+					map = ret.get(i);
+				map.put(k, r.get(i));
+			}
+		}
+		return ret;
 	}
 	
 	public Graph getGraph() {

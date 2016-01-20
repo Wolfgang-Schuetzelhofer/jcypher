@@ -4,6 +4,7 @@ Release Notes
 ## 3.2.0 (under development)
 **New**
 - Query DSL and Domain Query - String Operators: STARTS_WITH, CONTAINS (CONTAINS_string), ENDS_WITH
+- Query DSL - Supports returning Literal Maps
 
 ## 3.1.0
 **New**
