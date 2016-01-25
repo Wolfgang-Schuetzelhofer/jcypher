@@ -17,6 +17,8 @@
 package test;
 
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 import java.util.List;
 import java.util.Properties;
@@ -32,6 +34,7 @@ import iot.jcypher.database.IDBAccess;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.LiteralMap;
+import iot.jcypher.query.LiteralMapList;
 import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.MATCH;
@@ -49,7 +52,7 @@ public class LiteralMapTest extends AbstractTestSuite {
 	private static IDBAccess dbAccess;
 
 	@Test
-	public void testLiteralMap_01() {
+	public void testLiteralMap_02() {
 		IClause[] clauses = new IClause[]{
 				CREATE.node().label("Movie").property("name").value("movie_1")
 					.property("actorCount").value(5),
@@ -57,6 +60,8 @@ public class LiteralMapTest extends AbstractTestSuite {
 					.property("actorCount").value(6),
 				CREATE.node().label("Movie").property("name").value("movie_3")
 					.property("actorCount").value(7),
+				CREATE.node().label("Movie").property("name").value("movie_4"),
+				CREATE.node().label("Movie").property("actorCount").value(9),
 		};
 		
 		JcQuery query = new JcQuery();
@@ -91,7 +96,75 @@ public class LiteralMapTest extends AbstractTestSuite {
 		if (result.hasErrors())
 			printErrors(result);
 		assertFalse(result.hasErrors());
-		List<LiteralMap> maps = result.resultMapOf(name, rank, extraInfo);
+		try {
+			LiteralMapList mapList = result.resultMapListOf(name, rank, extraInfo);
+			assertTrue("the call should throw an exception", false);
+		} catch (Throwable e) {
+			assertEquals("Missing data! All columns for creating maps must have the same size!", e.getMessage());
+		}
+		
+		return;
+	}
+	
+	@Test
+	public void testLiteralMap_01() {
+		IClause[] clauses = new IClause[]{
+				CREATE.node().label("Movie").property("name").value("movie_1")
+					.property("actorCount").value(5),
+				CREATE.node().label("Movie").property("name").value("movie_2")
+					.property("actorCount").value(6),
+				CREATE.node().label("Movie").property("name").value("movie_3")
+					.property("actorCount").value(7)
+		};
+		
+		JcQuery query = new JcQuery();
+		query.setClauses(clauses);
+		JcQueryResult result = dbAccess.execute(query);
+		if (result.hasErrors())
+			printErrors(result);
+		assertFalse(result.hasErrors());
+		
+		JcNode n = new JcNode("n");
+		JcString name = new JcString("name");
+		JcNumber extraInfo = new JcNumber("extraInfo");
+		// if JcString is constructed with a value, the name is ignored
+		// and it is taken as a literal
+		JcString literal = new JcString(null, "5/7");
+		JcString rank = new JcString("rank");
+		clauses = new IClause[]{
+				MATCH.node(n).label("Movie"),
+				RETURN.value(n.property("name")).AS(name),
+				RETURN.value(n.property("actorCount")).AS(extraInfo),
+				RETURN.value(literal).AS(rank)
+		};
+		
+		query = new JcQuery();
+		query.setClauses(clauses);
+		
+		// you can look at the CYPHER query which is generated in the background
+		String str = Util.toCypher(query, Format.PRETTY_1);
+		System.out.println(str);
+		
+		result = dbAccess.execute(query);
+		if (result.hasErrors())
+			printErrors(result);
+		assertFalse(result.hasErrors());
+		LiteralMapList mapList = result.resultMapListOf(name, rank, extraInfo);
+		assertEquals(3, mapList.size());
+		assertEquals(1, mapList.select(name, "movie_1").size());
+		assertEquals(1, mapList.select("name", "movie_1").size());
+		assertEquals(5, mapList.selectFirst(name, "movie_1").get(extraInfo).intValue());
+		assertEquals("5/7", mapList.selectFirst(name, "movie_1").get(rank));
+		
+		assertEquals(1, mapList.select(name, "movie_2").size());
+		assertEquals(1, mapList.select("name", "movie_2").size());
+		assertEquals(6, mapList.selectFirst(name, "movie_2").get(extraInfo).intValue());
+		assertEquals("5/7", mapList.selectFirst(name, "movie_2").get(rank));
+		
+		assertEquals(1, mapList.select(name, "movie_3").size());
+		assertEquals(1, mapList.select("name", "movie_3").size());
+		assertEquals(7, mapList.selectFirst(name, "movie_3").get(extraInfo).intValue());
+		assertEquals("5/7", mapList.selectFirst(name, "movie_3").get(rank));
 		
 		return;
 	}

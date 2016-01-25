@@ -67,4 +67,10 @@ public class LiteralMap {
 	private Object getFor(JcPrimitive key) {
 		return this.get(ValueAccess.getName(key));
 	}
+
+	@Override
+	public String toString() {
+		return this.map.toString();
+	}
+	
 }

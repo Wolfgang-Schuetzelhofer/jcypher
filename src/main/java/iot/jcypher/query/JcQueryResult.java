@@ -112,11 +112,18 @@ public class JcQueryResult {
 	 * @param key a variable number of keys which are used to calculate result-values to fill the resulting maps 
 	 * @return a list of LiteralMap(s)
 	 */
-	public List<LiteralMap> resultMapOf(JcPrimitive... key) {
+	public LiteralMapList resultMapListOf(JcPrimitive... key) {
 		List<List<?>> results = new ArrayList<List<?>>();
-		List<LiteralMap> ret = new ArrayList<LiteralMap>();
+		LiteralMapList ret = new LiteralMapList();
+		int size = -1;
 		for (JcPrimitive k : key) {
 			List<?> r = this.resultOf(k);
+			if (size == -1)
+				size = r.size();
+			else {
+				if (r.size() != size)
+					throw new RuntimeException("Missing data! All columns for creating maps must have the same size!");
+			}
 			results.add(r);
 			for (int i = 0; i < r.size(); i++) {
 				LiteralMap map;
