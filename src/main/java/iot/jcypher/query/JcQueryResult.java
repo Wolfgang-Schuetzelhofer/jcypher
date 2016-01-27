@@ -16,6 +16,13 @@
 
 package iot.jcypher.query;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.json.JsonArray;
+import javax.json.JsonObject;
+
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
@@ -32,15 +39,6 @@ import iot.jcypher.query.values.JcPrimitive;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.JcValue;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.json.JsonArray;
-import javax.json.JsonObject;
 
 public class JcQueryResult {
 
@@ -116,24 +114,25 @@ public class JcQueryResult {
 		List<List<?>> results = new ArrayList<List<?>>();
 		LiteralMapList ret = new LiteralMapList();
 		int size = -1;
-		for (JcPrimitive k : key) {
-			List<?> r = this.resultOf(k);
-			if (size == -1)
-				size = r.size();
-			else {
-				if (r.size() != size)
-					throw new RuntimeException("Missing data! All columns for creating maps must have the same size!");
+		ResultHandler.includeNullValues.set(Boolean.TRUE);
+		try {
+			for (JcPrimitive k : key) {
+				List<?> r = this.resultOf(k);
+				if (size == -1)
+					size = r.size();
+				results.add(r);
+				for (int i = 0; i < r.size(); i++) {
+					LiteralMap map;
+					if (i > ret.size() - 1) {
+						map = new LiteralMap();
+						ret.add(map);
+					} else
+						map = ret.get(i);
+					map.put(k, r.get(i));
+				}
 			}
-			results.add(r);
-			for (int i = 0; i < r.size(); i++) {
-				LiteralMap map;
-				if (i > ret.size() - 1) {
-					map = new LiteralMap();
-					ret.add(map);
-				} else
-					map = ret.get(i);
-				map.put(k, r.get(i));
-			}
+		} finally {
+			ResultHandler.includeNullValues.remove();
 		}
 		return ret;
 	}

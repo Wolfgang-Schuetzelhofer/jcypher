@@ -26,6 +26,10 @@ import iot.jcypher.query.values.JcPrimitive;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.ValueAccess;
 
+/**
+ * Contains name (key) - value pairs; values are literal values.
+ *
+ */
 public class LiteralMap {
 	
 	private Map<String, Object> map;
@@ -35,6 +39,11 @@ public class LiteralMap {
 		this.map = new HashMap<String, Object>();
 	}
 
+	/**
+	 * Answer the value found under the given number (JcNumber) key.
+	 * @param number
+	 * @return
+	 */
 	public BigDecimal get(JcNumber number) {
 		Object val = this.getFor(number);
 		if (val != null)
@@ -42,6 +51,11 @@ public class LiteralMap {
 		return null;
 	}
 	
+	/**
+	 * Answer the value found under the given string (JcString) key.
+	 * @param string
+	 * @return
+	 */
 	public String get(JcString string) {
 		Object val = this.getFor(string);
 		if (val != null)
@@ -49,6 +63,11 @@ public class LiteralMap {
 		return null;
 	}
 	
+	/**
+	 * Answer the value found under the given boolean (JcBoolean) key.
+	 * @param bool
+	 * @return
+	 */
 	public Boolean get(JcBoolean bool) {
 		Object val = this.getFor(bool);
 		if (val != null)
@@ -56,6 +75,11 @@ public class LiteralMap {
 		return null;
 	}
 	
+	/**
+	 * Answer the value found under the given key.
+	 * @param key
+	 * @return
+	 */
 	public Object get(String key) {
 		return this.map.get(key);
 	}
