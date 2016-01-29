@@ -57,7 +57,7 @@ You may add JCypher as a Maven dependency:
 
 ## License & Copyright
 
-Copyright (c) 2014-2015 IoT-Solutions e.U.
+Copyright (c) 2014-2016 IoT-Solutions e.U.
 
 License:
 								Apache License
