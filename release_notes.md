@@ -3,7 +3,7 @@ Release Notes
 
 ## 3.2.0
 **New**
-- Concurrency support - thread-safe access to 'IDomainAccess'.
+- Concurrency support - thread-safe invocation of 'IDomainAccess' an domain queries.
 - Query DSL and Domain Query - String Operators: STARTS_WITH, CONTAINS (CONTAINS_string), ENDS_WITH
 - Query DSL - Support for Literal Maps
 - Upgrade to Neo4j 2.3.1
