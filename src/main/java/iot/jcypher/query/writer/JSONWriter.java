@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -227,7 +227,7 @@ public class JSONWriter {
 		context.resetLevel();
 	}
 	
-	private static JsonGeneratorFactory getPrettyGeneratorFactory() {
+	public static JsonGeneratorFactory getPrettyGeneratorFactory() {
 		if (prettyGeneratorFactory == null) {
 			HashMap<String, Object> prettyConfigMap = new HashMap<String, Object>();
 			prettyConfigMap.put(JsonGenerator.PRETTY_PRINTING, Boolean.TRUE);

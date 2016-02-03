@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2015 IoT-Solutions e.U.
+ * Copyright (c) 2015-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -185,6 +185,18 @@ public class DomainModel {
 
 	public DOType getDOType(String typeName) {
 		return this.doTypes.get(typeName);
+	}
+	
+	public List<DOType> getDOTypes() {
+		List<DOType> vals = new ArrayList<DOType>();
+		vals.addAll(this.doTypes.values());
+		Collections.sort(vals, new Comparator<DOType>() {
+			@Override
+			public int compare(DOType o1, DOType o2) {
+				return o1.getName().compareTo(o2.getName());
+			}
+		});
+		return vals;
 	}
 
 	public String getDomainName() {
@@ -588,14 +600,7 @@ public class DomainModel {
 		sb.append(", DomainInfo Version: ");
 		sb.append(((IIntDomainAccess)this.domainAccess).getInternalDomainAccess().getDomainInfoVersion());
 		sb.append(") {");
-		List<DOType> vals = new ArrayList<DOType>();
-		vals.addAll(this.doTypes.values());
-		Collections.sort(vals, new Comparator<DOType>() {
-			@Override
-			public int compare(DOType o1, DOType o2) {
-				return o1.getName().compareTo(o2.getName());
-			}
-		});
+		List<DOType> vals = getDOTypes();
 		for (DOType t : vals) {
 			sb.append('\n');
 			sb.append(t.asString(indent));

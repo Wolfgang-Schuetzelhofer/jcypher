@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2015-2016 IoT-Solutions e.U.
+ * Copyright (c) 2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,17 +14,9 @@
  * limitations under the License.
  ************************************************************************/
 
-package test.genericmodel;
+package test.facade;
 
 import static org.junit.Assert.assertEquals;
-
-import java.util.List;
-import java.util.Properties;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -36,17 +28,29 @@ import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.genericmodel.internal.DOWalker;
 import iot.jcypher.domain.internal.IIntDomainAccess;
+import iot.jcypher.facade.JSONDomainFacade;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
+
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Properties;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import test.AbstractTestSuite;
+import test.genericmodel.LoadUtil;
 import util.TestDataReader;
 
 //@Ignore
-public class GenericModelTest extends AbstractTestSuite {
+public class JSONFacadeTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
 	public static String domainName;
@@ -65,8 +69,8 @@ public class GenericModelTest extends AbstractTestSuite {
 		
 		QueriesPrintObserver.addOutputStream(System.out);
 		
-		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.COUNT_QUERY, ContentToObserve.CYPHER);
-		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOM_QUERY, ContentToObserve.CYPHER);
+//		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.COUNT_QUERY, ContentToObserve.CYPHER);
+//		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOM_QUERY, ContentToObserve.CYPHER);
 		QueriesPrintObserver.addToEnabledQueries(QueryToObserve.DOMAIN_INFO, ContentToObserve.CYPHER);
 		
 		// init db
@@ -89,73 +93,21 @@ public class GenericModelTest extends AbstractTestSuite {
 	}
 	
 	@Test
-	public void testGenericModel_01() {
-		String testId;
+	public void testJSONDomainFacade_01() {
+		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		JSONDomainFacade domainFacade = new JSONDomainFacade(gda).setPrettyFormat(Format.PRETTY_1);
 		
-		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENMODEL_01.txt");
+		TestDataReader tdr = new TestDataReader("/test/facade/Test_JSONFACADE_01.txt");
 		
 		/** 01 ****************************************/
-		testId = "GENMODEL_01";
-		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		((IIntDomainAccess)da).getInternalDomainAccess().loadDomainInfoIfNeeded();
-		String domModel = ((IIntDomainAccess)da).getInternalDomainAccess().domainModelAsString();
+		String testId = "FACADE_01";
+		String name = domainFacade.getDomainName();
+		assertEquals(tdr.getTestData(testId), name);
 		
-		assertEquals(tdr.getTestData(testId), domModel);
-		return;
-	}
-	
-	@Test
-	public void testLoadGenericModel_01() {
-		IGenericDomainAccess gda;
-		String testId;
-		
-		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENMODEL_01.txt");
-		
-		DomainInformation di = DomainInformation.forDomain(dbAccess, domainName);
-		gda = di.getGenericDomainAccess();
-		List<DomainObject> objects = gda.loadByType("iot.jcypher.samples.domain.people.model.Person", -1, 0, -1);
-		objects = Util.sortPersons(objects);
-		
-		DOToString doToString = new DOToString(Format.PRETTY_1);
-		DOWalker walker = new DOWalker(objects, doToString);
-		walker.walkDOGraph();
-		String str = doToString.getBuffer().toString();
-		//System.out.println("\nObjectGraph:" + str);
-		
-		testId = "GENMODEL_02";
-		assertEquals(tdr.getTestData(testId), str);
-		
-		return;
-	}
-	
-	@Test
-	public void testLoadGenericModel_02() {
-		IGenericDomainAccess gda;
-		String testId;
-		
-		TestDataReader tdr = new TestDataReader("/test/genericmodel/Test_GENMODEL_01.txt");
-		
-		gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
-		List<DomainObject> objects = gda.loadByType("iot.jcypher.samples.domain.people.model.Person", -1, 0, -1);
-		long carolineId = -1;
-		for (DomainObject obj : objects) {
-			if (obj.getFieldValue("lastName").toString().equals("Smith") &&
-					obj.getFieldValue("firstName").toString().equals("Caroline")) {
-				carolineId = gda.getSyncInfo(obj).getId();
-				break;
-			}
-		}
-		// create a new domain access
-		gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
-		DomainObject object = gda.loadById("iot.jcypher.samples.domain.people.model.Person", -1, carolineId);
-		
-		DOToString doToString = new DOToString(Format.PRETTY_1);
-		DOWalker walker = new DOWalker(object, doToString);
-		walker.walkDOGraph();
-		String str = doToString.getBuffer().toString();
-		
-		testId = "GENMODEL_03";
-		assertEquals(tdr.getTestData(testId), str);
+		/** 02 ****************************************/
+		testId = "FACADE_02";
+		String json = domainFacade.getDomainModel();
+		assertEquals(tdr.getTestData(testId), json);
 		
 		return;
 	}

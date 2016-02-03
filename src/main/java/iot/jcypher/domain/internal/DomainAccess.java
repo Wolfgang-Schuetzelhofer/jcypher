@@ -4159,6 +4159,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		public void setSyncObject(Object syncObject) {
 			this.syncObject = syncObject;
 		}
+		
+		public DomainModel getDomainModel() {
+			return domainAccessHandler.getDomainModel();
+		}
 
 		/**
 		 * For Testing
