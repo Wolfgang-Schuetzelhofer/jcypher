@@ -28,6 +28,7 @@ import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.genericmodel.internal.DOWalker;
 import iot.jcypher.domain.internal.IIntDomainAccess;
+import iot.jcypher.facade.JSONDBFacade;
 import iot.jcypher.facade.JSONDomainFacade;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
@@ -90,6 +91,19 @@ public class JSONFacadeTest extends AbstractTestSuite {
 			dbAccess = null;
 		}
 		QueriesPrintObserver.removeAllEnabledQueries();
+	}
+	
+	@Test
+	public void testJSONDomainFacade_02() {
+		JSONDBFacade dbFacade = new JSONDBFacade(dbAccess).setPrettyFormat(Format.PRETTY_1);
+		
+		TestDataReader tdr = new TestDataReader("/test/facade/Test_JSONFACADE_01.txt");
+		
+		String testId = "FACADE_03";
+		String domains = dbFacade.getDomains();
+		assertEquals(tdr.getTestData(testId), domains);
+		
+		return;
 	}
 	
 	@Test
