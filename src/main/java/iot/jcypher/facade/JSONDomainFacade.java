@@ -27,6 +27,7 @@ import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.genericmodel.DOField;
 import iot.jcypher.domain.genericmodel.DOType;
+import iot.jcypher.domain.genericmodel.DOType.Kind;
 import iot.jcypher.domain.genericmodel.internal.DomainModel;
 import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.query.writer.Format;
@@ -117,11 +118,17 @@ public class JSONDomainFacade {
 		generator.write("name", typ.getName());
 		if (typ.getKind() != null)
 			generator.write("kind", typ.getKind().name());
-		if (typ.getSuperType() != null)
-			generator.write("extends", typ.getSuperType().getName());
+		if (typ.getSuperType() != null) {
+			generator.writeStartArray("extends");
+			generator.write(typ.getSuperType().getName());
+			generator.writeEnd();
+		}
 		List<DOType> ifs = typ.getInterfaces();
 		if (!ifs.isEmpty()) {
-			generator.writeStartArray("implements");
+			if (typ.getKind() == Kind.INTERFACE)
+				generator.writeStartArray("extends");
+			else
+				generator.writeStartArray("implements");
 			for (DOType intf : ifs) {
 				generator.write(intf.getName());
 			}

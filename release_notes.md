@@ -1,6 +1,10 @@
 Release Notes
 =======
 
+## 3.3.0 (under development)
+**Fixed**
+- Bug in adding super interface to generic interface model.
+
 ## 3.2.0
 **New**
 - Concurrency support - thread-safe invocation of 'IDomainAccess' and domain queries.

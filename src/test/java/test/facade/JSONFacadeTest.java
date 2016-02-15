@@ -25,7 +25,11 @@ import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.DomainInformation;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
+import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
 import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.genericmodel.DOType;
+import iot.jcypher.domain.genericmodel.DOType.DOClassBuilder;
+import iot.jcypher.domain.genericmodel.DOType.DOInterfaceBuilder;
 import iot.jcypher.domain.genericmodel.internal.DOWalker;
 import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.facade.JSONDBFacade;
@@ -81,7 +85,36 @@ public class JSONFacadeTest extends AbstractTestSuite {
 			throw new JcResultException(errors);
 		}
 		LoadUtil.loadPeopleDomain(dbAccess);
+		addTypes();
+	}
+	
+	private static void addTypes() {
+		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		DOTypeBuilderFactory tpf = gda.getTypeBuilderFactory();
 		
+		DOType poc = gda.getDomainObjectType("iot.jcypher.samples.domain.people.model.PointOfContact");
+		
+		DOInterfaceBuilder extendedIfBuilder = tpf.createInterfaceBuilder("mytest.model.additional.ExtendedInterface");
+		extendedIfBuilder.addInterface(poc);
+		DOType eif = extendedIfBuilder.build();
+		
+		DOClassBuilder addressBuilder = tpf.createClassBuilder("mytest.model.additional.Address");
+		addressBuilder.addInterface(eif);
+		addressBuilder.addField("street", String.class.getName());
+		addressBuilder.addField("number", int.class.getName());
+		DOType addressType = addressBuilder.build();
+		
+		DomainObject anAddress = new DomainObject(addressType);
+		anAddress.setFieldValue("street", "Market Street");
+		anAddress.setFieldValue("number", 102);
+		
+		List<JcError> errors = gda.store(anAddress);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		
+		return;
 	}
 	
 	@AfterClass

@@ -13,7 +13,9 @@
         {
             "name":"iot.jcypher.samples.domain.people.model.Address",
             "kind":"CLASS",
-            "extends":"java.lang.Object",
+            "extends":[
+                "java.lang.Object"
+            ],
             "implements":[
                 "iot.jcypher.samples.domain.people.model.PointOfContact"
             ],
@@ -35,7 +37,9 @@
         {
             "name":"iot.jcypher.samples.domain.people.model.Area",
             "kind":"CLASS",
-            "extends":"java.lang.Object",
+            "extends":[
+                "java.lang.Object"
+            ],
             "fields":[
                 {
                     "name":"areaCode",
@@ -58,7 +62,9 @@
         {
             "name":"iot.jcypher.samples.domain.people.model.AreaType",
             "kind":"ENUM",
-            "extends":"java.lang.Enum",
+            "extends":[
+                "java.lang.Enum"
+            ],
             "fields":[
                 {
                     "name":"DISTRICT",
@@ -97,7 +103,9 @@
         {
             "name":"iot.jcypher.samples.domain.people.model.Company",
             "kind":"CLASS",
-            "extends":"iot.jcypher.samples.domain.people.model.Subject",
+            "extends":[
+                "iot.jcypher.samples.domain.people.model.Subject"
+            ],
             "fields":[
                 {
                     "name":"name",
@@ -108,7 +116,9 @@
         {
             "name":"iot.jcypher.samples.domain.people.model.EContact",
             "kind":"CLASS",
-            "extends":"java.lang.Object",
+            "extends":[
+                "java.lang.Object"
+            ],
             "implements":[
                 "iot.jcypher.samples.domain.people.model.PointOfContact"
             ],
@@ -126,7 +136,9 @@
         {
             "name":"iot.jcypher.samples.domain.people.model.EContact$EContactType",
             "kind":"ENUM",
-            "extends":"java.lang.Enum",
+            "extends":[
+                "java.lang.Enum"
+            ],
             "fields":[
                 {
                     "name":"EMAIL",
@@ -141,7 +153,9 @@
         {
             "name":"iot.jcypher.samples.domain.people.model.Gender",
             "kind":"ENUM",
-            "extends":"java.lang.Enum",
+            "extends":[
+                "java.lang.Enum"
+            ],
             "fields":[
                 {
                     "name":"FEMALE",
@@ -156,7 +170,9 @@
         {
             "name":"iot.jcypher.samples.domain.people.model.Person",
             "kind":"CLASS",
-            "extends":"iot.jcypher.samples.domain.people.model.Subject",
+            "extends":[
+                "iot.jcypher.samples.domain.people.model.Subject"
+            ],
             "fields":[
                 {
                     "name":"firstName",
@@ -191,7 +207,9 @@
         {
             "name":"iot.jcypher.samples.domain.people.model.Subject",
             "kind":"ABSTRACT_CLASS",
-            "extends":"java.lang.Object",
+            "extends":[
+                "java.lang.Object"
+            ],
             "fields":[
                 {
                     "name":"pointsOfContact",
@@ -205,6 +223,33 @@
         },
         {
             "name":"java.lang.Object"
+        },
+        {
+            "name":"mytest.model.additional.Address",
+            "kind":"CLASS",
+            "extends":[
+                "java.lang.Object"
+            ],
+            "implements":[
+                "mytest.model.additional.ExtendedInterface"
+            ],
+            "fields":[
+                {
+                    "name":"street",
+                    "type":"java.lang.String"
+                },
+                {
+                    "name":"number",
+                    "type":"int"
+                }
+            ]
+        },
+        {
+            "name":"mytest.model.additional.ExtendedInterface",
+            "kind":"INTERFACE",
+            "extends":[
+                "iot.jcypher.samples.domain.people.model.PointOfContact"
+            ]
         }
     ]
 }

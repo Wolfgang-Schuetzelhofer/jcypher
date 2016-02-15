@@ -395,7 +395,7 @@ public class DOType {
 		 * @param anInterface
 		 */
 		public void addInterface(DOType anInterface) {
-			if (superType.getKind() != Kind.INTERFACE)
+			if (anInterface.getKind() != Kind.INTERFACE)
 				throw new RuntimeException("must be a kind of Interface");
 			addInterfaceUnique(anInterface);
 		}
