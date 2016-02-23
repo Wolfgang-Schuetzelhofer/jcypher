@@ -150,8 +150,11 @@ public class JSONDomainFacade {
 		generator.write("name", f.getName());
 		generator.write("type", f.getTypeName());
 		String ct = f.getComponentTypeName();
-		if (ct != null)
+		if (ct != null) {
 			generator.write("componentType", ct);
+			generator.write("buildIn", DomainModel.isBuildIn(ct));
+		} else
+			generator.write("buildIn", f.isBuidInType());
 		generator.writeEnd();
 	}
 }
