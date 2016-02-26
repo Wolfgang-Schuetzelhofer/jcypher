@@ -1590,7 +1590,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		
 		private String getDomainLabel() {
 			if (this.domainLabel == null) {
-				this.domainLabel = this.domainName.replace('-', '_').replace(' ', '_'); // also replace blanks
+				this.domainLabel = getInternalDomainAccess().buildDomainLabel(this.domainName);
 			}
 			return this.domainLabel;
 		}
@@ -4162,6 +4162,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		
 		public DomainModel getDomainModel() {
 			return domainAccessHandler.getDomainModel();
+		}
+		
+		public String buildDomainLabel(String domainName) {
+			String ret = domainName.replace('-', '_').replace(' ', '_'); // also replace blanks
+			return ret;
 		}
 
 		/**
