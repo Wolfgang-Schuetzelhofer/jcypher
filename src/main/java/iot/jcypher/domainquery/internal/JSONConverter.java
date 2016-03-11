@@ -16,9 +16,9 @@
 
 package iot.jcypher.domainquery.internal;
 
-public class RecordedQueryJSON {
+public class JSONConverter {
 
-	public RecordedQueryJSON() {
+	public JSONConverter() {
 		// TODO Auto-generated constructor stub
 	}
 

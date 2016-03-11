@@ -22,15 +22,18 @@
             "fields":[
                 {
                     "name":"street",
-                    "type":"java.lang.String"
+                    "type":"java.lang.String",
+                    "buildIn":true
                 },
                 {
                     "name":"number",
-                    "type":"int"
+                    "type":"int",
+                    "buildIn":true
                 },
                 {
                     "name":"area",
-                    "type":"iot.jcypher.samples.domain.people.model.Area"
+                    "type":"iot.jcypher.samples.domain.people.model.Area",
+                    "buildIn":false
                 }
             ]
         },
@@ -43,19 +46,23 @@
             "fields":[
                 {
                     "name":"areaCode",
-                    "type":"java.lang.String"
+                    "type":"java.lang.String",
+                    "buildIn":true
                 },
                 {
                     "name":"name",
-                    "type":"java.lang.String"
+                    "type":"java.lang.String",
+                    "buildIn":true
                 },
                 {
                     "name":"areaType",
-                    "type":"iot.jcypher.samples.domain.people.model.AreaType"
+                    "type":"iot.jcypher.samples.domain.people.model.AreaType",
+                    "buildIn":false
                 },
                 {
                     "name":"partOf",
-                    "type":"iot.jcypher.samples.domain.people.model.Area"
+                    "type":"iot.jcypher.samples.domain.people.model.Area",
+                    "buildIn":false
                 }
             ]
         },
@@ -68,35 +75,43 @@
             "fields":[
                 {
                     "name":"DISTRICT",
-                    "type":"iot.jcypher.samples.domain.people.model.AreaType"
+                    "type":"iot.jcypher.samples.domain.people.model.AreaType",
+                    "buildIn":false
                 },
                 {
                     "name":"URBAN_DISTRICT",
-                    "type":"iot.jcypher.samples.domain.people.model.AreaType"
+                    "type":"iot.jcypher.samples.domain.people.model.AreaType",
+                    "buildIn":false
                 },
                 {
                     "name":"CITY",
-                    "type":"iot.jcypher.samples.domain.people.model.AreaType"
+                    "type":"iot.jcypher.samples.domain.people.model.AreaType",
+                    "buildIn":false
                 },
                 {
                     "name":"VILLAGE",
-                    "type":"iot.jcypher.samples.domain.people.model.AreaType"
+                    "type":"iot.jcypher.samples.domain.people.model.AreaType",
+                    "buildIn":false
                 },
                 {
                     "name":"STATE",
-                    "type":"iot.jcypher.samples.domain.people.model.AreaType"
+                    "type":"iot.jcypher.samples.domain.people.model.AreaType",
+                    "buildIn":false
                 },
                 {
                     "name":"COUNTRY",
-                    "type":"iot.jcypher.samples.domain.people.model.AreaType"
+                    "type":"iot.jcypher.samples.domain.people.model.AreaType",
+                    "buildIn":false
                 },
                 {
                     "name":"CONTINENT",
-                    "type":"iot.jcypher.samples.domain.people.model.AreaType"
+                    "type":"iot.jcypher.samples.domain.people.model.AreaType",
+                    "buildIn":false
                 },
                 {
                     "name":"PLANET",
-                    "type":"iot.jcypher.samples.domain.people.model.AreaType"
+                    "type":"iot.jcypher.samples.domain.people.model.AreaType",
+                    "buildIn":false
                 }
             ]
         },
@@ -109,7 +124,8 @@
             "fields":[
                 {
                     "name":"name",
-                    "type":"java.lang.String"
+                    "type":"java.lang.String",
+                    "buildIn":true
                 }
             ]
         },
@@ -125,11 +141,13 @@
             "fields":[
                 {
                     "name":"type",
-                    "type":"iot.jcypher.samples.domain.people.model.EContact$EContactType"
+                    "type":"iot.jcypher.samples.domain.people.model.EContact$EContactType",
+                    "buildIn":false
                 },
                 {
                     "name":"eAddress",
-                    "type":"java.lang.String"
+                    "type":"java.lang.String",
+                    "buildIn":true
                 }
             ]
         },
@@ -142,11 +160,13 @@
             "fields":[
                 {
                     "name":"EMAIL",
-                    "type":"iot.jcypher.samples.domain.people.model.EContact$EContactType"
+                    "type":"iot.jcypher.samples.domain.people.model.EContact$EContactType",
+                    "buildIn":false
                 },
                 {
                     "name":"TELEPHONE",
-                    "type":"iot.jcypher.samples.domain.people.model.EContact$EContactType"
+                    "type":"iot.jcypher.samples.domain.people.model.EContact$EContactType",
+                    "buildIn":false
                 }
             ]
         },
@@ -159,11 +179,13 @@
             "fields":[
                 {
                     "name":"FEMALE",
-                    "type":"iot.jcypher.samples.domain.people.model.Gender"
+                    "type":"iot.jcypher.samples.domain.people.model.Gender",
+                    "buildIn":false
                 },
                 {
                     "name":"MALE",
-                    "type":"iot.jcypher.samples.domain.people.model.Gender"
+                    "type":"iot.jcypher.samples.domain.people.model.Gender",
+                    "buildIn":false
                 }
             ]
         },
@@ -176,27 +198,33 @@
             "fields":[
                 {
                     "name":"firstName",
-                    "type":"java.lang.String"
+                    "type":"java.lang.String",
+                    "buildIn":true
                 },
                 {
                     "name":"lastName",
-                    "type":"java.lang.String"
+                    "type":"java.lang.String",
+                    "buildIn":true
                 },
                 {
                     "name":"gender",
-                    "type":"iot.jcypher.samples.domain.people.model.Gender"
+                    "type":"iot.jcypher.samples.domain.people.model.Gender",
+                    "buildIn":false
                 },
                 {
                     "name":"eyeColor",
-                    "type":"java.lang.String"
+                    "type":"java.lang.String",
+                    "buildIn":true
                 },
                 {
                     "name":"father",
-                    "type":"iot.jcypher.samples.domain.people.model.Person"
+                    "type":"iot.jcypher.samples.domain.people.model.Person",
+                    "buildIn":false
                 },
                 {
                     "name":"mother",
-                    "type":"iot.jcypher.samples.domain.people.model.Person"
+                    "type":"iot.jcypher.samples.domain.people.model.Person",
+                    "buildIn":false
                 }
             ]
         },
@@ -214,7 +242,8 @@
                 {
                     "name":"pointsOfContact",
                     "type":"java.util.List",
-                    "componentType":"iot.jcypher.samples.domain.people.model.PointOfContact"
+                    "componentType":"iot.jcypher.samples.domain.people.model.PointOfContact",
+                    "buildIn":false
                 }
             ]
         },
@@ -236,11 +265,13 @@
             "fields":[
                 {
                     "name":"street",
-                    "type":"java.lang.String"
+                    "type":"java.lang.String",
+                    "buildIn":true
                 },
                 {
                     "name":"number",
-                    "type":"int"
+                    "type":"int",
+                    "buildIn":true
                 }
             ]
         },
