@@ -1,6 +1,10 @@
 Release Notes
 =======
 
+## 3.2.1
+**Fixed**
+- NullpointerException in ResultHandler in certain query scenarios.
+
 ## 3.2.0
 **New**
 - Concurrency support - thread-safe invocation of 'IDomainAccess' an domain queries.

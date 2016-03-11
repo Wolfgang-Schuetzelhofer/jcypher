@@ -16,6 +16,23 @@
 
 package iot.jcypher.query.result.util;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+
+import javax.json.JsonArray;
+import javax.json.JsonNumber;
+import javax.json.JsonObject;
+import javax.json.JsonString;
+import javax.json.JsonValue;
+import javax.json.JsonValue.ValueType;
+
 import iot.jcypher.concurrency.Locking;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrAccess;
@@ -70,23 +87,6 @@ import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.transaction.ITransaction;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 import iot.jcypher.util.Util;
-
-import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-
-import javax.json.JsonArray;
-import javax.json.JsonNumber;
-import javax.json.JsonObject;
-import javax.json.JsonString;
-import javax.json.JsonValue;
-import javax.json.JsonValue.ValueType;
 
 public class ResultHandler {
 	
@@ -246,7 +246,8 @@ public class ResultHandler {
 						getRelationsById().put(ei.id, rRelation);
 					}
 				}
-				rRelations.add(rRelation);
+				if (!rRelations.contains(rRelation))
+					rRelations.add(rRelation);
 			}
 			getRelationColumns().put(colKey, rRelations);
 			getUnresolvedColumns().remove(colKey);
@@ -617,6 +618,20 @@ public class ResultHandler {
 		return dataObject.getJsonArray("rest");
 	}
 	
+	private JsonValue getRestValue(JsonArray restArray, int colIdx) {
+		JsonValue obj = restArray.get(colIdx);
+		if (obj.getValueType() == ValueType.ARRAY && ((JsonArray)obj).size() > 0)
+			obj = ((JsonArray)obj).get(0);
+		return obj;
+	}
+	
+	private JsonObject getRestObject(JsonArray restArray, int colIdx) {
+		JsonValue obj = restArray.get(colIdx);
+		if (obj.getValueType() == ValueType.ARRAY && ((JsonArray)obj).size() > 0)
+			obj = ((JsonArray)obj).get(0);
+		return (JsonObject) obj;
+	}
+	
 	private JsonObject getDataObject(int rowIndex) {
 		JsonObject jsres = this.queryResult.getJsonResult();
 		JsonArray datas = ((JsonObject)jsres.getJsonArray("results").get(
@@ -631,7 +646,7 @@ public class ResultHandler {
 	
 	private RelationInfo getRelationInfo(JsonObject dataObject, int colIdx) {
 		JsonArray restArray = getRestArray(dataObject);
-		JsonObject restObject = restArray.getJsonObject(colIdx);
+		JsonObject restObject = getRestObject(restArray, colIdx);
 		String startString = restObject.getString("start");
 		String endString = restObject.getString("end");
 		RelationInfo ri = RelationInfo.parse(startString, endString);
@@ -640,7 +655,7 @@ public class ResultHandler {
 	
 	private ElementInfo getElementInfo(JsonObject dataObject, int colIdx) {
 		JsonArray restArray = getRestArray(dataObject);
-		JsonValue obj = restArray.get(colIdx);
+		JsonValue obj = getRestValue(restArray, colIdx);
 		if (obj.getValueType() == ValueType.OBJECT) {
 			JsonObject restObject = (JsonObject)obj;
 			if (restObject.containsKey("self")) {
@@ -659,7 +674,7 @@ public class ResultHandler {
 	
 	private JsonObject getPathObject(JsonObject dataObject, int colIdx) {
 		JsonArray restArray = getRestArray(dataObject);
-		return restArray.getJsonObject(colIdx);
+		return getRestObject(restArray, colIdx);
 	}
 	
 	private void addValue(JsonObject dataObject, int colIdx, ValueList<?> vals) {
