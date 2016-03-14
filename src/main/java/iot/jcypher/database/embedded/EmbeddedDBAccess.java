@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,7 @@ package iot.jcypher.database.embedded;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 
+import java.io.File;
 import java.util.Properties;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -53,8 +54,8 @@ public class EmbeddedDBAccess extends AbstractEmbeddedDBAccess {
 //				.newEmbeddedDatabaseBuilder(dbDir);
 		
 		GraphDatabaseBuilder builder = new GraphDatabaseFactory()
-				.newEmbeddedDatabaseBuilder(this.properties
-						.getProperty(DBProperties.DATABASE_DIR));
+				.newEmbeddedDatabaseBuilder(new File(this.properties
+						.getProperty(DBProperties.DATABASE_DIR)));
 		if (this.properties
 				.getProperty(DBProperties.PAGECACHE_MEMORY) != null)
 			builder.setConfig(

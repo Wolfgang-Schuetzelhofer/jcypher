@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -113,6 +113,23 @@ public class ClauseTest extends AbstractTestSuite {
 		
 		result = print(clauses, Format.PRETTY_1);
 		testId = "MERGE_01";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		clauses = new IClause[] {
+				// match nodes (in this sample for 'John' and 'Song_1')
+				MATCH.node(n).label("Member").property("name").value("John"),
+				MATCH.node(s).label("Song").property("name").value("Song_1"),
+				// match (or create if not exists) a relation
+				MERGE.node(n).relation(r).out().type("PLAYED").node(s),
+				
+				ON_CREATE.DETACH_DELETE(s),
+				
+				ON_MATCH.DETACH_DELETE(s),
+		};
+		
+		result = print(clauses, Format.PRETTY_1);
+		testId = "MERGE_02";
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		return;
@@ -1329,6 +1346,14 @@ public class ClauseTest extends AbstractTestSuite {
 		result = print(foreach, Format.PRETTY_1);
 		testId = "FOREACH_09";
 		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		foreach = FOR_EACH.element(n).IN_nodes(p).DO()
+				.DETACH_DELETE(n);
+
+		result = print(foreach, Format.PRETTY_1);
+		testId = "FOREACH_10";
+		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 	
 	@Test
@@ -1598,6 +1623,7 @@ public class ClauseTest extends AbstractTestSuite {
 		TestDataReader tdr = new TestDataReader("/test/Test_DELETE_01.txt");
 		
 		JcNode n = new JcNode("n");
+		JcNode m = new JcNode("m");
 		JcRelation r = new JcRelation("r");
 		
 		/*******************************/
@@ -1614,6 +1640,22 @@ public class ClauseTest extends AbstractTestSuite {
 		result = print(clauses, Format.PRETTY_1);
 
 		testId = "DELETE_02";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		IClause detach_delete = DO.DETACH_DELETE(n);
+
+		result = print(detach_delete, Format.PRETTY_1);
+		testId = "DELETE_03";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		clauses = new IClause[] {
+				DO.DETACH_DELETE(n),
+				DO.DETACH_DELETE(m) };
+		result = print(clauses, Format.PRETTY_1);
+
+		testId = "DELETE_04";
 		assertQuery(testId, result, tdr.getTestData(testId));
 	}
 	

@@ -18,8 +18,21 @@ package iot.jcypher.domainquery.internal;
 
 public class JSONConverter {
 
-	public JSONConverter() {
-		// TODO Auto-generated constructor stub
+	/**
+	 * Answer a JSON representation of a recorded query
+	 * @param query
+	 * @return
+	 */
+	public static String toJSON(RecordedQuery query) {
+		return "{}";
 	}
 
+	/**
+	 * Build a recorded query from it's JSON representation
+	 * @param json
+	 * @return
+	 */
+	public static RecordedQuery fromJSON(String json) {
+		return null;
+	}
 }

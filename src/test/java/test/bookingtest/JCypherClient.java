@@ -2,11 +2,7 @@ package test.bookingtest;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 
-import iot.jcypher.database.DBAccessFactory;
-import iot.jcypher.database.DBProperties;
-import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.query.JcQuery;
@@ -14,7 +10,6 @@ import iot.jcypher.query.api.IClause;
 import iot.jcypher.query.factories.clause.DO;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.MERGE;
-import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
@@ -25,6 +20,13 @@ public class JCypherClient {
 	public static final String ID_PARAMETER = "id";
 	public static final String EMAIL_LABEL = "Email";
 	public static final String EMAIL_PROPERTY = "email";
+	
+	private IDBAccess dbAccess;
+
+	public JCypherClient(IDBAccess dbAccess) {
+		super();
+		this.dbAccess = dbAccess;
+	}
 
 	public void insertBooking(Booking booking) {
 
@@ -44,13 +46,10 @@ public class JCypherClient {
 						MATCH.node(e).label(EMAIL_LABEL).property("email").value(booking.getEmail()),
 						MERGE.node(b).relation().type("WITH_EMAIL").node(e) });
 
-		IDBAccess dbAccess = createDbAccess();
 		dbAccess.execute(Arrays.asList(nodeQuery, relationQuery));
-		dbAccess.close();
 	}
 
 	public List<GrRelation> getBookingsRelated(Long bookingId, int maxHops) {
-		IDBAccess dbAccess = createDbAccess();
 		JcQuery nodeQuery = new JcQuery();
 		JcNode b = new JcNode("b");
 		JcNode b2 = new JcNode("b2");
@@ -59,11 +58,4 @@ public class JCypherClient {
 				.relation(r).maxHops(maxHops).node(b2), RETURN.DISTINCT().value(r) });
 		return dbAccess.execute(nodeQuery).resultOf(r);
 	}
-
-	public IDBAccess createDbAccess() {
-		Properties props = new Properties();
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		return DBAccessFactory.createDBAccess(DBType.REMOTE, props);
-	}
-
 }

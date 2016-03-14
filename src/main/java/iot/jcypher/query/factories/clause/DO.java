@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -25,6 +25,7 @@ import iot.jcypher.query.ast.ASTNode;
 import iot.jcypher.query.ast.ClauseType;
 import iot.jcypher.query.values.JcElement;
 import iot.jcypher.query.values.JcLabel;
+import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcProperty;
 
 /**
@@ -81,6 +82,19 @@ public class DO {
 		ModifyTerminal ret = ModifyFactory.deleteElement(element);
 		ASTNode an = APIObjectAccess.getAstNode(ret);
 		an.setClauseType(ClauseType.DELETE);
+		return ret;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>detach all relations and then delete a node in a DO clause</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. ...<b>DETACH_DELETE(n)</b></i></div>
+	 * <br/>
+	 */
+	public static ModifyTerminal DETACH_DELETE(JcNode node) {
+		ModifyTerminal ret = ModifyFactory.deleteElement(node);
+		ASTNode an = APIObjectAccess.getAstNode(ret);
+		an.setClauseType(ClauseType.DETACH_DELETE);
 		return ret;
 	}
 	

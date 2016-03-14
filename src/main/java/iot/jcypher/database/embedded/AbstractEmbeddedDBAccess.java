@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -300,68 +300,20 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		JsonArrayBuilder nodesArray = Json.createArrayBuilder();
 		JsonArrayBuilder relationsArray = Json.createArrayBuilder();
 		
-		JsonObjectBuilder restObject;
-		Object restValue;
+		Object restObject;
 		List<NodeHolder> nodes = new ArrayList<NodeHolder>();
 		List<RelationHolder> relations = new ArrayList<RelationHolder>();
 		for (int i = 0; i < cols.size(); i++) {
 			restObject = null;
-			restValue = null;
 			String key = cols.get(i);
 			Object val = row.get(key);
-			if (val instanceof Node) {
-				restObject = Json.createObjectBuilder();
-				Node node = (Node)val;
-				restObject.add("self", "node/".concat(String.valueOf(node.getId())));
-				addNode(node, nodes);
-			} else if (val instanceof Relationship) {
-				restObject = Json.createObjectBuilder();
-				Relationship relation = (Relationship)val;
-				restObject.add("start", "node/".concat(String.valueOf(relation.getStartNode().getId())));
-				restObject.add("self", "relationship/".concat(String.valueOf(relation.getId())));
-				restObject.add("end", "node/".concat(String.valueOf(relation.getEndNode().getId())));
-				RelationHolder rh = new RelationHolder(relation);
-				if (!relations.contains(rh)) {
-					RelationHolder.RelationNodes nds = rh.init(relation);
-					addNode(nds.startNode, nodes);
-					addNode(nds.endNode, nodes);
-					relations.add(rh);
-				}
-			} else if (val instanceof Path) {
-				restObject = Json.createObjectBuilder();
-				Path path = (Path)val;
-				restObject.add("start", "node/".concat(String.valueOf(path.startNode().getId())));
-				JsonArrayBuilder pNodesArray = Json.createArrayBuilder();
-				Iterator<Node> nit = path.nodes().iterator();
-				while (nit.hasNext()) {
-					Node node = nit.next();
-					pNodesArray.add("node/".concat(String.valueOf(node.getId())));
-					addNode(node, nodes);
-				}
-				restObject.add("nodes", pNodesArray);
-				restObject.add("length", path.length());
-				JsonArrayBuilder pRelationsArray = Json.createArrayBuilder();
-				Iterator<Relationship> rit = path.relationships().iterator();
-				while (rit.hasNext()) {
-					Relationship relation = rit.next();
-					pRelationsArray.add("relationship/".concat(String.valueOf(relation.getId())));
-					RelationHolder rh = new RelationHolder(relation);
-					if (!relations.contains(rh)) {
-						rh.init(relation);
-						// nodes have already been added for the path
-						relations.add(rh);
-					}
-				}
-				restObject.add("relationships", pRelationsArray);
-				restObject.add("end", "node/".concat(String.valueOf(path.endNode().getId())));
-			} else {
-				restValue = val;
-			}
-			
-			if (restObject != null)
-				restArray.add(restObject);
-			else
-				writeLiteralValue(restValue, restArray);
+			restObject = buildRestObject(val, nodes, relations);
+			if (restObject == null)
+				writeLiteralValue(val, restArray);
+			else if (restObject instanceof JsonObjectBuilder)
+				restArray.add((JsonObjectBuilder)restObject);
+			 else if (restObject instanceof JsonArrayBuilder)
+					restArray.add((JsonArrayBuilder)restObject);
 		}
 		
 		Collections.sort(nodes);
@@ -379,6 +331,82 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		rowObject.add("graph", graphObject);
 		builderContext.dataArrays.get(
 				builderContext.dataArrays.size() - 1).add(rowObject);
+	}
+	
+	private Object buildRestObject(Object val, List<NodeHolder> nodes,
+			List<RelationHolder> relations) {
+		JsonObjectBuilder restObject = null;
+		JsonArrayBuilder jsarr = null;
+		
+		if (val instanceof Node) {
+			restObject = Json.createObjectBuilder();
+			Node node = (Node)val;
+			restObject.add("self", "node/".concat(String.valueOf(node.getId())));
+			addNode(node, nodes);
+		} else if (val instanceof Relationship) {
+			restObject = Json.createObjectBuilder();
+			Relationship relation = (Relationship)val;
+			restObject.add("start", "node/".concat(String.valueOf(relation.getStartNode().getId())));
+			restObject.add("self", "relationship/".concat(String.valueOf(relation.getId())));
+			restObject.add("end", "node/".concat(String.valueOf(relation.getEndNode().getId())));
+			RelationHolder rh = new RelationHolder(relation);
+			if (!relations.contains(rh)) {
+				RelationHolder.RelationNodes nds = rh.init(relation);
+				addNode(nds.startNode, nodes);
+				addNode(nds.endNode, nodes);
+				relations.add(rh);
+			}
+		} else if (val instanceof Path) {
+			restObject = Json.createObjectBuilder();
+			Path path = (Path)val;
+			restObject.add("start", "node/".concat(String.valueOf(path.startNode().getId())));
+			JsonArrayBuilder pNodesArray = Json.createArrayBuilder();
+			Iterator<Node> nit = path.nodes().iterator();
+			while (nit.hasNext()) {
+				Node node = nit.next();
+				pNodesArray.add("node/".concat(String.valueOf(node.getId())));
+				addNode(node, nodes);
+			}
+			restObject.add("nodes", pNodesArray);
+			restObject.add("length", path.length());
+			JsonArrayBuilder pRelationsArray = Json.createArrayBuilder();
+			Iterator<Relationship> rit = path.relationships().iterator();
+			while (rit.hasNext()) {
+				Relationship relation = rit.next();
+				pRelationsArray.add("relationship/".concat(String.valueOf(relation.getId())));
+				RelationHolder rh = new RelationHolder(relation);
+				if (!relations.contains(rh)) {
+					rh.init(relation);
+					// nodes have already been added for the path
+					relations.add(rh);
+				}
+			}
+			restObject.add("relationships", pRelationsArray);
+			restObject.add("end", "node/".concat(String.valueOf(path.endNode().getId())));
+		} else if (val instanceof SeqWrapper<?>) {
+			jsarr = Json.createArrayBuilder();
+			int sz = ((SeqWrapper<?>)val).size();
+			boolean restFound = false;
+			for (int i = 0; i < sz; i++) {
+				Object obj = ((SeqWrapper<?>)val).get(i);
+				Object ro = buildRestObject(obj, nodes, relations);
+				if (ro instanceof JsonObjectBuilder) {
+					jsarr.add((JsonObjectBuilder)ro);
+					restFound = true;
+				} else if (ro instanceof JsonArrayBuilder) {
+					jsarr.add((JsonArrayBuilder)ro);
+					restFound = true;
+				}
+			}
+			if (!restFound)
+				jsarr = null;
+		}
+		
+		if (restObject != null)
+			return restObject;
+		if (jsarr != null)
+			return jsarr;
+		return null;
 	}
 	
 	private static void writeLiteralValue(Object val, JsonArrayBuilder array) {

@@ -309,6 +309,20 @@ public class CypherWriter {
 			STCypherWriter.toCypherExpression((ModifyExpression)astNode, context);
 		}
 		
+		/*** DETACH DELETE CLAUSE **************************************/
+		else if (clauseType == ClauseType.DETACH_DELETE) {
+			if (context.previousClause != ClauseType.DETACH_DELETE) { // otherwise concat multiple deletes
+				if (hasStart)
+					Pretty.writePreClauseSeparator(context, context.buffer);
+				context.buffer.append("DETACH DELETE");
+				Pretty.writePostClauseSeparator(context, context.buffer);
+			} else {
+				context.buffer.append(',');
+				Pretty.writeStatementSeparator(context, context.buffer);
+			}
+			STCypherWriter.toCypherExpression((ModifyExpression)astNode, context);
+		}
+		
 		/*** REMOVE CLAUSE **************************************/
 		else if (clauseType == ClauseType.REMOVE) {
 			if (context.previousClause != ClauseType.REMOVE) { // otherwise concat multiple removes

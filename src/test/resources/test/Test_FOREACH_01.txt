@@ -33,3 +33,7 @@ FOREACH (n IN nodes(p) | REMOVE n.age)
 ----FOREACH_09:
 FOREACH (n IN nodes(p) | SET n = source)
 ------------------------------------------------------------
+
+----FOREACH_10:
+FOREACH (n IN nodes(p) | DETACH DELETE n)
+------------------------------------------------------------

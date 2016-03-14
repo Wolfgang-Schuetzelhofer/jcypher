@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,6 +31,7 @@ import iot.jcypher.query.ast.collection.DoEvalExpression;
 import iot.jcypher.query.ast.pattern.PatternExpression;
 import iot.jcypher.query.values.JcElement;
 import iot.jcypher.query.values.JcLabel;
+import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcProperty;
 
 public class Do extends APIObject {
@@ -127,6 +128,19 @@ public class Do extends APIObject {
 		ModifyTerminal mt = ModifyFactory.deleteElement(element);
 		ASTNode clause = APIObjectAccess.getAstNode(mt);
 		clause.setClauseType(ClauseType.DELETE);
+		return createConcat(clause);
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>detach all relations and then delete a node in the DO part of a FOREACH expression</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. ...<b>DETACH_DELETE(n)</b></i></div>
+	 * <br/>
+	 */
+	public DoConcat DETACH_DELETE(JcNode node) {
+		ModifyTerminal mt = ModifyFactory.deleteElement(node);
+		ASTNode clause = APIObjectAccess.getAstNode(mt);
+		clause.setClauseType(ClauseType.DETACH_DELETE);
 		return createConcat(clause);
 	}
 	
