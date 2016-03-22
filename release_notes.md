@@ -2,6 +2,10 @@ Release Notes
 =======
 
 ## 3.3.0 (under development)
+**New**
+- Query DSL - DETACH DELETE
+- JSONDBFacade, JSONDomainFacade
+
 **Fixed**
 - Bug in adding super interface to generic interface model.
 
