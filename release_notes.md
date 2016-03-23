@@ -1,7 +1,7 @@
 Release Notes
 =======
 
-## 3.3.0 (under development)
+## 3.3.0
 **New**
 - Query DSL - DETACH DELETE
 - JSONDBFacade, JSONDomainFacade
