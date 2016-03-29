@@ -1,0 +1,28 @@
+----MERGE_01:
+CYPHER planner=rule
+CREATE (a:Applicant{firstName:'Jerry', lastName:'Smith', UniqueId:'JerrySmith'})
+MERGE (b:Applicant{firstName:'John', lastName:'Smith', UniqueId:'JohnSmith'})
+CREATE (c:Applicant{firstName:'Angie', lastName:'Smith', UniqueId:'AngieSmith'})
+------------------------------------------------------------
+
+----MERGE_02:
+
+{
+    "query":"CYPHER planner=rule CREATE (a:Applicant{props_0}) MERGE (b:Applicant{firstName:{param_0}, lastName:{param_1}, UniqueId:{param_2}}) CREATE (c:Applicant{props_1})",
+    "params":{
+        "props_0":{
+            "firstName":"Jerry",
+            "lastName":"Smith",
+            "UniqueId":"JerrySmith"
+        },
+        "param_0":"John",
+        "param_1":"Smith",
+        "param_2":"JohnSmith",
+        "props_1":{
+            "firstName":"Angie",
+            "lastName":"Smith",
+            "UniqueId":"AngieSmith"
+        }
+    }
+}
+------------------------------------------------------------

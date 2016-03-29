@@ -95,6 +95,19 @@ public class CypherWriter {
 	private static final boolean CORRECT_FOR_LIST_WITH_PARAMS = true;
 	private static final String dBVersion_21x = "2.1.x";
 	
+	// clauses which can't use parameter sets
+	private static final ClauseType[] dontUseParamSet = new ClauseType[] {
+			ClauseType.MERGE
+	};
+	
+	private static boolean inDontUseParamSet(ClauseType ct) {
+		for (ClauseType t : dontUseParamSet) {
+			if (ct == t)
+				return true;
+		}
+		return false;
+	}
+	
 	public static void toCypherExpression(JcQuery query, WriterContext context) {
 		if (!DBVersion.Neo4j_Version.equals(dBVersion_21x)) {
 			context.buffer.append("CYPHER planner=");
@@ -1057,6 +1070,8 @@ public class CypherWriter {
 					idx++;
 				}
 				
+				if (inDontUseParamSet(context.currentClause))
+					QueryParamSet.disableUseSet(context);
 				if (QueryParam.isExtractParams(context) && QueryParamSet.canUseSet(context) &&
 						QueryParamSet.getCurrentSet(context).getQueryParams().size() > 1) {
 					QueryParam.setParamIndex(paramIdx, context);
