@@ -2284,6 +2284,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 				boolean prepareToDelete) {
 			if (!context.domainObjects.contains(domainObject)) { // avoid infinite loops
 				context.domainObjects.add(domainObject);
+				if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
+					iot.jcypher.domain.mapping.surrogate.Collection surrColl = (iot.jcypher.domain.mapping.surrogate.Collection)domainObject;
+					if (surrColl.getContent() != null)
+						surrColl.setCollType(surrColl.getContent().getClass().getName());
+				}
 				ObjectMapping objectMapping = domainAccessHandler.getObjectMappingFor(domainObject);
 				Iterator<FieldMapping> it = objectMapping.fieldMappingsIterator();
 				while (it.hasNext()) {

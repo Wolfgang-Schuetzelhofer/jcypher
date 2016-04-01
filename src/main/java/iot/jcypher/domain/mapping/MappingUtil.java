@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -122,6 +122,26 @@ public class MappingUtil {
 	 */
 	public static Object convertFromProperty(Object value, Class<?> targetType) {
 		return MappingUtil.convertFromProperty(value, targetType, null, null);
+	}
+	
+	@SuppressWarnings({ "unchecked", "rawtypes" })
+	public static <T extends Collection, S extends Collection> T convertCollection(S source, String collType) {
+		if (!source.getClass().getName().equals(collType)) { // need to convert
+			try {
+				Class<T> collCls = (Class<T>) Class.forName(collType);
+				T coll = collCls.newInstance();
+				for(Object val : source) {
+					coll.add(val);
+				}
+				return coll;
+			} catch (Throwable e) {
+				if (e instanceof RuntimeException)
+					throw (RuntimeException)e;
+				else
+					throw new RuntimeException(e);
+			}
+		}
+		return (T) source;
 	}
 	
 	/**

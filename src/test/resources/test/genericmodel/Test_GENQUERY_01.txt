@@ -591,20 +591,20 @@ iot.jcypher.samples.domain.people.model.Person {
 ----GENQUERY_05:
 [
 iot.jcypher.samples.domain.people.model.Company {
-  name : "MunichTec Limited"
-  pointsOfContact : [
-    iot.jcypher.samples.domain.people.model.Address {
-      street : "Schiller Strasse"
-      number : 15
-      area :
-    }]
-},
-iot.jcypher.samples.domain.people.model.Company {
   name : "Global Company"
   pointsOfContact : [
     iot.jcypher.samples.domain.people.model.Address {
       street : "Kearny Street"
       number : 29
+      area :
+    }]
+},
+iot.jcypher.samples.domain.people.model.Company {
+  name : "MunichTec Limited"
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Schiller Strasse"
+      number : 15
       area :
     }]
 },

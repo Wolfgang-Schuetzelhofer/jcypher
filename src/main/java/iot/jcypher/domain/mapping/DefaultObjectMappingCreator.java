@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,7 +68,7 @@ public class DefaultObjectMappingCreator {
 				
 				if (clazz.equals(MapEntry.class) && fields[i].getName().equals(ValueField))
 					fieldMapping = new ValueAndTypeMapping(field);
-				else if (clazz.equals(Collection.class)) // has only one field, don't need to test for field name
+				else if (clazz.equals(Collection.class) && fields[i].getName().equals("c_content"))
 					fieldMapping = new ListFieldMapping(field);
 				else if (clazz.equals(Array.class)) // has only one field, don't need to test for field name
 					fieldMapping = new ListFieldMapping(field);

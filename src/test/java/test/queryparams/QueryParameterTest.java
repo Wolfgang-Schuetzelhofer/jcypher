@@ -53,7 +53,7 @@ import util.TestDataReader;
 
 public class QueryParameterTest extends AbstractTestSuite {
 
-	public static IDBAccess dbAccess;
+	private static IDBAccess dbAccess;
 	private static ByteArrayOutputStream queriesStream;
 
 	@Test

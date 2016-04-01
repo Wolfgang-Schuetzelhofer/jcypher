@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,13 +16,13 @@
 
 package iot.jcypher.domain.mapping;
 
+import java.util.Collection;
+import java.util.Map;
+
 import iot.jcypher.domain.mapping.CompoundObjectType.CType;
 import iot.jcypher.domain.mapping.surrogate.InnerClassSurrogate;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrProperty;
-
-import java.util.Collection;
-import java.util.Map;
 
 public class FieldMapping {
 
@@ -141,7 +141,7 @@ public class FieldMapping {
 						propValue = MappingUtil.convertFromProperty(propValue, typ,
 								getComponentType(rNode), getConcreteFieldType());
 						if (!propValue.equals(value)) {
-							this.field.set(domainObject, propValue);
+							this.field.set(domainObject, convertFieldValue(propValue, domainObject));
 						}
 					}
 				}
@@ -150,6 +150,20 @@ public class FieldMapping {
 			}
 		}
 		return hasProperty;
+	}
+	
+	@SuppressWarnings("unchecked")
+	protected Object convertFieldValue(Object val, Object domainObject) {
+		Object ret = val;
+		if (domainObject instanceof iot.jcypher.domain.mapping.surrogate.Collection) {
+			iot.jcypher.domain.mapping.surrogate.Collection surrColl = (iot.jcypher.domain.mapping.surrogate.Collection)domainObject;
+			if (getFieldName().equals("collType") && surrColl.getContent() != null && val != null)
+				surrColl.setContent((Collection<Object>) MappingUtil.convertCollection(surrColl.getContent(), val.toString()));
+			else if (getFieldName().equals("c_content") && surrColl.getCollType() != null && val != null) {
+				ret = MappingUtil.convertCollection((Collection<?>)val, surrColl.getCollType());
+			}
+		}
+		return ret;
 	}
 	
 	public void setFieldValue(Object domainObject, Object value) {
