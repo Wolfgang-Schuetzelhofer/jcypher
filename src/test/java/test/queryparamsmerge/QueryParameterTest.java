@@ -14,7 +14,7 @@
  * limitations under the License.
  ************************************************************************/
 
-package test.queryparams;
+package test.queryparamsmerge;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

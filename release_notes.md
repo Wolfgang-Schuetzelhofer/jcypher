@@ -1,6 +1,11 @@
 Release Notes
 =======
 
+## 3.3.1
+**Fixed**
+- Illegal use of parameter-sets with MERGE, now using simple parameters.
+- Added support for all Collection sub classes in domain model.
+
 ## 3.3.0
 **New**
 - Query DSL - DETACH DELETE

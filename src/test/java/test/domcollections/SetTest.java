@@ -93,6 +93,11 @@ public class SetTest extends AbstractTestSuite {
 		DomainQueryResult queryResult = q.execute();
 		List<AddressNode> results = queryResult.resultOf(match);
 		assertTrue(results.size() == 1);
+		
+		AddressNode an0 = results.get(0);
+		assertTrue(an0.getGUID().equals("2"));
+		assertTrue(an0.getPreAddressNodeGUIDs().size() == 2);
+		assertTrue(an0.getPreAddressNodes().size() == 2);
 
 		return;
 	}
