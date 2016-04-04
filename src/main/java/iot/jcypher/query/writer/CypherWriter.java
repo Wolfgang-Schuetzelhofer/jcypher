@@ -267,16 +267,11 @@ public class CypherWriter {
 		}
 		
 		/*** MERGE CLAUSE **************************************/
-		else if (clauseType == ClauseType.MERGE) {
-			if (context.previousClause != ClauseType.MERGE) { // otherwise concat multiple merges
-				if (hasStart)
-					Pretty.writePreClauseSeparator(context, context.buffer);
-				context.buffer.append("MERGE");
-				Pretty.writePostClauseSeparator(context, context.buffer);
-			} else {
-				context.buffer.append(',');
-				Pretty.writeStatementSeparator(context, context.buffer);
-			}
+		else if (clauseType == ClauseType.MERGE) { // never concatenate MERGE clauses
+			if (hasStart)
+				Pretty.writePreClauseSeparator(context, context.buffer);
+			context.buffer.append("MERGE");
+			Pretty.writePostClauseSeparator(context, context.buffer);
 			PatternCypherWriter.toCypherExpression((PatternExpression)astNode, context);
 		}
 		
