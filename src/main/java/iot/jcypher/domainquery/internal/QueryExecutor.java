@@ -2458,7 +2458,10 @@ public class QueryExecutor implements IASTObjectsContainer {
 							cType = getMappingInfo().getInternalDomainAccess()
 									.getConcreteFieldType(fm.getClassFieldName());
 						}
-						typ = cType.getType();
+						if (cType != null)
+							typ = cType.getType();
+						else
+							typ = fm.getFieldType();
 					} else { // backward
 						typ = fm.getField().getDeclaringClass();
 					}
@@ -2484,9 +2487,15 @@ public class QueryExecutor implements IASTObjectsContainer {
 						nextStepIndex++;
 						if (nextStepIndex <= this.traversalExpression.getSteps().size() - 1)
 							nextStep = this.traversalExpression.getSteps().get(nextStepIndex);
-						if (forward)
-							types = cType.getTypes(true);
-						else
+						if (forward) {
+							if (cType != null)
+								types = cType.getTypes(true);
+							else if (CompoundObjectType.isConcrete(typ)) {
+								types = new ArrayList<Class<?>>();
+								types.add(typ);
+							} else
+								types = new ArrayList<Class<?>>();
+						} else
 							types = getMappingInfo().getCompoundTypesFor(typ);
 					}
 					

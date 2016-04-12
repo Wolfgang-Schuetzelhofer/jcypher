@@ -43,11 +43,15 @@ public class GregTest {
 
 	@Test
 	public void testGregSample() {
+		testGregSample(3);
+	}
+
+	public void testGregSample(int count) {
 		List<JcError> errs;
 		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 
 		// initially populate the domain
-		initDomain(da);
+//		initDomain(da);
 
 		// you can have a look at the graph using Neo4j Browser
 		// and the following CYPHER query:
@@ -106,6 +110,8 @@ public class GregTest {
 		// and the following CYPHER query:
 		// MATCH (n:BIStats) MATCH (e:Env) MATCH (a:App) RETURN n,e,a
 
+		if (count > 0)
+			testGregSample(count - 1);
 		return;
 	}
 

@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -98,12 +98,15 @@ public class CompoundObjectType {
 	}
 	
 	private void addType(List<Class<?>> typeList, boolean noAbstractTypes) {
-		if (!noAbstractTypes ||
-				(!this.type.isInterface() && !Modifier.isAbstract(this.type.getModifiers()) &&
-						!this.type.equals(Object.class)))
+		if (!noAbstractTypes || isConcrete(this.type))
 			typeList.add(this.type);
 		if (this.next != null)
 			next.addType(typeList, noAbstractTypes);
+	}
+	
+	public static boolean isConcrete(Class<?> typ) {
+		return (!typ.isInterface() && !Modifier.isAbstract(typ.getModifiers()) &&
+				!typ.equals(Object.class));
 	}
 	
 	/********************************************/
