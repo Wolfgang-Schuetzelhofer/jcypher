@@ -62,6 +62,21 @@ public class RecordedQuery {
 		return generic;
 	}
 	
+	@SuppressWarnings("unchecked")
+	public <T extends Statement> T createStatement(Class<T> type) {
+		if (Assignment.class.equals(type))
+			return (T) new Assignment();
+		else if (Invocation.class.equals(type))
+			return (T) new Invocation();
+		else if (Literal.class.equals(type))
+			return (T) new Literal();
+		else if (Reference.class.equals(type))
+			return (T) new Reference();
+		else if (DOMatchRef.class.equals(type))
+			return (T) new DOMatchRef();
+		return null;
+	}
+	
 	@Override
 	public String toString() {
 		return RecordedQueryToString.queryToString(this);
@@ -86,6 +101,11 @@ public class RecordedQuery {
 			this.method = method;
 			this.returnObjectRef = retObjectRef;
 			this.params = params;
+		}
+		
+		@SuppressWarnings("unused")
+		private Invocation() {
+			super();
 		}
 
 		public String getMethod() {
@@ -116,6 +136,10 @@ public class RecordedQuery {
 			return params;
 		}
 
+		public void setParams(List<Statement> params) {
+			this.params = params;
+		}
+
 		@Override
 		public String getHint() {
 			return this.method;
@@ -134,6 +158,10 @@ public class RecordedQuery {
 			super(onObjectRef, method, retObjectRef, params);
 		}
 		
+		@SuppressWarnings("unused")
+		private Assignment() {
+			super();
+		}
 	}
 	
 	/**************************************/
@@ -145,9 +173,18 @@ public class RecordedQuery {
 			super();
 			this.ref = ref;
 		}
+		
+		@SuppressWarnings("unused")
+		private DOMatchRef() {
+			super();
+		}
 
 		public String getRef() {
 			return ref;
+		}
+
+		public void setRef(String ref) {
+			this.ref = ref;
 		}
 
 		@Override
@@ -171,6 +208,11 @@ public class RecordedQuery {
 			super();
 			this.value = value;
 		}
+		
+		@SuppressWarnings("unused")
+		private Literal() {
+			super();
+		}
 
 		public Object getValue() {
 			if (this.value instanceof iot.jcypher.domainquery.ast.Parameter)
@@ -178,6 +220,14 @@ public class RecordedQuery {
 			return this.value;
 		}
 		
+		public Object getRawValue() {
+			return this.value;
+		}
+		
+		public void setValue(Object value) {
+			this.value = value;
+		}
+
 		@Override
 		public String getHint() {
 			if (this.value != null) {
@@ -206,8 +256,21 @@ public class RecordedQuery {
 			this.refId= refId;
 		}
 		
+		@SuppressWarnings("unused")
+		private Reference() {
+			super();
+		}
+		
 		public Object getValue() {
 			return value;
+		}
+
+		public void setValue(Object value) {
+			this.value = value;
+		}
+
+		public void setRefId(String refId) {
+			this.refId = refId;
 		}
 
 		public String getRefId() {

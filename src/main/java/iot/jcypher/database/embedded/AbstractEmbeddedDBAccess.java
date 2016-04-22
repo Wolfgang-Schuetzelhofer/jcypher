@@ -200,6 +200,8 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		String msg = exception.getLocalizedMessage();
 		JsonObjectBuilder errorObject = Json.createObjectBuilder();
 		errorObject.add("code", code);
+		if (msg == null)
+			msg = code;
 		errorObject.add("message", msg);
 		errorObject.add("info", DBUtil.getStacktrace(exception));
 		builderContext.errorsArray.add(errorObject);

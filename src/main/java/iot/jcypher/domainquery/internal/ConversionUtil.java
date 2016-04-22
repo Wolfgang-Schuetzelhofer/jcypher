@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2016 IoT-Solutions e.U.
+ * Copyright (c) 2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,32 +14,19 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.query.values.operators;
+package iot.jcypher.domainquery.internal;
 
-public class OPTYPE {
+public class ConversionUtil {
 
-	/*****************************/
-	public enum String {
-		CONCAT, REPLACE_SEPARATOR
-	}
+	private static final String STRING = "java.lang.String";
+	private static final String INTEGER = "java.lang.Integer";
 	
-	/*****************************/
-	public enum Collection {
-		ADD, ADD_ALL
-	}
-	
-	/*****************************/
-	public enum PropertyContainer {
-		PROPERTY_ACCESS
-	}
-	
-	/*****************************/
-	public enum Number {
-		PLUS, MINUS, MULT, DIV, MOD, POW
-	}
-	
-	/*****************************/
-	public enum Node {
-		LABEL_ACCESS
+	public static Object from(String type, String value) {
+		if (STRING.equals(type))
+			return value;
+		else if (INTEGER.equals(type))
+			return Integer.valueOf(value);
+
+		return null;
 	}
 }

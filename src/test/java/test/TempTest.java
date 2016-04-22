@@ -16,9 +16,6 @@
 
 package test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,67 +25,239 @@ import java.util.Properties;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
-import iot.jcypher.domain.DomainAccessFactory;
-import iot.jcypher.domain.IDomainAccess;
-import iot.jcypher.domainquery.DomainQuery;
-import iot.jcypher.domainquery.api.DomainObjectMatch;
-import iot.jcypher.domainquery.internal.QueryRecorder;
-import iot.jcypher.domainquery.internal.QueryRecorder.QueriesPerThread;
-import iot.jcypher.domainquery.internal.RecordedQuery;
-import iot.jcypher.domainquery.internal.RecordedQueryPlayer;
 import iot.jcypher.domainquery.internal.Settings;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrRelation;
-import iot.jcypher.graph.Graph;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.factories.clause.CASE;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.CREATE_UNIQUE;
 import iot.jcypher.query.factories.clause.DO;
+import iot.jcypher.query.factories.clause.ELSE;
+import iot.jcypher.query.factories.clause.END;
 import iot.jcypher.query.factories.clause.FOR_EACH;
 import iot.jcypher.query.factories.clause.MATCH;
 import iot.jcypher.query.factories.clause.MERGE;
+import iot.jcypher.query.factories.clause.NATIVE;
 import iot.jcypher.query.factories.clause.ON_CREATE;
 import iot.jcypher.query.factories.clause.ON_MATCH;
-import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
-import iot.jcypher.query.factories.clause.SEPARATE;
+import iot.jcypher.query.factories.clause.WHEN;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.factories.clause.WITH;
+import iot.jcypher.query.factories.xpression.C;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
-import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcPath;
 import iot.jcypher.query.values.JcPrimitive;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.values.JcString;
+import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.Util;
-import test.AbstractTestSuite;
 import test.domainquery.Population;
-import test.domainquery.model.Address;
-import test.domainquery.model.NumberHolder;
-import test.domainquery.model.Person;
-import test.domainquery.model.Subject;
 import util.TestDataReader;
 
-@Ignore
+//@Ignore
 public class TempTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	
+	@Test
+	public void test_11() {
+		// the query !
+		JcRelation activeIn = new JcRelation("activeIn");
+		JcQuery q = new JcQuery();
+		
+		// that will be possible with 3.4.0-M01
+		q.setClauses(new IClause[]{
+				// match activeIn first
+				DO.SET(activeIn.property("ratings")).byExpression(activeIn.collectionProperty("ratings").add(1))
+		});
+		
+		// show the created CYPHER statements
+		String str = Util.toCypher(q, Format.PRETTY_1);
+		// show the created JSON
+		String json = Util.toJSON(q, Format.PRETTY_1);
+		
+		// that's how you need to do it today
+		q.setClauses(new IClause[]{
+				// match activeIn first
+				NATIVE.cypher("SET activeIn.ratings = activeIn.ratings + 1")
+		});
+		
+		// show the created CYPHER statements
+		String str_1 = Util.toCypher(q, Format.PRETTY_1);
+		// show the created JSON
+		String json_1 = Util.toJSON(q, Format.PRETTY_1);
+		
+		return;
+	}
+	
+	@Test
+	public void test_10() {
+		// clear the database
+		dbAccess.clearDatabase();
+		
+		// add some sample data
+		IClause[] clauses = new IClause[]{
+				CREATE.node().label("Member")
+		};
+		JcQuery q = new JcQuery();
+		q.setClauses(clauses);
+		JcQueryResult result = dbAccess.execute(q);
+		
+		// the query !
+		JcNode n = new JcNode("n");
+		JcValue x = new JcValue("x");
+		List<Integer> ratings = new ArrayList<Integer>();
+		ratings.add(1);
+		ratings.add(2);
+		
+		q = new JcQuery();
+		q.setClauses(new IClause[]{
+				MATCH.node(n).label("Member"),
+				
+				// DO().SET(...) is called exactly once when the comments property exists
+				// (the case expression returns an array with one element)
+				FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+						CASE.result(),
+						WHEN.valueOf(n.property("ratings")).IS_NULL(),
+							NATIVE.cypher("[]"),
+						ELSE.perform(),
+							NATIVE.cypher("[1]"),
+						END.caseXpr()
+				})).DO().SET(n.property("ratings")).byExpression(
+						n.collectionProperty("ratings").addAll(ratings)),
+				
+				// DO().SET(...) is called exactly once when the comments property does not exist
+				// (the case expression returns an array with one element)
+				FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+						CASE.result(),
+						WHEN.valueOf(n.property("ratings")).IS_NULL(),
+							NATIVE.cypher("[1]"),
+						ELSE.perform(),
+							NATIVE.cypher("[]"),
+						END.caseXpr()
+				})).DO().SET(n.property("ratings")).to(new ArrayList<>()),
+		});
+		
+		String str = Util.toCypher(q, Format.PRETTY_1);
+		
+		// the ratings property is initialized to []
+		result = dbAccess.execute(q);
+		
+		// an element is added to the ratings property
+		result = dbAccess.execute(q);
+		
+		// an element is added to the ratings property
+		result = dbAccess.execute(q);
+		
+		return;
+	}
+	
+	@Test
+	public void test_09() {
+		// clear the database
+		dbAccess.clearDatabase();
+		
+		// add some sample data
+		IClause[] clauses = new IClause[]{
+				CREATE.node().label("Member")
+		};
+		JcQuery q = new JcQuery();
+		q.setClauses(clauses);
+		JcQueryResult result = dbAccess.execute(q);
+		
+		// the query !
+		JcNode n = new JcNode("n");
+		JcValue x = new JcValue("x");
+		
+		q = new JcQuery();
+		q.setClauses(new IClause[]{
+				MATCH.node(n).label("Member"),
+				
+				// DO().SET(...) is called exactly once when the comments property exists
+				// (the case expression returns an array with one element)
+				FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+						CASE.result(),
+						WHEN.valueOf(n.property("comments")).GTE(0),
+							NATIVE.cypher("[1]"),
+						ELSE.perform(),
+							NATIVE.cypher("[]"),
+						END.caseXpr()
+				})).DO().SET(n.property("comments")).byExpression(
+						n.numberProperty("comments").plus(1)),
+				
+				// DO().SET(...) is called exactly once when the comments property does not exist
+				// (the case expression returns an array with one element)
+				FOR_EACH.element(x).IN(C.CREATE(new IClause[]{
+						CASE.result(),
+						WHEN.valueOf(n.property("comments")).GTE(0),
+							NATIVE.cypher("[]"),
+						ELSE.perform(),
+							NATIVE.cypher("[1]"),
+						END.caseXpr()
+				})).DO().SET(n.property("comments")).to(0),
+		});
+		
+		// the comments property is initialized to 0
+		result = dbAccess.execute(q);
+		
+		// the comments property is incremented
+		result = dbAccess.execute(q);
+		
+		return;
+	}
+	
+	@Test
+	public void test_08() {
+		List<JcQueryResult> results;
+		
+		IClause[] clauses = new IClause[]{
+				CREATE.node().label("Member")
+		};
+		JcQuery query = new JcQuery();
+		query.setClauses(clauses);
+		JcQueryResult result = dbAccess.execute(query);
+		
+		JcNode n = new JcNode("n");
+		
+		List<JcQuery> queries = new ArrayList<JcQuery>();
+		JcQuery q = new JcQuery();
+		q.setClauses(clauses = new IClause[]{
+				MATCH.node(n).label("Member"),
+				WHERE.has(n.property("comments")),
+				DO.SET(n.property("comments")).byExpression(
+						n.numberProperty("comments").plus(1)),
+		});
+		queries.add(q);
+		q = new JcQuery();
+		q.setClauses(new IClause[]{
+				MATCH.node(n).label("Member"),
+				WHERE.NOT().has(n.property("comments")),
+				DO.SET(n.property("comments")).to(0),
+		});
+		queries.add(q);
+		results = dbAccess.execute(queries);
+		
+		results = dbAccess.execute(queries);
+		
+		return;
+	}
 	
 	@Test
 	public void test_07() {
@@ -543,11 +712,11 @@ public class TempTest extends AbstractTestSuite {
 		Population population = new Population();
 		storedDomainObjects = population.createPopulation();
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 //		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 //		errors = da.store(storedDomainObjects);
 //		if (errors.size() > 0) {

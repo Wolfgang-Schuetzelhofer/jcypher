@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -102,8 +102,12 @@ public class ValueWriter {
 				}
 			}
 			
-			if (valueElem instanceof JcPrimitive && !nameWritten) {
-				Object val = ((JcPrimitive)valueElem).getValue();
+			Object listVal = null;
+			if (!nameWritten && valueElem instanceof JcCollection)
+				listVal = ((JcCollection)valueElem).getValue();
+			
+			if ((valueElem instanceof JcPrimitive || listVal != null) && !nameWritten) {
+				Object val = listVal != null ? listVal : ((JcPrimitive)valueElem).getValue();
 				if (val instanceof ValueElement) {
 					toValueExpression((ValueElement)val, context, sb);
 				} else if (val != null) {

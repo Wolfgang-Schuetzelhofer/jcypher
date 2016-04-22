@@ -23,6 +23,7 @@ import java.util.Properties;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import iot.jcypher.database.DBAccessFactory;
@@ -36,6 +37,7 @@ import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.query.result.JcError;
 
+@Ignore
 public class GregTest {
 
 	public static IDBAccess dbAccess;

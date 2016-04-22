@@ -80,6 +80,8 @@ import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
 import iot.jcypher.query.values.ValueWriter;
 
+import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 
 public class CypherWriter {
@@ -1195,13 +1197,16 @@ public class CypherWriter {
 				sb.append(val.toString());
 			} else if (val instanceof Boolean) {
 				sb.append(val.toString());
-			} else if (val instanceof List<?>) {
+			} else if (val instanceof Collection<?>) {
 				sb.append('[');
-				List<?> list = (List<?>)val;
-				for (int i = 0; i < list.size(); i++) {
-					if (i > 0)
+				Collection<?> coll = (Collection<?>)val;
+				Iterator<?> it = coll.iterator();
+				int idx = 0;
+				while(it.hasNext()) {
+					if (idx > 0)
 						sb.append(", ");
-					PrimitiveCypherWriter.writePrimitiveValue(list.get(i), context, sb);
+					PrimitiveCypherWriter.writePrimitiveValue(it.next(), context, sb);
+					idx++;
 				}
 				sb.append(']');
 			} else if (val instanceof JcValue) {

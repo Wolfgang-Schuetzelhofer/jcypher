@@ -5,6 +5,7 @@ import java.util.Properties;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import iot.jcypher.database.DBAccessFactory;
@@ -21,6 +22,7 @@ import iot.jcypher.util.QueriesPrintObserver;
 import test.domainquery.model.Area;
 import test.domainquery.model.Person;
 
+@Ignore
 public class GC2016Test {
 
 	public static IDBAccess dbAccess;

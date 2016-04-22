@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,10 +16,15 @@
 
 package iot.jcypher.query.values;
 
+import java.util.Collection;
+
 import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
+import iot.jcypher.query.values.operators.OPERATOR;
 
 public class JcCollection extends JcValue {
+	
+	private Object value;
 	
 	JcCollection() {
 		super();
@@ -37,6 +42,11 @@ public class JcCollection extends JcValue {
 	JcCollection(String name, ValueElement predecessor, IOperatorOrFunction opf) {
 		super(name, predecessor, opf);
 	}
+	
+	JcCollection(String name, Object val, ValueElement predecessor, IOperatorOrFunction opf) {
+		super(name, predecessor, opf);
+		this.value = val;
+	}
 
 	/**
 	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
@@ -47,6 +57,30 @@ public class JcCollection extends JcValue {
 		JcNumber ret = new JcNumber(null, this,
 				new FunctionInstance(FUNCTION.Collection.LENGTH, 1));
 		QueryRecorder.recordInvocationConditional(this, "length", ret);
+		return ret;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>add a value to a collection, return a <b>JcCollection</b></i></div>
+	 * <br/>
+	 */
+	public JcCollection add(Object value) {
+		JcCollection ret = new JcCollection(null, value, this,
+				OPERATOR.Collection.ADD);
+		QueryRecorder.recordInvocationConditional(this, "add", ret);
+		return ret;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>add all elements of a collection to this collection, return a <b>JcCollection</b></i></div>
+	 * <br/>
+	 */
+	public JcCollection addAll(Collection<?> coll) {
+		JcCollection ret = new JcCollection(null, coll, this,
+				OPERATOR.Collection.ADD_ALL);
+		QueryRecorder.recordInvocationConditional(this, "addAll", ret);
 		return ret;
 	}
 	
@@ -72,5 +106,9 @@ public class JcCollection extends JcValue {
 				new FunctionInstance(FUNCTION.Collection.LAST, 1));
 		QueryRecorder.recordInvocationConditional(this, "last", ret);
 		return ret;
+	}
+	
+	Object getValue() {
+		return value;
 	}
 }

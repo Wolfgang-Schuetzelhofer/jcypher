@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,12 @@ public class OPERATOR {
 	/*********************************************/
 	public static class Common {
 		public static final Operator COMMA_SEPARATOR = new Operator(",", ", ", OPTYPE.String.REPLACE_SEPARATOR);
+	}
+	
+	/*********************************************/
+	public static class Collection {
+		public static final Operator ADD = new Operator("+", " + ", OPTYPE.Collection.ADD);
+		public static final Operator ADD_ALL = new Operator("+", " + ", OPTYPE.Collection.ADD_ALL);
 	}
 	
 	/*********************************************/
