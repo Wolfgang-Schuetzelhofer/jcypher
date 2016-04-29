@@ -4,3 +4,5 @@
 # IDEA
 .idea
 *.iml
+/.classpath
+/.project
