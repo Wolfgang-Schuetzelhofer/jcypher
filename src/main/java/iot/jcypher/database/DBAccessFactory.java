@@ -36,33 +36,7 @@ public class DBAccessFactory {
 	 */
 	@SuppressWarnings("unchecked")
 	public static IDBAccess createDBAccess(DBType dbType, Properties properties) {
-		Class<? extends IDBAccess> dbAccessClass = null;
-		IDBAccess dbAccess = null;
-		try {
-			if (dbType == DBType.REMOTE) {
-				dbAccessClass =
-						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.RemoteDBAccess");
-			} else if (dbType == DBType.EMBEDDED) {
-				dbAccessClass =
-						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.embedded.EmbeddedDBAccess");
-			} else if (dbType == DBType.IN_MEMORY) {
-				dbAccessClass =
-						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.embedded.InMemoryDBAccess");
-			}
-		} catch (Throwable e) {
-			throw new RuntimeException(e);
-		}
-		
-		if (dbAccessClass != null) {
-			try {
-				Method init = dbAccessClass.getDeclaredMethod("initialize", new Class[] {Properties.class});
-				dbAccess = dbAccessClass.newInstance();
-				init.invoke(dbAccess, new Object[] {properties});
-			} catch (Throwable e) {
-				throw new RuntimeException(e);
-			}
-		}
-		return dbAccess;
+		return createDBAccess(dbType, properties, null, null);
 	}
 	
 	/**
@@ -83,15 +57,21 @@ public class DBAccessFactory {
 		Class<? extends IDBAccess> dbAccessClass = null;
 		IDBAccess dbAccess = null;
 		try {
-			if (dbType == DBType.REMOTE) {
-				dbAccessClass =
-						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.RemoteDBAccess");
-			} else if (dbType == DBType.EMBEDDED) {
-				dbAccessClass =
-						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.embedded.EmbeddedDBAccess");
-			} else if (dbType == DBType.IN_MEMORY) {
-				dbAccessClass =
-						(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.embedded.InMemoryDBAccess");
+			switch(dbType) {
+				case REMOTE:
+					dbAccessClass =
+							(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.RemoteDBAccess");
+					break;
+				case EMBEDDED:
+					dbAccessClass =
+							(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.embedded.EmbeddedDBAccess");
+					break;
+				case IN_MEMORY:
+					dbAccessClass =
+							(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.embedded.InMemoryDBAccess");
+					break;
+				default:
+					throw new UnsupportedOperationException("Unexpected DBType: " + dbType);
 			}
 		} catch (Throwable e) {
 			throw new RuntimeException(e);
