@@ -11,12 +11,13 @@ Extensions to the Query-DSL API
 
 **Changed**
 
-There has been one API change which is not backward compatible:
+There is one API change which is not backward compatible:
+
 In class **Property** there where two implementations of method value(...):
-public <E> T **value(E value)**, and public <E> T **value(E... value)**.
+public &lt;E&gt; T **value(E value)**, and public &lt;E&gt; T **value(E... value)**.
 This was ambiguous in case of a single argument and some language compilers like e.g. for Scala had problems with that.
 This is now solved by using different method names:
-public <E> T **value(E value)**, and public <E> T **values(E... value)**.
+public &lt;E&gt; T **value(E value)**, and public &lt;E&gt; T **values(E... value)**.
 If you are using this API you are required to change the method name(s) in your code.
 
 
