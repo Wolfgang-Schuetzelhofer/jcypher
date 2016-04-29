@@ -34,6 +34,7 @@ public class OPERATOR {
 	public static class Collection {
 		public static final Operator ADD = new Operator("+", " + ", OPTYPE.Collection.ADD);
 		public static final Operator ADD_ALL = new Operator("+", " + ", OPTYPE.Collection.ADD_ALL);
+		public static final Operator GET = new Operator("[]", "[", "]", OPTYPE.Collection.GET);
 	}
 	
 	/*********************************************/

@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,12 +20,18 @@ public class Operator implements IOperatorOrFunction {
 
 	private String operatorSymbol;
 	private String prettySymbol;
+	private String postfixSymbol;
 	private Enum<?> type;
 
 	public Operator(String operatorSymbol, String prettySymbol, Enum<?> type) {
+		this(operatorSymbol, prettySymbol, null, type);
+	}
+	
+	public Operator(String operatorSymbol, String prettySymbol, String postfixSymbol, Enum<?> type) {
 		super();
 		this.operatorSymbol = operatorSymbol;
 		this.prettySymbol = prettySymbol;
+		this.postfixSymbol = postfixSymbol;
 		this.type = type;
 	}
 	
@@ -35,6 +41,10 @@ public class Operator implements IOperatorOrFunction {
 
 	String getPrettySymbol() {
 		return prettySymbol;
+	}
+
+	String getPostfixSymbol() {
+		return postfixSymbol;
 	}
 
 	Enum<?> getType() {

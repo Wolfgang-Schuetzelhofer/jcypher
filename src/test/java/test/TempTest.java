@@ -25,6 +25,7 @@ import java.util.Properties;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import iot.jcypher.database.DBAccessFactory;
@@ -69,7 +70,7 @@ import iot.jcypher.util.Util;
 import test.domainquery.Population;
 import util.TestDataReader;
 
-//@Ignore
+@Ignore
 public class TempTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;

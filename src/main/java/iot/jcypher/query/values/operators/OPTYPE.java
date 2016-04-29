@@ -25,7 +25,7 @@ public class OPTYPE {
 	
 	/*****************************/
 	public enum Collection {
-		ADD, ADD_ALL
+		ADD, ADD_ALL, GET
 	}
 	
 	/*****************************/

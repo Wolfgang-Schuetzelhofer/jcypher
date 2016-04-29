@@ -88,6 +88,14 @@ public class ValueWriter {
 				// the value represents a label
 				else if (((Operator)opf).getType() == OPTYPE.Node.LABEL_ACCESS)
 					writeAsValue = false;
+				Object opVal;
+				if (((Operator)opf).getPostfixSymbol() != null && (opVal = valueElem.getHint(ValueAccess.hintKey_opValue)) != null) {
+					if (opVal instanceof ValueElement)
+						toValueExpression((ValueElement)opVal, context, sb);
+					else 
+						PrimitiveCypherWriter.writePrimitiveValue(opVal, context, sb);
+					sb.append(((Operator)opf).getPostfixSymbol());
+				}
 			}
 			
 			boolean nameWritten = false;

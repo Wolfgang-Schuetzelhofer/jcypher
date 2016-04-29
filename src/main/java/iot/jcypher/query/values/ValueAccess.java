@@ -20,6 +20,8 @@ import iot.jcypher.query.values.functions.FUNCTION;
 import iot.jcypher.query.values.operators.OPERATOR;
 
 public class ValueAccess {
+	
+	static final String hintKey_opValue = "v_op";
 
 	public static ValueElement timeStamp() {
 		return new ValueElement(null,

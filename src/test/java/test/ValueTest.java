@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,11 +21,15 @@ import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcPath;
+import iot.jcypher.query.values.JcProperty;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.query.values.JcString;
 import iot.jcypher.query.values.MATH;
 import iot.jcypher.query.values.ValueElement;
 import iot.jcypher.query.writer.Format;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import org.junit.Test;
 
@@ -33,7 +37,111 @@ import util.TestDataReader;
 
 //@Ignore
 public class ValueTest extends AbstractTestSuite {
+	
+	@Test
+	public void testCollectionOps_03() {
+		String result;
+		String testId;
+		setDoPrint(true);
+		setDoAssert(true);
 
+		TestDataReader tdr = new TestDataReader("/test/value/Test_COLLECTION_OPS_01.txt");
+		
+		JcNode n = new JcNode("n");
+		
+		/*******************************/
+		JcNode a = new JcNode("a");
+		ValueElement elem = n.collectionProperty("values").get(a.numberProperty("index"))
+				.asNumber().plus(5);
+		result = print(elem, Format.PRETTY_1);
+		testId = "COLLOPS_06";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		a = new JcNode("a");
+		elem = n.collectionProperty("values").get(a.numberProperty("index"))
+				.asNumber().math().sqrt().str().concat(" EUR");
+		result = print(elem, Format.PRETTY_1);
+		testId = "COLLOPS_07";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		return;
+	}
+	
+	@Test
+	public void testCollectionOps_02() {
+		String result;
+		String testId;
+		setDoPrint(true);
+		setDoAssert(true);
+
+		TestDataReader tdr = new TestDataReader("/test/value/Test_COLLECTION_OPS_01.txt");
+		
+		JcNode n = new JcNode("n");
+		
+		/*******************************/
+		ValueElement elem = n.collectionProperty("values").get(3);
+		result = print(elem, Format.PRETTY_1);
+		testId = "COLLOPS_04";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		JcNode a = new JcNode("a");
+		elem = n.collectionProperty("values").get(a.numberProperty("index"));
+		result = print(elem, Format.PRETTY_1);
+		testId = "COLLOPS_05";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		return;
+	}
+
+	@Test
+	public void testCollectionOps_01() {
+		String result;
+		String testId;
+		setDoPrint(true);
+		setDoAssert(true);
+
+		TestDataReader tdr = new TestDataReader("/test/value/Test_COLLECTION_OPS_01.txt");
+		
+		JcNode n;
+		JcCollection xpr;
+		
+		/*******************************/
+		n = new JcNode("n");
+		
+		xpr = n.collectionProperty("values").add(1);
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLOPS_01";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		xpr = n.property("values").asCollection().add(1);
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLOPS_01";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		List<String> vals = new ArrayList<String>();
+		vals.add("A");
+		vals.add("B");
+		vals.add("C");
+		
+		xpr = n.collectionProperty("values").addAll(vals);
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLOPS_02";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		JcNode a = new JcNode("a");
+		
+		xpr = n.collectionProperty("values").add(a.property("value"));
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLOPS_03";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		return;
+	}
+	
 	@Test
 	public void testString_01() {
 		String result;

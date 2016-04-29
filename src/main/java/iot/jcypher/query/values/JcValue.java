@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -46,8 +46,41 @@ public class JcValue extends ValueElement {
 	 * <br/>
 	 */
 	public JcCollection asCollection() {
-		JcCollection ret = new JcCollection(this.name);
+		JcCollection ret = new JcCollection(null, this, null);
 		QueryRecorder.recordInvocationConditional(this, "asCollection", ret);
+		return ret;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>return the receiver as a JcNumber</i></div>
+	 * <br/>
+	 */
+	public JcNumber asNumber() {
+		JcNumber ret = new JcNumber(null, this, null);
+		QueryRecorder.recordInvocationConditional(this, "asNumber", ret);
+		return ret;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>return the receiver as a JcString</i></div>
+	 * <br/>
+	 */
+	public JcString asString() {
+		JcString ret = new JcString(null, this, null);
+		QueryRecorder.recordInvocationConditional(this, "asString", ret);
+		return ret;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>return the receiver as a JcBoolean</i></div>
+	 * <br/>
+	 */
+	public JcBoolean asBoolean() {
+		JcBoolean ret = new JcBoolean(null, this, null);
+		QueryRecorder.recordInvocationConditional(this, "asBoolean", ret);
 		return ret;
 	}
 	

@@ -62,13 +62,15 @@ public class JcCollection extends JcValue {
 	
 	/**
 	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
-	 * <div color='red' style="font-size:18px;color:red"><i>add a value to a collection, return a <b>JcCollection</b></i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>add a value to a collection, return a <b>JcCollection</b>.</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>The value can be a simple value or being derived via an expression</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>like ...<b>add(a.property("value"));</b>.</i></div>
 	 * <br/>
 	 */
 	public JcCollection add(Object value) {
 		JcCollection ret = new JcCollection(null, value, this,
 				OPERATOR.Collection.ADD);
-		QueryRecorder.recordInvocationConditional(this, "add", ret);
+		QueryRecorder.recordInvocationConditional(this, "add", ret, QueryRecorder.placeHolder(value));
 		return ret;
 	}
 	
@@ -80,7 +82,32 @@ public class JcCollection extends JcValue {
 	public JcCollection addAll(Collection<?> coll) {
 		JcCollection ret = new JcCollection(null, coll, this,
 				OPERATOR.Collection.ADD_ALL);
-		QueryRecorder.recordInvocationConditional(this, "addAll", ret);
+		QueryRecorder.recordInvocationConditional(this, "addAll", ret, QueryRecorder.literal(coll));
+		return ret;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>access the element of the collection at the given index, return a <b>JcProperty</b></i></div>
+	 * <br/>
+	 */
+	public JcProperty get(int index) {
+		JcProperty ret = new JcProperty(null, this, OPERATOR.Collection.GET);
+		ret.setHint(ValueAccess.hintKey_opValue, index);
+		QueryRecorder.recordInvocationConditional(this, "get", ret, QueryRecorder.literal(index));
+		return ret;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>access the element of the collection at the index given by the indexExpression, return a <b>JcProperty</b></i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. ...<b>get(a.numberProperty("index"));</b>.</i></div>
+	 * <br/>
+	 */
+	public JcProperty get(JcNumber indexExpression) {
+		JcProperty ret = new JcProperty(null, this, OPERATOR.Collection.GET);
+		ret.setHint(ValueAccess.hintKey_opValue, indexExpression);
+		QueryRecorder.recordInvocationConditional(this, "get", ret, QueryRecorder.placeHolder(indexExpression));
 		return ret;
 	}
 	
