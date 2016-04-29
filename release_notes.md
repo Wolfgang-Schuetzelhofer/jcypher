@@ -3,12 +3,14 @@ Release Notes
 
 ## 3.4.0-M01
 **New**
+
 Extensions to the Query-DSL API
 - JcCollection: add(...), addAll(...), get(...)
 - JcValue: asNumber(), asString(), asBoolean()
 - Property: values(...)
 
 **Changed**
+
 There has been one API change which is not backward compatible:
 In class **Property** there where two implementations of method value(...):
 public <E> T **value(E value)**, and public <E> T **value(E... value)**.
