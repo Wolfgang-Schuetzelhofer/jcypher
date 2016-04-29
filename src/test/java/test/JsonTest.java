@@ -191,7 +191,7 @@ public class JsonTest extends AbstractTestSuite {
 		query = new JcQuery();
 		query.setClauses(new IClause[] {
 				CREATE.node(n).label("Person")
-					.property("numbers").value("A", "B", "C")
+					.property("numbers").values("A", "B", "C")
 		});
 		
 		//result = print(query, Format.PRETTY_1);

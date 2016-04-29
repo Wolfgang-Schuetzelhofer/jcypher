@@ -1449,7 +1449,7 @@ public class ClauseTest extends AbstractTestSuite {
 		
 		/*******************************/
 		create = CREATE.node(n).label("Person").
-				property("numbers").value(1, 2, 3);
+				property("numbers").values(1, 2, 3);
 
 		result = print(create, Format.PRETTY_1);
 		testId = "CREATE_09";
