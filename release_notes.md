@@ -1,6 +1,23 @@
 Release Notes
 =======
 
+## 3.4.0-M01
+**New**
+Extensions to the Query-DSL API
+- JcCollection: add(...), addAll(...), get(...)
+- JcValue: asNumber(), asString(), asBoolean()
+- Property: values(...)
+
+**Changed**
+There has been one API change which is not backward compatible:
+In class **Property** there where two implementations of method value(...):
+public <E> T **value(E value)**, and public <E> T **value(E... value)**.
+This was ambiguous in case of a single argument and some language compilers like e.g. for Scala had problems with that.
+This is now solved by using different method names:
+public <E> T **value(E value)**, and public <E> T **values(E... value)**.
+If you are using this API you are required to change the method name(s) in your code.
+
+
 ## 3.3.1
 **Fixed**
 - Illegal use of parameter-sets with MERGE, now using simple parameters.
