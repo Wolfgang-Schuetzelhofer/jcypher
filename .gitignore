@@ -1,2 +1,6 @@
 /target
 /.settings/
+
+# IDEA
+.idea
+*.iml
