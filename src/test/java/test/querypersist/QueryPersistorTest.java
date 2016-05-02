@@ -18,6 +18,7 @@ package test.querypersist;
 
 import static org.junit.Assert.assertEquals;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -35,6 +36,7 @@ import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.internal.JSONConverter;
 import iot.jcypher.domainquery.internal.RecordedQuery;
 import iot.jcypher.query.writer.Format;
@@ -46,12 +48,64 @@ import test.domainquery.model.Area;
 import test.domainquery.model.Person;
 import util.TestDataReader;
 
-@Ignore
+//@Ignore
 public class QueryPersistorTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	
+	@Test
+	public void testPersist_02() {
+		IDomainAccess da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 02 ****************************************/
+		
+		List<Object> primList = new ArrayList<>();
+		primList.add("PrimHolder");
+		primList.add((int)2);
+		primList.add((short)3);
+		primList.add((long)4);
+		primList.add((float)1.25);
+		primList.add((double)7.765E8);
+		primList.add(true);
+		
+		Object[] primArray = new Object[]{
+			"PrimHolder",
+			(int)2,
+			(short)3,
+			(long)4,
+			(float)1.25,
+			(double)7.765E8,
+			true
+		};
+		
+		DomainQuery q = da1.createQuery();
+		
+		DomainObjectMatch<PrimitiveHolder> primHolder = q.createMatch(PrimitiveHolder.class);
+		DomainObjectMatch<List> plMatch = q.TRAVERSE_FROM(primHolder).FORTH("primList").TO(List.class);
+		
+		q.WHERE(primHolder.atttribute("theString")).EQUALS("PrimHolder");
+		q.WHERE(primHolder.atttribute("theInt")).EQUALS((int)2);
+		q.WHERE(primHolder.atttribute("theShort")).EQUALS((short)3);
+		q.WHERE(primHolder.atttribute("theLong")).EQUALS((long)4);
+		q.WHERE(primHolder.atttribute("theFloat")).EQUALS((float)1.25);
+		q.WHERE(primHolder.atttribute("theDouble")).EQUALS((double)7.765E8);
+		q.WHERE(primHolder.atttribute("theBool")).EQUALS(true);
+		q.SELECT_FROM(primHolder).ELEMENTS(q.WHERE(plMatch).CONTAINS_elements(primArray));
+		
+		RecordedQuery rq = q.getRecordedQuery();
+		System.out.println(rq.toString());
+		String query = new JSONConverter().setPrettyFormat(Format.PRETTY_1).toJSON(rq);
+		System.out.println(query);
+		
+		RecordedQuery rq_2 = new JSONConverter().fromJSON(query);
+		System.out.println(rq_2.toString());
+		
+		assertEquals(rq.toString(), rq_2.toString());
+		
+		return;
+	}
 	
 	@Test
 	public void testPersist_01() {
@@ -70,12 +124,14 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		testId = "PERSIST_01";
 		
 		q = da1.createQuery();
+		Parameter lastName = q.parameter("lastName");
+		lastName.setValue("Smith");
 		DomainObjectMatch<Person> j_smith = q.createMatch(Person.class);
 		DomainObjectMatch<Area> europe = q.createMatch(Area.class);
 		
 		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
 
-		q.WHERE(j_smith.atttribute("lastName")).EQUALS("Smith");
+		q.WHERE(j_smith.atttribute("lastName")).EQUALS(lastName);
 		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
 		
 		DomainObjectMatch<Address> j_smith_Addresses =
@@ -89,6 +145,7 @@ public class QueryPersistorTest extends AbstractTestSuite {
 
 		RecordedQuery rq = q.getRecordedQuery();
 		String query = new JSONConverter().setPrettyFormat(Format.PRETTY_1).toJSON(rq);
+		System.out.println(rq.toString());
 		
 		RecordedQuery rq_2 = new JSONConverter().fromJSON(query);
 		

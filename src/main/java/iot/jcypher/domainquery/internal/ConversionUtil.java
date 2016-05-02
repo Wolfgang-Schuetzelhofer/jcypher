@@ -20,12 +20,27 @@ public class ConversionUtil {
 
 	private static final String STRING = "java.lang.String";
 	private static final String INTEGER = "java.lang.Integer";
+	private static final String SHORT = "java.lang.Short";
+	private static final String LONG = "java.lang.Long";
+	private static final String FLOAT = "java.lang.Float";
+	private static final String DOUBLE = "java.lang.Double";
+	private static final String BOOL = "java.lang.Boolean";
 	
 	public static Object from(String type, String value) {
 		if (STRING.equals(type))
 			return value;
 		else if (INTEGER.equals(type))
 			return Integer.valueOf(value);
+		else if (SHORT.equals(type))
+			return Short.valueOf(value);
+		else if (LONG.equals(type))
+			return Long.valueOf(value);
+		else if (FLOAT.equals(type))
+			return Float.valueOf(value);
+		else if (DOUBLE.equals(type))
+			return Double.valueOf(value);
+		else if (BOOL.equals(type))
+			return Boolean.valueOf(value);
 
 		return null;
 	}

@@ -18,7 +18,9 @@ package iot.jcypher.domainquery.internal;
 
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.lang.reflect.Array;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 
@@ -30,6 +32,7 @@ import javax.json.JsonValue;
 import javax.json.stream.JsonGenerator;
 import javax.json.stream.JsonGeneratorFactory;
 
+import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.internal.RecordedQuery.Assignment;
 import iot.jcypher.domainquery.internal.RecordedQuery.DOMatchRef;
 import iot.jcypher.domainquery.internal.RecordedQuery.Invocation;
@@ -50,6 +53,8 @@ public class JSONConverter {
 	private static final String INVOCATION = "Invocation";
 	private static final String ASSIGNMENT = "Assignment";
 	private static final String LITERAL = "Literal";
+	private static final String PARAM = "Parameter";
+	private static final String PARAM_NAME = "paramName";
 	private static final String REFERENCE = "Reference";
 	private static final String PARAMETERS = "parameters";
 	
@@ -60,6 +65,9 @@ public class JSONConverter {
 	private static final String REF_VALUE = "RefValue";
 	private static final String DO_MATCH_REF = "DOMatchRef";
 	private static final String REF = "ref";
+	
+	private static final String ARRAY_PREF = "Array(";
+	private static final String ARRAY_POST = ")";
 	
 	private Format prettyFormat;
 
@@ -126,11 +134,24 @@ public class JSONConverter {
 				inv.setOnObjectRef(jobj.getString(ON_OBJECT_KEY));
 				inv.setMethod(jobj.getString(METHOD_KEY));
 				inv.setReturnObjectRef(jobj.getString(RETURN_OBJECT_KEY));
-			} else if (LITERAL.equals(typ)) {
+			} else if (LITERAL.equals(typ) || PARAM.equals(typ)) {
+				boolean isParam = PARAM.equals(typ);
 				statement = rq.createStatement(Literal.class);
 				String lTyp = jobj.getString(LITERAL_TYPE);
-				String lVal = jobj.getString(LITERAL_VALUE);
-				Object val = ConversionUtil.from(lTyp, lVal);
+				JsonValue jsVal = jobj.get(LITERAL_VALUE);
+				Object val;
+				if (jsVal instanceof JsonArray) {
+					val = "ARR";
+				} else {
+					String lVal = jobj.getString(LITERAL_VALUE);
+					val = ConversionUtil.from(lTyp, lVal);
+				}
+				if (isParam) {
+					String pName = jobj.getString(PARAM_NAME);
+					Parameter param = new iot.jcypher.domainquery.ast.Parameter(pName);
+					param.setValue(val);
+					val = param;
+				}
 				((Literal)statement).setValue(val);
 			} else if (REFERENCE.equals(typ)) {
 				statement = rq.createStatement(Reference.class);
@@ -173,12 +194,8 @@ public class JSONConverter {
 			}
 			generator.writeEnd();
 		} else if (statement instanceof Literal) {
-			generator.write(TYPE_KEY, LITERAL);
 			Object val = ((Literal)statement).getRawValue();
-			if (val != null) {
-				generator.write(LITERAL_TYPE, val.getClass().getName());
-				generator.write(LITERAL_VALUE, val.toString());
-			}
+			writeLiteral(val, generator);
 		} else if (statement instanceof Reference) {
 			Reference ref = (Reference)statement;
 			generator.write(TYPE_KEY, REFERENCE);
@@ -193,6 +210,47 @@ public class JSONConverter {
 			generator.write(REF, ((DOMatchRef)statement).getRef());
 		}
 		generator.writeEnd();
+	}
+
+	private void writeLiteral(Object val, JsonGenerator generator) {
+		boolean isParam = val instanceof iot.jcypher.domainquery.ast.Parameter;
+		if (isParam) {
+			generator.write(TYPE_KEY, PARAM);
+			generator.write(PARAM_NAME, ((iot.jcypher.domainquery.ast.Parameter)val).getName());
+			val = ((iot.jcypher.domainquery.ast.Parameter)val).getValue();
+		} else
+			generator.write(TYPE_KEY, LITERAL);
+		if (val != null) {
+			boolean isColl = Collection.class.isAssignableFrom(val.getClass());
+			boolean isArray = val.getClass().isArray();
+			if (isArray) {
+				StringBuilder sb = new StringBuilder();
+				sb.append(ARRAY_PREF);
+				sb.append(val.getClass().getComponentType().getName());
+				sb.append(ARRAY_POST);
+				generator.write(LITERAL_TYPE, sb.toString());
+			} else
+				generator.write(LITERAL_TYPE, val.getClass().getName());
+			if (isArray || isColl) {
+				generator.writeStartArray(LITERAL_VALUE);
+				if (isColl) {
+					Iterator<?> it = ((Collection<?>)val).iterator();
+					while(it.hasNext()) {
+						generator.writeStartObject();
+						writeLiteral(it.next(), generator);
+						generator.writeEnd();
+					}
+				} else { // an array
+					for (int i = 0; i < Array.getLength(val); i++) {
+						generator.writeStartObject();
+						writeLiteral(Array.get(val, i), generator);
+						generator.writeEnd();
+					}
+				}
+				generator.writeEnd();
+			} else
+				generator.write(LITERAL_VALUE, val.toString());
+		}
 	}
 
 	/**
