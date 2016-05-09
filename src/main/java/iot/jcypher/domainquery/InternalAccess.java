@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2015 IoT-Solutions e.U.
+ * Copyright (c) 2015-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,8 @@
  ************************************************************************/
 
 package iot.jcypher.domainquery;
+
+import java.util.Map;
 
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.QueryExecutor;
@@ -50,5 +52,9 @@ public class InternalAccess {
 	
 	public static QueryExecutor getQueryExecutor(AbstractDomainQuery q) {
 		return q.getQueryExecutor();
+	}
+	
+	public static Map<Object, String> getRecordedQueryObjects(AbstractDomainQuery q) {
+		return q.getRecordedQueryObjects();
 	}
 }

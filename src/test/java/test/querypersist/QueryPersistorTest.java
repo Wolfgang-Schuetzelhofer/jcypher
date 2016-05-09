@@ -35,6 +35,8 @@ import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
+import iot.jcypher.domainquery.QueryPersistor;
+import iot.jcypher.domainquery.QueryPersistor.QueryMemento;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.internal.JSONConverter;
@@ -54,6 +56,54 @@ public class QueryPersistorTest extends AbstractTestSuite {
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	
+	@Test
+	public void testPersist_03() {
+		IDomainAccess da1;
+		DomainQuery q;
+		DomainQueryResult result = null;
+		boolean equals;
+		String testId;
+		String qCypher;
+		
+		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_SELECT_01.txt");
+		
+		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		
+		/** 03 ****************************************/
+		testId = "PERSIST_01";
+		
+		q = da1.createQuery();
+		QueryPersistor qPersistor = new QueryPersistor(q).setPrettyFormat(Format.PRETTY_1);
+		
+		Parameter lastName = q.parameter("lastName");
+		lastName.setValue("Smith");
+		DomainObjectMatch<Person> smiths = q.createMatch(Person.class);
+		q.WHERE(smiths.atttribute("lastName")).EQUALS(lastName);
+		
+		DomainObjectMatch<Area> europe = q.createMatch(Area.class);
+		q.WHERE(europe.atttribute("name")).EQUALS("Europe");
+		
+		DomainObjectMatch<Area> smithAreas = 
+				q.TRAVERSE_FROM(smiths).FORTH("pointsOfContact").FORTH("area").FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+		
+		DomainObjectMatch<Person> smithsInEurope = q.SELECT_FROM(smiths).ELEMENTS(
+				q.WHERE(smithAreas).CONTAINS(europe)
+		);
+
+		qPersistor.augment(smiths, "smiths")
+		.augment(smithsInEurope, "smithsInEurope")
+		.augment(europe, "europe")
+		.augment(smithAreas, "smithAreas");
+		QueryMemento qm = qPersistor.createMemento();
+		
+		RecordedQuery rq_2 = new JSONConverter().fromJSON(qm.getQueryJSON());
+		System.out.println(rq_2.toString());
+		
+		assertEquals(qm.getQueryJava(), rq_2.toString());
+		
+		return;
+	}
 	
 	@Test
 	public void testPersist_02() {
@@ -80,6 +130,16 @@ public class QueryPersistorTest extends AbstractTestSuite {
 			true
 		};
 		
+		int[] intArray = new int[]{
+				2,
+				3,
+				4
+			};
+		
+		List<String> stringList = new ArrayList<String>();
+		stringList.add("String nr. 1");
+		stringList.add("String nr. 2");
+		
 		DomainQuery q = da1.createQuery();
 		
 		DomainObjectMatch<PrimitiveHolder> primHolder = q.createMatch(PrimitiveHolder.class);
@@ -92,7 +152,14 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		q.WHERE(primHolder.atttribute("theFloat")).EQUALS((float)1.25);
 		q.WHERE(primHolder.atttribute("theDouble")).EQUALS((double)7.765E8);
 		q.WHERE(primHolder.atttribute("theBool")).EQUALS(true);
-		q.SELECT_FROM(primHolder).ELEMENTS(q.WHERE(plMatch).CONTAINS_elements(primArray));
+		DomainObjectMatch<PrimitiveHolder> selectePrimHolder =
+				q.SELECT_FROM(primHolder).ELEMENTS(q.WHERE(plMatch).CONTAINS_elements("PrimHolder",
+						(int)2,
+						(short)3,
+						(long)4,
+						(float)1.25,
+						(double)7.765E8,
+						true));
 		
 		RecordedQuery rq = q.getRecordedQuery();
 		System.out.println(rq.toString());

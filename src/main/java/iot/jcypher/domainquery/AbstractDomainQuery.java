@@ -18,6 +18,7 @@ package iot.jcypher.domainquery;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
@@ -426,6 +427,14 @@ public abstract class AbstractDomainQuery {
 	 */
 	public RecordedQuery getRecordedQuery() {
 		return this.queryExecutor.getRecordedQuery();
+	}
+	
+	/**
+	 * answer a map containing DomainObjectMatch to id entries
+	 * @return
+	 */
+	Map<Object, String> getRecordedQueryObjects() {
+		return this.queryExecutor.getRecordedQueryObjects();
 	}
 
 	QueryExecutor getQueryExecutor() {

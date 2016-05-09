@@ -1,0 +1,138 @@
+----CONVERSION_01:
+{
+    "type":"Literal",
+    "LiteralType":"java.lang.Integer",
+    "LiteralValue":"2"
+}
+------------------------------------------------------------
+
+----CONVERSION_02:
+{
+    "type":"Literal",
+    "LiteralType":"java.util.ArrayList",
+    "LiteralValue":[
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.String",
+            "LiteralValue":"String nr. 1"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.String",
+            "LiteralValue":"String nr. 2"
+        }
+    ]
+}
+------------------------------------------------------------
+
+----CONVERSION_03:
+{
+    "type":"Literal",
+    "LiteralType":"java.util.ArrayList",
+    "LiteralValue":[
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.String",
+            "LiteralValue":"PrimHolder"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Integer",
+            "LiteralValue":"2"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Short",
+            "LiteralValue":"3"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Long",
+            "LiteralValue":"4"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Float",
+            "LiteralValue":"1.25"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Double",
+            "LiteralValue":"7.765E8"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Boolean",
+            "LiteralValue":"true"
+        }
+    ]
+}
+------------------------------------------------------------
+
+----CONVERSION_04:
+{
+    "type":"Literal",
+    "LiteralType":"Array(java.lang.Object)",
+    "LiteralValue":[
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.String",
+            "LiteralValue":"PrimHolder"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Integer",
+            "LiteralValue":"2"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Short",
+            "LiteralValue":"3"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Long",
+            "LiteralValue":"4"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Float",
+            "LiteralValue":"1.25"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Double",
+            "LiteralValue":"7.765E8"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Boolean",
+            "LiteralValue":"true"
+        }
+    ]
+}
+------------------------------------------------------------
+
+----CONVERSION_05:
+{
+    "type":"Literal",
+    "LiteralType":"Array(int)",
+    "LiteralValue":[
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Integer",
+            "LiteralValue":"2"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Integer",
+            "LiteralValue":"3"
+        },
+        {
+            "type":"Literal",
+            "LiteralType":"java.lang.Integer",
+            "LiteralValue":"4"
+        }
+    ]
+}
+------------------------------------------------------------

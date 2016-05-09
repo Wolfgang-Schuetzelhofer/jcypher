@@ -456,6 +456,21 @@ public class QueryExecutor implements IASTObjectsContainer {
 		return null;
 	}
 	
+	/**
+	 * answer a map containing DomainObjectMatch to id entries
+	 * @return
+	 */
+	public Map<Object, String> getRecordedQueryObjects() {
+		if (this.recordedQueryContext != null) {
+			if (this.recordedQueryContext.object2IdMap != null)
+				return this.recordedQueryContext.object2IdMap;
+			else
+				return this.recordedQueryContext.queriesPerThread.getDOM2IdMap(
+						this.recordedQueryContext.domainQuery);
+		}
+		return null;
+	}
+	
 	@Override
 	protected void finalize() throws Throwable {
 		if (this.recordedQueryContext != null)

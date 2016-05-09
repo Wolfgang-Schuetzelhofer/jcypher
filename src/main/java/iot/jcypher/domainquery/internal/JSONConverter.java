@@ -21,8 +21,11 @@ import java.io.StringWriter;
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.json.Json;
 import javax.json.JsonArray;
@@ -57,6 +60,7 @@ public class JSONConverter {
 	private static final String PARAM_NAME = "paramName";
 	private static final String REFERENCE = "Reference";
 	private static final String PARAMETERS = "parameters";
+	private static final String AUGMENTATIONS = "augmentations";
 	
 	private static final String LITERAL_TYPE = "LiteralType";
 	private static final String LITERAL_VALUE = "LiteralValue";
@@ -66,10 +70,13 @@ public class JSONConverter {
 	private static final String DO_MATCH_REF = "DOMatchRef";
 	private static final String REF = "ref";
 	
+	private static final String KEY = "key";
+	private static final String VALUE = "value";
+	
 	private static final String ARRAY_PREF = "Array(";
 	private static final String ARRAY_POST = ")";
 	
-	private Format prettyFormat;
+	private Format prettyFormat = Format.NONE;
 
 	/**
 	 * Answer a JSON representation of a recorded query
@@ -103,6 +110,18 @@ public class JSONConverter {
 		StringReader sr = new StringReader(json);
 		JsonReader reader = Json.createReader(sr);
 		JsonObject jsonResult = reader.readObject();
+		
+		JsonArray augmentations = jsonResult.getJsonArray(AUGMENTATIONS);
+		if (augmentations != null) {
+			Map<String, String> augs = new HashMap<String, String>();
+			Iterator<JsonValue> ait = augmentations.iterator();
+			while(ait.hasNext()) {
+				JsonObject a = (JsonObject) ait.next();
+				augs.put(a.getString(KEY), a.getString(VALUE));
+			}
+			ret.setAugmentations(augs);
+		}
+		
 		JsonArray statements = jsonResult.getJsonArray(STATEMENTS);
 		Iterator<JsonValue> it = statements.iterator();
 		while(it.hasNext()) {
@@ -112,7 +131,7 @@ public class JSONConverter {
 		return ret;
 	}
 
-	private void readStatement(JsonValue s, List<Statement> statements, RecordedQuery rq) {
+	void readStatement(JsonValue s, List<Statement> statements, RecordedQuery rq) {
 		Statement statement = null;
 		if (s instanceof JsonObject) {
 			JsonObject jobj = (JsonObject)s;
@@ -139,13 +158,7 @@ public class JSONConverter {
 				statement = rq.createStatement(Literal.class);
 				String lTyp = jobj.getString(LITERAL_TYPE);
 				JsonValue jsVal = jobj.get(LITERAL_VALUE);
-				Object val;
-				if (jsVal instanceof JsonArray) {
-					val = "ARR";
-				} else {
-					String lVal = jobj.getString(LITERAL_VALUE);
-					val = ConversionUtil.from(lTyp, lVal);
-				}
+				Object val = ConversionUtil.fromJSON(lTyp, jsVal);
 				if (isParam) {
 					String pName = jobj.getString(PARAM_NAME);
 					Parameter param = new iot.jcypher.domainquery.ast.Parameter(pName);
@@ -170,6 +183,18 @@ public class JSONConverter {
 	}
 
 	private void writeQuery(RecordedQuery query, JsonGenerator generator) {
+		if (query.getAugmentations() != null) {
+			generator.writeStartArray(AUGMENTATIONS);
+			Iterator<Entry<String, String>> it = query.getAugmentations().entrySet().iterator();
+			while(it.hasNext()) {
+				Entry<String, String> entry = it.next();
+				generator.writeStartObject();
+				generator.write(KEY, entry.getKey());
+				generator.write(VALUE, entry.getValue());
+				generator.writeEnd();
+			}
+			generator.writeEnd();
+		}
 		generator.writeStartArray(STATEMENTS);
 		for(Statement s : query.getStatements()) {
 			writeStatement(s, generator);

@@ -20,6 +20,7 @@ import java.lang.reflect.Array;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import iot.jcypher.domainquery.internal.RecordedQuery.Assignment;
 import iot.jcypher.domainquery.internal.RecordedQuery.DOMatchRef;
@@ -37,6 +38,7 @@ public class RecordedQueryToString {
 	
 	public static String queryToString(RecordedQuery query) {
 		Context context = new Context();
+		context.augmentations = query.getAugmentations();
 		context.sb.append(query.isGeneric() ? "Generic-DomainQuery" : "DomainQuery");
 		context.sb.append("\n");
 		List<Statement> stmts = query.getStatements();
@@ -97,14 +99,14 @@ public class RecordedQueryToString {
 		} else if (statement instanceof Invocation) {
 			invocationToString((Invocation)statement, context);
 		} else if (statement instanceof DOMatchRef) {
-			context.sb.append(((DOMatchRef)statement).getRef());
+			context.sb.append(context.getAugmented(((DOMatchRef)statement).getRef()));
 		} else if (statement instanceof Reference) {
 			context.sb.append(((Reference)statement).getRefId());
 		}
 	}
 	
 	private static void invocationToString(RecordedQuery.Invocation invocation, Context context) {
-		context.sb.append(invocation.getOnObjectRef());
+		context.sb.append(context.getAugmented(invocation.getOnObjectRef()));
 		context.sb.append('.');
 		callToString(invocation, context);
 	}
@@ -122,7 +124,7 @@ public class RecordedQueryToString {
 		context.sb.append(')');
 		if (invocation instanceof Assignment) {
 			context.sb.insert(context.topStatementStart, " = ");
-			context.sb.insert(context.topStatementStart, invocation.getReturnObjectRef());
+			context.sb.insert(context.topStatementStart, context.getAugmented(invocation.getReturnObjectRef()));
 		}
 	}
 	
@@ -184,7 +186,16 @@ public class RecordedQueryToString {
 		private Indent indent = new Indent();
 		private int callDepth = 0;
 		private int topStatementStart;
+		private Map<String, String> augmentations;
 		private StringBuilder sb = new StringBuilder();
+		
+		private String getAugmented(String str) {
+			String aug;
+			if (this.augmentations != null &&
+					(aug = this.augmentations.get(str)) != null)
+				return aug;
+			return str;
+		}
 	}
 	
 	/****************************************/

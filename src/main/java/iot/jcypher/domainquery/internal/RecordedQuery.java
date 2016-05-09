@@ -18,12 +18,14 @@ package iot.jcypher.domainquery.internal;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import iot.jcypher.domainquery.AbstractDomainQuery;
 
 public class RecordedQuery {
 
 	private boolean generic;
+	private Map<String, String> augmentations;
 	private List<Statement> statements;
 	
 	public <E extends AbstractDomainQuery> RecordedQuery(boolean generic) {
@@ -77,6 +79,14 @@ public class RecordedQuery {
 		return null;
 	}
 	
+	public Map<String, String> getAugmentations() {
+		return augmentations;
+	}
+
+	public void setAugmentations(Map<String, String> augmentations) {
+		this.augmentations = augmentations;
+	}
+
 	@Override
 	public String toString() {
 		return RecordedQueryToString.queryToString(this);
@@ -127,7 +137,7 @@ public class RecordedQuery {
 		public String getReturnObjectRef() {
 			return returnObjectRef;
 		}
-
+		
 		public void setReturnObjectRef(String returnObjectRef) {
 			this.returnObjectRef = returnObjectRef;
 		}
