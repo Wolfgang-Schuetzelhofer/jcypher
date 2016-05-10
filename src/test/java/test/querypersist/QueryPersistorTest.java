@@ -74,7 +74,7 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		testId = "PERSIST_01";
 		
 		q = da1.createQuery();
-		QueryPersistor qPersistor = new QueryPersistor(q).setPrettyFormat(Format.PRETTY_1);
+		QueryPersistor qPersistor = da1.createQueryPersistor(q);
 		
 		Parameter lastName = q.parameter("lastName");
 		lastName.setValue("Smith");
@@ -101,6 +101,8 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		System.out.println(rq_2.toString());
 		
 		assertEquals(qm.getQueryJava(), rq_2.toString());
+		
+		qPersistor.storeAs("TestQuery_01");
 		
 		return;
 	}

@@ -16,12 +16,13 @@
 
 package iot.jcypher.domain;
 
+import java.util.List;
+
 import iot.jcypher.concurrency.Locking;
 import iot.jcypher.domainquery.DomainQuery;
+import iot.jcypher.domainquery.QueryPersistor;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.transaction.ITransaction;
-
-import java.util.List;
 
 /**
  * Provides methods to access a domain graph.
@@ -135,6 +136,13 @@ public interface IDomainAccess {
 	 * @return a DomainQuery
 	 */
 	public DomainQuery createQuery();
+	
+	/**
+	 * create a 'Persistor' which allows to persist a query with the domain model
+	 * @param query
+	 * @return a QueryPersistor for the given query
+	 */
+	public QueryPersistor createQueryPersistor(DomainQuery query);
 	
 	/**
 	 * create a transaction

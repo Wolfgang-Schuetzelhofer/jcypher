@@ -79,6 +79,7 @@ import iot.jcypher.domain.mapping.surrogate.Surrogate2ListEntry;
 import iot.jcypher.domain.mapping.surrogate.Surrogate2MapEntry;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
+import iot.jcypher.domainquery.QueryPersistor;
 import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.domainquery.internal.ReplayedQueryContext;
 import iot.jcypher.graph.GrAccess;
@@ -242,6 +243,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		return ret;
 	}
 	
+	@Override
+	public QueryPersistor createQueryPersistor(DomainQuery query) {
+		return iot.jcypher.domainquery.InternalAccess.createQueryPersistor(query, this);
+	}
+
 	private DomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
 		DomainQuery ret = new DomainQuery(this);
 		QueryRecorder.recordCreateQuery(ret);
@@ -446,6 +452,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			return ret;
 		}
 		
+		@Override
+		public QueryPersistor createQueryPersistor(GDomainQuery query) {
+			return iot.jcypher.domainquery.InternalAccess.createQueryPersistor(query, this);
+		}
+
 		private GDomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
 			GDomainQuery ret = new GDomainQuery(DomainAccess.this);
 			QueryRecorder.recordCreateQuery(ret);
@@ -4172,6 +4183,14 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		public String buildDomainLabel(String domainName) {
 			String ret = domainName.replace('-', '_').replace(' ', '_'); // also replace blanks
 			return ret;
+		}
+		
+		public String getDomainLabel() {
+			return domainAccessHandler.getDomainLabel();
+		}
+		
+		public IDBAccess getDBAccess() {
+			return ((DomainAccessHandler.DBAccessWrapper)domainAccessHandler.dbAccess).delegate;
 		}
 
 		/**

@@ -57,4 +57,8 @@ public class InternalAccess {
 	public static Map<Object, String> getRecordedQueryObjects(AbstractDomainQuery q) {
 		return q.getRecordedQueryObjects();
 	}
+	
+	public static QueryPersistor createQueryPersistor(AbstractDomainQuery query, Object domAccess) {
+		return new QueryPersistor(query, domAccess);
+	}
 }

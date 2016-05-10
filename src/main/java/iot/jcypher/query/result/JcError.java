@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -41,4 +41,18 @@ public class JcError {
 	public String getAdditionalInfo() {
 		return additionalInfo;
 	}
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append("CodeOrType: ");
+		sb.append(this.codeOrType != null ? this.codeOrType : "");
+		sb.append(", Message: ");
+		sb.append(this.message != null ? this.message : "");
+		if (this.additionalInfo != null) {
+			sb.append("\nAdditionalInfo: ");
+			sb.append(this.additionalInfo);
+		}
+		return sb.toString();
+	}
+	
 }
