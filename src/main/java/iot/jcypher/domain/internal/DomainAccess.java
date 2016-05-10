@@ -79,6 +79,7 @@ import iot.jcypher.domain.mapping.surrogate.Surrogate2ListEntry;
 import iot.jcypher.domain.mapping.surrogate.Surrogate2MapEntry;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
+import iot.jcypher.domainquery.QueryLoader;
 import iot.jcypher.domainquery.QueryPersistor;
 import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.domainquery.internal.ReplayedQueryContext;
@@ -246,6 +247,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	@Override
 	public QueryPersistor createQueryPersistor(DomainQuery query) {
 		return iot.jcypher.domainquery.InternalAccess.createQueryPersistor(query, this);
+	}
+
+	@Override
+	public QueryLoader<DomainQuery> createQueryLoader(String queryName) {
+		return iot.jcypher.domainquery.InternalAccess.createQueryLoader(queryName, this);
 	}
 
 	private DomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
@@ -455,6 +461,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		@Override
 		public QueryPersistor createQueryPersistor(GDomainQuery query) {
 			return iot.jcypher.domainquery.InternalAccess.createQueryPersistor(query, this);
+		}
+
+		@Override
+		public QueryLoader<GDomainQuery> createQueryLoader(String queryName) {
+			return iot.jcypher.domainquery.InternalAccess.createQueryLoader(queryName, this);
 		}
 
 		private GDomainQuery createRecordedQuery(ReplayedQueryContext rqc) {

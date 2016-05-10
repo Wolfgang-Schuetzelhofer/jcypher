@@ -70,9 +70,7 @@ public class QueryPersistor {
 			}
 			rq.setAugmentations(augments);
 		}
-		QueryMemento ret = new QueryMemento();
-		ret.queryJava = rq.toString();
-		ret.queryJSON = new JSONConverter().setPrettyFormat(this.prettyFormat).toJSON(rq);
+		QueryMemento ret = new QueryMemento(rq.toString(), new JSONConverter().setPrettyFormat(this.prettyFormat).toJSON(rq));
 		
 		return ret;
 	}
@@ -89,7 +87,7 @@ public class QueryPersistor {
 		
 		JcNode n = new JcNode("n");
 		IClause[] clauses = new IClause[] {
-				MERGE.node(n).label(qLabel).property("name").value(queryName),
+				MERGE.node(n).label(qLabel).property(PROP_NAME).value(queryName),
 				DO.SET(n.property(PROP_Q_JAVA)).to(qm.getQueryJava()),
 				DO.SET(n.property(PROP_Q_JSON)).to(qm.getQueryJSON())
 		};
@@ -125,22 +123,5 @@ public class QueryPersistor {
 	public QueryPersistor setPrettyFormat(Format prettyFormat) {
 		this.prettyFormat = prettyFormat;
 		return this;
-	}
-	
-	/****************************************************/
-	public static class QueryMemento {
-		private String queryJSON;
-		private String queryJava;
-		
-		private QueryMemento() {
-			super();
-		}
-		public String getQueryJSON() {
-			return queryJSON;
-		}
-		public String getQueryJava() {
-			return queryJava;
-		}
-		
 	}
 }

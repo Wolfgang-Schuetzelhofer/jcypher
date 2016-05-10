@@ -20,6 +20,7 @@ import java.util.List;
 
 import iot.jcypher.concurrency.Locking;
 import iot.jcypher.domainquery.DomainQuery;
+import iot.jcypher.domainquery.QueryLoader;
 import iot.jcypher.domainquery.QueryPersistor;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.transaction.ITransaction;
@@ -143,6 +144,13 @@ public interface IDomainAccess {
 	 * @return a QueryPersistor for the given query
 	 */
 	public QueryPersistor createQueryPersistor(DomainQuery query);
+	
+	/**
+	 * create a 'Loader' to load a persisted domain query
+	 * @param queryName
+	 * @return a QueryLoader
+	 */
+	public QueryLoader<DomainQuery> createQueryLoader(String queryName);
 	
 	/**
 	 * create a transaction

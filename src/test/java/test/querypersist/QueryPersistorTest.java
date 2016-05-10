@@ -24,7 +24,6 @@ import java.util.Properties;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import iot.jcypher.database.DBAccessFactory;
@@ -35,8 +34,9 @@ import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
+import iot.jcypher.domainquery.QueryLoader;
+import iot.jcypher.domainquery.QueryMemento;
 import iot.jcypher.domainquery.QueryPersistor;
-import iot.jcypher.domainquery.QueryPersistor.QueryMemento;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.internal.JSONConverter;
@@ -103,6 +103,10 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		assertEquals(qm.getQueryJava(), rq_2.toString());
 		
 		qPersistor.storeAs("TestQuery_01");
+		
+		QueryLoader<DomainQuery> qLoader = da1.createQueryLoader("TestQuery_01");
+		QueryMemento qm1 = qLoader.loadMemento();
+		DomainQuery q1 = qLoader.load();
 		
 		return;
 	}

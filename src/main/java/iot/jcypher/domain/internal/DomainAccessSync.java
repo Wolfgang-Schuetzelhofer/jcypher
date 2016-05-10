@@ -30,6 +30,7 @@ import iot.jcypher.domain.internal.DomainAccess.InternalDomainAccess;
 import iot.jcypher.domain.internal.DomainAccessFactoryImpl.SyncType;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
+import iot.jcypher.domainquery.QueryLoader;
 import iot.jcypher.domainquery.QueryPersistor;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.transaction.ITransaction;
@@ -106,6 +107,11 @@ public class DomainAccessSync implements IDomainAccess, IIntDomainAccess {
 	@Override
 	public QueryPersistor createQueryPersistor(DomainQuery query) {
 		return getDelegate().createQueryPersistor(query);
+	}
+
+	@Override
+	public QueryLoader<DomainQuery> createQueryLoader(String queryName) {
+		return getDelegate().createQueryLoader(queryName);
 	}
 
 	@Override
@@ -193,6 +199,11 @@ public class DomainAccessSync implements IDomainAccess, IIntDomainAccess {
 		@Override
 		public QueryPersistor createQueryPersistor(GDomainQuery query) {
 			return getDelegate().getGenericDomainAccess().createQueryPersistor(query);
+		}
+
+		@Override
+		public QueryLoader<GDomainQuery> createQueryLoader(String queryName) {
+			return getDelegate().getGenericDomainAccess().createQueryLoader(queryName);
 		}
 
 		@Override

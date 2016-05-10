@@ -61,4 +61,8 @@ public class InternalAccess {
 	public static QueryPersistor createQueryPersistor(AbstractDomainQuery query, Object domAccess) {
 		return new QueryPersistor(query, domAccess);
 	}
+	
+	public static <T> QueryLoader<T> createQueryLoader(String queryName, Object domAccess) {
+		return new QueryLoader<T>(queryName, domAccess);
+	}
 }

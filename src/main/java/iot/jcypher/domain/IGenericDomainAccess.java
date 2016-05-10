@@ -23,6 +23,7 @@ import iot.jcypher.domain.genericmodel.DOType;
 import iot.jcypher.domain.genericmodel.DOTypeBuilderFactory;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domainquery.GDomainQuery;
+import iot.jcypher.domainquery.QueryLoader;
 import iot.jcypher.domainquery.QueryPersistor;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.transaction.ITransaction;
@@ -147,6 +148,13 @@ public interface IGenericDomainAccess {
 	 * @return a QueryPersistor for the given query
 	 */
 	public QueryPersistor createQueryPersistor(GDomainQuery query);
+	
+	/**
+	 * create a 'Loader' to load a persisted domain query
+	 * @param queryName
+	 * @return a QueryLoader
+	 */
+	public QueryLoader<GDomainQuery> createQueryLoader(String queryName);
 	
 	/**
 	 * create a transaction

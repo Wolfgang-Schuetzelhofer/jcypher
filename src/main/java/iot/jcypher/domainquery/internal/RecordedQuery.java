@@ -64,6 +64,10 @@ public class RecordedQuery {
 		return generic;
 	}
 	
+	public void setGeneric(boolean generic) {
+		this.generic = generic;
+	}
+
 	@SuppressWarnings("unchecked")
 	public <T extends Statement> T createStatement(Class<T> type) {
 		if (Assignment.class.equals(type))
