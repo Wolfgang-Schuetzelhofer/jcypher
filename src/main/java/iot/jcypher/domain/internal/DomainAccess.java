@@ -254,9 +254,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		return iot.jcypher.domainquery.InternalAccess.createQueryLoader(queryName, this);
 	}
 
-	private DomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
+	private DomainQuery createRecordedQuery(ReplayedQueryContext rqc, boolean doRecord) {
 		DomainQuery ret = new DomainQuery(this);
-		QueryRecorder.recordCreateQuery(ret);
+		if (doRecord) {
+			QueryRecorder.recordCreateQuery(ret);
+			iot.jcypher.domainquery.InternalAccess.recordQuery(ret, QueryRecorder.getRecordedQuery(ret));
+		}
 		iot.jcypher.domainquery.InternalAccess.replayQuery(ret, rqc);
 		return ret;
 	}
@@ -468,9 +471,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			return iot.jcypher.domainquery.InternalAccess.createQueryLoader(queryName, this);
 		}
 
-		private GDomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
+		private GDomainQuery createRecordedQuery(ReplayedQueryContext rqc, boolean doRecord) {
 			GDomainQuery ret = new GDomainQuery(DomainAccess.this);
-			QueryRecorder.recordCreateQuery(ret);
+			if (doRecord) {
+				QueryRecorder.recordCreateQuery(ret);
+				iot.jcypher.domainquery.InternalAccess.recordQuery(ret, QueryRecorder.getRecordedQuery(ret));
+			}
 			iot.jcypher.domainquery.InternalAccess.replayQuery(ret, rqc);
 			return ret;
 		}
@@ -4171,12 +4177,12 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			domainAccessHandler.loadDomainInfoIfNeeded();
 		}
 		
-		public DomainQuery createRecordedQuery(ReplayedQueryContext rqc) {
-			return DomainAccess.this.createRecordedQuery(rqc);
+		public DomainQuery createRecordedQuery(ReplayedQueryContext rqc, boolean doRecord) {
+			return DomainAccess.this.createRecordedQuery(rqc, doRecord);
 		}
 		
-		public GDomainQuery createRecordedGenQuery(ReplayedQueryContext rqc) {
-			return ((GenericDomainAccess)DomainAccess.this.getGenericDomainAccess()).createRecordedQuery(rqc);
+		public GDomainQuery createRecordedGenQuery(ReplayedQueryContext rqc, boolean doRecord) {
+			return ((GenericDomainAccess)DomainAccess.this.getGenericDomainAccess()).createRecordedQuery(rqc, doRecord);
 		}
 		
 		public Object getSyncObject() {

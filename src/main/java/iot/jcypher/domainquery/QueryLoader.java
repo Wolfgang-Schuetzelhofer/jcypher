@@ -23,6 +23,7 @@ import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.domainquery.internal.JSONConverter;
+import iot.jcypher.domainquery.internal.QueryExecutor;
 import iot.jcypher.domainquery.internal.RecordedQuery;
 import iot.jcypher.domainquery.internal.RecordedQueryPlayer;
 import iot.jcypher.graph.GrNode;
@@ -47,14 +48,19 @@ public class QueryLoader<T> {
 	@SuppressWarnings("unchecked")
 	public T load() {
 		QueryMemento qm = loadMemento();
-		RecordedQuery rq = new JSONConverter().fromJSON(qm.getQueryJSON());
-		RecordedQueryPlayer qp = new RecordedQueryPlayer();
-		T q;
-		if (isGeneric())
-			q = (T) qp.replayGenericQuery(rq, (IGenericDomainAccess) this.domainAccess);
-		else
-			q = (T) qp.replayQuery(rq, (IDomainAccess) this.domainAccess);
-		return q;
+		if (qm != null) {
+			RecordedQuery rq = new JSONConverter().fromJSON(qm.getQueryJSON());
+			RecordedQueryPlayer qp = new RecordedQueryPlayer(true); // create new
+			T q;
+			if (isGeneric())
+				q = (T) qp.replayGenericQuery(rq, (IGenericDomainAccess) this.domainAccess);
+			else
+				q = (T) qp.replayQuery(rq, (IDomainAccess) this.domainAccess);
+			QueryExecutor qe = InternalAccess.getQueryExecutor((AbstractDomainQuery) q);
+			qe.queryCreationCompleted();
+			return q;
+		}
+		return null;
 	}
 	
 	/**

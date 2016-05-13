@@ -175,6 +175,14 @@ public class QueryExecutor implements IASTObjectsContainer {
 		return param;
 	}
 	
+	public Set<String> getParameterNames() {
+		return this.parameters.keySet();
+	}
+	
+	public void addParameter(Parameter param) {
+		this.parameters.put(param.getName(), param);
+	}
+	
 	/**
 	 * Execute the domain query
 	 */
@@ -469,6 +477,11 @@ public class QueryExecutor implements IASTObjectsContainer {
 						this.recordedQueryContext.domainQuery);
 		}
 		return null;
+	}
+	
+	public void queryCreationCompleted() {
+		if (this.recordedQueryContext != null)
+			this.recordedQueryContext.queryCompleted();
 	}
 	
 	@Override

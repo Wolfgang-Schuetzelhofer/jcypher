@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2015 IoT-Solutions e.U.
+ * Copyright (c) 2015-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,17 +20,18 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
-import iot.jcypher.domain.internal.DomainAccess;
-import iot.jcypher.domain.internal.DomainAccess.GenericDomainAccess;
 import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
+import iot.jcypher.domainquery.InternalAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
+import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.internal.RecordedQuery.DOMatchRef;
 import iot.jcypher.domainquery.internal.RecordedQuery.Invocation;
 import iot.jcypher.domainquery.internal.RecordedQuery.Literal;
@@ -42,9 +43,15 @@ public class RecordedQueryPlayer {
 	private Map<String, Object> id2ObjectMap;
 	private ReplayedQueryContext replayedQueryContext;
 	private boolean generic;
+	private boolean createNew;
 	
 	public RecordedQueryPlayer() {
+		this(false);
+	}
+	
+	public RecordedQueryPlayer(boolean createNew) {
 		super();
+		this.createNew = createNew;
 		this.id2ObjectMap = new HashMap<String, Object>();
 	}
 
@@ -60,15 +67,28 @@ public class RecordedQueryPlayer {
 		try {
 			if (!Settings.TEST_MODE) {
 				br_old = QueryRecorder.blockRecording.get();
-				QueryRecorder.blockRecording.set(Boolean.TRUE);
+				if (this.createNew)
+					QueryRecorder.blockRecording.set(Boolean.FALSE);
+				else
+					QueryRecorder.blockRecording.set(Boolean.TRUE);
 			}
 			this.generic = false;
 			this.replayedQueryContext = new ReplayedQueryContext(recordedQuery);
-			query = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().createRecordedQuery(this.replayedQueryContext);
+			query = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().createRecordedQuery(this.replayedQueryContext,
+					this.createNew); // do record
 			this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
 			
 			for (Statement stmt : recordedQuery.getStatements()) {
 				replayStatement(stmt);
+			}
+			Map<String, Parameter> params = recordedQuery.getParameters();
+			if (params != null) {
+				QueryExecutor qe = InternalAccess.getQueryExecutor(query);
+				Iterator<Parameter> pit = params.values().iterator();
+				while(pit.hasNext()) {
+					Parameter param = pit.next();
+					qe.addParameter(param);
+				}
 			}
 		} finally {
 			if (!Settings.TEST_MODE)
@@ -90,11 +110,15 @@ public class RecordedQueryPlayer {
 		try {
 			if (!Settings.TEST_MODE) {
 				br_old = QueryRecorder.blockRecording.get();
-				QueryRecorder.blockRecording.set(Boolean.TRUE);
+				if (this.createNew)
+					QueryRecorder.blockRecording.set(Boolean.FALSE);
+				else
+					QueryRecorder.blockRecording.set(Boolean.TRUE);
 			}
 			this.generic = true;
 			this.replayedQueryContext = new ReplayedQueryContext(recordedQuery);
-			query = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().createRecordedGenQuery(this.replayedQueryContext);
+			query = ((IIntDomainAccess)domainAccess).getInternalDomainAccess().createRecordedGenQuery(this.replayedQueryContext,
+					this.createNew); // do record
 			this.id2ObjectMap.put(QueryRecorder.QUERY_ID, query);
 			
 			for (Statement stmt : recordedQuery.getStatements()) {

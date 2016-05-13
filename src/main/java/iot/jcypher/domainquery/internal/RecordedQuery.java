@@ -17,14 +17,17 @@
 package iot.jcypher.domainquery.internal;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import iot.jcypher.domainquery.AbstractDomainQuery;
+import iot.jcypher.domainquery.ast.Parameter;
 
 public class RecordedQuery {
 
 	private boolean generic;
+	private Map<String, Parameter> parameters;
 	private Map<String, String> augmentations;
 	private List<Statement> statements;
 	
@@ -89,6 +92,26 @@ public class RecordedQuery {
 
 	public void setAugmentations(Map<String, String> augmentations) {
 		this.augmentations = augmentations;
+	}
+	
+	Map<String, Parameter> getParameters() {
+		return parameters;
+	}
+
+	/**
+	 * Get or create, if not exists, a query parameter.
+	 * @param name of the parameter
+	 * @return a query parameter
+	 */
+	Parameter getCreateParameter(String name) {
+		if (this.parameters == null)
+			this.parameters = new HashMap<String, Parameter>();
+		Parameter param = this.parameters.get(name);
+		if (param == null) {
+			param = new Parameter(name);
+			this.parameters.put(name, param);
+		}
+		return param;
 	}
 
 	@Override

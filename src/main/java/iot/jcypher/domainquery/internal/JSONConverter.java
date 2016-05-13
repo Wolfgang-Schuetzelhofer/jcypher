@@ -161,7 +161,7 @@ public class JSONConverter {
 				Object val = ConversionUtil.fromJSON(lTyp, jsVal);
 				if (isParam) {
 					String pName = jobj.getString(PARAM_NAME);
-					Parameter param = new iot.jcypher.domainquery.ast.Parameter(pName);
+					Parameter param = rq.getCreateParameter(pName); // get or create
 					param.setValue(val);
 					val = param;
 				}

@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2015 IoT-Solutions e.U.
+ * Copyright (c) 2015-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -28,6 +28,7 @@ import java.util.Set;
 
 import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.GDomainQuery;
+import iot.jcypher.domainquery.InternalAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.RecordedQuery.Invocation;
@@ -265,10 +266,12 @@ public class QueryRecorder {
 	public static void queryCompleted(AbstractDomainQuery query) {
 		if (blockRecording.get())
 			return;
-		QueriesPerThread qpt = queriesPerThread.get();
-		if (qpt != null) {
-			qpt.queryCompleted(query);
-		}
+		QueryExecutor qe = InternalAccess.getQueryExecutor((AbstractDomainQuery) query);
+		qe.queryCreationCompleted();
+//		QueriesPerThread qpt = queriesPerThread.get();
+//		if (qpt != null) {
+//			qpt.queryCompleted(query);
+//		}
 	}
 	
 	public static RecordedQuery getRecordedQuery(AbstractDomainQuery query) {

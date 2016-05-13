@@ -17,6 +17,7 @@
 package test.querypersist;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,15 +33,20 @@ import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
+import iot.jcypher.domainquery.InternalAccess;
 import iot.jcypher.domainquery.QueryLoader;
 import iot.jcypher.domainquery.QueryMemento;
 import iot.jcypher.domainquery.QueryPersistor;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.ast.Parameter;
 import iot.jcypher.domainquery.internal.JSONConverter;
+import iot.jcypher.domainquery.internal.QueryExecutor;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.domainquery.internal.RecordedQuery;
+import iot.jcypher.domainquery.internal.QueryRecorder.QueriesPerThread;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
 import test.AbstractTestSuite;
@@ -90,6 +96,10 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		DomainObjectMatch<Person> smithsInEurope = q.SELECT_FROM(smiths).ELEMENTS(
 				q.WHERE(smithAreas).CONTAINS(europe)
 		);
+		
+		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
+		QueryRecorder.queryCompleted(q);
+		assertTrue(qpt.isCleared());
 
 		qPersistor.augment(smiths, "smiths")
 		.augment(smithsInEurope, "smithsInEurope")
@@ -107,6 +117,13 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		QueryLoader<DomainQuery> qLoader = da1.createQueryLoader("TestQuery_01");
 		QueryMemento qm1 = qLoader.loadMemento();
 		DomainQuery q1 = qLoader.load();
+		assertTrue(qpt.isCleared());
+		
+		List<String> params = q1.getParameterNames();
+		assertEquals("[lastName]", params.toString());
+		
+		Parameter param = q1.parameter("lastName");
+		assertEquals("Smith", param.getValue().toString());
 		
 		return;
 	}

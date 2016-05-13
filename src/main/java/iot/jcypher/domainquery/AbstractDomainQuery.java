@@ -201,6 +201,10 @@ public abstract class AbstractDomainQuery {
 		return this.queryExecutor.parameter(name);
 	}
 	
+	public List<String> getParameterNames() {
+		return new ArrayList<String>(this.queryExecutor.getParameterNames());
+	}
+	
 	/**
 	 * Start formulating a predicate expression.
 	 * A predicate expression yields a boolean value.
