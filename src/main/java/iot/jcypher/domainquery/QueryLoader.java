@@ -16,16 +16,23 @@
 
 package iot.jcypher.domainquery;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map.Entry;
 
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.internal.IIntDomainAccess;
+import iot.jcypher.domainquery.api.APIAccess;
+import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.JSONConverter;
 import iot.jcypher.domainquery.internal.QueryExecutor;
 import iot.jcypher.domainquery.internal.RecordedQuery;
 import iot.jcypher.domainquery.internal.RecordedQueryPlayer;
+import iot.jcypher.domainquery.internal.ReplayedQueryContext;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
@@ -39,6 +46,7 @@ public class QueryLoader<T> {
 
 	private Object domainAccess; // can be IDomainAccess or IGenericDomainAccess
 	private String queryName;
+	private ReplayedQueryContext replayedQueryContext;
 	
 	QueryLoader( String qName, Object domAccess) {
 		this.queryName = qName;
@@ -56,8 +64,9 @@ public class QueryLoader<T> {
 				q = (T) qp.replayGenericQuery(rq, (IGenericDomainAccess) this.domainAccess);
 			else
 				q = (T) qp.replayQuery(rq, (IDomainAccess) this.domainAccess);
+			this.replayedQueryContext = ((AbstractDomainQuery) q).getReplayedQueryContext();
 			QueryExecutor qe = InternalAccess.getQueryExecutor((AbstractDomainQuery) q);
-			qe.queryCreationCompleted();
+			qe.queryCreationCompleted(true); // delete the replayedQueryContext
 			return q;
 		}
 		return null;
@@ -94,6 +103,52 @@ public class QueryLoader<T> {
 			return qm;
 		}
 		return null;
+	}
+	
+	public List<String> getAugmentedDOMNames() {
+		List<String> dNames;
+		if (this.replayedQueryContext.getRecordedQuery().getAugmentations() != null) {
+			dNames = new ArrayList<String>(
+					this.replayedQueryContext.getRecordedQuery().getAugmentations().values());
+			Collections.sort(dNames);
+		} else
+			dNames = Collections.emptyList();
+		return dNames;
+	}
+	
+	public List<String> getInternalDOMNames() {
+		List<String> dNames = new ArrayList<String>(
+				replayedQueryContext.getId2DomainObjectMatch().keySet());
+		Collections.sort(dNames);
+		return dNames;
+	}
+	
+	public DomainObjectMatch<?> getDomainObjectMatch(String name) {
+		DomainObjectMatch<?> ret = null;
+		if (this.replayedQueryContext.getRecordedQuery().getAugmentations() != null) {
+			Iterator<Entry<String, String>> it =
+				this.replayedQueryContext.getRecordedQuery().getAugmentations().entrySet().iterator();
+			while(it.hasNext()) {
+				Entry<String, String> entry = it.next();
+				if (entry.getValue().equals(name)) {
+					ret = this.replayedQueryContext.getById(entry.getKey());
+					break;
+				}
+			}
+		}
+		if (ret == null) {
+			ret = this.replayedQueryContext.getById(name);
+		}
+		return ret;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public <E> DomainObjectMatch<E> getDomainObjectMatch(String name, Class<E> type) {
+		DomainObjectMatch<?> dom = this.getDomainObjectMatch(name);
+		Class<?> typ = APIAccess.getDomainObjectType(dom);
+		if (!type.isAssignableFrom(typ))
+			throw new ClassCastException();
+		return (DomainObjectMatch<E>) dom;
 	}
 	
 	private boolean isGeneric() {

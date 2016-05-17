@@ -47,6 +47,8 @@ import iot.jcypher.domainquery.internal.QueryExecutor;
 import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.domainquery.internal.RecordedQuery;
 import iot.jcypher.domainquery.internal.QueryRecorder.QueriesPerThread;
+import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
 import test.AbstractTestSuite;
@@ -54,6 +56,7 @@ import test.domainquery.Population;
 import test.domainquery.model.Address;
 import test.domainquery.model.Area;
 import test.domainquery.model.Person;
+import test.domainquery.util.CompareUtil;
 import util.TestDataReader;
 
 //@Ignore
@@ -62,6 +65,7 @@ public class QueryPersistorTest extends AbstractTestSuite {
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	private static Population population;
 	
 	@Test
 	public void testPersist_03() {
@@ -98,8 +102,15 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		);
 		
 		QueriesPerThread qpt = QueryRecorder.getCreateQueriesPerThread();
-		QueryRecorder.queryCompleted(q);
+		result = q.execute();
+		List<Person> sie = result.resultOf(smithsInEurope);
+		//QueryRecorder.queryCompleted(q);
 		assertTrue(qpt.isCleared());
+		assertTrue(sie.size() == 1);
+		boolean ok = CompareUtil.equalsObjects(population.getJohn_smith(), sie.get(0));
+		assertTrue(ok);
+		
+		QueryMemento qmNoAugment = qPersistor.createMemento();
 
 		qPersistor.augment(smiths, "smiths")
 		.augment(smithsInEurope, "smithsInEurope")
@@ -114,16 +125,54 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		
 		qPersistor.storeAs("TestQuery_01");
 		
-		QueryLoader<DomainQuery> qLoader = da1.createQueryLoader("TestQuery_01");
-		QueryMemento qm1 = qLoader.loadMemento();
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		QueryLoader<DomainQuery> qLoader = da.createQueryLoader("TestQuery_01");
+		//QueryMemento qm1 = qLoader.loadMemento();
 		DomainQuery q1 = qLoader.load();
 		assertTrue(qpt.isCleared());
+		
+		String qJava = da.createQueryPersistor(q1).createMemento().getQueryJava();
+		assertEquals(qmNoAugment.getQueryJava(), qJava);
 		
 		List<String> params = q1.getParameterNames();
 		assertEquals("[lastName]", params.toString());
 		
 		Parameter param = q1.parameter("lastName");
 		assertEquals("Smith", param.getValue().toString());
+		
+		List<String> augNames = qLoader.getAugmentedDOMNames();
+		assertEquals("[europe, smithAreas, smiths, smithsInEurope]", augNames.toString());
+		
+		List<String> intNames = qLoader.getInternalDOMNames();
+		assertEquals("[obj0, obj12, obj16, obj4]", intNames.toString());
+		
+		DomainQueryResult result1 = q1.execute();
+		DomainObjectMatch<?> dom = qLoader.getDomainObjectMatch("smithsInEurope");
+		List<?> sie_1 = result1.resultOf(dom);
+		assertTrue(sie_1.size() == 1);
+		ok = CompareUtil.equalsObjects(population.getJohn_smith(), sie_1.get(0));
+		assertTrue(ok);
+		
+		/*********************************************/
+		IDomainAccess da2 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		QueryLoader<DomainQuery> qLoader2= da2.createQueryLoader("TestQuery_01");
+		DomainQuery q2 = qLoader2.load();
+		assertTrue(qpt.isCleared());
+		
+		DomainQueryResult result2 = q2.execute();
+		Throwable th = null;
+		try {
+			DomainObjectMatch<Area> dom2Err = qLoader2.getDomainObjectMatch("obj16", Area.class);
+		} catch (Throwable e) {
+			th = e;
+		}
+		assertTrue(th != null);
+		assertTrue(th.getClass().equals(ClassCastException.class));
+		DomainObjectMatch<Person> dom2 = qLoader2.getDomainObjectMatch("obj16", Person.class);
+		List<Person> sie_2 = result2.resultOf(dom2);
+		assertTrue(sie_2.size() == 1);
+		ok = CompareUtil.equalsObjects(population.getJohn_smith(), sie_2.get(0));
+		assertTrue(ok);
 		
 		return;
 	}
@@ -258,21 +307,21 @@ public class QueryPersistorTest extends AbstractTestSuite {
 //		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
 		
 		// init db
-		Population population = new Population();
+		population = new Population();
 		
 		storedDomainObjects = population.createPopulation();
 		
-//		List<JcError> errors = dbAccess.clearDatabase();
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
-//		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-//		errors = da.store(storedDomainObjects);
-//		if (errors.size() > 0) {
-//			printErrors(errors);
-//			throw new JcResultException(errors);
-//		}
+		List<JcError> errors = dbAccess.clearDatabase();
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
+		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
+		errors = da.store(storedDomainObjects);
+		if (errors.size() > 0) {
+			printErrors(errors);
+			throw new JcResultException(errors);
+		}
 	}
 	
 	@AfterClass

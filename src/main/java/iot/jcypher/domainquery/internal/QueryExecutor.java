@@ -479,9 +479,17 @@ public class QueryExecutor implements IASTObjectsContainer {
 		return null;
 	}
 	
-	public void queryCreationCompleted() {
+	/**
+	 * If the query was created from a stored state, not if it was replayed because of an optimistic locking conflict,
+	 * then 'deleteReplayedQueryContext' is set to true and the replayedQueryContext is deleted.
+	 * After that the query is in the same state as when programmatically created for the first time.
+	 * @param deleteReplayedQueryContext
+	 */
+	public void queryCreationCompleted(boolean deleteReplayedQueryContext) {
 		if (this.recordedQueryContext != null)
 			this.recordedQueryContext.queryCompleted();
+		if (deleteReplayedQueryContext)
+			this.replayedQueryContext = null;
 	}
 	
 	@Override

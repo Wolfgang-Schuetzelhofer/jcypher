@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2015 IoT-Solutions e.U.
+ * Copyright (c) 2015-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,5 +38,13 @@ public class ReplayedQueryContext {
 	
 	public DomainObjectMatch<?> getById(String id) {
 		return this.id2DomainObjectMatch.get(id);
+	}
+
+	public RecordedQuery getRecordedQuery() {
+		return recordedQuery;
+	}
+
+	public Map<String, DomainObjectMatch<?>> getId2DomainObjectMatch() {
+		return id2DomainObjectMatch;
 	}
 }

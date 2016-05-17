@@ -267,7 +267,7 @@ public class QueryRecorder {
 		if (blockRecording.get())
 			return;
 		QueryExecutor qe = InternalAccess.getQueryExecutor((AbstractDomainQuery) query);
-		qe.queryCreationCompleted();
+		qe.queryCreationCompleted(false);
 //		QueriesPerThread qpt = queriesPerThread.get();
 //		if (qpt != null) {
 //			qpt.queryCompleted(query);
