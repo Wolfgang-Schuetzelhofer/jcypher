@@ -61,6 +61,7 @@ public class JSONConverter {
 	private static final String REFERENCE = "Reference";
 	private static final String PARAMETERS = "parameters";
 	private static final String AUGMENTATIONS = "augmentations";
+	private static final String GENERIC = "generic";
 	
 	private static final String LITERAL_TYPE = "LiteralType";
 	private static final String LITERAL_VALUE = "LiteralValue";
@@ -111,6 +112,7 @@ public class JSONConverter {
 		JsonReader reader = Json.createReader(sr);
 		JsonObject jsonResult = reader.readObject();
 		
+		ret.setGeneric(jsonResult.getBoolean(GENERIC));
 		JsonArray augmentations = jsonResult.getJsonArray(AUGMENTATIONS);
 		if (augmentations != null) {
 			Map<String, String> augs = new HashMap<String, String>();
@@ -183,6 +185,7 @@ public class JSONConverter {
 	}
 
 	private void writeQuery(RecordedQuery query, JsonGenerator generator) {
+		generator.write(GENERIC, query.isGeneric());
 		if (query.getAugmentations() != null) {
 			generator.writeStartArray(AUGMENTATIONS);
 			Iterator<Entry<String, String>> it = query.getAugmentations().entrySet().iterator();

@@ -33,9 +33,13 @@ import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
 import iot.jcypher.domain.IDomainAccess;
+import iot.jcypher.domain.IGenericDomainAccess;
+import iot.jcypher.domain.genericmodel.DomainObject;
+import iot.jcypher.domain.genericmodel.internal.DOWalker;
 import iot.jcypher.domainquery.AbstractDomainQuery;
 import iot.jcypher.domainquery.DomainQuery;
 import iot.jcypher.domainquery.DomainQueryResult;
+import iot.jcypher.domainquery.GDomainQuery;
 import iot.jcypher.domainquery.InternalAccess;
 import iot.jcypher.domainquery.QueryLoader;
 import iot.jcypher.domainquery.QueryMemento;
@@ -57,6 +61,7 @@ import test.domainquery.model.Address;
 import test.domainquery.model.Area;
 import test.domainquery.model.Person;
 import test.domainquery.util.CompareUtil;
+import test.genericmodel.DOToString;
 import util.TestDataReader;
 
 //@Ignore
@@ -72,16 +77,10 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		IDomainAccess da1;
 		DomainQuery q;
 		DomainQueryResult result = null;
-		boolean equals;
-		String testId;
-		String qCypher;
 		
-		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_SELECT_01.txt");
+		TestDataReader tdr = new TestDataReader("/test/querypersist/Test_EXEC_01.txt");
 		
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
-		
-		/** 03 ****************************************/
-		testId = "PERSIST_01";
 		
 		q = da1.createQuery();
 		QueryPersistor qPersistor = da1.createQueryPersistor(q);
@@ -119,7 +118,7 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		QueryMemento qm = qPersistor.createMemento();
 		
 		RecordedQuery rq_2 = new JSONConverter().fromJSON(qm.getQueryJSON());
-		System.out.println(rq_2.toString());
+		//System.out.println(rq_2.toString());
 		
 		assertEquals(qm.getQueryJava(), rq_2.toString());
 		
@@ -173,6 +172,25 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		assertTrue(sie_2.size() == 1);
 		ok = CompareUtil.equalsObjects(population.getJohn_smith(), sie_2.get(0));
 		assertTrue(ok);
+		
+		/*************************************************/
+		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		QueryLoader<GDomainQuery> gQLoader = gda.createQueryLoader("TestQuery_01");
+		GDomainQuery gq = gQLoader.load();
+		
+		DomainQueryResult gResult = gq.execute();
+		DomainObjectMatch<DomainObject> sm_ie_Match = gQLoader.getDomainObjectMatch("smithsInEurope", DomainObject.class);
+		
+		List<DomainObject> sm_ie = gResult.resultOf(sm_ie_Match);
+		assertTrue(sm_ie.size() == 1);
+		
+		DOToString doToString = new DOToString(Format.PRETTY_1);
+		DOWalker walker = new DOWalker(sm_ie.get(0), doToString);
+		walker.walkDOGraph();
+		String str = doToString.getBuffer().toString();
+		//System.out.println(str);
+		
+		assertEquals(tdr.getTestData("EXEC_01"), str);
 		
 		return;
 	}
@@ -234,12 +252,12 @@ public class QueryPersistorTest extends AbstractTestSuite {
 						true));
 		
 		RecordedQuery rq = q.getRecordedQuery();
-		System.out.println(rq.toString());
+		//System.out.println(rq.toString());
 		String query = new JSONConverter().setPrettyFormat(Format.PRETTY_1).toJSON(rq);
-		System.out.println(query);
+		//System.out.println(query);
 		
 		RecordedQuery rq_2 = new JSONConverter().fromJSON(query);
-		System.out.println(rq_2.toString());
+		//System.out.println(rq_2.toString());
 		
 		assertEquals(rq.toString(), rq_2.toString());
 		
@@ -250,18 +268,10 @@ public class QueryPersistorTest extends AbstractTestSuite {
 	public void testPersist_01() {
 		IDomainAccess da1;
 		DomainQuery q;
-		DomainQueryResult result = null;
-		boolean equals;
-		String testId;
-		String qCypher;
-		
-		TestDataReader tdr = new TestDataReader("/test/domainquery/Test_SELECT_01.txt");
-		
+
 		da1 = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 		
 		/** 01 ****************************************/
-		testId = "PERSIST_01";
-		
 		q = da1.createQuery();
 		Parameter lastName = q.parameter("lastName");
 		lastName.setValue("Smith");
@@ -284,7 +294,7 @@ public class QueryPersistorTest extends AbstractTestSuite {
 
 		RecordedQuery rq = q.getRecordedQuery();
 		String query = new JSONConverter().setPrettyFormat(Format.PRETTY_1).toJSON(rq);
-		System.out.println(rq.toString());
+		//System.out.println(rq.toString());
 		
 		RecordedQuery rq_2 = new JSONConverter().fromJSON(query);
 		
@@ -303,7 +313,7 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 //		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
 		
 		// init db

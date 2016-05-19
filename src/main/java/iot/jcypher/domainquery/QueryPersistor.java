@@ -23,6 +23,7 @@ import java.util.Map.Entry;
 
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.internal.IIntDomainAccess;
+import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.JSONConverter;
 import iot.jcypher.domainquery.internal.RecordedQuery;
@@ -66,7 +67,11 @@ public class QueryPersistor {
 			Iterator<Entry<DomainObjectMatch<?>, String>> it = this.augmentations.entrySet().iterator();
 			while(it.hasNext()) {
 				Entry<DomainObjectMatch<?>, String> entry = it.next();
-				augments.put(domMap.get(entry.getKey()), entry.getValue());
+				DomainObjectMatch<?> dom = entry.getKey();
+				DomainObjectMatch<?> delegate = APIAccess.getDelegate(dom);
+				if (delegate != null)
+					dom = delegate;
+				augments.put(domMap.get(dom), entry.getValue());
 			}
 			rq.setAugmentations(augments);
 		}

@@ -1,0 +1,213 @@
+----EXEC_01:
+
+test.domainquery.model.Person {
+  firstName : "John"
+  lastName : "Smith"
+  gender : MALE
+  father : null
+  mother : null
+  matchString : "smith"
+  pointsOfContact : [
+    test.domainquery.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+        test.domainquery.model.Area {
+          areaCode : null
+          name : "San Francisco"
+          areaType : CITY
+          partOf :
+            test.domainquery.model.Area {
+              areaCode : null
+              name : "California"
+              areaType : STATE
+              partOf :
+                test.domainquery.model.Area {
+                  areaCode : "1"
+                  name : "USA"
+                  areaType : COUNTRY
+                  partOf :
+                    test.domainquery.model.Area {
+                      areaCode : null
+                      name : "North America"
+                      areaType : CONTINENT
+                      partOf :
+                        test.domainquery.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    },
+    test.domainquery.model.Address {
+      street : "Schweden Platz"
+      number : 32
+      area :
+        test.domainquery.model.Area {
+          areaCode : "1010"
+          name : "Innere Stadt"
+          areaType : URBAN_DISTRICT
+          partOf :
+            test.domainquery.model.Area {
+              areaCode : "1"
+              name : "Vienna"
+              areaType : CITY
+              partOf :
+                test.domainquery.model.Area {
+                  areaCode : null
+                  name : "Austria"
+                  areaType : COUNTRY
+                  partOf :
+                    test.domainquery.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        test.domainquery.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    },
+    test.domainquery.model.Address {
+      street : "Karlsplatz Stachus"
+      number : 1
+      area :
+        test.domainquery.model.Area {
+          areaCode : null
+          name : "Munich"
+          areaType : CITY
+          partOf :
+            test.domainquery.model.Area {
+              areaCode : "2"
+              name : "Germany"
+              areaType : COUNTRY
+              partOf :
+                test.domainquery.model.Area {
+                  areaCode : null
+                  name : "Europe"
+                  areaType : CONTINENT
+                  partOf :
+                    test.domainquery.model.Area {
+                      areaCode : null
+                      name : "Earth"
+                      areaType : PLANET
+                      partOf : null
+                    }
+                }
+            }
+        }
+    },
+    test.domainquery.model.EContact {
+      type : EMAIL
+      eAddress : "j.smith@email.smith"
+      area :
+        test.domainquery.model.EArea {
+          region : "region_11"
+          areaType : ELECTRONIC
+          partOf :
+            test.domainquery.model.EArea {
+              region : "region_1"
+              areaType : ELECTRONIC
+              partOf : null
+            }
+        }
+    }]
+}
+------------------------------------------------------------
+
+----EXEC_02:
+
+iot.jcypher.samples.domain.people.model.Person {
+  firstName : "John"
+  lastName : "Smith"
+  gender : MALE
+  eyeColor : "brown"
+  father : null
+  mother : null
+  pointsOfContact : [
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Market Street"
+      number : 20
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : null
+          name : "San Francisco"
+          areaType : CITY
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : null
+              name : "California"
+              areaType : STATE
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : "1"
+                  name : "USA"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "North America"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    },
+    iot.jcypher.samples.domain.people.model.Address {
+      street : "Schweden Platz"
+      number : 32
+      area :
+        iot.jcypher.samples.domain.people.model.Area {
+          areaCode : "1010"
+          name : "Innere Stadt"
+          areaType : URBAN_DISTRICT
+          partOf :
+            iot.jcypher.samples.domain.people.model.Area {
+              areaCode : "1"
+              name : "Vienna"
+              areaType : CITY
+              partOf :
+                iot.jcypher.samples.domain.people.model.Area {
+                  areaCode : null
+                  name : "Austria"
+                  areaType : COUNTRY
+                  partOf :
+                    iot.jcypher.samples.domain.people.model.Area {
+                      areaCode : null
+                      name : "Europe"
+                      areaType : CONTINENT
+                      partOf :
+                        iot.jcypher.samples.domain.people.model.Area {
+                          areaCode : null
+                          name : "Earth"
+                          areaType : PLANET
+                          partOf : null
+                        }
+                    }
+                }
+            }
+        }
+    },
+    iot.jcypher.samples.domain.people.model.EContact {
+      type : EMAIL
+      eAddress : "j.smith@email.smith"
+    }]
+}
+------------------------------------------------------------
