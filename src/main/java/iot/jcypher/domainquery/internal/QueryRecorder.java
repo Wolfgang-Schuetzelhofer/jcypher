@@ -267,11 +267,13 @@ public class QueryRecorder {
 		if (blockRecording.get())
 			return;
 		QueryExecutor qe = InternalAccess.getQueryExecutor((AbstractDomainQuery) query);
-		qe.queryCreationCompleted(false);
-//		QueriesPerThread qpt = queriesPerThread.get();
-//		if (qpt != null) {
-//			qpt.queryCompleted(query);
-//		}
+		boolean done = qe.queryCreationCompleted(false);
+		if (!done) {
+			QueriesPerThread qpt = queriesPerThread.get();
+			if (qpt != null) {
+				qpt.queryCompleted(query);
+			}
+		}
 	}
 	
 	public static RecordedQuery getRecordedQuery(AbstractDomainQuery query) {

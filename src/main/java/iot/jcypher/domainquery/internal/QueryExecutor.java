@@ -484,12 +484,17 @@ public class QueryExecutor implements IASTObjectsContainer {
 	 * then 'deleteReplayedQueryContext' is set to true and the replayedQueryContext is deleted.
 	 * After that the query is in the same state as when programmatically created for the first time.
 	 * @param deleteReplayedQueryContext
+	 * @return true if queryCompleted was actually called
 	 */
-	public void queryCreationCompleted(boolean deleteReplayedQueryContext) {
-		if (this.recordedQueryContext != null)
+	public boolean queryCreationCompleted(boolean deleteReplayedQueryContext) {
+		boolean compl = false;
+		if (this.recordedQueryContext != null) {
 			this.recordedQueryContext.queryCompleted();
+			compl = true;
+		}
 		if (deleteReplayedQueryContext)
 			this.replayedQueryContext = null;
+		return compl;
 	}
 	
 	@Override
@@ -3154,7 +3159,8 @@ public class QueryExecutor implements IASTObjectsContainer {
 		
 		private void queryCompleted() {
 			if (this.queriesPerThread != null) {
-				this.object2IdMap = this.queriesPerThread.getDOM2IdMap(this.domainQuery);
+				if (this.object2IdMap == null)
+					this.object2IdMap = this.queriesPerThread.getDOM2IdMap(this.domainQuery);
 				this.queriesPerThread.queryCompleted(this.domainQuery);
 			}
 		}

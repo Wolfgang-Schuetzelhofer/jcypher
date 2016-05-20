@@ -31,6 +31,7 @@ import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domain.DomainAccessFactory;
+import iot.jcypher.domain.IDomainAccess;
 import iot.jcypher.domain.IGenericDomainAccess;
 import iot.jcypher.domain.genericmodel.DomainObject;
 import iot.jcypher.domain.genericmodel.internal.DOWalker;
@@ -49,8 +50,6 @@ import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
-import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
-import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 import test.AbstractTestSuite;
 import test.genericmodel.DOToString;
 import test.genericmodel.LoadUtil;
@@ -61,6 +60,33 @@ public class GenericQueryPersistorTest extends AbstractTestSuite {
 
 	public static IDBAccess dbAccess;
 	public static String domainName;
+	
+	@Test
+	public void testLoad_01() {
+		
+		TestDataReader tdr = new TestDataReader("/test/querypersist/Test_EXEC_01.txt");
+		
+		IGenericDomainAccess gda = DomainAccessFactory.createGenericDomainAccess(dbAccess, domainName);
+		
+		QueryLoader<GDomainQuery> gQLoader = gda.createQueryLoader("Smiths_In_Europe");
+		GDomainQuery gq = gQLoader.load();
+		
+		DomainQueryResult gResult = gq.execute();
+		DomainObjectMatch<DomainObject> sm_ie_Match = gQLoader.getDomainObjectMatch("smithsInEurope", DomainObject.class);
+		
+		List<DomainObject> sm_ie = gResult.resultOf(sm_ie_Match);
+		assertTrue(sm_ie.size() == 1);
+		
+		DOToString doToString = new DOToString(Format.PRETTY_1);
+		DOWalker walker = new DOWalker(sm_ie.get(0), doToString);
+		walker.walkDOGraph();
+		String str = doToString.getBuffer().toString();
+		//System.out.println(str);
+		
+		assertEquals(tdr.getTestData("EXEC_03"), str);
+		
+		return;
+	}
 	
 	@Test
 	public void testPersist_01() {
@@ -153,7 +179,7 @@ public class GenericQueryPersistorTest extends AbstractTestSuite {
 			printErrors(errors);
 			throw new JcResultException(errors);
 		}
-		LoadUtil.loadPeopleDomain(dbAccess);
+		LoadUtil.loadPeopleDomainWithQuery(dbAccess);
 		
 	}
 	

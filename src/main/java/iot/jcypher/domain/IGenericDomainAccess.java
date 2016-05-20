@@ -143,6 +143,12 @@ public interface IGenericDomainAccess {
 	public GDomainQuery createQuery();
 	
 	/**
+	 * Answer a list of names of domain queries stored with this domain.
+	 * @return
+	 */
+	public List<String> getStoredQueryNames();
+	
+	/**
 	 * create a 'Persistor' which allows to persist a query with the domain model
 	 * @param query
 	 * @return a QueryPersistor for the given query

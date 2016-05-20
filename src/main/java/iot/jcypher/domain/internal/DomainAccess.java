@@ -245,6 +245,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	}
 	
 	@Override
+	public List<String> getStoredQueryNames() {
+		return this.domainAccessHandler.getStoredQueryNames();
+	}
+
+	@Override
 	public QueryPersistor createQueryPersistor(DomainQuery query) {
 		return iot.jcypher.domainquery.InternalAccess.createQueryPersistor(query, this);
 	}
@@ -256,8 +261,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 	private DomainQuery createRecordedQuery(ReplayedQueryContext rqc, boolean doRecord) {
 		DomainQuery ret = new DomainQuery(this);
+		QueryRecorder.recordCreateQuery(ret);
 		if (doRecord) {
-			QueryRecorder.recordCreateQuery(ret);
 			iot.jcypher.domainquery.InternalAccess.recordQuery(ret, QueryRecorder.getRecordedQuery(ret));
 		}
 		iot.jcypher.domainquery.InternalAccess.replayQuery(ret, rqc);
@@ -462,6 +467,11 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		}
 		
 		@Override
+		public List<String> getStoredQueryNames() {
+			return domainAccessHandler.getStoredQueryNames();
+		}
+
+		@Override
 		public QueryPersistor createQueryPersistor(GDomainQuery query) {
 			return iot.jcypher.domainquery.InternalAccess.createQueryPersistor(query, this);
 		}
@@ -473,8 +483,8 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 
 		private GDomainQuery createRecordedQuery(ReplayedQueryContext rqc, boolean doRecord) {
 			GDomainQuery ret = new GDomainQuery(DomainAccess.this);
+			QueryRecorder.recordCreateQuery(ret);
 			if (doRecord) {
-				QueryRecorder.recordCreateQuery(ret);
 				iot.jcypher.domainquery.InternalAccess.recordQuery(ret, QueryRecorder.getRecordedQuery(ret));
 			}
 			iot.jcypher.domainquery.InternalAccess.replayQuery(ret, rqc);
@@ -910,6 +920,31 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 			
 			return resultList;
+		}
+		
+		List<String> getStoredQueryNames() {
+			List<String> ret = new ArrayList<String>();
+			IDBAccess dba = ((DBAccessWrapper)this.dbAccess).delegate;
+			String qLabel = this.getDomainLabel()	.concat(QueryPersistor.Q_LABEL_POSTFIX);
+			
+			JcNode n = new JcNode("n");
+			IClause[] clauses = new IClause[] {
+					MATCH.node(n).label(qLabel),
+					RETURN.value(n)
+			};
+			JcQuery q = new JcQuery();
+			q.setClauses(clauses);
+			JcQueryResult result = dba.execute(q);
+			if (result.hasErrors()) {
+				StringBuilder sb = new StringBuilder();
+				Util.appendErrorList(Util.collectErrors(result), sb);
+				throw new RuntimeException(sb.toString());
+			}
+			List<GrNode> lgn = result.resultOf(n);
+			for (GrNode rn : lgn) {
+				ret.add(rn.getProperty(QueryPersistor.PROP_NAME).getValue().toString());
+			}
+			return ret;
 		}
 		
 		private synchronized DomainState getDomainState() {

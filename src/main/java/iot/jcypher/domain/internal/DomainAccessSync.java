@@ -105,6 +105,11 @@ public class DomainAccessSync implements IDomainAccess, IIntDomainAccess {
 	}
 
 	@Override
+	public List<String> getStoredQueryNames() {
+		return getDelegate().getStoredQueryNames();
+	}
+
+	@Override
 	public QueryPersistor createQueryPersistor(DomainQuery query) {
 		return getDelegate().createQueryPersistor(query);
 	}
@@ -194,6 +199,11 @@ public class DomainAccessSync implements IDomainAccess, IIntDomainAccess {
 		@Override
 		public GDomainQuery createQuery() {
 			return getDelegate().getGenericDomainAccess().createQuery();
+		}
+
+		@Override
+		public List<String> getStoredQueryNames() {
+			return getDelegate().getStoredQueryNames();
 		}
 
 		@Override

@@ -26,6 +26,7 @@ import iot.jcypher.domain.internal.IIntDomainAccess;
 import iot.jcypher.domainquery.api.APIAccess;
 import iot.jcypher.domainquery.api.DomainObjectMatch;
 import iot.jcypher.domainquery.internal.JSONConverter;
+import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.domainquery.internal.RecordedQuery;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
@@ -38,8 +39,8 @@ import iot.jcypher.util.Util;
 
 public class QueryPersistor {
 	
-	static final String Q_LABEL_POSTFIX = "_query";
-	static final String PROP_NAME = "name";
+	public static final String Q_LABEL_POSTFIX = "_query";
+	public static final String PROP_NAME = "name";
 	static final String PROP_Q_JSON = "queryJSON";
 	static final String PROP_Q_JAVA = "queryJava";
 
@@ -85,6 +86,7 @@ public class QueryPersistor {
 	 * @param queryName
 	 */
 	public void storeAs(String queryName) {
+		QueryRecorder.queryCompleted(this.query);
 		QueryMemento qm = this.createMemento();
 		IDBAccess dbAccess = ((IIntDomainAccess)this.domainAccess).getInternalDomainAccess().getDBAccess();
 		String qLabel = ((IIntDomainAccess)this.domainAccess).getInternalDomainAccess().getDomainLabel()

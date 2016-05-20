@@ -251,6 +251,8 @@ public class QueryPersistorTest extends AbstractTestSuite {
 						(double)7.765E8,
 						true));
 		
+		QueryRecorder.queryCompleted(q);
+		
 		RecordedQuery rq = q.getRecordedQuery();
 		//System.out.println(rq.toString());
 		String query = new JSONConverter().setPrettyFormat(Format.PRETTY_1).toJSON(rq);
@@ -291,6 +293,7 @@ public class QueryPersistorTest extends AbstractTestSuite {
 		DomainObjectMatch<Address> j_smith_FilteredPocs = q.SELECT_FROM(j_smith_Addresses).ELEMENTS(
 				q.WHERE(j_smith_Areas).CONTAINS(europe)
 		);
+		QueryRecorder.queryCompleted(q);
 
 		RecordedQuery rq = q.getRecordedQuery();
 		String query = new JSONConverter().setPrettyFormat(Format.PRETTY_1).toJSON(rq);

@@ -38,6 +38,10 @@ public class LoadUtil {
 		loadPeopleDomain(dbAccess, "/test/load/people_domain.txt");
 	}
 	
+	public static void loadPeopleDomainWithQuery(IDBAccess dbAccess) {
+		loadPeopleDomain(dbAccess, "/test/load/people_domain_with_query.txt");
+	}
+	
 	public static void loadPeopleDomainExtension(IDBAccess dbAccess) {
 		loadPeopleDomain(dbAccess, "/test/load/people_domain_extension.txt");
 	}
