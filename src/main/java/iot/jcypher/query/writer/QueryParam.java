@@ -18,6 +18,8 @@ package iot.jcypher.query.writer;
 
 import java.util.ArrayList;
 
+import iot.jcypher.query.JcQueryParameter;
+
 public class QueryParam implements IQueryParam {
 
 	private String key;
@@ -26,7 +28,10 @@ public class QueryParam implements IQueryParam {
 	
 	public static QueryParam createParam(String name, Object value, WriterContext context) {
 		QueryParam qp = new QueryParam();
-		qp.setKey(createNewParamKey(context));
+		if (value instanceof JcQueryParameter) {
+			qp.setKey(((JcQueryParameter)value).getName());
+		} else
+			qp.setKey(createNewParamKey(context));
 		qp.setValue(value);
 		qp.setOrgName(name);
 		return qp;
@@ -66,6 +71,12 @@ public class QueryParam implements IQueryParam {
 		this.key = key;
 	}
 	public Object getValue() {
+		if (this.value instanceof JcQueryParameter) {
+			Object val = ((JcQueryParameter)this.value).getValue();
+			if (val == null)
+				val = "NOT_SET";
+			return val;
+		}
 		return value;
 	}
 	public void setValue(Object value) {
@@ -85,4 +96,16 @@ public class QueryParam implements IQueryParam {
 	public void setOrgName(String orgName) {
 		this.orgName = orgName;
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(key);
+		sb.append(": ");
+		sb.append(value);
+		sb.append(": ");
+		sb.append(orgName);
+		return sb.toString();
+	}
+	
 }

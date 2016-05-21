@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +34,7 @@ public class WriterContext {
 	IQueryParam currentParamOrSet;
 	// vs. using cypher endpoint
 	boolean useTransactionalEndpoint = false;
+	List<PreparedQuery> preparedQueries;
 	
 	// allows to specify a number of resultDataContents for
 	// JSON output from the REST API
@@ -88,5 +89,9 @@ public class WriterContext {
 			this.resultDataContents = new ArrayList<String>();
 		}
 		return this.resultDataContents;
+	}
+
+	void setResultDataContents(List<String> resultDataContents) {
+		this.resultDataContents = resultDataContents;
 	}
 }

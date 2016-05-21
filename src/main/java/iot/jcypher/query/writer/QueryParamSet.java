@@ -99,4 +99,18 @@ public class QueryParamSet implements IQueryParam {
 	public void setQueryParams(List<QueryParam> queryParams) {
 		this.queryParams = queryParams;
 	}
+
+	@Override
+	public String toString() {
+		StringBuilder sb = new StringBuilder();
+		sb.append(key);
+		sb.append(':');
+		for (QueryParam qp : queryParams) {
+			sb.append("\n");
+			sb.append("   ");
+			sb.append(qp.toString());
+		}
+		return sb.toString();
+	}
+	
 }

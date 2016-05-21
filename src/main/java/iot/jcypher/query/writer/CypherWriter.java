@@ -19,6 +19,7 @@ package iot.jcypher.query.writer;
 import iot.jcypher.database.DBVersion;
 import iot.jcypher.domainquery.internal.Settings;
 import iot.jcypher.query.JcQuery;
+import iot.jcypher.query.JcQueryParameter;
 import iot.jcypher.query.api.APIObject;
 import iot.jcypher.query.api.APIObjectAccess;
 import iot.jcypher.query.api.IClause;
@@ -1211,6 +1212,10 @@ public class CypherWriter {
 				sb.append(']');
 			} else if (val instanceof JcValue) {
 				sb.append(ValueAccess.getName((JcValue)val));
+			} else if (val instanceof JcQueryParameter) {
+				Object pval = ((JcQueryParameter)val).getValue();
+				pval = pval == null ? "NOT_SET" : pval;
+				PrimitiveCypherWriter.writePrimitiveValue(pval, context, sb);
 			} else {
 				sb.append('\'');
 				sb.append(val.toString());

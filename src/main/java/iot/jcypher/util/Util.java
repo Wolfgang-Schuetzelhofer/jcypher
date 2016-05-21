@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,7 @@ import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.writer.CypherWriter;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.JSONWriter;
+import iot.jcypher.query.writer.PreparedQuery;
 import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
@@ -213,12 +214,23 @@ public class Util {
 		JSONWriter.toJSON(query, context);
 		return context.buffer.toString();
 	}
-
+	
 	public static String toJSON(List<JcQuery> queries, Format pretty) {
 		WriterContext context = new WriterContext();
 		//ContextAccess.setUseTransactionalEndpoint(true, context);
 		context.cypherFormat = pretty;
 		JSONWriter.toJSON(queries, context);
 		return context.buffer.toString();
+	}
+	
+	public static PreparedQuery toPreparedQuery(JcQuery query, Format pretty) {
+		WriterContext context = new WriterContext();
+		//ContextAccess.setUseTransactionalEndpoint(true, context);
+		context.cypherFormat = pretty;
+		return JSONWriter.toPreparedQuery(query, context);
+	}
+	
+	public static String toJSON(PreparedQuery preparedQuery) {
+		return JSONWriter.toJSON(preparedQuery);
 	}
 }
