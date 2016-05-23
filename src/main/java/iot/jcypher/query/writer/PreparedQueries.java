@@ -16,24 +16,25 @@
 
 package iot.jcypher.query.writer;
 
+import java.util.ArrayList;
 import java.util.List;
 
-public class PreparedQuery {
+public class PreparedQueries {
 
-	private String cypher;
+	private List<PreparedQuery> preparedQueries;
 	private String json;
-	private PQContext context;
 	private boolean dSLParams;
 	
-	PreparedQuery() {
+	PreparedQueries() {
+		this.preparedQueries = new ArrayList<PreparedQuery>();
 	}
 
-	public String getCypher() {
-		return cypher;
+	public void add(PreparedQuery preparedQuery) {
+		this.preparedQueries.add(preparedQuery);
 	}
-
-	void setCypher(String cypher) {
-		this.cypher = cypher;
+	
+	public List<PreparedQuery> getPreparedQueries() {
+		return preparedQueries;
 	}
 
 	public String getJson() {
@@ -44,39 +45,11 @@ public class PreparedQuery {
 		this.json = json;
 	}
 	
-	PQContext getContext() {
-		if (this.context == null)
-			this.context = new PQContext();
-		return this.context;
-	}
-
 	boolean hasdSLParams() {
 		return dSLParams;
 	}
 
 	void setdSLParams() {
 		this.dSLParams = true;
-	}
-
-	/********************************/
-	public class PQContext {
-
-		Format cypherFormat;
-		boolean extractParams;
-		boolean useTransationalEndpoint;
-		List<String> resultDataContents;
-		List<IQueryParam> queryParams;
-		
-		private PQContext() {
-			super();
-		}
-		
-		void fillContext(WriterContext ctxt) {
-			ctxt.cypherFormat = this.cypherFormat;
-			ctxt.extractParams = this.extractParams;
-			ctxt.useTransactionalEndpoint = this.useTransationalEndpoint;
-			ctxt.queryParams = this.queryParams;
-			ContextAccess.setResultDataContents(ctxt, this.resultDataContents);
-		}
 	}
 }

@@ -1,0 +1,107 @@
+----QPARAMS_01:
+
+{
+    "query":"CYPHER planner=rule MATCH (n:Member{name:{memberName}}), (s:Song{name:{songName}}) MERGE (n)-[r:PLAYED]->(s) ON CREATE SET r.views = {param_0}, r.created = timestamp() ON MATCH SET r.views = r.views + 1",
+    "params":{
+        "memberName":"NOT_SET",
+        "songName":"NOT_SET",
+        "param_0":1
+    }
+}
+------------------------------------------------------------
+
+----QPARAMS_02:
+
+{
+    "query":"CYPHER planner=rule MATCH (n:Member{name:{memberName}}), (s:Song{name:{songName}}) MERGE (n)-[r:PLAYED]->(s) ON CREATE SET r.views = {param_0}, r.created = timestamp() ON MATCH SET r.views = r.views + 1",
+    "params":{
+        "memberName":"John",
+        "songName":"Song_1",
+        "param_0":1
+    }
+}
+------------------------------------------------------------
+
+----QPARAMS_03:
+
+{
+    "statements":[
+        {
+            "statement":"CYPHER planner=rule MATCH (n:Member{name:{memberName}}), (s:Song{name:{songName}}) MERGE (n)-[r:PLAYED]->(s) ON CREATE SET r.views = {param_0}, r.created = timestamp() ON MATCH SET r.views = r.views + 1",
+            "parameters":{
+                "memberName":"John",
+                "songName":"Song_1",
+                "param_0":1
+            }
+        },
+        {
+            "statement":"CYPHER planner=rule MATCH (n:Member{name:{memberName_1}}), (s:Song{name:{songName_1}}) MERGE (n)-[r:PLAYED]->(s) ON CREATE SET r.views = {param_0}, r.created = timestamp() ON MATCH SET r.views = r.views + 3",
+            "parameters":{
+                "memberName_1":"NOT_SET",
+                "songName_1":"NOT_SET",
+                "param_0":3
+            }
+        }
+    ]
+}
+------------------------------------------------------------
+
+----QPARAMS_04:
+
+{
+    "statements":[
+        {
+            "statement":"CYPHER planner=rule MATCH (n:Member{name:{memberName}}), (s:Song{name:{songName}}) MERGE (n)-[r:PLAYED]->(s) ON CREATE SET r.views = {param_0}, r.created = timestamp() ON MATCH SET r.views = r.views + 1",
+            "parameters":{
+                "memberName":"John",
+                "songName":"Song_1",
+                "param_0":1
+            }
+        },
+        {
+            "statement":"CYPHER planner=rule MATCH (n:Member{name:{memberName_1}}), (s:Song{name:{songName_1}}) MERGE (n)-[r:PLAYED]->(s) ON CREATE SET r.views = {param_0}, r.created = timestamp() ON MATCH SET r.views = r.views + 3",
+            "parameters":{
+                "memberName_1":"Angie",
+                "songName_1":"My Song",
+                "param_0":3
+            }
+        }
+    ]
+}
+------------------------------------------------------------
+
+----QPARAMS_05:
+
+{
+    "statements":[
+        {
+            "statement":"CYPHER planner=rule MATCH (n:Member{name:{memberName}}), (s:Song{name:{songName}}) MERGE (n)-[r:PLAYED]->(s) ON CREATE SET r.views = {param_0}, r.created = timestamp() ON MATCH SET r.views = r.views + 1",
+            "parameters":{
+                "memberName":"Johnny",
+                "songName":"Song 2",
+                "param_0":1
+            }
+        },
+        {
+            "statement":"CYPHER planner=rule MATCH (n:Member{name:{memberName_1}}), (s:Song{name:{songName_1}}) MERGE (n)-[r:PLAYED]->(s) ON CREATE SET r.views = {param_0}, r.created = timestamp() ON MATCH SET r.views = r.views + 3",
+            "parameters":{
+                "memberName_1":"Angelina",
+                "songName_1":"My Other Song",
+                "param_0":3
+            }
+        }
+    ]
+}
+------------------------------------------------------------
+
+----QPARAMS_06:
+
+{
+    "query":"CYPHER planner=rule MATCH (n:Member{name:{param_0}}), (s:Song{name:{param_1}}) MERGE (n)-[r:PLAYED]->(s) ON CREATE SET r.views = {param_2}, r.created = timestamp() ON MATCH SET r.views = r.views + 3",
+    "params":{
+        "param_0":"Herbert",
+        "param_1":"Herberts Song",
+        "param_2":5
+    }
+}
+------------------------------------------------------------

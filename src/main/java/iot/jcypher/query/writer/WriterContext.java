@@ -34,7 +34,7 @@ public class WriterContext {
 	IQueryParam currentParamOrSet;
 	// vs. using cypher endpoint
 	boolean useTransactionalEndpoint = false;
-	List<PreparedQuery> preparedQueries;
+	Object preparedQuery;
 	
 	// allows to specify a number of resultDataContents for
 	// JSON output from the REST API
@@ -93,5 +93,12 @@ public class WriterContext {
 
 	void setResultDataContents(List<String> resultDataContents) {
 		this.resultDataContents = resultDataContents;
+	}
+	
+	void doesHaveDSLParams() {
+		if (this.preparedQuery instanceof PreparedQuery)
+			((PreparedQuery)this.preparedQuery).setdSLParams();
+		else if (this.preparedQuery instanceof PreparedQueries)
+			((PreparedQueries)this.preparedQuery).setdSLParams();
 	}
 }

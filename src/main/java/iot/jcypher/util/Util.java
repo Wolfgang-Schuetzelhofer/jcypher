@@ -22,6 +22,7 @@ import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.writer.CypherWriter;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.JSONWriter;
+import iot.jcypher.query.writer.PreparedQueries;
 import iot.jcypher.query.writer.PreparedQuery;
 import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
@@ -230,7 +231,18 @@ public class Util {
 		return JSONWriter.toPreparedQuery(query, context);
 	}
 	
+	public static PreparedQueries toPreparedQueries(List<JcQuery> queries, Format pretty) {
+		WriterContext context = new WriterContext();
+		//ContextAccess.setUseTransactionalEndpoint(true, context);
+		context.cypherFormat = pretty;
+		return JSONWriter.toPreparedQueries(queries, context);
+	}
+	
 	public static String toJSON(PreparedQuery preparedQuery) {
 		return JSONWriter.toJSON(preparedQuery);
+	}
+	
+	public static String toJSON(PreparedQueries preparedQueries) {
+		return JSONWriter.toJSON(preparedQueries);
 	}
 }

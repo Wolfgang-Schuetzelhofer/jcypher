@@ -30,6 +30,7 @@ public class QueryParam implements IQueryParam {
 		QueryParam qp = new QueryParam();
 		if (value instanceof JcQueryParameter) {
 			qp.setKey(((JcQueryParameter)value).getName());
+			context.doesHaveDSLParams();
 		} else
 			qp.setKey(createNewParamKey(context));
 		qp.setValue(value);

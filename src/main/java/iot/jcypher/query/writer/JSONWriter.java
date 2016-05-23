@@ -16,9 +16,6 @@
 
 package iot.jcypher.query.writer;
 
-import iot.jcypher.query.JcQuery;
-import iot.jcypher.query.writer.PreparedQuery.PQContext;
-
 import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,30 +25,34 @@ import javax.json.Json;
 import javax.json.stream.JsonGenerator;
 import javax.json.stream.JsonGeneratorFactory;
 
+import iot.jcypher.query.JcQuery;
+import iot.jcypher.query.writer.PreparedQuery.PQContext;
+
 public class JSONWriter {
 
 	private static JsonGeneratorFactory prettyGeneratorFactory;
 	
 	public static void toJSON(List<JcQuery> queries, WriterContext context) {
 		List<Statement> statements = new ArrayList<Statement>(queries.size());
-		context.preparedQueries = new ArrayList<PreparedQuery>(queries.size());
+		PreparedQueries prepQs = new PreparedQueries();
+		context.preparedQuery = prepQs;
 		Format cf = context.cypherFormat;
 		context.cypherFormat = Format.NONE;
 		boolean useTxEndpoint = ContextAccess.useTransationalEndpoint(context);
 		// needed for multiple statements
 		ContextAccess.setUseTransactionalEndpoint(true, context);
 		boolean extract = QueryParam.isExtractParams(context);
-		PreparedQuery prepQ;
 		for (JcQuery query : queries) {
-			prepQ = new PreparedQuery();
-			context.preparedQueries.add(prepQ);
+			PreparedQuery prepQ = new PreparedQuery();
+			prepQs.add(prepQ);
 			PQContext pqContext = prepQ.getContext();
-			pqContext.cypherFormat = context.cypherFormat;
+			pqContext.cypherFormat = cf;
 			pqContext.extractParams = query.isExtractParams();
 			pqContext.useTransationalEndpoint = ContextAccess.useTransationalEndpoint(context);
 			pqContext.resultDataContents = ContextAccess.getResultDataContents(context);
 			
 			WriterContext ctxt = ContextAccess.cloneContext(context);
+			ctxt.preparedQuery = prepQs; // needed to mark if there are dynamic parameters
 			QueryParam.setExtractParams(query.isExtractParams(), ctxt);
 			CypherWriter.toCypherExpression(query, ctxt);
 			String cypher = ctxt.buffer.toString();
@@ -81,12 +82,12 @@ public class JSONWriter {
 		// reset to original
 		QueryParam.setExtractParams(extract, context);
 		ContextAccess.setUseTransactionalEndpoint(useTxEndpoint, context);
+		prepQs.setJson(context.buffer.toString());
 	}
 	
 	public static void toJSON(JcQuery query, WriterContext context) {
 		PreparedQuery prepQ = new PreparedQuery();
-		context.preparedQueries = new ArrayList<PreparedQuery>();
-		context.preparedQueries.add(prepQ);
+		context.preparedQuery = prepQ;
 		PQContext pqContext = prepQ.getContext();
 		pqContext.cypherFormat = context.cypherFormat;
 		context.cypherFormat = Format.NONE;
@@ -129,38 +130,91 @@ public class JSONWriter {
 	
 	public static PreparedQuery toPreparedQuery(JcQuery query, WriterContext context) {
 		toJSON(query, context);
-		return context.preparedQueries.get(0);
+		return (PreparedQuery) context.preparedQuery;
+	}
+	
+	public static PreparedQueries toPreparedQueries(List<JcQuery> queries, WriterContext context) {
+		toJSON(queries, context);
+		return (PreparedQueries) context.preparedQuery;
 	}
 	
 	public static String toJSON(PreparedQuery preparedQuery) {
-		WriterContext context = new WriterContext();
-		PQContext pqContext = preparedQuery.getContext();
-		QueryParam.setExtractParams(pqContext.extractParams, context);
-		context.cypherFormat = pqContext.cypherFormat;
-		String cypher = preparedQuery.getCypher();
-		
-		StringWriter sw = new StringWriter();
-		JsonGenerator generator;
-		if (context.cypherFormat != Format.NONE) {
-			JsonGeneratorFactory gf = getPrettyGeneratorFactory();
-			generator = gf.createGenerator(sw);
+		if (preparedQuery.hasdSLParams()) { // parameters part of json must be recreated
+			WriterContext context = new WriterContext();
+			PQContext pqContext = preparedQuery.getContext();
+			QueryParam.setExtractParams(pqContext.extractParams, context);
+			context.cypherFormat = pqContext.cypherFormat;
+			String cypher = preparedQuery.getCypher();
+			
+			StringWriter sw = new StringWriter();
+			JsonGenerator generator;
+			if (context.cypherFormat != Format.NONE) {
+				JsonGeneratorFactory gf = getPrettyGeneratorFactory();
+				generator = gf.createGenerator(sw);
+			} else
+				generator = Json.createGenerator(sw);
+			
+			ContextAccess.setUseTransactionalEndpoint(pqContext.useTransationalEndpoint, context);
+			ContextAccess.setResultDataContents(context, pqContext.resultDataContents);
+			context.queryParams = pqContext.queryParams;
+			
+			generator.writeStartObject();
+			if (pqContext.useTransationalEndpoint)
+				writeStatements(new Statement[] {new Statement(context, cypher)}, generator);
+			else
+				writeQuery("query", cypher, context, generator);
+			generator.writeEnd();
+	
+			generator.flush();
+			context.buffer.append(sw.getBuffer());
+			return context.buffer.toString();
 		} else
-			generator = Json.createGenerator(sw);
-		
-		ContextAccess.setUseTransactionalEndpoint(pqContext.useTransationalEndpoint, context);
-		ContextAccess.setResultDataContents(context, pqContext.resultDataContents);
-		context.queryParams = pqContext.queryParams;
-		
-		generator.writeStartObject();
-		if (pqContext.useTransationalEndpoint)
-			writeStatements(new Statement[] {new Statement(context, cypher)}, generator);
-		else
-			writeQuery("query", cypher, context, generator);
-		generator.writeEnd();
-
-		generator.flush();
-		context.buffer.append(sw.getBuffer());
-		return context.buffer.toString();
+			return preparedQuery.getJson();
+	}
+	
+	public static String toJSON(PreparedQueries preparedQueries) {
+		if (preparedQueries.hasdSLParams()) { // parameters part of json must be recreated
+			WriterContext context = new WriterContext();
+			List<PreparedQuery> prepQs = preparedQueries.getPreparedQueries();
+			if (prepQs.isEmpty())
+				return new String();
+			PreparedQuery prepQ = prepQs.get(0);
+			PQContext pqContext = prepQ.getContext();
+			List<Statement> statements = new ArrayList<Statement>(prepQs.size());
+			Format cf = pqContext.cypherFormat;
+			pqContext.fillContext(context);
+			context.cypherFormat = Format.NONE;
+			// needed for multiple statements
+			ContextAccess.setUseTransactionalEndpoint(true, context);
+			for (PreparedQuery pq : prepQs) {
+				WriterContext ctxt = new WriterContext();
+				PQContext pqCtxt = pq.getContext();
+				pqCtxt.fillContext(ctxt);
+				
+				String cypher = pq.getCypher();
+				statements.add(new Statement(ctxt, cypher));
+			}
+			context.cypherFormat = cf;
+			
+			StringWriter sw = new StringWriter();
+			JsonGenerator generator;
+			if (context.cypherFormat != Format.NONE) {
+				JsonGeneratorFactory gf = getPrettyGeneratorFactory();
+				generator = gf.createGenerator(sw);
+			} else
+				generator = Json.createGenerator(sw);
+			
+			generator.writeStartObject();
+			Statement[] statementsArray = statements.toArray(new Statement[statements.size()]);
+			writeStatements(statementsArray, generator);
+			generator.writeEnd();
+	
+			generator.flush();
+			context.buffer.append(sw.getBuffer());
+			preparedQueries.setJson(context.buffer.toString());
+			return preparedQueries.getJson();
+		} else
+			return preparedQueries.getJson();
 	}
 	
 	private static void writeStatements(Statement[] statements, JsonGenerator generator) {
