@@ -1217,8 +1217,10 @@ public class CypherWriter {
 				pval = pval == null ? "NOT_SET" : pval;
 				PrimitiveCypherWriter.writePrimitiveValue(pval, context, sb);
 			} else {
+				String str = val.toString();
+				String escaped = str.replace("\\", "\\\\").replace("'", "\\'");
 				sb.append('\'');
-				sb.append(val.toString());
+				sb.append(escaped);
 				sb.append('\'');
 			}
 		}
