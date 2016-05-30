@@ -1,6 +1,12 @@
 Release Notes
 =======
 
+## 3.4.0
+**New**
+
+- Store / retrieve Domain Queries to / from the graph db.
+- JcQueryParameter to be used with Query DSL expressions.
+
 ## 3.4.0-M01
 **New**
 
