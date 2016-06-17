@@ -20,6 +20,7 @@ public class QueryMemento {
 
 	private String queryJSON;
 	private String queryJava;
+	private String description;
 	
 	QueryMemento(String qJava, String qJSON) {
 		super();
@@ -31,5 +32,11 @@ public class QueryMemento {
 	}
 	public String getQueryJava() {
 		return queryJava;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
 	}
 }
