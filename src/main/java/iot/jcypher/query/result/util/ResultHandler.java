@@ -246,8 +246,7 @@ public class ResultHandler {
 						getRelationsById().put(ei.id, rRelation);
 					}
 				}
-				if (!rRelations.contains(rRelation))
-					rRelations.add(rRelation);
+				rRelations.add(rRelation);
 			}
 			getRelationColumns().put(colKey, rRelations);
 			getUnresolvedColumns().remove(colKey);
