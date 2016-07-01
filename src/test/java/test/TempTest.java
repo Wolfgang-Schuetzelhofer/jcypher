@@ -38,6 +38,7 @@ import iot.jcypher.graph.GrRelation;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
+import iot.jcypher.query.factories.JC;
 import iot.jcypher.query.factories.clause.CASE;
 import iot.jcypher.query.factories.clause.CREATE;
 import iot.jcypher.query.factories.clause.CREATE_UNIQUE;
@@ -76,6 +77,19 @@ public class TempTest extends AbstractTestSuite {
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	
+	@Test
+	public void test_12() {
+		JcNode a = new JcNode("a");
+		JcNode score = new JcNode("score");
+		IClause[] clauses = new IClause[] {
+				WITH.value(JC.coalesce(a.property("hairColor"), a.property("eyes")).asNumber().plus(
+						JC.coalesce(a.property("hairColor"), a.property("eyes")).asNumber())).AS(score),
+				RETURN.value(JC.coalesce(a.property("hairColor"), a.property("eyes")))
+		};
+		String result = print(clauses, Format.PRETTY_1);
+		return;
+	}
 	
 	@Test
 	public void test_11() {

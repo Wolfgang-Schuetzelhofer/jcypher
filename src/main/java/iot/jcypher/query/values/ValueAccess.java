@@ -28,7 +28,7 @@ public class ValueAccess {
 				new FunctionInstance(FUNCTION.Common.TIMESTAMP));
 	}
 	
-	public static ValueElement coalesce(ValueElement... expression) {
+	public static JcValue coalesce(ValueElement... expression) {
 		ValueElement next = null;
 		ValueElement last = null;
 		boolean init = true;
@@ -47,7 +47,7 @@ public class ValueAccess {
 				last = expression[i];
 			next = expression[i];
 		}
-		return new ValueElement(last,
+		return new JcValue(null, last,
 				new FunctionInstance(FUNCTION.Common.COALESCE, expression.length));
 	}
 	
