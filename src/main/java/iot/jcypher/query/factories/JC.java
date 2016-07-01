@@ -16,6 +16,7 @@
 
 package iot.jcypher.query.factories;
 
+import iot.jcypher.query.values.JcValue;
 import iot.jcypher.query.values.ValueAccess;
 import iot.jcypher.query.values.ValueElement;
 
@@ -38,7 +39,7 @@ public class JC {
 	 * <div color='red' style="font-size:18px;color:red"><i>return the first non-NULL value in the list of expressions</i></div>
 	 * <br/>
 	 */
-	public static ValueElement coalesce(ValueElement... expression) {
+	public static JcValue coalesce(ValueElement... expression) {
 		return ValueAccess.coalesce(expression);
 	}
 }

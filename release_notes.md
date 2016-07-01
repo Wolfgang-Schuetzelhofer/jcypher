@@ -1,6 +1,10 @@
 Release Notes
 =======
 
+## 3.4.1
+**Fixed**
+- JC.coalesce(...) now returns a JcValue to be applicable in RETURN and WITH clauses.
+
 ## 3.4.0
 **New**
 
