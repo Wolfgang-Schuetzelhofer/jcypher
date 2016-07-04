@@ -168,16 +168,17 @@ public class ResultHandler {
 	public List<GrNode> getNodes(JcNode node) {
 		String colKey =  ValueAccess.getName(node);
 		List<GrNode> nds = getNodes(colKey);
-		nds = filterRemovedItems(nds);
+		nds = filterRemovedAndNullItems(nds);
 		return Collections.unmodifiableList(nds);
 	}
 	
-	private <T extends PersistableItem> List<T> filterRemovedItems(List<T> items) {
+	private <T extends PersistableItem> List<T> filterRemovedAndNullItems(List<T> items) {
 		ArrayList<T> rItems = new ArrayList<T>();
 		for (T item : items) {
-			if (item == null)
-				rItems.add(item);
-			else if (GrAccess.getState(item) != SyncState.REMOVED)
+			if (item == null) {
+				if (includeNullValues.get())
+					rItems.add(item);
+			} else if (GrAccess.getState(item) != SyncState.REMOVED)
 				rItems.add(item);
 		}
 		return rItems;
@@ -217,7 +218,7 @@ public class ResultHandler {
 	public List<GrRelation> getRelations(JcRelation relation) {
 		String colKey =  ValueAccess.getName(relation);
 		List<GrRelation> rels = getRelations(colKey);
-		rels = filterRemovedItems(rels);
+		rels = filterRemovedAndNullItems(rels);
 		return Collections.unmodifiableList(rels);
 	}
 	

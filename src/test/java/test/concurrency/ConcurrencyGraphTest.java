@@ -1132,7 +1132,7 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 		//String qStr = print(query, Format.PRETTY_1);
 		JcQueryResult result = dba.execute(query);
 		List<GrNode> ares = result.resultOf(a);
-		return ares.size() == 1 && ares.get(0) == null;
+		return (ares.size() == 0) || (ares.size() == 1 && ares.get(0) == null);
 	}
 	
 	static boolean testDeletedRelation(long relId, IDBAccess dba) {

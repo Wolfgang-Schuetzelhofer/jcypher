@@ -1171,7 +1171,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						Iterator<Entry<Integer, QueryNode2ResultNode>> nit = context.nodeIndexMap.entrySet().iterator();
 						while (nit.hasNext()) {
 							Entry<Integer, QueryNode2ResultNode> entry = nit.next();
-							GrNode res = result.resultOf(entry.getValue().queryNode).get(0);
+							List<GrNode> nds = result.resultOf(entry.getValue().queryNode);
+							GrNode res = null;
+							if (nds.size() > 0)
+								res = nds.get(0);
 							if (this.lockingStrategy == Locking.OPTIMISTIC && res == null) // element has been deleted
 								context.lockingErrors = true;
 							entry.getValue().resultNode = res;
@@ -1181,7 +1184,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 						Iterator<Entry<Integer, QueryRelation2ResultRelation>> rit = context.relationIndexMap.entrySet().iterator();
 						while (rit.hasNext()) {
 							Entry<Integer, QueryRelation2ResultRelation> entry = rit.next();
-							GrRelation res = result.resultOf(entry.getValue().queryRelation).get(0);
+							List<GrRelation> rels = result.resultOf(entry.getValue().queryRelation);
+							GrRelation res = null;
+							if (rels.size() > 0)
+								res = rels.get(0);
 							if (this.lockingStrategy == Locking.OPTIMISTIC && res == null) // element has been deleted
 								context.lockingErrors = true;
 							entry.getValue().resultRelation = res;
