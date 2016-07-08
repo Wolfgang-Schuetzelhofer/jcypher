@@ -86,6 +86,7 @@ import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.transaction.ITransaction;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
+import iot.jcypher.util.ResultSettings;
 import iot.jcypher.util.Util;
 
 public class ResultHandler {
@@ -176,7 +177,7 @@ public class ResultHandler {
 		ArrayList<T> rItems = new ArrayList<T>();
 		for (T item : items) {
 			if (item == null) {
-				if (includeNullValues.get())
+				if (includeNullValues.get() || ResultSettings.includeNullValuesAndDuplicates)
 					rItems.add(item);
 			} else if (GrAccess.getState(item) != SyncState.REMOVED)
 				rItems.add(item);
@@ -247,7 +248,7 @@ public class ResultHandler {
 						getRelationsById().put(ei.id, rRelation);
 					}
 				}
-				if (!rRelations.contains(rRelation))
+				if (ResultSettings.includeNullValuesAndDuplicates || !rRelations.contains(rRelation))
 					rRelations.add(rRelation);
 			}
 			getRelationColumns().put(colKey, rRelations);
