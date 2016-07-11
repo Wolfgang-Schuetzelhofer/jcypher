@@ -37,7 +37,19 @@ public class Relation extends Element<Relation> {
 		getPatternRelation().getTypes().add(type);
 		return this;
 	}
-	
+
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>set a type to match or create relations with that type</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>using enum type</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. MATCH.node(n).relation(r).<b>type(MyRelations.WORKS_AT)</b></i></div>
+	 * <br/>
+	 */
+	public Relation type(Enum<?> type) {
+		getPatternRelation().getTypes().add(type.name());
+		return this;
+	}
+
 	/**
 	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
 	 * <div color='red' style="font-size:18px;color:red"><i>match or create (depends on the clause) nodes connected to the relation</i></div>

@@ -51,6 +51,7 @@ import iot.jcypher.query.factories.clause.MERGE;
 import iot.jcypher.query.factories.clause.NATIVE;
 import iot.jcypher.query.factories.clause.ON_CREATE;
 import iot.jcypher.query.factories.clause.ON_MATCH;
+import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.WHEN;
 import iot.jcypher.query.factories.clause.WHERE;
@@ -79,15 +80,71 @@ public class TempTest extends AbstractTestSuite {
 	private static List<Object> storedDomainObjects;
 	
 	@Test
-	public void test_12() {
+	public void test_13() {
+		IClause[] clauses;
+		JcQuery q;
+		JcQueryResult result;
+		String cypher;
+		// add some sample data
+		JcNode t1 = new JcNode("t1");
+		JcNode t2 = new JcNode("t2");
+		JcNode t3 = new JcNode("t3");
+		JcNode a1 = new JcNode("a1");
+		JcNode a2 = new JcNode("a2");
+		JcNode a3 = new JcNode("a3");
+//		clauses = new IClause[]{
+//				CREATE.node(t1).label("Text"),
+//				CREATE.node(t2).label("Text"),
+//				CREATE.node(t3).label("Text"),
+//				CREATE.node(a1).label("Audio"),
+//				CREATE.node(a2).label("Audio"),
+//				CREATE.node(a3).label("Audio"),
+//		};
+//		q = new JcQuery();
+//		q.setClauses(clauses);
+//		cypher = print(clauses, Format.PRETTY_1);
+//		result = dbAccess.execute(q);
+		
+		JcNode n = new JcNode("n");
 		JcNode a = new JcNode("a");
-		JcNode score = new JcNode("score");
+		JcRelation r = new JcRelation("r");
+		clauses = new IClause[]{
+				MATCH.node(n).label("Text"),
+				OPTIONAL_MATCH.node(n).relation(r).type("hasAudio").node(a).label("Audio"),
+				RETURN.value(n),
+				RETURN.value(r),
+				RETURN.value(a)
+		};
+		q = new JcQuery();
+		q.setClauses(clauses);
+		cypher = print(clauses, Format.PRETTY_1);
+		result = dbAccess.execute(q);
+		
+		List<GrNode> nres = result.resultOf(n);
+		List<GrRelation> rres = result.resultOf(r);
+		List<GrNode> ares = result.resultOf(a);
+		
+		return;
+	}
+	
+	@Test
+	public void test_12() {
+
+		JcNode score = new JcNode("Score");
+		JcNumber num_0 = new JcNumber(0);
+		JcNode r = new JcNode("r");
 		IClause[] clauses = new IClause[] {
-				WITH.value(JC.coalesce(a.property("hairColor"), a.property("eyes")).asNumber().plus(
-						JC.coalesce(a.property("hairColor"), a.property("eyes")).asNumber())).AS(score),
-				RETURN.value(JC.coalesce(a.property("hairColor"), a.property("eyes")))
+				WITH.value(JC.coalesce(r.property("nearbyTeams"), num_0).asNumber().plus(
+						JC.coalesce(r.property("nearbyTeamsinNetworks"), num_0).asNumber().plus(
+								JC.coalesce(r.property("daysActive"), num_0).asNumber().plus(
+										JC.coalesce(r.property("parnersLimit"), num_0).asNumber().plus(
+												JC.coalesce(r.property("sameCity"), num_0).asNumber().plus(
+														JC.coalesce(r.property("sameCountry"), num_0).asNumber().plus(
+																JC.coalesce(r.property("sameLanguage"), num_0).asNumber().plus(
+																		JC.coalesce(r.property("sameTags"), num_0).asNumber())))))))).AS(score),
 		};
 		String result = print(clauses, Format.PRETTY_1);
+		
 		return;
 	}
 	
@@ -727,11 +784,11 @@ public class TempTest extends AbstractTestSuite {
 		Population population = new Population();
 		storedDomainObjects = population.createPopulation();
 		
-		List<JcError> errors = dbAccess.clearDatabase();
-		if (errors.size() > 0) {
-			printErrors(errors);
-			throw new JcResultException(errors);
-		}
+//		List<JcError> errors = dbAccess.clearDatabase();
+//		if (errors.size() > 0) {
+//			printErrors(errors);
+//			throw new JcResultException(errors);
+//		}
 //		IDomainAccess da = DomainAccessFactory.createDomainAccess(dbAccess, domainName);
 //		errors = da.store(storedDomainObjects);
 //		if (errors.size() > 0) {

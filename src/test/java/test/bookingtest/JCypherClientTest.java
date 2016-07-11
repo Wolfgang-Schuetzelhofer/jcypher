@@ -1,6 +1,8 @@
 package test.bookingtest;
 
 import static org.junit.Assert.assertEquals;
+
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
@@ -30,6 +32,7 @@ public class JCypherClientTest {
 		
 		jCypherClient = new JCypherClient(dbAccess);
 		List<GrRelation> bookingsRelated = jCypherClient.getBookingsRelated(1L, 6);
+		bookingsRelated = removeMultiples(bookingsRelated); // needed when duplicates are included
 		assertEquals(1, bookingsRelated.size());
 		
 		GrRelation br = bookingsRelated.get(0);
@@ -43,6 +46,18 @@ public class JCypherClientTest {
 		assertEquals("CONTRACT", statVal);
 		
 		return;
+	}
+	
+	private List<GrRelation> removeMultiples(List<GrRelation> list) {
+		List<GrRelation> ret = new ArrayList<GrRelation>();
+		List<Long> ids = new ArrayList<Long>();
+		for (GrRelation r : list) {
+			if (!ids.contains(Long.valueOf(r.getId()))) {
+				ret.add(r);
+				ids.add(Long.valueOf(r.getId()));
+			}
+		}
+		return ret;
 	}
 	
 	@BeforeClass

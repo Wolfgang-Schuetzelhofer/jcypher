@@ -86,6 +86,7 @@ import iot.jcypher.query.writer.Format;
 import iot.jcypher.query.writer.WriterContext;
 import iot.jcypher.transaction.ITransaction;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
+import iot.jcypher.util.ResultSettings;
 import iot.jcypher.util.Util;
 
 public class ResultHandler {
@@ -168,16 +169,17 @@ public class ResultHandler {
 	public List<GrNode> getNodes(JcNode node) {
 		String colKey =  ValueAccess.getName(node);
 		List<GrNode> nds = getNodes(colKey);
-		nds = filterRemovedItems(nds);
+		nds = filterRemovedAndNullItems(nds);
 		return Collections.unmodifiableList(nds);
 	}
 	
-	private <T extends PersistableItem> List<T> filterRemovedItems(List<T> items) {
+	private <T extends PersistableItem> List<T> filterRemovedAndNullItems(List<T> items) {
 		ArrayList<T> rItems = new ArrayList<T>();
 		for (T item : items) {
-			if (item == null)
-				rItems.add(item);
-			else if (GrAccess.getState(item) != SyncState.REMOVED)
+			if (item == null) {
+				if (includeNullValues.get() || ResultSettings.includeNullValuesAndDuplicates)
+					rItems.add(item);
+			} else if (GrAccess.getState(item) != SyncState.REMOVED)
 				rItems.add(item);
 		}
 		return rItems;
@@ -206,7 +208,8 @@ public class ResultHandler {
 						getNodesById().put(ei.id, rNode);
 					}
 				}
-				rNodes.add(rNode);
+				if (ResultSettings.includeNullValuesAndDuplicates || !rNodes.contains(rNode))
+					rNodes.add(rNode);
 			}
 			getNodeColumns().put(colKey, rNodes);
 			getUnresolvedColumns().remove(colKey);
@@ -217,7 +220,7 @@ public class ResultHandler {
 	public List<GrRelation> getRelations(JcRelation relation) {
 		String colKey =  ValueAccess.getName(relation);
 		List<GrRelation> rels = getRelations(colKey);
-		rels = filterRemovedItems(rels);
+		rels = filterRemovedAndNullItems(rels);
 		return Collections.unmodifiableList(rels);
 	}
 	
@@ -246,7 +249,8 @@ public class ResultHandler {
 						getRelationsById().put(ei.id, rRelation);
 					}
 				}
-				rRelations.add(rRelation);
+				if (ResultSettings.includeNullValuesAndDuplicates || !rRelations.contains(rRelation))
+					rRelations.add(rRelation);
 			}
 			getRelationColumns().put(colKey, rRelations);
 			getUnresolvedColumns().remove(colKey);
@@ -304,7 +308,7 @@ public class ResultHandler {
 					GrPath rPath = GrAccess.createPath(this, new GrId(startId), new GrId(endId), relIds, rowIdx);
 					rPaths.add(rPath);
 				}
-				else {
+				else if (ResultSettings.includeNullValuesAndDuplicates) {
 					rPaths.add(null);
 				}
 			}
