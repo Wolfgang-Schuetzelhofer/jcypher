@@ -268,37 +268,45 @@ public class ResultHandler {
 			while(it.hasNext()) { // iterate over rows
 				rowIdx++;
 				JsonObject dataObject = (JsonObject) it.next();
-				JsonObject pathObject = getPathObject(dataObject, colIdx);
-				String str = pathObject.getString("start");
-				long startId = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
-				str = pathObject.getString("end");
-				long endId = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
-				JsonArray rels = pathObject.getJsonArray("relationships");
-				JsonArray nodes = null;
-				List<GrId> relIds = new ArrayList<GrId>();
-				int sz = rels.size();
-				long sid;
-				long eid = startId;
-				for (int i = 0; i < sz; i++) {
-					String rel = rels.getString(i);
-					long rid = Long.parseLong(rel.substring(rel.lastIndexOf('/') + 1));
-					GrRelation rRelation = getRelationsById().get(rid);
-					if (rRelation == null) {
-						if (nodes == null)
-							nodes = pathObject.getJsonArray("nodes");
-						sid = eid;
-						str = nodes.getString(i + 1);
-						eid = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
-						rRelation = GrAccess.createRelation(this, new GrId(rid),
-								new GrId(sid), new GrId(eid), rowIdx);
-						GrAccess.setState(rRelation, SyncState.SYNC);
-						GrAccess.addChangeListener(getNodeRelationListener(), rRelation);
-						getRelationsById().put(rid, rRelation);
+				JsonArray restArray = getRestArray(dataObject);
+				JsonValue restValue = getRestValue(restArray, colIdx);
+				
+				if (restValue.getValueType() != ValueType.NULL) {
+					JsonObject pathObject = getPathObject(dataObject, colIdx);
+					String str = pathObject.getString("start");
+					long startId = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
+					str = pathObject.getString("end");
+					long endId = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
+					JsonArray rels = pathObject.getJsonArray("relationships");
+					JsonArray nodes = null;
+					List<GrId> relIds = new ArrayList<GrId>();
+					int sz = rels.size();
+					long sid;
+					long eid = startId;
+					for (int i = 0; i < sz; i++) {
+						String rel = rels.getString(i);
+						long rid = Long.parseLong(rel.substring(rel.lastIndexOf('/') + 1));
+						GrRelation rRelation = getRelationsById().get(rid);
+						if (rRelation == null) {
+							if (nodes == null)
+								nodes = pathObject.getJsonArray("nodes");
+							sid = eid;
+							str = nodes.getString(i + 1);
+							eid = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
+							rRelation = GrAccess.createRelation(this, new GrId(rid),
+									new GrId(sid), new GrId(eid), rowIdx);
+							GrAccess.setState(rRelation, SyncState.SYNC);
+							GrAccess.addChangeListener(getNodeRelationListener(), rRelation);
+							getRelationsById().put(rid, rRelation);
+						}
+						relIds.add(new GrId(rid));
 					}
-					relIds.add(new GrId(rid));
+					GrPath rPath = GrAccess.createPath(this, new GrId(startId), new GrId(endId), relIds, rowIdx);
+					rPaths.add(rPath);
 				}
-				GrPath rPath = GrAccess.createPath(this, new GrId(startId), new GrId(endId), relIds, rowIdx);
-				rPaths.add(rPath);
+				else {
+					rPaths.add(null);
+				}
 			}
 			getPathColumns().put(colKey, rPaths);
 		}
