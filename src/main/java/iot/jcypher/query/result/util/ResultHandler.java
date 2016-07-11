@@ -208,7 +208,8 @@ public class ResultHandler {
 						getNodesById().put(ei.id, rNode);
 					}
 				}
-				rNodes.add(rNode);
+				if (ResultSettings.includeNullValuesAndDuplicates || !rNodes.contains(rNode))
+					rNodes.add(rNode);
 			}
 			getNodeColumns().put(colKey, rNodes);
 			getUnresolvedColumns().remove(colKey);
