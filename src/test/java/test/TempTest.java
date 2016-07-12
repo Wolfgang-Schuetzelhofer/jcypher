@@ -34,6 +34,7 @@ import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.domainquery.internal.Settings;
 import iot.jcypher.graph.GrNode;
+import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrRelation;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
@@ -53,10 +54,12 @@ import iot.jcypher.query.factories.clause.ON_CREATE;
 import iot.jcypher.query.factories.clause.ON_MATCH;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
+import iot.jcypher.query.factories.clause.SEPARATE;
 import iot.jcypher.query.factories.clause.WHEN;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.factories.clause.WITH;
 import iot.jcypher.query.factories.xpression.C;
+import iot.jcypher.query.factories.xpression.X;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
@@ -80,11 +83,90 @@ public class TempTest extends AbstractTestSuite {
 	private static List<Object> storedDomainObjects;
 	
 	@Test
+	public void test_14() {
+		IClause[] clauses;
+		JcQuery q;
+		JcQueryResult result;
+		String cypher;
+		dbAccess.clearDatabase();
+		
+		// add some sample data
+		clauses = new IClause[]{
+				CREATE.node().label("Chapter").property("chapter").value("Chapter 1")
+					.relation().out().type("hasTexts")
+					.node().label("Text").property("Text").value("Text 1")
+					.relation().out().type("hasAudio")
+					.node().label("Audio").property("Audio").value("Audio 1"),
+				CREATE.node().label("Chapter").property("chapter").value("Chapter 2")
+					.relation().out().type("hasTexts")
+					.node().label("Text").property("Text").value("Text 2")
+					.relation().out().type("hasAudio")
+					.node().label("Audio").property("Audio").value("Audio 2"),
+				CREATE.node().label("Chapter").property("chapter").value("Chapter 3")
+					.relation().out().type("hasTexts")
+					.node().label("Text").property("Text").value("Text 3"),
+		};
+		q = new JcQuery();
+		q.setClauses(clauses);
+		cypher = print(clauses, Format.PRETTY_1);
+		result = dbAccess.execute(q);
+		
+		// two queries in a single request
+		JcPath p1 = new JcPath("p1");
+		JcPath p2 = new JcPath("p2");
+		JcNode n1 = new JcNode("n1");
+		q = new JcQuery();
+		q.setClauses(new IClause[]{
+				MATCH.path(p1).node().label("Chapter")
+					.relation().type("hasTexts").out()
+					.node().label("Text")
+					.relation().type("hasAudio").out()
+					.node().label("Audio"),
+				RETURN.value(p1)
+			});
+		JcQuery q2 = new JcQuery();
+		q2.setClauses(new IClause[]{
+				MATCH.path(p2).node().label("Chapter")
+					.relation().type("hasTexts").out()
+					.node(n1).label("Text"),
+				// make sure only paths with no attached Audio nodes are returned
+				WHERE.NOT().existsPattern(X.node(n1).relation().type("hasAudio").out().node().label("Audio")),
+				RETURN.value(p2)
+			});
+		List<JcQuery> queries = new ArrayList<JcQuery>();
+		queries.add(q);
+		queries.add(q2);
+		cypher = print(q, Format.PRETTY_1);
+		String cypher2 = print(q2, Format.PRETTY_1);
+		List<JcQueryResult> results = dbAccess.execute(queries);
+		
+		List<GrPath> p1res = results.get(0).resultOf(p1);
+		int idx = 0;
+		System.out.println("P1---------------------------");
+		for (GrPath p : p1res) {
+			System.out.println("Length: " + p.getLength());
+			System.out.println("Startnode: " + p.getStartNode().getProperty("chapter").getValue().toString());
+			idx++;
+		}
+		List<GrPath> p2res = results.get(1).resultOf(p2);
+		idx = 0;
+		System.out.println("P2---------------------------");
+		for (GrPath p : p2res) {
+			System.out.println("Length: " + p.getLength());
+			System.out.println("Startnode: " + p.getStartNode().getProperty("chapter").getValue().toString());
+			idx++;
+		}
+		
+		return;
+	}
+	
+	@Test
 	public void test_13() {
 		IClause[] clauses;
 		JcQuery q;
 		JcQueryResult result;
 		String cypher;
+//		dbAccess.clearDatabase();
 		// add some sample data
 		JcNode t1 = new JcNode("t1");
 		JcNode t2 = new JcNode("t2");
@@ -100,6 +182,20 @@ public class TempTest extends AbstractTestSuite {
 //				CREATE.node(a2).label("Audio"),
 //				CREATE.node(a3).label("Audio"),
 //		};
+		
+//		clauses = new IClause[]{
+//				CREATE.node().label("Text").property("text").value("Text 1")
+//					.relation().out().type("hasAudio")
+//					.node().label("Audio").property("Audio").value("Audio 1")
+//					.relation().out().type("interpretedBy")
+//					.node(t1).label("Artist").property("name").value("John Doe"),
+//				CREATE.node().label("Text").property("text").value("Text 2")
+//					.relation().out().type("hasAudio")
+//					.node().label("Audio").property("Audio").value("Audio 2")
+//					.relation().out().type("interpretedBy")
+//					.node(t2).label("Artist").property("name").value("Patty Smith"),
+//				CREATE.node(t1).relation().out().type("knows").node(t2)
+//		};
 //		q = new JcQuery();
 //		q.setClauses(clauses);
 //		cypher = print(clauses, Format.PRETTY_1);
@@ -108,9 +204,18 @@ public class TempTest extends AbstractTestSuite {
 		JcNode n = new JcNode("n");
 		JcNode a = new JcNode("a");
 		JcRelation r = new JcRelation("r");
+//		clauses = new IClause[]{
+//				MATCH.node(n).label("Text"),
+//				OPTIONAL_MATCH.node(n).relation(r).type("hasAudio").node(a).label("Audio"),
+//				RETURN.value(n),
+//				RETURN.value(r),
+//				RETURN.value(a)
+//		};
+		JcPath p = new JcPath("p");
 		clauses = new IClause[]{
-				MATCH.node(n).label("Text"),
-				OPTIONAL_MATCH.node(n).relation(r).type("hasAudio").node(a).label("Audio"),
+				MATCH.node(n).label("Text").property("text").value("Text 1"),
+				MATCH.path(p).node(n).relation(r).hopsUnbound().node(a),
+				RETURN.value(p),
 				RETURN.value(n),
 				RETURN.value(r),
 				RETURN.value(a)
@@ -120,9 +225,20 @@ public class TempTest extends AbstractTestSuite {
 		cypher = print(clauses, Format.PRETTY_1);
 		result = dbAccess.execute(q);
 		
+		List<GrPath> pres = result.resultOf(p);
 		List<GrNode> nres = result.resultOf(n);
 		List<GrRelation> rres = result.resultOf(r);
 		List<GrNode> ares = result.resultOf(a);
+		
+		int[] sizes = new int[]{pres.size(), nres.size(), rres.size(), ares.size()};
+		int[] pathLengths = new int[pres.size()];
+		int idx = 0;
+		for (GrPath pth : pres) {
+			pathLengths[idx] = pth.getRelations().size();
+			idx++;
+		}
+		
+		List<GrRelation> rels = pres.get(pres.size() - 1).getRelations();
 		
 		return;
 	}
