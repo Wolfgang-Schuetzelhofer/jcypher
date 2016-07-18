@@ -246,10 +246,15 @@ public class TempTest extends AbstractTestSuite {
 	@Test
 	public void test_12() {
 
+		JcNode user = new JcNode("u");
+		JcNode team = new JcNode("t");
+		JcRelation r = new JcRelation("r");
 		JcNode score = new JcNode("Score");
+		JcNode partupId = new JcNode("partupId");
 		JcNumber num_0 = new JcNumber(0);
-		JcNode r = new JcNode("r");
 		IClause[] clauses = new IClause[] {
+				MATCH.node(user).label("User").relation(r).type("RECOMMEND").node(team).label("Team"),
+				WHERE.valueOf(user.property("_id")).EQUALS("..."),
 				WITH.value(JC.coalesce(r.property("nearbyTeams"), num_0).asNumber().plus(
 						JC.coalesce(r.property("nearbyTeamsinNetworks"), num_0).asNumber().plus(
 								JC.coalesce(r.property("daysActive"), num_0).asNumber().plus(
@@ -258,6 +263,9 @@ public class TempTest extends AbstractTestSuite {
 														JC.coalesce(r.property("sameCountry"), num_0).asNumber().plus(
 																JC.coalesce(r.property("sameLanguage"), num_0).asNumber().plus(
 																		JC.coalesce(r.property("sameTags"), num_0).asNumber())))))))).AS(score),
+				WITH.value(team.property("_id")).AS(partupId),
+				RETURN.value(score),
+				RETURN.value(partupId)
 		};
 		String result = print(clauses, Format.PRETTY_1);
 		
