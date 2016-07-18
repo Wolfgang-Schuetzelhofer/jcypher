@@ -59,6 +59,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
+import test.DBAccessSettings;
 import test.domainmapping.ambiguous.Broker;
 import test.domainmapping.ambiguous.District;
 import test.domainmapping.ambiguous.DistrictAddress;
@@ -89,14 +90,7 @@ public class DomainMappingTest extends AbstractTestSuite{
 	@BeforeClass
 	public static void before() {
 		domainName = "TEST-DOMAIN";
-		Properties props = new Properties();
-		
-		// properties for remote access and for embedded access
-		// (not needed for in memory access)
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
-		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessSettings.createDBAccess();
 	}
 	
 	@AfterClass

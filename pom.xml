@@ -109,8 +109,8 @@
 				<artifactId>maven-compiler-plugin</artifactId>
 				<version>3.1</version>
 				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
+					<source>1.8</source>
+					<target>1.8</target>
 					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
@@ -142,19 +142,24 @@
 		<dependency><!-- needed for embedded and in_memory database access -->
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j</artifactId>
-			<version>2.3.2</version>
+			<version>3.0.3</version>
 		</dependency>
 		<dependency><!-- needed for in memory database access -->
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j-kernel</artifactId>
 			<type>test-jar</type>
-			<version>2.3.2</version>
+			<version>3.0.3</version>
 		</dependency>
 		<dependency><!-- needed for embedded and in_memory database access -->
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j-io</artifactId>
-			<version>2.3.2</version>
+			<version>3.0.3</version>
 			<type>test-jar</type>
+		</dependency>
+		<dependency><!-- to use the BOLT protocol. Since Neo4J 3.0 -->
+			<groupId>org.neo4j.driver</groupId>
+			<artifactId>neo4j-java-driver</artifactId>
+			<version>1.0.4</version>
 		</dependency>
 		<dependency>
 			<groupId>org.javassist</groupId>

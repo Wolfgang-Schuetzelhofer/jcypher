@@ -50,14 +50,7 @@ public class DBAccessTest extends AbstractTestSuite {
 	
 	@BeforeClass
 	public static void before() {
-		Properties props = new Properties();
-		
-		// properties for remote access and for embedded access
-		// (not needed for in memory access)
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
-		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessSettings.createDBAccess();
 		
 		List<JcError> errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {

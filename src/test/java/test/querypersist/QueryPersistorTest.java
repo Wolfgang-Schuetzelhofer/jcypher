@@ -56,6 +56,7 @@ import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
 import test.AbstractTestSuite;
+import test.DBAccessSettings;
 import test.domainquery.Population;
 import test.domainquery.model.Address;
 import test.domainquery.model.Area;
@@ -309,15 +310,7 @@ public class QueryPersistorTest extends AbstractTestSuite {
 	@BeforeClass
 	public static void before() {
 		domainName = "QTEST-DOMAIN";
-		Properties props = new Properties();
-		
-		// properties for remote access and for embedded access
-		// (not needed for in memory access)
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
-		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
-//		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
+		dbAccess = DBAccessSettings.createDBAccess();
 		
 		// init db
 		population = new Population();

@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2015 IoT-Solutions e.U.
+ * Copyright (c) 2015-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -54,6 +54,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
+import test.DBAccessSettings;
 import test.domainquery.Population;
 import test.domainquery.model.Person;
 import test.domainquery.model.PointOfContact;
@@ -1012,15 +1013,8 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 	@BeforeClass
 	public static void before() {
 		domainName = "QTEST-DOMAIN";
-		Properties props = new Properties();
 		
-		// properties for remote access and for embedded access
-		// (not needed for in memory access)
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
-		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
-//		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
+		dbAccess = DBAccessSettings.createDBAccess();
 		
 		// init db
 		Population population = new Population();

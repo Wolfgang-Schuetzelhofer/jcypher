@@ -52,6 +52,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
+import test.DBAccessSettings;
 import test.domainquery.model.AbstractArea;
 import test.domainquery.model.Address;
 import test.domainquery.model.Area;
@@ -80,15 +81,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 	public static void before() {
 		QueryRecorder.blockRecording.set(Boolean.TRUE);
 		domainName = "QTEST-DOMAIN";
-		Properties props = new Properties();
-		
-		// properties for remote access and for embedded access
-		// (not needed for in memory access)
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
-		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
-//		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
+		dbAccess = DBAccessSettings.createDBAccess();
 		
 		// init db
 		Population population = new Population();

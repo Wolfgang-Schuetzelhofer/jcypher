@@ -41,6 +41,7 @@ import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.QueriesPrintObserver.ContentToObserve;
 import iot.jcypher.util.QueriesPrintObserver.QueryToObserve;
 import test.AbstractTestSuite;
+import test.DBAccessSettings;
 import test.domainquery.Population;
 import test.domainquery.model.Person;
 import test.domainquery.model.PoBox;
@@ -117,16 +118,7 @@ public class ConcurrentQueryReplayTest extends AbstractTestSuite {
 	@BeforeClass
 	public static void before() {
 		domainName = "QTEST-DOMAIN";
-		Properties props = new Properties();
-	
-		// properties for remote access and for embedded access
-		// (not needed for in memory access)
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
-	
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
-		// dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props,
-		// "neo4j", "jcypher");
+		dbAccess = DBAccessSettings.createDBAccess();
 	
 		Population population = new Population();
 	

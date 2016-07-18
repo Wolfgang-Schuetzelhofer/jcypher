@@ -23,6 +23,7 @@ public class DBVersion {
 	 * <br/>'2.1.x' .. to work with remote neo4j databases of versions: 2.1.6 or 2.1.7.
 	 * <br/>'2.2.x' .. to work with remote neo4j databases of version: 2.2.x.
 	 * <br/>'2.3.x' .. to work with remote neo4j databases of version: 2.3.x.
+	 * <br/>'3.0.x' .. to work with remote neo4j databases of version: 3.0.x.
 	 */
-	public static String Neo4j_Version = "2.3.x";
+	public static String Neo4j_Version = "3.0.x";
 }
