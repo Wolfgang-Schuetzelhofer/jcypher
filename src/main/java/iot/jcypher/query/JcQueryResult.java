@@ -50,7 +50,7 @@ public class JcQueryResult {
 	public JcQueryResult(JsonObject jsonResult, int queryIndex, IDBAccess dbAccess) {
 		super();
 		this.jsonResult = jsonResult;
-		this.resultHandler = new ResultHandler(this, queryIndex, dbAccess);
+		this.resultHandler = new ResultHandler(jsonResult, queryIndex, dbAccess);
 	}
 
 	/**

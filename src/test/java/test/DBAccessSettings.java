@@ -26,13 +26,13 @@ import iot.jcypher.database.IDBAccess;
 public class DBAccessSettings {
 
 	private static Properties props = new Properties();
-	private static DBType dbType = DBType.IN_MEMORY;
+	private static DBType dbType = DBType.REMOTE;
 	
 	static {
 		// properties for remote access and for embedded access
 		// (not needed for in memory access)
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
+		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/02");
 		
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");

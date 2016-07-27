@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -59,7 +59,11 @@ public class DBAccessFactory {
 		try {
 			switch(dbType) {
 				case REMOTE:
-					dbAccessClass =
+					if (!DBVersion.Neo4j_Version.startsWith("2"))
+						dbAccessClass =
+							(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.BoltDBAccess");
+					else
+						dbAccessClass =
 							(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.RemoteDBAccess");
 					break;
 				case EMBEDDED:
