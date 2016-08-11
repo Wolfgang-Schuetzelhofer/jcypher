@@ -59,7 +59,9 @@ public class DBAccessFactory {
 		try {
 			switch(dbType) {
 				case REMOTE:
-					if (!DBVersion.Neo4j_Version.startsWith("2"))
+					boolean bolt = Boolean.valueOf(properties.getProperty(DBProperties.USE_BOLT_PROTOCOL, "true"))
+						.booleanValue();
+					if (!DBVersion.Neo4j_Version.startsWith("2") && bolt)
 						dbAccessClass =
 							(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.BoltDBAccess");
 					else

@@ -34,6 +34,9 @@ public class DBAccessSettings {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/02");
 		
+		// fall back to JSON-HTTP protocol
+		props.setProperty(DBProperties.USE_BOLT_PROTOCOL, "false");
+		
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
 	}

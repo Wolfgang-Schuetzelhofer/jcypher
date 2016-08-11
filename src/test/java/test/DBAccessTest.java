@@ -22,6 +22,7 @@ import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.DBVersion;
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.database.remote.RemoteDBAccess;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
@@ -132,10 +133,14 @@ public class DBAccessTest extends AbstractTestSuite {
 		setDoAssert(true);
 
 		TestDataReader tdr;
-		if (!DBVersion.Neo4j_Version.equals("2.2.x") && !DBVersion.Neo4j_Version.equals("2.1.x"))
-			tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01_23x.txt");
-		else
-			tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01.txt");
+		if (dbAccess instanceof RemoteDBAccess) {
+			tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01_remote.txt");
+		} else {
+			if (!DBVersion.Neo4j_Version.equals("2.2.x") && !DBVersion.Neo4j_Version.equals("2.1.x"))
+				tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01_23x.txt");
+			else
+				tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01.txt");
+		}
 		
 		JcNode movie = new JcNode("movie");
 		JcNode n = new JcNode("n");
@@ -164,7 +169,8 @@ public class DBAccessTest extends AbstractTestSuite {
 		resultString = Util.writePretty(result.getJsonResult());
 		print(resultString);
 		testId = "ACCESS_02";
-		assertQuery(testId, resultString, tdr.getTestData(testId));
+		if (!(dbAccess instanceof RemoteDBAccess))
+			assertQuery(testId, resultString, tdr.getTestData(testId));
 		
 		return;
 	}
