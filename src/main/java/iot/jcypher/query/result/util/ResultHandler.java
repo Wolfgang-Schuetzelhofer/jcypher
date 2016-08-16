@@ -33,6 +33,7 @@ import org.neo4j.driver.v1.Value;
 
 import iot.jcypher.concurrency.Locking;
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.database.remote.BoltDBAccess;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
@@ -147,6 +148,20 @@ public class ResultHandler {
 		super();
 		init(dbAccess);
 		this.contentHandler = new BoltContentHandler(statementResult);
+		
+	}
+	
+	/**
+	 * construct a ResultHandler initialized with a statementResult
+	 * @param dbAccess
+	 */
+	public ResultHandler(IDBAccess dbAccess) {
+		super();
+		init(dbAccess);
+		if (dbAccess instanceof BoltDBAccess)
+			this.contentHandler = new BoltContentHandler(null);
+		else
+			this.contentHandler = new JSONContentHandler(null, -1);
 		
 	}
 	

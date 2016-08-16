@@ -43,7 +43,7 @@ public class Graph {
 	 * @return the empty graph model
 	 */
 	public static Graph create(IDBAccess dbAccess) {
-		ResultHandler rh = new ResultHandler(null, -1, dbAccess);
+		ResultHandler rh = new ResultHandler(dbAccess);
 		Graph ret = rh.getGraph();
 		ret.setSyncState(SyncState.NEW);
 		return ret;

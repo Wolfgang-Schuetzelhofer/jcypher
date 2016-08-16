@@ -47,7 +47,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
 
-public class RemoteDBAccess implements IDBAccessInit {
+public class RemoteDBAccess extends AbstractRemoteDBAccess {
 
 	private static final String transactionalURLPostfix = "db/data/transaction/commit";
 	private static final String locationHeader = "Location";
@@ -72,14 +72,6 @@ public class RemoteDBAccess implements IDBAccessInit {
 					DBProperties.SERVER_ROOT_URI + "' in database configuration");
 	}
 	
-	@Override
-	public JcQueryResult execute(JcQuery query) {
-		List<JcQuery> qList = new ArrayList<JcQuery>();
-		qList.add(query);
-		List<JcQueryResult> qrList = execute(qList);
-		return qrList.get(0);
-	}
-
 	@Override
 	public List<JcQueryResult> execute(List<JcQuery> queries) {
 		WriterContext context = new WriterContext();
@@ -136,11 +128,6 @@ public class RemoteDBAccess implements IDBAccessInit {
 			}
 		}
 		return ret;
-	}
-
-	@Override
-	public List<JcError> clearDatabase() {
-		return DBUtil.clearDatabase(this);
 	}
 
 	@Override

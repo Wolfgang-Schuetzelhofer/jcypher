@@ -23,6 +23,8 @@ import java.util.List;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
+import org.neo4j.driver.v1.StatementResult;
+
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
@@ -51,6 +53,10 @@ public class JcQueryResult {
 		super();
 		this.jsonResult = jsonResult;
 		this.resultHandler = new ResultHandler(jsonResult, queryIndex, dbAccess);
+	}
+	
+	public JcQueryResult(StatementResult statementResult, IDBAccess dbAccess) {
+		this.resultHandler = new ResultHandler(statementResult, dbAccess);
 	}
 
 	/**
@@ -158,15 +164,17 @@ public class JcQueryResult {
 		if (this.dbErrors == null) {
 			this.dbErrors = new ArrayList<JcError>();
 			JsonObject obj = getJsonResult();
-			JsonArray errs = obj.getJsonArray("errors");
-			int size = errs.size();
-			for (int i = 0; i < size; i++) {
-				JsonObject err = errs.getJsonObject(i);
-				String info = null;
-				if (err.containsKey("info"))
-					info = err.getString("info");
-				this.dbErrors.add(new JcError(err.getString("code"),
-						err.getString("message"), info));
+			if (obj != null) {
+				JsonArray errs = obj.getJsonArray("errors");
+				int size = errs.size();
+				for (int i = 0; i < size; i++) {
+					JsonObject err = errs.getJsonObject(i);
+					String info = null;
+					if (err.containsKey("info"))
+						info = err.getString("info");
+					this.dbErrors.add(new JcError(err.getString("code"),
+							err.getString("message"), info));
+				}
 			}
 		}
 		return this.dbErrors;

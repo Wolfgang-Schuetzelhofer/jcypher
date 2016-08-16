@@ -41,12 +41,10 @@ import iot.jcypher.query.result.util.ResultHandler.RelationInfo;
 
 public class BoltContentHandler extends AContentHandler {
 	
-	private StatementResult statementResult;
 	private List<Record> records;
 
 	public BoltContentHandler(StatementResult statementResult) {
-		this.statementResult = statementResult;
-		this.records = this.statementResult.list();
+		this.records = statementResult.list(); // don't use streaming mode
 	}
 
 	@Override

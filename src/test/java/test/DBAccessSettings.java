@@ -31,11 +31,12 @@ public class DBAccessSettings {
 	static {
 		// properties for remote access and for embedded access
 		// (not needed for in memory access)
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
+		props.setProperty(DBProperties.SERVER_ROOT_URI, "bolt://localhost:7687");
+//		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/02");
 		
 		// fall back to JSON-HTTP protocol
-		props.setProperty(DBProperties.USE_BOLT_PROTOCOL, "false");
+//		props.setProperty(DBProperties.USE_BOLT_PROTOCOL, "false");
 		
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
