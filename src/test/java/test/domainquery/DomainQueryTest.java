@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014-2015 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -907,11 +907,13 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		long numObjNames = countResult.countOf(objNamesMatch);
 		List<String> objNames = result.resultOf(objNamesMatch);
+		Collections.sort(objNames);
+//		System.out.println(objNames.toString());
 		
 		assertEquals(21, numObjNames);
-		assertEquals("[San Francisco, Global Company, addressee_01, n_123, w, n_456," +
-				" d, Small Company, California, USA, North America, Earth, Innere Stadt, Vienna," +
-				" Austria, Europe, Munich, Germany, New York City, New York, Hernals]",
+		assertEquals("[Austria, California, Earth, Europe, Germany, Global Company, Hernals, " + 
+							"Innere Stadt, Munich, New York, New York City, North America, San Francisco, " + 
+							"Small Company, USA, Vienna, addressee_01, d, n_123, n_456, w]",
 				objNames.toString());
 		qCypher = TestDataReader.trimComments(queriesStream.toString().trim());
 		assertQuery(testId, qCypher, tdr.getTestData(testId));

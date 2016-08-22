@@ -92,34 +92,37 @@ public class JSONContentHandler extends AContentHandler {
 	
 	@Override
 	public Object convertContentValue(Object value) {
-		JsonValue val = (JsonValue) value;
-		Object ret = null;
-		ValueType typ = val.getValueType();
-		if (typ == ValueType.NUMBER)
-			ret = ((JsonNumber)val).bigDecimalValue();
-		else if (typ == ValueType.STRING)
-			ret = ((JsonString)val).getString();
-		else if (typ == ValueType.FALSE)
-			ret = Boolean.FALSE;
-		else if (typ == ValueType.TRUE)
-			ret = Boolean.TRUE;
-		else if (typ == ValueType.ARRAY) {
-			JsonArray arr = (JsonArray)val;
-			List<Object> vals = new ArrayList<Object>();
-			int sz = arr.size();
-			for (int i = 0; i < sz; i++) {
-				JsonValue v = arr.get(i);
-				vals.add(convertContentValue(v));
+		if (value instanceof JsonValue) {
+			JsonValue val = (JsonValue) value;
+			Object ret = null;
+			ValueType typ = val.getValueType();
+			if (typ == ValueType.NUMBER)
+				ret = ((JsonNumber)val).bigDecimalValue();
+			else if (typ == ValueType.STRING)
+				ret = ((JsonString)val).getString();
+			else if (typ == ValueType.FALSE)
+				ret = Boolean.FALSE;
+			else if (typ == ValueType.TRUE)
+				ret = Boolean.TRUE;
+			else if (typ == ValueType.ARRAY) {
+				JsonArray arr = (JsonArray)val;
+				List<Object> vals = new ArrayList<Object>();
+				int sz = arr.size();
+				for (int i = 0; i < sz; i++) {
+					JsonValue v = arr.get(i);
+					vals.add(convertContentValue(v));
+				}
+				ret = vals;
+			} else if (typ == ValueType.OBJECT) {
+				//JsonObject obj = (JsonObject)val;
 			}
-			ret = vals;
-		} else if (typ == ValueType.OBJECT) {
-			//JsonObject obj = (JsonObject)val;
+			return ret;
 		}
-		return ret;
+		return value;
 	}
 
 	@Override
-	public Iterator<Entry<String, ?>> getPropertiesIterator(long id, int rowIndex, ElemType typ) {
+	public Iterator<PropEntry> getPropertiesIterator(long id, int rowIndex, ElemType typ) {
 		JsonObject propertiesObject = getPropertiesObject(id, rowIndex, typ);
 		Iterator<Entry<String, JsonValue>> esIt = propertiesObject.entrySet().iterator();
 		return new PropertiesIterator(esIt);
@@ -273,9 +276,12 @@ public class JSONContentHandler extends AContentHandler {
 
 			@Override
 			public ElementInfo getElementInfo(String colKey) {
+				int colIdx = getColumnIndex(colKey);
+				if (colIdx == -1)
+					throw new RuntimeException("no result column: " + colKey);
 				JsonObject dataObject = (JsonObject) this.jsonValue;
 				JsonArray restArray = getRestArray(dataObject);
-				JsonValue obj = getRestValue(restArray, getColumnIndex(colKey));
+				JsonValue obj = getRestValue(restArray, colIdx);
 				if (obj.getValueType() == ValueType.OBJECT) {
 					JsonObject restObject = (JsonObject)obj;
 					if (restObject.containsKey("self")) {
@@ -306,9 +312,12 @@ public class JSONContentHandler extends AContentHandler {
 			@Override
 			public PathInfo getPathInfo(String colKey) {
 				PathInfo pathInfo = null;
+				int colIdx = getColumnIndex(colKey);
+				if (colIdx == -1)
+					throw new RuntimeException("no result column: " + colKey);
 				JsonObject dataObject = (JsonObject) this.jsonValue;
 				JsonArray restArray = getRestArray(dataObject);
-				JsonValue restValue = getRestValue(restArray, getColumnIndex(colKey));
+				JsonValue restValue = getRestValue(restArray, colIdx);
 				
 				if (restValue.getValueType() == ValueType.OBJECT) {
 					JsonObject pathObject = (JsonObject) restValue;
@@ -346,7 +355,10 @@ public class JSONContentHandler extends AContentHandler {
 			@SuppressWarnings("unchecked")
 			@Override
 			public <T> void addValue(String colKey, List<T> vals) {
-				JsonValue restVal = getRestValue(getRestArray((JsonObject) this.jsonValue), getColumnIndex(colKey));
+				int colIdx = getColumnIndex(colKey);
+				if (colIdx == -1)
+					throw new RuntimeException("no result column: " + colKey);
+				JsonValue restVal = getRestValue(getRestArray((JsonObject) this.jsonValue), colIdx);
 				Object v = convertContentValue(restVal);
 				if (v != null)
 					vals.add((T) v);
@@ -359,7 +371,7 @@ public class JSONContentHandler extends AContentHandler {
 	}
 	
 	/************************************/
-	public class PropertiesIterator implements Iterator<Entry<String, ?>> {
+	public class PropertiesIterator implements Iterator<PropEntry> {
 
 		private Iterator<Entry<String, JsonValue>> iterator;
 		
@@ -374,9 +386,9 @@ public class JSONContentHandler extends AContentHandler {
 		}
 
 		@Override
-		public Entry<String, ?> next() {
-			return this.iterator.next();
+		public PropEntry next() {
+			Entry<String, JsonValue> next = this.iterator.next();
+			return new PropEntry(next.getKey(), next.getValue());
 		}
-		
 	}
 }

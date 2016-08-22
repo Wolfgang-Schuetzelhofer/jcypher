@@ -172,8 +172,12 @@ public class MappingUtil {
 					for (Object elem : coll) {
 						converted.add(convertFromProperty(elem, componentType, null, null));
 					}
-					coll.clear();
-					coll.addAll(converted);
+					try {
+						coll.clear();
+						coll.addAll(converted);
+					} catch (UnsupportedOperationException e) {
+						return converted;
+					}
 				}
 			} else if (targetType.isArray()) {
 				if (componentType != null) {
@@ -190,8 +194,12 @@ public class MappingUtil {
 							}
 							return array;
 						} else {
-							coll.clear();
-							coll.addAll(converted);
+							try {
+								coll.clear();
+								coll.addAll(converted);
+							} catch (UnsupportedOperationException e) {
+								return converted;
+							}
 						}
 					}
 				}

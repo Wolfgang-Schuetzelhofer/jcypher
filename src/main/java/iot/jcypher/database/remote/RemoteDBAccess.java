@@ -60,7 +60,6 @@ public class RemoteDBAccess extends AbstractRemoteDBAccess {
 	private Client restClient;
 	private WebTarget transactionalTarget;
 	private Invocation.Builder invocationBuilder;
-	private Thread shutdownHook;
 	
 	@Override
 	public void initialize(Properties properties) {
@@ -146,21 +145,8 @@ public class RemoteDBAccess extends AbstractRemoteDBAccess {
 	}
 
 	@Override
-	public DBType getDBType() {
-		return DBType.REMOTE;
-	}
-
-	@Override
-	public boolean isDatabaseEmpty() {
-		return DBUtil.isDatabaseEmpty(this);
-	}
-
-	@Override
 	public synchronized void close() {
-		if (this.shutdownHook != null) {
-			Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
-			this.shutdownHook = null;
-		}
+		super.close();
 		
 		if (this.restClient != null) {
 			this.restClient.close();

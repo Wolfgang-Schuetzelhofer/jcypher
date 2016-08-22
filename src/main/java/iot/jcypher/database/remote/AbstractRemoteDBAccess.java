@@ -19,6 +19,7 @@ package iot.jcypher.database.remote;
 import java.util.ArrayList;
 import java.util.List;
 
+import iot.jcypher.database.DBType;
 import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
 import iot.jcypher.query.JcQuery;
@@ -27,6 +28,8 @@ import iot.jcypher.query.result.JcError;
 
 public abstract class AbstractRemoteDBAccess implements IDBAccessInit {
 
+	protected Thread shutdownHook;
+	
 	@Override
 	public JcQueryResult execute(JcQuery query) {
 		List<JcQuery> qList = new ArrayList<JcQuery>();
@@ -38,5 +41,23 @@ public abstract class AbstractRemoteDBAccess implements IDBAccessInit {
 	@Override
 	public List<JcError> clearDatabase() {
 		return DBUtil.clearDatabase(this);
+	}
+	
+	@Override
+	public boolean isDatabaseEmpty() {
+		return DBUtil.isDatabaseEmpty(this);
+	}
+	
+	@Override
+	public DBType getDBType() {
+		return DBType.REMOTE;
+	}
+	
+	@Override
+	public void close() {
+		if (this.shutdownHook != null) {
+			Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
+			this.shutdownHook = null;
+		}
 	}
 }

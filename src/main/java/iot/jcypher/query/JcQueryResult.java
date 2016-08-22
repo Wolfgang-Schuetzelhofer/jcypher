@@ -60,7 +60,7 @@ public class JcQueryResult {
 	}
 
 	/**
-	 * @return the JsonObject representing the query result.
+	 * @return the JsonObject representing the query result. Is null when BOLT protocol is used.
 	 */
 	public JsonObject getJsonResult() {
 		return jsonResult;
@@ -193,5 +193,9 @@ public class JcQueryResult {
 	 */
 	public boolean hasErrors() {
 		return !this.getGeneralErrors().isEmpty() || !this.getDBErrors().isEmpty();
+	}
+	
+	ResultHandler getResultHandler() {
+		return this.resultHandler;
 	}
 }

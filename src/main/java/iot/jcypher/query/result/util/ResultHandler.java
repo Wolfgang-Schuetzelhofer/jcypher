@@ -28,12 +28,14 @@ import java.util.Map.Entry;
 
 import javax.json.JsonObject;
 
+import org.neo4j.driver.internal.value.ListValue;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Value;
 
 import iot.jcypher.concurrency.Locking;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.database.remote.BoltDBAccess;
+import iot.jcypher.domain.internal.DomainAccess.DomainAccessHandler.DBAccessWrapper;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
@@ -69,6 +71,7 @@ import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.factories.clause.WITH;
 import iot.jcypher.query.factories.xpression.C;
 import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.util.ResultHandler.AContentHandler.PropEntry;
 import iot.jcypher.query.result.util.ResultHandler.AContentHandler.RowOrRecord;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
@@ -147,7 +150,7 @@ public class ResultHandler {
 	public ResultHandler(StatementResult statementResult, IDBAccess dbAccess) {
 		super();
 		init(dbAccess);
-		this.contentHandler = new BoltContentHandler(statementResult);
+		this.contentHandler = new BoltContentHandler(statementResult, this);
 		
 	}
 	
@@ -158,11 +161,16 @@ public class ResultHandler {
 	public ResultHandler(IDBAccess dbAccess) {
 		super();
 		init(dbAccess);
-		if (dbAccess instanceof BoltDBAccess)
-			this.contentHandler = new BoltContentHandler(null);
+		this.contentHandler = this.calcContentHandler(dbAccess);
+	}
+	
+	private AContentHandler calcContentHandler(IDBAccess dba) {
+		if (dba instanceof BoltDBAccess)
+			return new BoltContentHandler(null, this);
+		else if (dba instanceof DBAccessWrapper)
+			return this.calcContentHandler(((DBAccessWrapper)dba).getDelegate());
 		else
-			this.contentHandler = new JSONContentHandler(null, -1);
-		
+			return new JSONContentHandler(null, -1);
 	}
 	
 	private void init(IDBAccess dbAccess) {
@@ -171,6 +179,14 @@ public class ResultHandler {
 		this.localElements = new LocalElements();
 		this.graph = GrAccess.createGraph(this);
 		GrAccess.setGraphState(this.graph, SyncState.SYNC);
+	}
+
+	IDBAccess getDbAccess() {
+		return dbAccess;
+	}
+
+	AContentHandler getContentHandler() {
+		return contentHandler;
 	}
 
 	public void setLockingStrategy(Locking lockingStrategy) {
@@ -217,8 +233,6 @@ public class ResultHandler {
 		List<GrNode> rNodes = getNodeColumns().get(colKey);
 		if (rNodes == null) {
 			rNodes = new ArrayList<GrNode>();
-			if (this.contentHandler.getColumnIndex(colKey) == -1)
-				throw new RuntimeException("no result column: " + colKey);
 			Iterator<RowOrRecord> it = this.contentHandler.getDataIterator();
 			int rowIdx = -1;
 			while(it.hasNext()) { // iterate over rows
@@ -255,8 +269,6 @@ public class ResultHandler {
 		List<GrRelation> rRelations = getRelationColumns().get(colKey);
 		if (rRelations == null) {
 			rRelations = new ArrayList<GrRelation>();
-			if (this.contentHandler.getColumnIndex(colKey) == -1)
-				throw new RuntimeException("no result column: " + colKey);
 			Iterator<RowOrRecord> it = this.contentHandler.getDataIterator();
 			int rowIdx = -1;
 			while(it.hasNext()) { // iterate over rows
@@ -290,8 +302,6 @@ public class ResultHandler {
 		List<GrPath> rPaths = getPathColumns().get(colKey);
 		if (rPaths == null) {
 			rPaths = new ArrayList<GrPath>();
-			if (this.contentHandler.getColumnIndex(colKey) == -1)
-				throw new RuntimeException("no result column: " + colKey);
 			Iterator<RowOrRecord> it = this.contentHandler.getDataIterator();
 			int rowIdx = -1;
 			while(it.hasNext()) { // iterate over rows
@@ -427,11 +437,11 @@ public class ResultHandler {
 	
 	private List<GrProperty> getNodeProperties(long nodeId, int rowIndex) {
 		List<GrProperty> props = new ArrayList<GrProperty>();
-		Iterator<Entry<String, ?>> esIt = this.contentHandler.getPropertiesIterator(nodeId, rowIndex, ElemType.NODE);
+		Iterator<PropEntry> esIt = this.contentHandler.getPropertiesIterator(nodeId, rowIndex, ElemType.NODE);
 		while (esIt.hasNext()) {
-			Entry<String, ?> entry = esIt.next();
-			GrProperty prop = GrAccess.createProperty(entry.getKey());
-			prop.setValue(this.contentHandler.convertContentValue(entry.getValue()));
+			PropEntry entry = esIt.next();
+			GrProperty prop = GrAccess.createProperty(entry.getPropName());
+			prop.setValue(this.contentHandler.convertContentValue(entry.getPropValue()));
 			GrAccess.setState(prop, SyncState.SYNC);
 			props.add(prop);
 		}
@@ -451,11 +461,11 @@ public class ResultHandler {
 	
 	private List<GrProperty> getRelationProperties(long relationId, int rowIndex) {
 		List<GrProperty> props = new ArrayList<GrProperty>();
-		Iterator<Entry<String, ?>> esIt = this.contentHandler.getPropertiesIterator(relationId, rowIndex, ElemType.RELATION);
+		Iterator<PropEntry> esIt = this.contentHandler.getPropertiesIterator(relationId, rowIndex, ElemType.RELATION);
 		while (esIt.hasNext()) {
-			Entry<String, ?> entry = esIt.next();
-			GrProperty prop = GrAccess.createProperty(entry.getKey());
-			prop.setValue(this.contentHandler.convertContentValue(entry.getValue()));
+			PropEntry entry = esIt.next();
+			GrProperty prop = GrAccess.createProperty(entry.getPropName());
+			prop.setValue(this.contentHandler.convertContentValue(entry.getPropValue()));
 			GrAccess.setState(prop, SyncState.SYNC);
 			props.add(prop);
 		}
@@ -474,8 +484,6 @@ public class ResultHandler {
 		List<T> vals = getValueColumns().get(colKey);
 		if (vals == null) {
 			vals = new ArrayList<T>();
-			if (this.contentHandler.getColumnIndex(colKey) == -1)
-				throw new RuntimeException("no result column: " + colKey);
 			Iterator<RowOrRecord> it = this.contentHandler.getDataIterator();
 			while(it.hasNext()) { // iterate over rows
 				RowOrRecord roc = it.next();
@@ -792,6 +800,8 @@ public class ResultHandler {
 		}
 		
 		public static ElementInfo fromRecordValue(Value val) {
+			if (val instanceof ListValue)
+				return ElementInfo.fromRecordValue(((ListValue)val).get(0));
 			ElementInfo ret = null;
 			if (val != null) {
 				String typName = val.type().name(); // NODE, RELATIONSHIP, NULL
@@ -831,6 +841,8 @@ public class ResultHandler {
 		}
 		
 		public static RelationInfo fromRecordValue(Value val) {
+			if (val instanceof ListValue)
+				return RelationInfo.fromRecordValue(((ListValue)val).get(0));
 			RelationInfo ret = null;
 			if (val != null) {
 				String typName = val.type().name(); // must be: RELATIONSHIP
@@ -1460,9 +1472,27 @@ public class ResultHandler {
 		public abstract int getColumnIndex(String colKey);
 		public abstract Iterator<RowOrRecord> getDataIterator();
 		public abstract Object convertContentValue(Object val);
-		public abstract Iterator<Entry<String, ?>> getPropertiesIterator(long id, int rowIndex, ElemType typ);
+		public abstract Iterator<PropEntry> getPropertiesIterator(long id, int rowIndex, ElemType typ);
 		public abstract String getRelationType(long relationId, int rowIndex);
 		public abstract List<GrLabel> getNodeLabels(long nodeId, int rowIndex);
+		
+		/*********************************************/
+		public static class PropEntry {
+			private String propName;
+			private Object propValue;
+			
+			public PropEntry(String propName, Object propValue) {
+				super();
+				this.propName = propName;
+				this.propValue = propValue;
+			}
+			public String getPropName() {
+				return propName;
+			}
+			public Object getPropValue() {
+				return propValue;
+			}
+		}
 		
 		/*********************************************/
 		public abstract class RowOrRecord {

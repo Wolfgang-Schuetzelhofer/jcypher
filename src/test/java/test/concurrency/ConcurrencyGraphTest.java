@@ -468,6 +468,11 @@ public class ConcurrencyGraphTest extends AbstractTestSuite {
 		// first client tries to change same relation
 		
 		Locking lockingStrategy = Locking.NONE;
+		try {
+			Thread.sleep(1000);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
 		initDB(lockingStrategy);
 		
 		/******* first client loading j_smith ******/

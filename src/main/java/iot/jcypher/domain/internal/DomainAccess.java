@@ -510,7 +510,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 	}
 
 	/**********************************************************************/
-	private class DomainAccessHandler {
+	public class DomainAccessHandler {
 		private String regexClassfieldSep = "\\".concat(FieldMapping.ClassFieldSeparator);
 		private static final String NodePrefix = "n_";
 		private static final String RelationPrefix = "r_";
@@ -1742,7 +1742,7 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 		}
 
 		/****************************************/
-		private class DBAccessWrapper implements IDBAccess {
+		public class DBAccessWrapper implements IDBAccess {
 
 			private IDBAccess delegate;
 			private DomainInfo temporaryDomainInfo;
@@ -1873,6 +1873,10 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			@Override
 			public void close() {
 				this.delegate.close();
+			}
+
+			public IDBAccess getDelegate() {
+				return delegate;
 			}
 
 			private void updateDomainInfo(JcQueryResult result, ExecContext context) {

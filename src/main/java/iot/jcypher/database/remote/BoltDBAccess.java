@@ -21,16 +21,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
-import org.neo4j.driver.internal.value.MapValue;
+import javax.ws.rs.client.Client;
+
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
 import org.neo4j.driver.v1.Session;
 import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
-import org.neo4j.driver.v1.Value;
-import org.neo4j.driver.v1.Values;
-import org.neo4j.driver.v1.util.Function;
 
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
@@ -56,9 +54,13 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 	private Driver driver;
 	private Session session;
 	
+	public BoltDBAccess() {
+		super();
+		this.shutdownHook = registerShutdownHook(this);
+	}
+
 	@Override
 	public List<JcQueryResult> execute(List<JcQuery> queries) {
-		Driver drv = getDriver();
 		List<Statement> statements = new ArrayList<Statement>(queries.size());
 		for (JcQuery query : queries) {
 			WriterContext context = new WriterContext();
@@ -108,9 +110,12 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 			String typ = dbException.getClass().getSimpleName();
 			String msg = dbException.getLocalizedMessage();
 			JcError err = new JcError(typ, msg, DBUtil.getStacktrace(dbException));
-			if (ret.isEmpty()) {
-				JcQueryResult res = new JcQueryResult(null, this);
-				res.getDBErrors().add(err);
+			if (ret.size() < queries.size()) {
+				for(int i = ret.size(); i < queries.size(); i++) {
+					JcQueryResult res = new JcQueryResult(null, this);
+					res.getDBErrors().add(err);
+					ret.add(res);
+				}
 			} else {
 				JcQueryResult res = ret.get(ret.size() - 1);
 				res.getDBErrors().add(err); // the last one must have been erroneous
@@ -133,24 +138,6 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 	@Override
 	public ITransaction getTX() {
 		return this.transaction.get();
-	}
-
-	@Override
-	public boolean isDatabaseEmpty() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-
-	@Override
-	public DBType getDBType() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public void close() {
-		// TODO Auto-generated method stub
-		
 	}
 
 	@Override
@@ -193,6 +180,31 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 		if (this.session == null)
 			this.session = getDriver().session();
 		return this.session;
+	}
+	
+	private static Thread registerShutdownHook(final BoltDBAccess bda) {
+		// Registers a shutdown hook
+		// shuts down nicely when the VM exits (even if you "Ctrl-C" the
+		// running application).
+		Thread hook = new Thread() {
+			@Override
+			public void run() {
+				try {
+					if (bda.session != null)
+						bda.session.close();
+				} catch (Throwable e) {
+					// do nothing
+				}
+				try {
+					if (bda.driver != null)
+						bda.driver.close();
+				} catch (Throwable e) {
+					// do nothing
+				}
+			}
+		};
+		Runtime.getRuntime().addShutdownHook(hook);
+		return hook;
 	}
 	
 	/*******************************************/
