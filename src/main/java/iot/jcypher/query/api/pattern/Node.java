@@ -70,5 +70,16 @@ public class Node extends Element<Node> {
 			labels.add(dLab);
 		return this;
 	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>set a label to match or create nodes with that label</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>using enum label</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. MATCH.node(n).<b>label(MyLabels.Movie)</b></i></div>
+	 * <br/>
+	 */
+	public Node label(Enum<?> label) {
+		return label(label.name());
+	}
 
 }

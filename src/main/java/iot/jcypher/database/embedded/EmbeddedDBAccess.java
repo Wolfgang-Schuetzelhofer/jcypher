@@ -32,9 +32,6 @@ public class EmbeddedDBAccess extends AbstractEmbeddedDBAccess {
 	@Override
 	public void initialize(Properties properties) {
 		this.properties = properties;
-		if (this.properties == null)
-			throw new RuntimeException(
-					"missing properties in database configuration");
 		if (this.properties.getProperty(DBProperties.DATABASE_DIR) == null)
 			throw new RuntimeException("missing property: '"
 					+ DBProperties.DATABASE_DIR + "' in database configuration");

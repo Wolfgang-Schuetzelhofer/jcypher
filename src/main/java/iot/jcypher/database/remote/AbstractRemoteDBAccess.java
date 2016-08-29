@@ -18,7 +18,9 @@ package iot.jcypher.database.remote;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Properties;
 
+import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
@@ -29,6 +31,7 @@ import iot.jcypher.query.result.JcError;
 public abstract class AbstractRemoteDBAccess implements IDBAccessInit {
 
 	protected Thread shutdownHook;
+	protected Properties properties;
 	
 	@Override
 	public JcQueryResult execute(JcQuery query) {
@@ -59,5 +62,13 @@ public abstract class AbstractRemoteDBAccess implements IDBAccessInit {
 			Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
 			this.shutdownHook = null;
 		}
+	}
+	
+	@Override
+	public void initialize(Properties properties) {
+		this.properties = properties;
+		if (this.properties.getProperty(DBProperties.SERVER_ROOT_URI) == null)
+			throw new RuntimeException("missing property: '" +
+					DBProperties.SERVER_ROOT_URI + "' in database configuration");
 	}
 }

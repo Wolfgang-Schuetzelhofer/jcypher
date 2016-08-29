@@ -1,6 +1,11 @@
 Release Notes
 =======
 
+## 3.5.0
+**New**
+
+- Support for Neo4J 3.0.x including the BOLT protocol
+
 ## 3.4.1
 **Fixed**
 - JC.coalesce(...) now returns a JcValue to be applicable in RETURN and WITH clauses.

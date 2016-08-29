@@ -26,7 +26,7 @@ import iot.jcypher.database.IDBAccess;
 public class DBAccessSettings {
 
 	private static Properties props = new Properties();
-	private static DBType dbType = DBType.REMOTE;
+	private static DBType dbType = DBType.IN_MEMORY;
 	
 	static {
 		// properties for remote access and for embedded access
@@ -34,9 +34,6 @@ public class DBAccessSettings {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "bolt://localhost:7687");
 //		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/02");
-		
-		// fall back to JSON-HTTP protocol
-//		props.setProperty(DBProperties.USE_BOLT_PROTOCOL, "false");
 		
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");

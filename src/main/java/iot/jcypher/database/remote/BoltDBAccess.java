@@ -48,7 +48,6 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 	private static final String bolt = "bolt";
 	
 	private ThreadLocal<BoltTransactionImpl> transaction = new ThreadLocal<BoltTransactionImpl>();
-	private Properties properties;
 	private String userId;
 	private String passWord;
 	private Driver driver;
@@ -141,17 +140,6 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 	}
 
 	@Override
-	public void initialize(Properties properties) {
-		this.properties = properties;
-		if (this.properties == null)
-			throw new RuntimeException("missing properties in database configuration");
-		if (this.properties.getProperty(DBProperties.SERVER_ROOT_URI) == null)
-			throw new RuntimeException("missing property: '" +
-					DBProperties.SERVER_ROOT_URI + "' in database configuration");
-		
-	}
-
-	@Override
 	public void setAuth(String userId, String password) {
 		this.userId = userId;
 		this.passWord = password;
@@ -164,10 +152,6 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 	private Driver getDriver() {
 		if (this.driver == null) {
 			String uri = this.properties.getProperty(DBProperties.SERVER_ROOT_URI);
-			int idx = uri.indexOf(pathPrefix);
-			if (idx >= 0)
-				uri = uri.substring(idx + pathPrefix.length());
-			uri = bolt.concat(pathPrefix).concat(uri);
 			if (this.userId != null && this.passWord != null)
 				this.driver = GraphDatabase.driver(uri, AuthTokens.basic(this.userId, this.passWord));
 			else
@@ -180,6 +164,18 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 		if (this.session == null)
 			this.session = getDriver().session();
 		return this.session;
+	}
+	
+	public static boolean isBoltProtocol(String uri) {
+		boolean ret = false;
+		if (uri != null) {
+			int idx = uri.indexOf(pathPrefix);
+			if (idx > 0) {
+				String prot = uri.substring(0, idx);
+				ret = bolt.equalsIgnoreCase(prot);
+			}
+		}
+		return ret;
 	}
 	
 	private static Thread registerShutdownHook(final BoltDBAccess bda) {

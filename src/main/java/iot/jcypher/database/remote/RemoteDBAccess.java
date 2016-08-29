@@ -55,21 +55,10 @@ public class RemoteDBAccess extends AbstractRemoteDBAccess {
 	private static final String authBasic = "Basic";
 	
 	private ThreadLocal<RTransactionImpl> transaction = new ThreadLocal<RTransactionImpl>();
-	private Properties properties;
 	private String auth;
 	private Client restClient;
 	private WebTarget transactionalTarget;
 	private Invocation.Builder invocationBuilder;
-	
-	@Override
-	public void initialize(Properties properties) {
-		this.properties = properties;
-		if (this.properties == null)
-			throw new RuntimeException("missing properties in database configuration");
-		if (this.properties.getProperty(DBProperties.SERVER_ROOT_URI) == null)
-			throw new RuntimeException("missing property: '" +
-					DBProperties.SERVER_ROOT_URI + "' in database configuration");
-	}
 	
 	@Override
 	public List<JcQueryResult> execute(List<JcQuery> queries) {

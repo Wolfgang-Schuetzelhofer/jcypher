@@ -24,11 +24,6 @@ public interface DBProperties {
 	/******************** properties for remote database access *********************/
 	/** REQUIRED - Address (uri) of a remote database server.	 */
 	public static final String SERVER_ROOT_URI = "server_root_uri";
-	/** OPTIONAL - From Neo4J 3.0 onwards an optimized binary protocol,
-	 * the BOLT protocol is available for remote db communications.
-	 * By default JCypher uses the BOLT protocol. By specifying:
-	 * 	USE_BOLT_PROTOCOL=false; a fallback to the JSON-HTTP protocol is possible. */
-	public static final String USE_BOLT_PROTOCOL = "use_bolt_protocol";
 	
 	/******************** properties for embedded database access *********************/
 	/** REQUIRED - Directory of the embedded database. */

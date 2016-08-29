@@ -19,6 +19,8 @@ package iot.jcypher.database;
 import java.lang.reflect.Method;
 import java.util.Properties;
 
+import iot.jcypher.database.remote.BoltDBAccess;
+
 /**
  * A Factory for creating accessors to Neo4j databases.
  *
@@ -59,8 +61,9 @@ public class DBAccessFactory {
 		try {
 			switch(dbType) {
 				case REMOTE:
-					boolean bolt = Boolean.valueOf(properties.getProperty(DBProperties.USE_BOLT_PROTOCOL, "true"))
-						.booleanValue();
+					if (properties == null)
+						throw new RuntimeException("missing properties in database configuration");
+					boolean bolt = BoltDBAccess.isBoltProtocol(properties.getProperty(DBProperties.SERVER_ROOT_URI));
 					if (!DBVersion.Neo4j_Version.startsWith("2") && bolt)
 						dbAccessClass =
 							(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.BoltDBAccess");
@@ -69,6 +72,8 @@ public class DBAccessFactory {
 							(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.remote.RemoteDBAccess");
 					break;
 				case EMBEDDED:
+					if (properties == null)
+						throw new RuntimeException("missing properties in database configuration");
 					dbAccessClass =
 							(Class<? extends IDBAccess>) Class.forName("iot.jcypher.database.embedded.EmbeddedDBAccess");
 					break;
@@ -85,7 +90,7 @@ public class DBAccessFactory {
 		
 		if (dbAccessClass != null) {
 			try {
-				Method init = dbAccessClass.getDeclaredMethod("initialize", new Class[] {Properties.class});
+				Method init = dbAccessClass.getMethod("initialize", new Class[] {Properties.class});
 				dbAccess = dbAccessClass.newInstance();
 				init.invoke(dbAccess, new Object[] {properties});
 				if (dbType == DBType.REMOTE) { // authentication only applies to remote db access
