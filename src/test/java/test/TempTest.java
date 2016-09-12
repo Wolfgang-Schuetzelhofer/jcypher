@@ -27,6 +27,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import static org.junit.Assert.*;
 
 import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
@@ -62,6 +63,7 @@ import iot.jcypher.query.factories.xpression.C;
 import iot.jcypher.query.factories.xpression.X;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
+import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcNumber;
 import iot.jcypher.query.values.JcPath;
@@ -81,6 +83,40 @@ public class TempTest extends AbstractTestSuite {
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	
+	@Test
+	public void test_15_maurits() {
+		IClause[] clauses;
+		JcQuery q;
+		JcQueryResult result;
+		String cypher;
+//		dbAccess.clearDatabase();
+//		
+//		// add some sample data
+//		clauses = new IClause[]{
+//				CREATE.node().label("ActiveIn")
+//		};
+//		q = new JcQuery();
+//		q.setClauses(clauses);
+//		cypher = print(clauses, Format.PRETTY_1);
+//		result = dbAccess.execute(q);
+//		assertFalse(result.hasErrors());
+		
+		// query
+		JcNode activeIn = new JcNode("a");
+		JcCollection empty = new JcCollection("[]");
+		q = new JcQuery();
+		q.setClauses(new IClause[]{
+				MATCH.node(activeIn).label("ActiveIn"),
+				DO.SET(activeIn.property("ratings")).byExpression(JC.coalesce(activeIn.property("ratings"), empty).asCollection().add(3))
+			});
+		cypher = print(q, Format.PRETTY_1);
+	
+		result = dbAccess.execute(q);
+		assertFalse(result.hasErrors());
+		
+		return;
+	}
 	
 	@Test
 	public void test_14() {
@@ -898,8 +934,9 @@ public class TempTest extends AbstractTestSuite {
 		
 		// properties for remote access and for embedded access
 		// (not needed for in memory access)
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
+		//props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
+		props.setProperty(DBProperties.SERVER_ROOT_URI, "bolt://localhost:7687");
+		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/02");
 		
 		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
 //		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
