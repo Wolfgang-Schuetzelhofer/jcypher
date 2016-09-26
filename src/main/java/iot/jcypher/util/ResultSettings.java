@@ -20,4 +20,7 @@ public class ResultSettings {
 
 	public static boolean includeNullValuesAndDuplicates = false;
 
+	public static void setIncludeNullValuesAndDuplicates(boolean includeNullValuesAndDuplicates) {
+		ResultSettings.includeNullValuesAndDuplicates = includeNullValuesAndDuplicates;
+	}
 }
