@@ -265,6 +265,11 @@ public class JSONContentHandler extends AContentHandler {
 			return new Row(nextVal);
 		}
 		
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+		
 		/*****************************/
 		public class Row extends RowOrRecord {
 			private JsonValue jsonValue;
@@ -389,6 +394,11 @@ public class JSONContentHandler extends AContentHandler {
 		public PropEntry next() {
 			Entry<String, JsonValue> next = this.iterator.next();
 			return new PropEntry(next.getKey(), next.getValue());
+		}
+		
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
 		}
 	}
 }

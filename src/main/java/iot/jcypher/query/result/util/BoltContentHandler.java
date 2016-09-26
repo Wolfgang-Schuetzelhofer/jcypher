@@ -205,6 +205,11 @@ public class BoltContentHandler extends AContentHandler {
 			return new Rec(nextVal);
 		}
 		
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+		
 		/*****************************/
 		public class Rec extends RowOrRecord {
 			private Record record;
@@ -313,6 +318,11 @@ public class BoltContentHandler extends AContentHandler {
 		public PropEntry next() {
 			Entry<String, Object> next = this.iterator.next();
 			return new PropEntry(next.getKey(), next.getValue());
+		}
+		
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
 		}
 	}
 	
