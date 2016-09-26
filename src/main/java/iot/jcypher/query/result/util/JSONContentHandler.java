@@ -38,6 +38,7 @@ import iot.jcypher.query.result.util.ResultHandler.ElemType;
 import iot.jcypher.query.result.util.ResultHandler.ElementInfo;
 import iot.jcypher.query.result.util.ResultHandler.PathInfo;
 import iot.jcypher.query.result.util.ResultHandler.RelationInfo;
+import iot.jcypher.util.ResultSettings;
 
 public class JSONContentHandler extends AContentHandler {
 	
@@ -368,7 +369,8 @@ public class JSONContentHandler extends AContentHandler {
 				if (v != null)
 					vals.add((T) v);
 				else {
-					if (ResultHandler.includeNullValues.get().booleanValue())
+					if (ResultHandler.includeNullValues.get().booleanValue() 
+							|| ResultSettings.includeNullValuesAndDuplicates.get().booleanValue())
 						vals.add((T) v);
 				}
 			}

@@ -56,6 +56,7 @@ import iot.jcypher.query.result.util.ResultHandler.PathInfo;
 import iot.jcypher.query.result.util.ResultHandler.RelationInfo;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.util.ResultSettings;
 import iot.jcypher.util.Util;
 
 public class BoltContentHandler extends AContentHandler {
@@ -291,7 +292,8 @@ public class BoltContentHandler extends AContentHandler {
 				if (v != null)
 					vals.add((T) v);
 				else {
-					if (ResultHandler.includeNullValues.get().booleanValue())
+					if (ResultHandler.includeNullValues.get().booleanValue() 
+							|| ResultSettings.includeNullValuesAndDuplicates.get().booleanValue())
 						vals.add((T) v);
 				}
 			}
