@@ -1014,7 +1014,7 @@ public class ResultHandler {
 			if (v != null)
 				this.values.add((T) v);
 			else {
-				if (includeNullValues.get().booleanValue())
+				if (includeNullValues.get().booleanValue() || ResultSettings.includeNullValuesAndDuplicates)
 					this.values.add((T) v);
 			}
 		}
