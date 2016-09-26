@@ -18,6 +18,7 @@ package iot.jcypher.database.embedded;
 
 import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
+import iot.jcypher.database.util.QParamsUtil;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.result.JcError;
@@ -75,7 +76,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			QueryParam.setExtractParams(query.isExtractParams(), context);
 			CypherWriter.toCypherExpression(query, context);
 			String cypher = context.buffer.toString();
-			Map<String, Object> paramsMap = createQueryParams(context);
+			Map<String, Object> paramsMap = QParamsUtil.createQueryParams(context);
 			statements.add(new Statement(cypher, paramsMap));
 		}
 		JsonBuilderContext builderContext = new JsonBuilderContext();
@@ -205,60 +206,6 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		errorObject.add("message", msg);
 		errorObject.add("info", DBUtil.getStacktrace(exception));
 		builderContext.errorsArray.add(errorObject);
-	}
-
-	private Map<String, Object> createQueryParams(WriterContext context) {
-		Map<String, Object> paramsMap = null;
-		if (QueryParam.isExtractParams(context)) {
-			List<IQueryParam> params = QueryParamSet.getQueryParams(context);
-			if (params != null) {
-				for (IQueryParam iparam : params) {
-					if (paramsMap == null)
-						paramsMap = new HashMap<String, Object>();
-					if (iparam instanceof QueryParamSet) {
-						QueryParamSet paramSet = (QueryParamSet)iparam;
-						if (paramSet.canUseSet() && paramSet.getQueryParams().size() > 1)
-							writeAsSet(paramSet, paramsMap);
-						else
-							writeAsParams(paramSet, paramsMap);
-					} else if (iparam instanceof QueryParam) {
-						String key = ((QueryParam)iparam).getKey();
-						Object val = ((QueryParam)iparam).getValue();
-						val = this.convertVal(val);
-						paramsMap.put(key, val);
-					}
-				}
-			}
-		}
-		return paramsMap;
-	}
-	
-	private Object convertVal(Object val) {
-		if (!(val instanceof Number) && !(val instanceof Boolean) && !(val instanceof List<?>))
-			return val.toString();
-		return val;
-	}
-	
-	private void writeAsSet(QueryParamSet paramSet,
-			Map<String, Object> paramsMap) {
-		Map<String, Object> set = new HashMap<String, Object>();
-		paramsMap.put(paramSet.getKey(), set);
-		for (QueryParam param : paramSet.getQueryParams()) {
-			String key = param.getOrgName();
-			Object val = param.getValue();
-			val = this.convertVal(val);
-			set.put(key, val);
-		}
-	}
-	
-	private void writeAsParams(QueryParamSet paramSet,
-			Map<String, Object> paramsMap) {
-		for (QueryParam param : paramSet.getQueryParams()) {
-			String key = param.getKey();
-			Object val = param.getValue();
-			val = this.convertVal(val);
-			paramsMap.put(key, val);
-		}
 	}
 
 	protected abstract GraphDatabaseService createGraphDB();

@@ -40,6 +40,7 @@ import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.result.JcError;
 import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
+import test.DBAccessSettings;
 import test.bookingtest.Booking;
 import test.bookingtest.JCypherClient;
 
@@ -78,7 +79,7 @@ public class DetachDeleteTest {
 	
 	@BeforeClass
 	public static void before() {
-		dbAccess = createDBAccess();
+		dbAccess = DBAccessSettings.createDBAccess();
 		List<JcError> errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
 			throw new JcResultException(errors);
@@ -91,12 +92,5 @@ public class DetachDeleteTest {
 			dbAccess.close();
 			dbAccess = null;
 		}
-	}
-	
-	private static IDBAccess createDBAccess() {
-		Properties props = new Properties();
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
-		return DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 	}
 }

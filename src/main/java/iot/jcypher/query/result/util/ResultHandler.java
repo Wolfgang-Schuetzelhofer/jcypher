@@ -26,15 +26,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.json.JsonArray;
-import javax.json.JsonNumber;
 import javax.json.JsonObject;
-import javax.json.JsonString;
-import javax.json.JsonValue;
-import javax.json.JsonValue.ValueType;
+
+import org.neo4j.driver.internal.value.ListValue;
+import org.neo4j.driver.v1.StatementResult;
+import org.neo4j.driver.v1.Value;
 
 import iot.jcypher.concurrency.Locking;
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.database.remote.BoltDBAccess;
+import iot.jcypher.domain.internal.DomainAccess.DomainAccessHandler.DBAccessWrapper;
 import iot.jcypher.graph.GrAccess;
 import iot.jcypher.graph.GrLabel;
 import iot.jcypher.graph.GrNode;
@@ -70,6 +71,8 @@ import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.factories.clause.WITH;
 import iot.jcypher.query.factories.xpression.C;
 import iot.jcypher.query.result.JcError;
+import iot.jcypher.query.result.util.ResultHandler.AContentHandler.PropEntry;
+import iot.jcypher.query.result.util.ResultHandler.AContentHandler.RowOrRecord;
 import iot.jcypher.query.values.JcBoolean;
 import iot.jcypher.query.values.JcCollection;
 import iot.jcypher.query.values.JcElement;
@@ -100,6 +103,7 @@ public class ResultHandler {
 		}
 	};
 
+	private AContentHandler contentHandler;
 	private IDBAccess dbAccess;
 	
 	// allow to switch off writing version property for testing purposes
@@ -108,9 +112,6 @@ public class ResultHandler {
 	private Graph graph;
 	private Locking lockingStrategy;
 	private LocalElements localElements;
-	private JcQueryResult queryResult;
-	// needed to support multiple queries
-	private int queryIndex;
 	private NodeRelationListener nodeRelationListener;
 	private Map<Long, GrNode> nodesById;
 	// contains changed and removed (deleted) nodes
@@ -124,27 +125,70 @@ public class ResultHandler {
 	private Map<String, List<GrRelation>> relationColumns;
 	private Map<String, List<GrPath>> pathColumns;
 	@SuppressWarnings("rawtypes")
-	private Map<String, ValueList> valueColumns;
-	private List<String> columns;
+	private Map<String, List> valueColumns;
 	// only needed to lookup nodes and relations
 	private List<String> unResolvedColumns;
 
 	/**
-	 * construct a ResultHandler initialized with a queryResult
-	 * @param queryResult
+	 * construct a ResultHandler initialized with a jsonResult
+	 * @param jsonResult
 	 * @param queryIndex
+	 * @param dbAccess
 	 */
-	public ResultHandler(JcQueryResult queryResult, int queryIndex, IDBAccess dbAccess) {
+	public ResultHandler(JsonObject jsonResult, int queryIndex, IDBAccess dbAccess) {
 		super();
+		init(dbAccess);
+		this.contentHandler = new JSONContentHandler(jsonResult, queryIndex);
+		
+	}
+	
+	/**
+	 * construct a ResultHandler initialized with a statementResult
+	 * @param statementResult
+	 * @param dbAccess
+	 */
+	public ResultHandler(StatementResult statementResult, IDBAccess dbAccess) {
+		super();
+		init(dbAccess);
+		this.contentHandler = new BoltContentHandler(statementResult, this);
+		
+	}
+	
+	/**
+	 * construct a ResultHandler initialized with a statementResult
+	 * @param dbAccess
+	 */
+	public ResultHandler(IDBAccess dbAccess) {
+		super();
+		init(dbAccess);
+		this.contentHandler = this.calcContentHandler(dbAccess);
+	}
+	
+	private AContentHandler calcContentHandler(IDBAccess dba) {
+		if (dba instanceof BoltDBAccess)
+			return new BoltContentHandler(null, this);
+		else if (dba instanceof DBAccessWrapper)
+			return this.calcContentHandler(((DBAccessWrapper)dba).getDelegate());
+		else
+			return new JSONContentHandler(null, -1);
+	}
+	
+	private void init(IDBAccess dbAccess) {
 		this.dbAccess = dbAccess;
-		this.queryResult = queryResult;
-		this.queryIndex = queryIndex;
 		this.lockingStrategy = Locking.NONE;
 		this.localElements = new LocalElements();
 		this.graph = GrAccess.createGraph(this);
 		GrAccess.setGraphState(this.graph, SyncState.SYNC);
 	}
-	
+
+	IDBAccess getDbAccess() {
+		return dbAccess;
+	}
+
+	AContentHandler getContentHandler() {
+		return contentHandler;
+	}
+
 	public void setLockingStrategy(Locking lockingStrategy) {
 		this.lockingStrategy = lockingStrategy;
 	}
@@ -189,15 +233,12 @@ public class ResultHandler {
 		List<GrNode> rNodes = getNodeColumns().get(colKey);
 		if (rNodes == null) {
 			rNodes = new ArrayList<GrNode>();
-			int colIdx = getColumnIndex(colKey);
-			if (colIdx == -1)
-				throw new RuntimeException("no result column: " + colKey);
-			Iterator<JsonValue> it = getDataIterator();
+			Iterator<RowOrRecord> it = this.contentHandler.getDataIterator();
 			int rowIdx = -1;
 			while(it.hasNext()) { // iterate over rows
 				rowIdx++;
-				JsonObject dataObject = (JsonObject) it.next();
-				ElementInfo ei = getElementInfo(dataObject, colIdx);
+				RowOrRecord roc = it.next();
+				ElementInfo ei = roc.getElementInfo(colKey);
 				GrNode rNode = null;
 				if (!ei.isNull) {
 					rNode = getNodesById().get(ei.id);
@@ -228,18 +269,15 @@ public class ResultHandler {
 		List<GrRelation> rRelations = getRelationColumns().get(colKey);
 		if (rRelations == null) {
 			rRelations = new ArrayList<GrRelation>();
-			int colIdx = getColumnIndex(colKey);
-			if (colIdx == -1)
-				throw new RuntimeException("no result column: " + colKey);
-			Iterator<JsonValue> it = getDataIterator();
+			Iterator<RowOrRecord> it = this.contentHandler.getDataIterator();
 			int rowIdx = -1;
 			while(it.hasNext()) { // iterate over rows
 				rowIdx++;
-				JsonObject dataObject = (JsonObject) it.next();
+				RowOrRecord roc = it.next();
 				GrRelation rRelation = null;
-				ElementInfo ei = getElementInfo(dataObject, colIdx);
+				ElementInfo ei = roc.getElementInfo(colKey);
 				if (!ei.isNull) {
-					RelationInfo ri = getRelationInfo(dataObject, colIdx);
+					RelationInfo ri = roc.getRelationInfo(colKey);
 					rRelation = getRelationsById().get(ei.id);
 					if (rRelation == null) {
 						rRelation = GrAccess.createRelation(this, new GrId(ei.id),
@@ -264,39 +302,24 @@ public class ResultHandler {
 		List<GrPath> rPaths = getPathColumns().get(colKey);
 		if (rPaths == null) {
 			rPaths = new ArrayList<GrPath>();
-			int colIdx = getColumnIndex(colKey);
-			if (colIdx == -1)
-				throw new RuntimeException("no result column: " + colKey);
-			Iterator<JsonValue> it = getDataIterator();
+			Iterator<RowOrRecord> it = this.contentHandler.getDataIterator();
 			int rowIdx = -1;
 			while(it.hasNext()) { // iterate over rows
 				rowIdx++;
-				JsonObject dataObject = (JsonObject) it.next();
-				JsonArray restArray = getRestArray(dataObject);
-				JsonValue restValue = getRestValue(restArray, colIdx);
+				RowOrRecord roc = it.next();
+				PathInfo pinfo = roc.getPathInfo(colKey);
 				
-				if (restValue.getValueType() != ValueType.NULL) {
-					JsonObject pathObject = getPathObject(dataObject, colIdx);
-					String str = pathObject.getString("start");
-					long startId = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
-					str = pathObject.getString("end");
-					long endId = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
-					JsonArray rels = pathObject.getJsonArray("relationships");
-					JsonArray nodes = null;
-					List<GrId> relIds = new ArrayList<GrId>();
-					int sz = rels.size();
+				if (pinfo != null) {
+					int sz = pinfo.relationIds.size();
+					List<GrId> relIds = new ArrayList<GrId>(sz);
 					long sid;
-					long eid = startId;
+					long eid = pinfo.startNodeId;
 					for (int i = 0; i < sz; i++) {
-						String rel = rels.getString(i);
-						long rid = Long.parseLong(rel.substring(rel.lastIndexOf('/') + 1));
+						long rid = pinfo.relationIds.get(i);
 						GrRelation rRelation = getRelationsById().get(rid);
 						if (rRelation == null) {
-							if (nodes == null)
-								nodes = pathObject.getJsonArray("nodes");
 							sid = eid;
-							str = nodes.getString(i + 1);
-							eid = Long.parseLong(str.substring(str.lastIndexOf('/') + 1));
+							eid = roc.gePathtNodeIdAt(pinfo, i + 1);
 							rRelation = GrAccess.createRelation(this, new GrId(rid),
 									new GrId(sid), new GrId(eid), rowIdx);
 							GrAccess.setState(rRelation, SyncState.SYNC);
@@ -305,10 +328,10 @@ public class ResultHandler {
 						}
 						relIds.add(new GrId(rid));
 					}
-					GrPath rPath = GrAccess.createPath(this, new GrId(startId), new GrId(endId), relIds, rowIdx);
+					GrPath rPath = GrAccess.createPath(this, new GrId(pinfo.startNodeId),
+							new GrId(pinfo.endNodeId), relIds, rowIdx);
 					rPaths.add(rPath);
-				}
-				else if (ResultSettings.includeNullValuesAndDuplicates) {
+				} else if (ResultSettings.includeNullValuesAndDuplicates) {
 					rPaths.add(null);
 				}
 			}
@@ -357,12 +380,11 @@ public class ResultHandler {
 				ucols.addAll(getUnresolvedColumns());
 				for (int i = 0; i < ucols.size(); i++) {
 					String colKey = ucols.get(i);
-					int colIdx = getColumnIndex(colKey);
-					Iterator<JsonValue> it = getDataIterator();
+					Iterator<RowOrRecord> it = this.contentHandler.getDataIterator();
 					boolean isNodeColumn = false;
 					while(it.hasNext()) { // iterate over just one row
-						JsonObject dataObject = (JsonObject) it.next();
-						ElementInfo ei = getElementInfo(dataObject, colIdx);
+						RowOrRecord roc = it.next();
+						ElementInfo ei = roc.getElementInfo(colKey);
 						if (ei != null && !ei.isNull) { // relation or node
 							if (ElemType.NODE == ei.type) {
 								isNodeColumn = true;
@@ -403,25 +425,7 @@ public class ResultHandler {
 	}
 
 	public String getRelationType(long relationId, int rowIndex) {
-		if (rowIndex >= 0) {
-			JsonObject graphObject = getGraphObject(rowIndex);
-			JsonArray elemsArray = graphObject.getJsonArray("relationships");
-			int sz = elemsArray.size();
-			for (int i = 0; i < sz; i++) {
-				JsonObject elem = elemsArray.getJsonObject(i);
-				String idStr = elem.getString("id");
-				long elemId;
-				try {
-					elemId = Long.parseLong(idStr);
-				} catch (Throwable e) {
-					throw new RuntimeException(e);
-				}
-				if (relationId == elemId) {
-					return elem.getString("type");
-				}
-			}
-		}
-		return null;
+		return this.contentHandler.getRelationType(relationId, rowIndex);
 	}
 	
 	public List<GrProperty> getNodeProperties(GrId nodeId, int rowIndex) {
@@ -433,12 +437,11 @@ public class ResultHandler {
 	
 	private List<GrProperty> getNodeProperties(long nodeId, int rowIndex) {
 		List<GrProperty> props = new ArrayList<GrProperty>();
-		JsonObject propertiesObject = getPropertiesObject(nodeId, rowIndex, ElemType.NODE);
-		Iterator<Entry<String, JsonValue>> esIt = propertiesObject.entrySet().iterator();
+		Iterator<PropEntry> esIt = this.contentHandler.getPropertiesIterator(nodeId, rowIndex, ElemType.NODE);
 		while (esIt.hasNext()) {
-			Entry<String, JsonValue> entry = esIt.next();
-			GrProperty prop = GrAccess.createProperty(entry.getKey());
-			prop.setValue(convertJsonValue(entry.getValue()));
+			PropEntry entry = esIt.next();
+			GrProperty prop = GrAccess.createProperty(entry.getPropName());
+			prop.setValue(this.contentHandler.convertContentValue(entry.getPropValue()));
 			GrAccess.setState(prop, SyncState.SYNC);
 			props.add(prop);
 		}
@@ -446,17 +449,7 @@ public class ResultHandler {
 	}
 	
 	public List<GrLabel> getNodeLabels(long nodeId, int rowIndex) {
-		List<GrLabel> labels = new ArrayList<GrLabel>();
-		if (rowIndex >= 0) {
-			JsonArray labelsArray = getNodeLabelsObject(nodeId, rowIndex);
-			int sz = labelsArray.size();
-			for (int i = 0; i < sz; i++) {
-				GrLabel label = GrAccess.createLabel(labelsArray.getString(i));
-				GrAccess.setState(label, SyncState.SYNC);
-				labels.add(label);
-			}
-		}
-		return labels;
+		return this.contentHandler.getNodeLabels(nodeId, rowIndex);
 	}
 	
 	public List<GrProperty> getRelationProperties(GrId relationId, int rowIndex) {
@@ -468,60 +461,15 @@ public class ResultHandler {
 	
 	private List<GrProperty> getRelationProperties(long relationId, int rowIndex) {
 		List<GrProperty> props = new ArrayList<GrProperty>();
-		JsonObject propertiesObject = getPropertiesObject(relationId, rowIndex, ElemType.RELATION);
-		Iterator<Entry<String, JsonValue>> esIt = propertiesObject.entrySet().iterator();
+		Iterator<PropEntry> esIt = this.contentHandler.getPropertiesIterator(relationId, rowIndex, ElemType.RELATION);
 		while (esIt.hasNext()) {
-			Entry<String, JsonValue> entry = esIt.next();
-			GrProperty prop = GrAccess.createProperty(entry.getKey());
-			prop.setValue(convertJsonValue(entry.getValue()));
+			PropEntry entry = esIt.next();
+			GrProperty prop = GrAccess.createProperty(entry.getPropName());
+			prop.setValue(this.contentHandler.convertContentValue(entry.getPropValue()));
 			GrAccess.setState(prop, SyncState.SYNC);
 			props.add(prop);
 		}
 		return props;
-	}
-	
-	private JsonObject getPropertiesObject(long id, int rowIndex, ElemType typ) {
-		JsonObject graphObject = getGraphObject(rowIndex);
-		JsonArray elemsArray = null;
-		if (typ == ElemType.NODE)
-			elemsArray = graphObject.getJsonArray("nodes");
-		else if (typ == ElemType.RELATION)
-			elemsArray = graphObject.getJsonArray("relationships");
-		int sz = elemsArray.size();
-		for (int i = 0; i < sz; i++) {
-			JsonObject elem = elemsArray.getJsonObject(i);
-			String idStr = elem.getString("id");
-			long elemId;
-			try {
-				elemId = Long.parseLong(idStr);
-			} catch (Throwable e) {
-				throw new RuntimeException(e);
-			}
-			if (id == elemId) {
-				return elem.getJsonObject("properties");
-			}
-		}
-		return null;
-	}
-	
-	private JsonArray getNodeLabelsObject(long id, int rowIndex) {
-		JsonObject graphObject = getGraphObject(rowIndex);
-		JsonArray elemsArray = graphObject.getJsonArray("nodes");
-		int sz = elemsArray.size();
-		for (int i = 0; i < sz; i++) {
-			JsonObject elem = elemsArray.getJsonObject(i);
-			String idStr = elem.getString("id");
-			long elemId;
-			try {
-				elemId = Long.parseLong(idStr);
-			} catch (Throwable e) {
-				throw new RuntimeException(e);
-			}
-			if (id == elemId) {
-				return elem.getJsonArray("labels");
-			}
-		}
-		return null;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -533,21 +481,18 @@ public class ResultHandler {
 			colKey = ctxt.buffer.toString();
 		} else
 			colKey =  ValueAccess.getName(jcValue);
-		ValueList<T> vals = getValueColumns().get(colKey);
+		List<T> vals = getValueColumns().get(colKey);
 		if (vals == null) {
-			vals = new ValueList<T>();
-			int colIdx = getColumnIndex(colKey);
-			if (colIdx == -1)
-				throw new RuntimeException("no result column: " + colKey);
-			Iterator<JsonValue> it = getDataIterator();
+			vals = new ArrayList<T>();
+			Iterator<RowOrRecord> it = this.contentHandler.getDataIterator();
 			while(it.hasNext()) { // iterate over rows
-				JsonObject dataObject = (JsonObject) it.next();
-				 addValue(dataObject, colIdx, vals);
+				RowOrRecord roc = it.next();
+				roc.addValue(colKey, vals);
 			}
 			getValueColumns().put(colKey, vals);
 			getUnresolvedColumns().remove(colKey);
 		}
-		return vals.values;
+		return vals;
 	}
 
 	private Map<String, List<GrNode>> getNodeColumns() {
@@ -569,9 +514,9 @@ public class ResultHandler {
 	}
 	
 	@SuppressWarnings("rawtypes")
-	private Map<String, ValueList> getValueColumns() {
+	private Map<String, List> getValueColumns() {
 		if (this.valueColumns == null)
-			this.valueColumns = new HashMap<String, ValueList>();
+			this.valueColumns = new HashMap<String, List>();
 		return this.valueColumns;
 	}
 	
@@ -587,111 +532,12 @@ public class ResultHandler {
 		return this.relationsById;
 	}
 	
-	private List<String> getColumns() {
-		if (this.columns == null) {
-			this.columns = new ArrayList<String>();
-			JsonObject jsres = this.queryResult.getJsonResult();
-			JsonArray cols = ((JsonObject)jsres.getJsonArray("results").get(
-					this.queryIndex)).getJsonArray("columns");
-			int sz = cols.size();
-			for (int i = 0;i < sz; i++) {
-				this.columns.add(cols.getString(i));
-			}
-		}
-		return this.columns;
-	}
-	
 	private List<String> getUnresolvedColumns() {
 		if (this.unResolvedColumns == null) {
 			this.unResolvedColumns = new ArrayList<String>();
-			this.unResolvedColumns.addAll(getColumns());
+			this.unResolvedColumns.addAll(this.contentHandler.getColumns());
 		}
 		return this.unResolvedColumns;
-	}
-	
-	private int getColumnIndex(String colKey) {
-		List<String> cols = getColumns();
-		for (int i = 0; i < cols.size(); i++) {
-			if (cols.get(i).equals(colKey))
-				return i;
-		}
-		return -1;
-	}
-	
-	private Iterator<JsonValue> getDataIterator() {
-		JsonObject jsres = this.queryResult.getJsonResult();
-		JsonArray datas = ((JsonObject)jsres.getJsonArray("results").get(
-				this.queryIndex)).getJsonArray("data");
-		return datas.iterator();
-	}
-	
-	private JsonArray getRestArray(JsonObject dataObject) {
-		return dataObject.getJsonArray("rest");
-	}
-	
-	private JsonValue getRestValue(JsonArray restArray, int colIdx) {
-		JsonValue obj = restArray.get(colIdx);
-		if (obj.getValueType() == ValueType.ARRAY && ((JsonArray)obj).size() > 0)
-			obj = ((JsonArray)obj).get(0);
-		return obj;
-	}
-	
-	private JsonObject getRestObject(JsonArray restArray, int colIdx) {
-		JsonValue obj = restArray.get(colIdx);
-		if (obj.getValueType() == ValueType.ARRAY && ((JsonArray)obj).size() > 0)
-			obj = ((JsonArray)obj).get(0);
-		return (JsonObject) obj;
-	}
-	
-	private JsonObject getDataObject(int rowIndex) {
-		JsonObject jsres = this.queryResult.getJsonResult();
-		JsonArray datas = ((JsonObject)jsres.getJsonArray("results").get(
-				this.queryIndex)).getJsonArray("data");
-		return datas.getJsonObject(rowIndex);
-	}
-	
-	private JsonObject getGraphObject(int rowIndex) {
-		JsonObject dataObject = getDataObject(rowIndex);
-		return dataObject.getJsonObject("graph");
-	}
-	
-	private RelationInfo getRelationInfo(JsonObject dataObject, int colIdx) {
-		JsonArray restArray = getRestArray(dataObject);
-		JsonObject restObject = getRestObject(restArray, colIdx);
-		String startString = restObject.getString("start");
-		String endString = restObject.getString("end");
-		RelationInfo ri = RelationInfo.parse(startString, endString);
-		return ri;
-	}
-	
-	private ElementInfo getElementInfo(JsonObject dataObject, int colIdx) {
-		JsonArray restArray = getRestArray(dataObject);
-		JsonValue obj = getRestValue(restArray, colIdx);
-		if (obj.getValueType() == ValueType.OBJECT) {
-			JsonObject restObject = (JsonObject)obj;
-			if (restObject.containsKey("self")) {
-				String selfString = restObject.getString("self");
-				if (selfString != null) {
-					ElementInfo ei = ElementInfo.parse(selfString);
-					return ei;
-				}
-			}
-		} else if (obj.getValueType() == ValueType.NULL) {
-			ElementInfo ei = ElementInfo.nullElement();
-			return ei;
-		}
-		return null;
-	}
-	
-	private JsonObject getPathObject(JsonObject dataObject, int colIdx) {
-		JsonArray restArray = getRestArray(dataObject);
-		return getRestObject(restArray, colIdx);
-	}
-	
-	private void addValue(JsonObject dataObject, int colIdx, ValueList<?> vals) {
-		JsonArray restArray = getRestArray(dataObject);
-		JsonValue restVal = restArray.get(colIdx);
-		vals.add(restVal);
 	}
 	
 	private NodeRelationListener getNodeRelationListener() {
@@ -700,32 +546,6 @@ public class ResultHandler {
 		return this.nodeRelationListener;
 	}
 
-	private static Object convertJsonValue(JsonValue val) {
-		Object ret = null;
-		ValueType typ = val.getValueType();
-		if (typ == ValueType.NUMBER)
-			ret = ((JsonNumber)val).bigDecimalValue();
-		else if (typ == ValueType.STRING)
-			ret = ((JsonString)val).getString();
-		else if (typ == ValueType.FALSE)
-			ret = Boolean.FALSE;
-		else if (typ == ValueType.TRUE)
-			ret = Boolean.TRUE;
-		else if (typ == ValueType.ARRAY) {
-			JsonArray arr = (JsonArray)val;
-			List<Object> vals = new ArrayList<Object>();
-			int sz = arr.size();
-			for (int i = 0; i < sz; i++) {
-				JsonValue v = arr.get(i);
-				vals.add(convertJsonValue(v));
-			}
-			ret = vals;
-		} else if (typ == ValueType.OBJECT) {
-			//JsonObject obj = (JsonObject)val;
-		}
-		return ret;
-	}
-	
 	/**
 	 * Update the underlying database with changes made on the graph
 	 * @return a list of errors, which is empty if no errors occurred
@@ -948,17 +768,17 @@ public class ResultHandler {
 	}
 
 	/**************************************/
-	private enum ElemType {
+	public enum ElemType {
 		NODE, RELATION
 	}
 	
 	/**************************************/
-	private static class ElementInfo {
+	public static class ElementInfo {
 		private long id;
 		private ElemType type;
 		private boolean isNull;
 		
-		private static ElementInfo parse(String selfString) {
+		public static ElementInfo parse(String selfString) {
 			ElementInfo ret = new ElementInfo();
 			ret.isNull = false;
 			int lidx = selfString.lastIndexOf('/');
@@ -979,7 +799,29 @@ public class ResultHandler {
 			return ret;
 		}
 		
-		private static ElementInfo nullElement() {
+		public static ElementInfo fromRecordValue(Value val) {
+			if (val instanceof ListValue)
+				return ElementInfo.fromRecordValue(((ListValue)val).get(0));
+			ElementInfo ret = null;
+			if (val != null) {
+				String typName = val.type().name(); // NODE, RELATIONSHIP, NULL
+				if ("NODE".equals(typName)) {
+					ret = new ElementInfo();
+					ret.isNull = false;
+					ret.id = val.asNode().id();
+					ret.type = ElemType.NODE;
+				} else if ("RELATIONSHIP".equals(typName)) {
+					ret = new ElementInfo();
+					ret.isNull = false;
+					ret.id = val.asRelationship().id();
+					ret.type = ElemType.RELATION;
+				} else if ("NULL".equals(typName))
+					ret = ElementInfo.nullElement();
+			}
+			return ret;
+		}
+		
+		public static ElementInfo nullElement() {
 			ElementInfo ret = new ElementInfo();
 			ret.isNull = true;
 			return ret;
@@ -987,14 +829,29 @@ public class ResultHandler {
 	}
 	
 	/**************************************/
-	private static class RelationInfo {
+	public static class RelationInfo {
 		private long startNodeId;
 		private long endNodeId;
 		
-		private static RelationInfo parse(String startString, String endString) {
+		public static RelationInfo parse(String startString, String endString) {
 			RelationInfo ret = new RelationInfo();
 			ret.startNodeId = ret.parseId(startString);
 			ret.endNodeId = ret.parseId(endString);
+			return ret;
+		}
+		
+		public static RelationInfo fromRecordValue(Value val) {
+			if (val instanceof ListValue)
+				return RelationInfo.fromRecordValue(((ListValue)val).get(0));
+			RelationInfo ret = null;
+			if (val != null) {
+				String typName = val.type().name(); // must be: RELATIONSHIP
+				if ("RELATIONSHIP".equals(typName)) {
+					ret = new RelationInfo();
+					ret.startNodeId = val.asRelationship().startNodeId();
+					ret.endNodeId = val.asRelationship().endNodeId();
+				}
+			}
 			return ret;
 		}
 		
@@ -1005,19 +862,29 @@ public class ResultHandler {
 	}
 	
 	/**************************************/
-	private static class ValueList<T> {
-		private List<T> values = new ArrayList<T>();
+	public static class PathInfo {
+		private long startNodeId;
+		private long endNodeId;
+		private List<Long> relationIds;
+		private Object contentObject;
 		
-		@SuppressWarnings("unchecked")
-		private void add (JsonValue val) {
-			Object v = convertJsonValue(val);
-			if (v != null)
-				this.values.add((T) v);
-			else {
-				if (includeNullValues.get().booleanValue())
-					this.values.add((T) v);
-			}
+		public PathInfo(long startNodeId, long endNodeId, List<Long> relationIds,
+				Object userObject) {
+			super();
+			this.startNodeId = startNodeId;
+			this.endNodeId = endNodeId;
+			this.relationIds = relationIds;
+			this.contentObject = userObject;
 		}
+
+		public Object getContentObject() {
+			return contentObject;
+		}
+
+		public void setContentObject(Object userObject) {
+			this.contentObject = userObject;
+		}
+		
 	}
 	
 	/**************************************/
@@ -1596,6 +1463,44 @@ public class ResultHandler {
 		public boolean isEmpty() {
 			return (this.localNodesById == null || this.localNodesById.size() == 0) &&
 					(this.localRelationsById == null || this.localRelationsById.size() == 0);
+		}
+	}
+	
+	/**************************************/
+	public static abstract class AContentHandler {
+		public abstract List<String> getColumns();
+		public abstract int getColumnIndex(String colKey);
+		public abstract Iterator<RowOrRecord> getDataIterator();
+		public abstract Object convertContentValue(Object val);
+		public abstract Iterator<PropEntry> getPropertiesIterator(long id, int rowIndex, ElemType typ);
+		public abstract String getRelationType(long relationId, int rowIndex);
+		public abstract List<GrLabel> getNodeLabels(long nodeId, int rowIndex);
+		
+		/*********************************************/
+		public static class PropEntry {
+			private String propName;
+			private Object propValue;
+			
+			public PropEntry(String propName, Object propValue) {
+				super();
+				this.propName = propName;
+				this.propValue = propValue;
+			}
+			public String getPropName() {
+				return propName;
+			}
+			public Object getPropValue() {
+				return propValue;
+			}
+		}
+		
+		/*********************************************/
+		public abstract class RowOrRecord {
+			public abstract ElementInfo getElementInfo(String colKey);
+			public abstract RelationInfo getRelationInfo(String colKey);
+			public abstract PathInfo getPathInfo(String colKey);
+			public abstract long gePathtNodeIdAt(PathInfo pathInfo, int index);
+			public abstract <T> void addValue(String colKey, List<T> vals);
 		}
 	}
 }

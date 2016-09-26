@@ -1391,6 +1391,13 @@ public class ClauseTest extends AbstractTestSuite {
 		assertQuery(testId, result, tdr.getTestData(testId));
 		
 		/*******************************/
+		create = CREATE.node(n).label(Labels.Person);
+
+		result = print(create, Format.PRETTY_1);
+		testId = "CREATE_02";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
 		create = CREATE.node(n).label("Person").label("Swedish");
 
 		result = print(create, Format.PRETTY_1);
@@ -1768,5 +1775,9 @@ public class ClauseTest extends AbstractTestSuite {
 		result = print(union, Format.PRETTY_1);
 		testId = "UNION_02";
 		assertQuery(testId, result, tdr.getTestData(testId));
+	}
+	
+	public static enum Labels {
+		Person
 	}
 }

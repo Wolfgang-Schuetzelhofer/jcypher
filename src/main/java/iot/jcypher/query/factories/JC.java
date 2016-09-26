@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,7 +30,7 @@ public class JC {
 	 * <div color='red' style="font-size:18px;color:red"><i>return the current time, returns the same value during a whole query</i></div>
 	 * <br/>
 	 */
-	public static ValueElement timeStamp() {
+	public static JcValue timeStamp() {
 		return ValueAccess.timeStamp();
 	}
 	

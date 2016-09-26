@@ -49,6 +49,7 @@ import iot.jcypher.query.writer.Format;
 import iot.jcypher.util.QueriesPrintObserver;
 import iot.jcypher.util.Util;
 import test.AbstractTestSuite;
+import test.DBAccessSettings;
 import util.TestDataReader;
 
 public class QueryParameterTest extends AbstractTestSuite {
@@ -130,16 +131,7 @@ public class QueryParameterTest extends AbstractTestSuite {
 
 	@BeforeClass
 	public static void before() {
-		Properties props = new Properties();
-
-		// properties for remote access and for embedded access
-		// (not needed for in memory access)
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
-
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
-		// dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props,
-		// "neo4j", "jcypher");
+		dbAccess = DBAccessSettings.createDBAccess();
 
 		QueriesPrintObserver.addOutputStream(System.out);
 		queriesStream = new ByteArrayOutputStream();

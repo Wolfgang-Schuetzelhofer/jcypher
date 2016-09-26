@@ -23,6 +23,8 @@ import java.util.List;
 import javax.json.JsonArray;
 import javax.json.JsonObject;
 
+import org.neo4j.driver.v1.StatementResult;
+
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
@@ -50,11 +52,15 @@ public class JcQueryResult {
 	public JcQueryResult(JsonObject jsonResult, int queryIndex, IDBAccess dbAccess) {
 		super();
 		this.jsonResult = jsonResult;
-		this.resultHandler = new ResultHandler(this, queryIndex, dbAccess);
+		this.resultHandler = new ResultHandler(jsonResult, queryIndex, dbAccess);
+	}
+	
+	public JcQueryResult(StatementResult statementResult, IDBAccess dbAccess) {
+		this.resultHandler = new ResultHandler(statementResult, dbAccess);
 	}
 
 	/**
-	 * @return the JsonObject representing the query result.
+	 * @return the JsonObject representing the query result. Is null when BOLT protocol is used.
 	 */
 	public JsonObject getJsonResult() {
 		return jsonResult;
@@ -158,15 +164,17 @@ public class JcQueryResult {
 		if (this.dbErrors == null) {
 			this.dbErrors = new ArrayList<JcError>();
 			JsonObject obj = getJsonResult();
-			JsonArray errs = obj.getJsonArray("errors");
-			int size = errs.size();
-			for (int i = 0; i < size; i++) {
-				JsonObject err = errs.getJsonObject(i);
-				String info = null;
-				if (err.containsKey("info"))
-					info = err.getString("info");
-				this.dbErrors.add(new JcError(err.getString("code"),
-						err.getString("message"), info));
+			if (obj != null) {
+				JsonArray errs = obj.getJsonArray("errors");
+				int size = errs.size();
+				for (int i = 0; i < size; i++) {
+					JsonObject err = errs.getJsonObject(i);
+					String info = null;
+					if (err.containsKey("info"))
+						info = err.getString("info");
+					this.dbErrors.add(new JcError(err.getString("code"),
+							err.getString("message"), info));
+				}
 			}
 		}
 		return this.dbErrors;
@@ -185,5 +193,9 @@ public class JcQueryResult {
 	 */
 	public boolean hasErrors() {
 		return !this.getGeneralErrors().isEmpty() || !this.getDBErrors().isEmpty();
+	}
+	
+	ResultHandler getResultHandler() {
+		return this.resultHandler;
 	}
 }

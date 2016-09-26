@@ -1,0 +1,790 @@
+----ACCESS_01:
+
+{
+    "results":[
+        {
+            "columns":[
+                "movie"
+            ],
+            "data":[
+                {
+                    "rest":[
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3686,
+                                "labels":[
+                                    "Movie"
+                                ]
+                            },
+_IGNORE_                            "paged_traverse":"http://localhost:7474/db/data/node/3686/paged/traverse/{returnType}{?pageSize,leaseTime}",
+_IGNORE_                            "outgoing_relationships":"http://localhost:7474/db/data/node/3686/relationships/out",
+_IGNORE_                            "outgoing_typed_relationships":"http://localhost:7474/db/data/node/3686/relationships/out/{-list|&|types}",
+_IGNORE_                            "create_relationship":"http://localhost:7474/db/data/node/3686/relationships",
+_IGNORE_                            "labels":"http://localhost:7474/db/data/node/3686/labels",
+_IGNORE_                            "traverse":"http://localhost:7474/db/data/node/3686/traverse/{returnType}",
+_IGNORE_                            "all_relationships":"http://localhost:7474/db/data/node/3686/relationships/all",
+_IGNORE_                            "all_typed_relationships":"http://localhost:7474/db/data/node/3686/relationships/all/{-list|&|types}",
+_IGNORE_                            "property":"http://localhost:7474/db/data/node/3686/properties/{key}",
+_IGNORE_                            "self":"http://localhost:7474/db/data/node/3686",
+_IGNORE_                            "incoming_relationships":"http://localhost:7474/db/data/node/3686/relationships/in",
+_IGNORE_                            "properties":"http://localhost:7474/db/data/node/3686/properties",
+_IGNORE_                            "incoming_typed_relationships":"http://localhost:7474/db/data/node/3686/relationships/in/{-list|&|types}",
+                            "data":{
+                                "year":"1999-03-31",
+                                "title":"The Matrix"
+                            }
+                        }
+                    ],
+                    "graph":{
+                        "nodes":[
+                            {
+_IGNORE_                                "id":"3686",
+                                "labels":[
+                                    "Movie"
+                                ],
+                                "properties":{
+                                    "year":"1999-03-31",
+                                    "title":"The Matrix"
+                                }
+                            }
+                        ],
+                        "relationships":[
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "errors":[
+    ]
+}
+------------------------------------------------------------
+
+----ACCESS_02:
+
+{
+    "results":[
+        {
+            "columns":[
+                "n",
+                "r"
+            ],
+            "data":[
+                {
+                    "rest":[
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3731,
+                                "labels":[
+                                    "Actor"
+                                ]
+                            },
+_IGNORE_                           "paged_traverse":"http://localhost:7474/db/data/node/3731/paged/traverse/{returnType}{?pageSize,leaseTime}",
+_IGNORE_                           "outgoing_relationships":"http://localhost:7474/db/data/node/3731/relationships/out",
+_IGNORE_                            "outgoing_typed_relationships":"http://localhost:7474/db/data/node/3731/relationships/out/{-list|&|types}",
+_IGNORE_                            "create_relationship":"http://localhost:7474/db/data/node/3731/relationships",
+_IGNORE_                            "labels":"http://localhost:7474/db/data/node/3731/labels",
+_IGNORE_                            "traverse":"http://localhost:7474/db/data/node/3731/traverse/{returnType}",
+_IGNORE_                            "all_relationships":"http://localhost:7474/db/data/node/3731/relationships/all",
+_IGNORE_                            "all_typed_relationships":"http://localhost:7474/db/data/node/3731/relationships/all/{-list|&|types}",
+_IGNORE_                            "property":"http://localhost:7474/db/data/node/3731/properties/{key}",
+_IGNORE_                            "self":"http://localhost:7474/db/data/node/3731",
+_IGNORE_                            "incoming_relationships":"http://localhost:7474/db/data/node/3731/relationships/in",
+_IGNORE_                            "properties":"http://localhost:7474/db/data/node/3731/properties",
+_IGNORE_                            "incoming_typed_relationships":"http://localhost:7474/db/data/node/3731/relationships/in/{-list|&|types}",
+                            "data":{
+                                "name":"Keanu Reeves",
+                                "rating":5
+                            }
+                        },
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3244,
+                                "type":"ACTS_IN"
+                            },
+_IGNORE_                            "start":"http://localhost:7474/db/data/node/3731",
+_IGNORE_                            "property":"http://localhost:7474/db/data/relationship/3244/properties/{key}",
+_IGNORE_                            "self":"http://localhost:7474/db/data/relationship/3244",
+_IGNORE_                            "end":"http://localhost:7474/db/data/node/3729",
+                            "type":"ACTS_IN",
+_IGNORE_                            "properties":"http://localhost:7474/db/data/relationship/3244/properties",
+                            "data":{
+                                "role":"Neo"
+                            }
+                        }
+                    ],
+                    "graph":{
+                        "nodes":[
+                            {
+_IGNORE_                                "id":"3729",
+                                "labels":[
+                                    "Movie"
+                                ],
+                                "properties":{
+                                    "year":"2003-05-07",
+                                    "title":"The Matrix Reloaded"
+                                }
+                            },
+                            {
+_IGNORE_                                "id":"3731",
+                                "labels":[
+                                    "Actor"
+                                ],
+                                "properties":{
+                                    "name":"Keanu Reeves",
+                                    "rating":5
+                                }
+                            }
+                        ],
+                        "relationships":[
+                            {
+_IGNORE_                                "id":"3244",
+                                "type":"ACTS_IN",
+_IGNORE_                                "startNode":"3731",
+_IGNORE_                                "endNode":"3729",
+                                "properties":{
+                                    "role":"Neo"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "rest":[
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3731,
+                                "labels":[
+                                    "Actor"
+                                ]
+                            },
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+                            "data":{
+                                "name":"Keanu Reeves",
+                                "rating":5
+                            }
+                        },
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3245,
+                                "type":"ACTS_IN"
+                            },
+_IGNORE_
+_IGNORE_
+_IGNORE_
+_IGNORE_
+                            "type":"ACTS_IN",
+_IGNORE_                            "properties":"http://localhost:7474/db/data/relationship/3245/properties",
+                            "data":{
+                                "role":"Neo"
+                            }
+                        }
+                    ],
+                    "graph":{
+                        "nodes":[
+                            {
+_IGNORE_                                "id":"3730",
+                                "labels":[
+                                    "Movie"
+                                ],
+                                "properties":{
+                                    "year":"2003-10-27",
+                                    "title":"The Matrix Revolutions"
+                                }
+                            },
+                            {
+_IGNORE_                                "id":"3731",
+                                "labels":[
+                                    "Actor"
+                                ],
+                                "properties":{
+                                    "name":"Keanu Reeves",
+                                    "rating":5
+                                }
+                            }
+                        ],
+                        "relationships":[
+                            {
+_IGNORE_                                "id":"3245",
+                                "type":"ACTS_IN",
+_IGNORE_                                "startNode":"3731",
+_IGNORE_                                "endNode":"3730",
+                                "properties":{
+                                    "role":"Neo"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "rest":[
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3731,
+                                "labels":[
+                                    "Actor"
+                                ]
+                            },
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_
+                            "data":{
+                                "name":"Keanu Reeves",
+                                "rating":5
+                            }
+                        },
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3243,
+                                "type":"ACTS_IN"
+                            },
+_IGNORE_
+_IGNORE_
+_IGNORE_
+_IGNORE_
+                            "type":"ACTS_IN",
+_IGNORE_                            "properties":"http://localhost:7474/db/data/relationship/3243/properties",
+                            "data":{
+                                "role":"Neo"
+                            }
+                        }
+                    ],
+                    "graph":{
+                        "nodes":[
+                            {
+_IGNORE_                                "id":"3728",
+                                "labels":[
+                                    "Movie"
+                                ],
+                                "properties":{
+                                    "year":"1999-03-31",
+                                    "title":"The Matrix"
+                                }
+                            },
+                            {
+_IGNORE_                                "id":"3731",
+                                "labels":[
+                                    "Actor"
+                                ],
+                                "properties":{
+                                    "name":"Keanu Reeves",
+                                    "rating":5
+                                }
+                            }
+                        ],
+                        "relationships":[
+                            {
+_IGNORE_                                "id":"3243",
+                                "type":"ACTS_IN",
+_IGNORE_                                "startNode":"3731",
+_IGNORE_                                "endNode":"3728",
+                                "properties":{
+                                    "role":"Neo"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "rest":[
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3732,
+                                "labels":[
+                                    "Actor"
+                                ]
+                            },
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_
+                            "data":{
+                                "name":"Laurence Fishburne",
+                                "rating":6
+                            }
+                        },
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3246,
+                                "type":"ACTS_IN"
+                            },
+_IGNORE_
+_IGNORE_
+_IGNORE_
+_IGNORE_
+                            "type":"ACTS_IN",
+_IGNORE_                            "properties":"http://localhost:7474/db/data/relationship/3246/properties",
+                            "data":{
+                                "role":"Morpheus"
+                            }
+                        }
+                    ],
+                    "graph":{
+                        "nodes":[
+                            {
+_IGNORE_                                "id":"3728",
+                                "labels":[
+                                    "Movie"
+                                ],
+                                "properties":{
+                                    "year":"1999-03-31",
+                                    "title":"The Matrix"
+                                }
+                            },
+                            {
+_IGNORE_                                "id":"3732",
+                                "labels":[
+                                    "Actor"
+                                ],
+                                "properties":{
+                                    "name":"Laurence Fishburne",
+                                    "rating":6
+                                }
+                            }
+                        ],
+                        "relationships":[
+                            {
+_IGNORE_                                "id":"3246",
+                                "type":"ACTS_IN",
+_IGNORE_                                "startNode":"3732",
+_IGNORE_                                "endNode":"3728",
+                                "properties":{
+                                    "role":"Morpheus"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "rest":[
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3732,
+                                "labels":[
+                                    "Actor"
+                                ]
+                            },
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_
+                            "data":{
+                                "name":"Laurence Fishburne",
+                                "rating":6
+                            }
+                        },
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3247,
+                                "type":"ACTS_IN"
+                            },
+_IGNORE_
+_IGNORE_
+_IGNORE_
+_IGNORE_
+                            "type":"ACTS_IN",
+_IGNORE_                            "properties":"http://localhost:7474/db/data/relationship/3247/properties",
+                            "data":{
+                                "role":"Morpheus"
+                            }
+                        }
+                    ],
+                    "graph":{
+                        "nodes":[
+                            {
+_IGNORE_                                "id":"3729",
+                                "labels":[
+                                    "Movie"
+                                ],
+                                "properties":{
+                                    "year":"2003-05-07",
+                                    "title":"The Matrix Reloaded"
+                                }
+                            },
+                            {
+_IGNORE_                                "id":"3732",
+                                "labels":[
+                                    "Actor"
+                                ],
+                                "properties":{
+                                    "name":"Laurence Fishburne",
+                                    "rating":6
+                                }
+                            }
+                        ],
+                        "relationships":[
+                            {
+_IGNORE_                                "id":"3247",
+                                "type":"ACTS_IN",
+_IGNORE_                                "startNode":"3732",
+_IGNORE_                                "endNode":"3729",
+                                "properties":{
+                                    "role":"Morpheus"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "rest":[
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3732,
+                                "labels":[
+                                    "Actor"
+                                ]
+                            },
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_
+                            "data":{
+                                "name":"Laurence Fishburne",
+                                "rating":6
+                            }
+                        },
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3248,
+                                "type":"ACTS_IN"
+                            },
+_IGNORE_
+_IGNORE_
+_IGNORE_
+_IGNORE_
+                            "type":"ACTS_IN",
+_IGNORE_                            "properties":"http://localhost:7474/db/data/relationship/3248/properties",
+                            "data":{
+                                "role":"Morpheus"
+                            }
+                        }
+                    ],
+                    "graph":{
+                        "nodes":[
+                            {
+_IGNORE_                                "id":"3730",
+                                "labels":[
+                                    "Movie"
+                                ],
+                                "properties":{
+                                    "year":"2003-10-27",
+                                    "title":"The Matrix Revolutions"
+                                }
+                            },
+                            {
+_IGNORE_                                "id":"3732",
+                                "labels":[
+                                    "Actor"
+                                ],
+                                "properties":{
+                                    "name":"Laurence Fishburne",
+                                    "rating":6
+                                }
+                            }
+                        ],
+                        "relationships":[
+                            {
+_IGNORE_                                "id":"3248",
+                                "type":"ACTS_IN",
+_IGNORE_                                "startNode":"3732",
+_IGNORE_                                "endNode":"3730",
+                                "properties":{
+                                    "role":"Morpheus"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "rest":[
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3733,
+                                "labels":[
+                                    "Actor"
+                                ]
+                            },
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_
+                            "data":{
+                                "name":"Carrie-Anne Moss",
+                                "rating":7
+                            }
+                        },
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3249,
+                                "type":"ACTS_IN"
+                            },
+_IGNORE_
+_IGNORE_
+_IGNORE_
+_IGNORE_
+                            "type":"ACTS_IN",
+_IGNORE_                            "properties":"http://localhost:7474/db/data/relationship/3249/properties",
+                            "data":{
+                                "role":"Trinity"
+                            }
+                        }
+                    ],
+                    "graph":{
+                        "nodes":[
+                            {
+_IGNORE_                                "id":"3728",
+                                "labels":[
+                                    "Movie"
+                                ],
+                                "properties":{
+                                    "year":"1999-03-31",
+                                    "title":"The Matrix"
+                                }
+                            },
+                            {
+_IGNORE_                                "id":"3733",
+                                "labels":[
+                                    "Actor"
+                                ],
+                                "properties":{
+                                    "name":"Carrie-Anne Moss",
+                                    "rating":7
+                                }
+                            }
+                        ],
+                        "relationships":[
+                            {
+_IGNORE_                                "id":"3249",
+                                "type":"ACTS_IN",
+_IGNORE_                                "startNode":"3733",
+_IGNORE_                                "endNode":"3728",
+                                "properties":{
+                                    "role":"Trinity"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "rest":[
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3733,
+                                "labels":[
+                                    "Actor"
+                                ]
+                            },
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_
+                            "data":{
+                                "name":"Carrie-Anne Moss",
+                                "rating":7
+                            }
+                        },
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3251,
+                                "type":"ACTS_IN"
+                            },
+_IGNORE_
+_IGNORE_
+_IGNORE_
+_IGNORE_
+                            "type":"ACTS_IN",
+_IGNORE_                            "properties":"http://localhost:7474/db/data/relationship/3251/properties",
+                            "data":{
+                                "role":"Trinity"
+                            }
+                        }
+                    ],
+                    "graph":{
+                        "nodes":[
+                            {
+_IGNORE_                                "id":"3730",
+                                "labels":[
+                                    "Movie"
+                                ],
+                                "properties":{
+                                    "year":"2003-10-27",
+                                    "title":"The Matrix Revolutions"
+                                }
+                            },
+                            {
+_IGNORE_                                "id":"3733",
+                                "labels":[
+                                    "Actor"
+                                ],
+                                "properties":{
+                                    "name":"Carrie-Anne Moss",
+                                    "rating":7
+                                }
+                            }
+                        ],
+                        "relationships":[
+                            {
+_IGNORE_                                "id":"3251",
+                                "type":"ACTS_IN",
+_IGNORE_                                "startNode":"3733",
+_IGNORE_                                "endNode":"3730",
+                                "properties":{
+                                    "role":"Trinity"
+                                }
+                            }
+                        ]
+                    }
+                },
+                {
+                    "rest":[
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3733,
+                                "labels":[
+                                    "Actor"
+                                ]
+                            },
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_ 
+_IGNORE_
+                            "data":{
+                                "name":"Carrie-Anne Moss",
+                                "rating":7
+                            }
+                        },
+                        {
+                            "metadata":{
+_IGNORE_                                "id":3250,
+                                "type":"ACTS_IN"
+                            },
+_IGNORE_
+_IGNORE_
+_IGNORE_
+_IGNORE_
+                            "type":"ACTS_IN",
+_IGNORE_                            "properties":"http://localhost:7474/db/data/relationship/3250/properties",
+                            "data":{
+                                "role":"Trinity"
+                            }
+                        }
+                    ],
+                    "graph":{
+                        "nodes":[
+                            {
+_IGNORE_                                "id":"3729",
+                                "labels":[
+                                    "Movie"
+                                ],
+                                "properties":{
+                                    "year":"2003-05-07",
+                                    "title":"The Matrix Reloaded"
+                                }
+                            },
+                            {
+_IGNORE_                                "id":"3733",
+                                "labels":[
+                                    "Actor"
+                                ],
+                                "properties":{
+                                    "name":"Carrie-Anne Moss",
+                                    "rating":7
+                                }
+                            }
+                        ],
+                        "relationships":[
+                            {
+_IGNORE_                                "id":"3250",
+                                "type":"ACTS_IN",
+_IGNORE_                                "startNode":"3733",
+_IGNORE_                                "endNode":"3729",
+                                "properties":{
+                                    "role":"Trinity"
+                                }
+                            }
+                        ]
+                    }
+                }
+            ]
+        }
+    ],
+    "errors":[
+    ]
+}
+------------------------------------------------------------

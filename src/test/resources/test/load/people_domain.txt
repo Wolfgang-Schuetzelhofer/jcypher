@@ -67,73 +67,73 @@ create (_367:`PEOPLE_DOMAIN_mdl` {`fields`:["DISTRICT:iot.jcypher.samples.domain
 create (_368:`PEOPLE_DOMAIN_mdl` {`fields`:["type:iot.jcypher.samples.domain.people.model.EContact$EContactType", "eAddress:java.lang.String"], `interfaceNames`:["iot.jcypher.samples.domain.people.model.PointOfContact"], `kind`:"CLASS", `superTypeName`:"java.lang.Object", `typeName`:"iot.jcypher.samples.domain.people.model.EContact"})
 create (_369:`PEOPLE_DOMAIN_mdl` {`fields`:["EMAIL:iot.jcypher.samples.domain.people.model.EContact$EContactType", "TELEPHONE:iot.jcypher.samples.domain.people.model.EContact$EContactType"], `interfaceNames`:[], `kind`:"ENUM", `superTypeName`:"java.lang.Enum", `typeName`:"iot.jcypher.samples.domain.people.model.EContact$EContactType"})
 create (_370:`PEOPLE_DOMAIN_mdl` {`fields`:["name:java.lang.String"], `interfaceNames`:[], `kind`:"CLASS", `superTypeName`:"iot.jcypher.samples.domain.people.model.Subject", `typeName`:"iot.jcypher.samples.domain.people.model.Company"})
-create _303-[:`pointsOfContact` {`_c_version_`:0}]->_304
-create _304-[:`c_content` {`_c_version_`:0, `key`:1, `keyType`:"java.lang.Integer"}]->_311
-create _304-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_305
-create _304-[:`c_content` {`_c_version_`:0, `key`:2, `keyType`:"java.lang.Integer"}]->_316
-create _305-[:`area` {`_c_version_`:0}]->_306
-create _306-[:`partOf` {`_c_version_`:0}]->_307
-create _307-[:`partOf` {`_c_version_`:0}]->_308
-create _308-[:`partOf` {`_c_version_`:0}]->_309
-create _309-[:`partOf` {`_c_version_`:0}]->_310
-create _311-[:`area` {`_c_version_`:0}]->_312
-create _312-[:`partOf` {`_c_version_`:0}]->_313
-create _313-[:`partOf` {`_c_version_`:0}]->_314
-create _314-[:`partOf` {`_c_version_`:0}]->_315
-create _315-[:`partOf` {`_c_version_`:0}]->_310
-create _317-[:`pointsOfContact` {`_c_version_`:0}]->_318
-create _318-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_305
-create _319-[:`father` {`_c_version_`:0}]->_303
-create _319-[:`mother` {`_c_version_`:0}]->_317
-create _319-[:`pointsOfContact` {`_c_version_`:0}]->_320
-create _320-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_305
-create _321-[:`father` {`_c_version_`:0}]->_303
-create _321-[:`mother` {`_c_version_`:0}]->_317
-create _321-[:`pointsOfContact` {`_c_version_`:0}]->_322
-create _322-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_305
-create _323-[:`pointsOfContact` {`_c_version_`:0}]->_324
-create _324-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_325
-create _325-[:`area` {`_c_version_`:0}]->_326
-create _326-[:`partOf` {`_c_version_`:0}]->_327
-create _327-[:`partOf` {`_c_version_`:0}]->_315
-create _328-[:`pointsOfContact` {`_c_version_`:0}]->_329
-create _329-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_325
-create _330-[:`mother` {`_c_version_`:0}]->_328
-create _330-[:`father` {`_c_version_`:0}]->_323
-create _330-[:`pointsOfContact` {`_c_version_`:0}]->_331
-create _331-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_325
-create _332-[:`mother` {`_c_version_`:0}]->_328
-create _332-[:`father` {`_c_version_`:0}]->_323
-create _332-[:`pointsOfContact` {`_c_version_`:0}]->_333
-create _333-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_325
-create _334-[:`mother` {`_c_version_`:0}]->_328
-create _334-[:`father` {`_c_version_`:0}]->_323
-create _334-[:`pointsOfContact` {`_c_version_`:0}]->_335
-create _335-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_325
-create _336-[:`mother` {`_c_version_`:0}]->_328
-create _336-[:`pointsOfContact` {`_c_version_`:0}]->_341
-create _336-[:`father` {`_c_version_`:0}]->_337
-create _337-[:`pointsOfContact` {`_c_version_`:0}]->_338
-create _338-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_339
-create _339-[:`area` {`_c_version_`:0}]->_340
-create _340-[:`partOf` {`_c_version_`:0}]->_313
-create _341-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_325
-create _342-[:`pointsOfContact` {`_c_version_`:0}]->_343
-create _343-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_344
-create _344-[:`area` {`_c_version_`:0}]->_345
-create _345-[:`partOf` {`_c_version_`:0}]->_346
-create _346-[:`partOf` {`_c_version_`:0}]->_308
-create _347-[:`pointsOfContact` {`_c_version_`:0}]->_348
-create _348-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_349
-create _349-[:`area` {`_c_version_`:0}]->_345
-create _350-[:`pointsOfContact` {`_c_version_`:0}]->_351
-create _351-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_339
-create _352-[:`pointsOfContact` {`_c_version_`:0}]->_353
-create _353-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_354
-create _354-[:`area` {`_c_version_`:0}]->_306
-create _355-[:`pointsOfContact` {`_c_version_`:0}]->_356
-create _356-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_357
-create _357-[:`area` {`_c_version_`:0}]->_306
-create _358-[:`pointsOfContact` {`_c_version_`:0}]->_359
-create _359-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->_360
-create _360-[:`area` {`_c_version_`:0}]->_326
+create (_303)-[:`pointsOfContact` {`_c_version_`:0}]->(_304)
+create (_304)-[:`c_content` {`_c_version_`:0, `key`:1, `keyType`:"java.lang.Integer"}]->(_311)
+create (_304)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_305)
+create (_304)-[:`c_content` {`_c_version_`:0, `key`:2, `keyType`:"java.lang.Integer"}]->(_316)
+create (_305)-[:`area` {`_c_version_`:0}]->(_306)
+create (_306)-[:`partOf` {`_c_version_`:0}]->(_307)
+create (_307)-[:`partOf` {`_c_version_`:0}]->(_308)
+create (_308)-[:`partOf` {`_c_version_`:0}]->(_309)
+create (_309)-[:`partOf` {`_c_version_`:0}]->(_310)
+create (_311)-[:`area` {`_c_version_`:0}]->(_312)
+create (_312)-[:`partOf` {`_c_version_`:0}]->(_313)
+create (_313)-[:`partOf` {`_c_version_`:0}]->(_314)
+create (_314)-[:`partOf` {`_c_version_`:0}]->(_315)
+create (_315)-[:`partOf` {`_c_version_`:0}]->(_310)
+create (_317)-[:`pointsOfContact` {`_c_version_`:0}]->(_318)
+create (_318)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_305)
+create (_319)-[:`father` {`_c_version_`:0}]->(_303)
+create (_319)-[:`mother` {`_c_version_`:0}]->(_317)
+create (_319)-[:`pointsOfContact` {`_c_version_`:0}]->(_320)
+create (_320)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_305)
+create (_321)-[:`father` {`_c_version_`:0}]->(_303)
+create (_321)-[:`mother` {`_c_version_`:0}]->(_317)
+create (_321)-[:`pointsOfContact` {`_c_version_`:0}]->(_322)
+create (_322)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_305)
+create (_323)-[:`pointsOfContact` {`_c_version_`:0}]->(_324)
+create (_324)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_325)
+create (_325)-[:`area` {`_c_version_`:0}]->(_326)
+create (_326)-[:`partOf` {`_c_version_`:0}]->(_327)
+create (_327)-[:`partOf` {`_c_version_`:0}]->(_315)
+create (_328)-[:`pointsOfContact` {`_c_version_`:0}]->(_329)
+create (_329)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_325)
+create (_330)-[:`mother` {`_c_version_`:0}]->(_328)
+create (_330)-[:`father` {`_c_version_`:0}]->(_323)
+create (_330)-[:`pointsOfContact` {`_c_version_`:0}]->(_331)
+create (_331)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_325)
+create (_332)-[:`mother` {`_c_version_`:0}]->(_328)
+create (_332)-[:`father` {`_c_version_`:0}]->(_323)
+create (_332)-[:`pointsOfContact` {`_c_version_`:0}]->(_333)
+create (_333)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_325)
+create (_334)-[:`mother` {`_c_version_`:0}]->(_328)
+create (_334)-[:`father` {`_c_version_`:0}]->(_323)
+create (_334)-[:`pointsOfContact` {`_c_version_`:0}]->(_335)
+create (_335)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_325)
+create (_336)-[:`mother` {`_c_version_`:0}]->(_328)
+create (_336)-[:`pointsOfContact` {`_c_version_`:0}]->(_341)
+create (_336)-[:`father` {`_c_version_`:0}]->(_337)
+create (_337)-[:`pointsOfContact` {`_c_version_`:0}]->(_338)
+create (_338)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_339)
+create (_339)-[:`area` {`_c_version_`:0}]->(_340)
+create (_340)-[:`partOf` {`_c_version_`:0}]->(_313)
+create (_341)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_325)
+create (_342)-[:`pointsOfContact` {`_c_version_`:0}]->(_343)
+create (_343)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_344)
+create (_344)-[:`area` {`_c_version_`:0}]->(_345)
+create (_345)-[:`partOf` {`_c_version_`:0}]->(_346)
+create (_346)-[:`partOf` {`_c_version_`:0}]->(_308)
+create (_347)-[:`pointsOfContact` {`_c_version_`:0}]->(_348)
+create (_348)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_349)
+create (_349)-[:`area` {`_c_version_`:0}]->(_345)
+create (_350)-[:`pointsOfContact` {`_c_version_`:0}]->(_351)
+create (_351)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_339)
+create (_352)-[:`pointsOfContact` {`_c_version_`:0}]->(_353)
+create (_353)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_354)
+create (_354)-[:`area` {`_c_version_`:0}]->(_306)
+create (_355)-[:`pointsOfContact` {`_c_version_`:0}]->(_356)
+create (_356)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_357)
+create (_357)-[:`area` {`_c_version_`:0}]->(_306)
+create (_358)-[:`pointsOfContact` {`_c_version_`:0}]->(_359)
+create (_359)-[:`c_content` {`_c_version_`:0, `key`:0, `keyType`:"java.lang.Integer"}]->(_360)
+create (_360)-[:`area` {`_c_version_`:0}]->(_326)

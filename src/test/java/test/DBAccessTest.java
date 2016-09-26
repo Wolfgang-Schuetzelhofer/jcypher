@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2014 IoT-Solutions e.U.
+ * Copyright (c) 2014-2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -22,6 +22,8 @@ import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.DBVersion;
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.database.remote.BoltDBAccess;
+import iot.jcypher.database.remote.RemoteDBAccess;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
@@ -50,14 +52,7 @@ public class DBAccessTest extends AbstractTestSuite {
 	
 	@BeforeClass
 	public static void before() {
-		Properties props = new Properties();
-		
-		// properties for remote access and for embedded access
-		// (not needed for in memory access)
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
-		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
+		dbAccess = DBAccessSettings.createDBAccess();
 		
 		List<JcError> errors = dbAccess.clearDatabase();
 		if (errors.size() > 0) {
@@ -139,10 +134,14 @@ public class DBAccessTest extends AbstractTestSuite {
 		setDoAssert(true);
 
 		TestDataReader tdr;
-		if (!DBVersion.Neo4j_Version.equals("2.2.x") && !DBVersion.Neo4j_Version.equals("2.1.x"))
-			tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01_23x.txt");
-		else
-			tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01.txt");
+		if (dbAccess instanceof RemoteDBAccess) {
+			tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01_remote.txt");
+		} else {
+			if (!DBVersion.Neo4j_Version.equals("2.2.x") && !DBVersion.Neo4j_Version.equals("2.1.x"))
+				tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01_23x.txt");
+			else
+				tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01.txt");
+		}
 		
 		JcNode movie = new JcNode("movie");
 		JcNode n = new JcNode("n");
@@ -155,10 +154,12 @@ public class DBAccessTest extends AbstractTestSuite {
 				RETURN.value(movie)
 		});
 		result = dbAccess.execute(query);
-		resultString = Util.writePretty(result.getJsonResult());
-		print(resultString);
-		testId = "ACCESS_01";
-		assertQuery(testId, resultString, tdr.getTestData(testId));
+		if (!(dbAccess instanceof BoltDBAccess)) {
+			resultString = Util.writePretty(result.getJsonResult());
+			print(resultString);
+			testId = "ACCESS_01";
+			assertQuery(testId, resultString, tdr.getTestData(testId));
+		}
 		
 		/*******************************/
 		query = new JcQuery();
@@ -168,10 +169,13 @@ public class DBAccessTest extends AbstractTestSuite {
 				RETURN.ALL()
 		});
 		result = dbAccess.execute(query);
-		resultString = Util.writePretty(result.getJsonResult());
-		print(resultString);
-		testId = "ACCESS_02";
-		assertQuery(testId, resultString, tdr.getTestData(testId));
+		if (!(dbAccess instanceof BoltDBAccess)) {
+			resultString = Util.writePretty(result.getJsonResult());
+			print(resultString);
+			testId = "ACCESS_02";
+			if (!(dbAccess instanceof RemoteDBAccess))
+				assertQuery(testId, resultString, tdr.getTestData(testId));
+		}
 		
 		return;
 	}

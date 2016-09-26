@@ -1,5 +1,5 @@
 /************************************************************************
- * Copyright (c) 2015-2016 IoT-Solutions e.U.
+ * Copyright (c) 2016 IoT-Solutions e.U.
  * 
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,16 +14,13 @@
  * limitations under the License.
  ************************************************************************/
 
-package iot.jcypher.database;
+package iot.jcypher.query;
 
-public class DBVersion {
+import iot.jcypher.query.result.util.ResultHandler;
 
-	/**
-	 * possible values:
-	 * <br/>'2.1.x' .. to work with remote neo4j databases of versions: 2.1.6 or 2.1.7.
-	 * <br/>'2.2.x' .. to work with remote neo4j databases of version: 2.2.x.
-	 * <br/>'2.3.x' .. to work with remote neo4j databases of version: 2.3.x.
-	 * <br/>'3.0.x' .. to work with remote neo4j databases of version: 3.0.x.
-	 */
-	public static String Neo4j_Version = "3.0.x";
+public class InternalQAccess {
+
+	public static ResultHandler getResultHandler(JcQueryResult qResult) {
+		return qResult.getResultHandler();
+	}
 }

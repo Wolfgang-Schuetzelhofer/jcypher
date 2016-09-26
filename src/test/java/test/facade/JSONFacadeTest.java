@@ -51,6 +51,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
+import test.DBAccessSettings;
 import test.genericmodel.LoadUtil;
 import util.TestDataReader;
 
@@ -62,15 +63,7 @@ public class JSONFacadeTest extends AbstractTestSuite {
 	@BeforeClass
 	public static void before() {
 		domainName = "PEOPLE-DOMAIN"; // "QTEST-DOMAIN";
-		Properties props = new Properties();
-		
-		// properties for remote access and for embedded access
-		// (not needed for in memory access)
-		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
-		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
-//		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
+		dbAccess = DBAccessSettings.createDBAccess();
 		
 		QueriesPrintObserver.addOutputStream(System.out);
 		

@@ -47,7 +47,7 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
 
-public class RemoteDBAccess implements IDBAccessInit {
+public class RemoteDBAccess extends AbstractRemoteDBAccess {
 
 	private static final String transactionalURLPostfix = "db/data/transaction/commit";
 	private static final String locationHeader = "Location";
@@ -55,31 +55,11 @@ public class RemoteDBAccess implements IDBAccessInit {
 	private static final String authBasic = "Basic";
 	
 	private ThreadLocal<RTransactionImpl> transaction = new ThreadLocal<RTransactionImpl>();
-	private Properties properties;
 	private String auth;
 	private Client restClient;
 	private WebTarget transactionalTarget;
 	private Invocation.Builder invocationBuilder;
-	private Thread shutdownHook;
 	
-	@Override
-	public void initialize(Properties properties) {
-		this.properties = properties;
-		if (this.properties == null)
-			throw new RuntimeException("missing properties in database configuration");
-		if (this.properties.getProperty(DBProperties.SERVER_ROOT_URI) == null)
-			throw new RuntimeException("missing property: '" +
-					DBProperties.SERVER_ROOT_URI + "' in database configuration");
-	}
-	
-	@Override
-	public JcQueryResult execute(JcQuery query) {
-		List<JcQuery> qList = new ArrayList<JcQuery>();
-		qList.add(query);
-		List<JcQueryResult> qrList = execute(qList);
-		return qrList.get(0);
-	}
-
 	@Override
 	public List<JcQueryResult> execute(List<JcQuery> queries) {
 		WriterContext context = new WriterContext();
@@ -139,11 +119,6 @@ public class RemoteDBAccess implements IDBAccessInit {
 	}
 
 	@Override
-	public List<JcError> clearDatabase() {
-		return DBUtil.clearDatabase(this);
-	}
-
-	@Override
 	public ITransaction beginTX() {
 		RTransactionImpl tx = this.transaction.get();
 		if (tx == null) {
@@ -159,21 +134,8 @@ public class RemoteDBAccess implements IDBAccessInit {
 	}
 
 	@Override
-	public DBType getDBType() {
-		return DBType.REMOTE;
-	}
-
-	@Override
-	public boolean isDatabaseEmpty() {
-		return DBUtil.isDatabaseEmpty(this);
-	}
-
-	@Override
 	public synchronized void close() {
-		if (this.shutdownHook != null) {
-			Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
-			this.shutdownHook = null;
-		}
+		super.close();
 		
 		if (this.restClient != null) {
 			this.restClient.close();
