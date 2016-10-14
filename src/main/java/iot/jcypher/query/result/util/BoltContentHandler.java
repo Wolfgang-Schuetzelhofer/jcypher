@@ -56,6 +56,7 @@ import iot.jcypher.query.result.util.ResultHandler.PathInfo;
 import iot.jcypher.query.result.util.ResultHandler.RelationInfo;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
+import iot.jcypher.util.ResultSettings;
 import iot.jcypher.util.Util;
 
 public class BoltContentHandler extends AContentHandler {
@@ -205,6 +206,11 @@ public class BoltContentHandler extends AContentHandler {
 			return new Rec(nextVal);
 		}
 		
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+		
 		/*****************************/
 		public class Rec extends RowOrRecord {
 			private Record record;
@@ -286,7 +292,8 @@ public class BoltContentHandler extends AContentHandler {
 				if (v != null)
 					vals.add((T) v);
 				else {
-					if (ResultHandler.includeNullValues.get().booleanValue())
+					if (ResultHandler.includeNullValues.get().booleanValue() 
+							|| ResultSettings.includeNullValuesAndDuplicates.get().booleanValue())
 						vals.add((T) v);
 				}
 			}
@@ -313,6 +320,11 @@ public class BoltContentHandler extends AContentHandler {
 		public PropEntry next() {
 			Entry<String, Object> next = this.iterator.next();
 			return new PropEntry(next.getKey(), next.getValue());
+		}
+		
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
 		}
 	}
 	

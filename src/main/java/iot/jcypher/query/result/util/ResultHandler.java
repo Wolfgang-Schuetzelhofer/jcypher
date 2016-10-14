@@ -221,7 +221,7 @@ public class ResultHandler {
 		ArrayList<T> rItems = new ArrayList<T>();
 		for (T item : items) {
 			if (item == null) {
-				if (includeNullValues.get() || ResultSettings.includeNullValuesAndDuplicates)
+				if (includeNullValues.get() || ResultSettings.includeNullValuesAndDuplicates.get().booleanValue())
 					rItems.add(item);
 			} else if (GrAccess.getState(item) != SyncState.REMOVED)
 				rItems.add(item);
@@ -249,7 +249,7 @@ public class ResultHandler {
 						getNodesById().put(ei.id, rNode);
 					}
 				}
-				if (ResultSettings.includeNullValuesAndDuplicates || !rNodes.contains(rNode))
+				if (ResultSettings.includeNullValuesAndDuplicates.get().booleanValue() || !rNodes.contains(rNode))
 					rNodes.add(rNode);
 			}
 			getNodeColumns().put(colKey, rNodes);
@@ -287,7 +287,7 @@ public class ResultHandler {
 						getRelationsById().put(ei.id, rRelation);
 					}
 				}
-				if (ResultSettings.includeNullValuesAndDuplicates || !rRelations.contains(rRelation))
+				if (ResultSettings.includeNullValuesAndDuplicates.get().booleanValue() || !rRelations.contains(rRelation))
 					rRelations.add(rRelation);
 			}
 			getRelationColumns().put(colKey, rRelations);
@@ -331,7 +331,7 @@ public class ResultHandler {
 					GrPath rPath = GrAccess.createPath(this, new GrId(pinfo.startNodeId),
 							new GrId(pinfo.endNodeId), relIds, rowIdx);
 					rPaths.add(rPath);
-				} else if (ResultSettings.includeNullValuesAndDuplicates) {
+				} else if (ResultSettings.includeNullValuesAndDuplicates.get().booleanValue()) {
 					rPaths.add(null);
 				}
 			}

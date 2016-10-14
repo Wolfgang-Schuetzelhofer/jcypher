@@ -18,6 +18,11 @@ package iot.jcypher.util;
 
 public class ResultSettings {
 
-	public static boolean includeNullValuesAndDuplicates = false;
+	public static ThreadLocal<Boolean> includeNullValuesAndDuplicates = new ThreadLocal<Boolean>() {
+		@Override
+		protected Boolean initialValue() {
+			return Boolean.FALSE;
+		}
+	};
 
 }

@@ -38,6 +38,7 @@ import iot.jcypher.query.result.util.ResultHandler.ElemType;
 import iot.jcypher.query.result.util.ResultHandler.ElementInfo;
 import iot.jcypher.query.result.util.ResultHandler.PathInfo;
 import iot.jcypher.query.result.util.ResultHandler.RelationInfo;
+import iot.jcypher.util.ResultSettings;
 
 public class JSONContentHandler extends AContentHandler {
 	
@@ -265,6 +266,11 @@ public class JSONContentHandler extends AContentHandler {
 			return new Row(nextVal);
 		}
 		
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
+		}
+		
 		/*****************************/
 		public class Row extends RowOrRecord {
 			private JsonValue jsonValue;
@@ -363,7 +369,8 @@ public class JSONContentHandler extends AContentHandler {
 				if (v != null)
 					vals.add((T) v);
 				else {
-					if (ResultHandler.includeNullValues.get().booleanValue())
+					if (ResultHandler.includeNullValues.get().booleanValue() 
+							|| ResultSettings.includeNullValuesAndDuplicates.get().booleanValue())
 						vals.add((T) v);
 				}
 			}
@@ -389,6 +396,11 @@ public class JSONContentHandler extends AContentHandler {
 		public PropEntry next() {
 			Entry<String, JsonValue> next = this.iterator.next();
 			return new PropEntry(next.getKey(), next.getValue());
+		}
+		
+		@Override
+		public void remove() {
+			throw new UnsupportedOperationException();
 		}
 	}
 }
