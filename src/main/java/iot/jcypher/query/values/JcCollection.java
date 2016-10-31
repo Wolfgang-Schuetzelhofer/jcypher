@@ -17,6 +17,7 @@
 package iot.jcypher.query.values;
 
 import java.util.Collection;
+import java.util.List;
 
 import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
@@ -25,7 +26,6 @@ import iot.jcypher.query.values.operators.OPERATOR;
 public class JcCollection extends JcValue {
 	
 	private Object value;
-	
 	JcCollection() {
 		super();
 	}
@@ -37,6 +37,16 @@ public class JcCollection extends JcValue {
 	 */
 	public JcCollection(String name) {
 		super(name);
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>create a JcCollection initialized with a possibly empty list of primitives.</i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>This serves to create lists of literals as e.g. <b>[1, 2, 3]</b> or <b>['Peter', 'Paul', 'Mary']...</b></i></div>
+	 * <br/>
+	 */
+	public JcCollection(List<?> list) {
+		this(fromPrimitiveList(list), null, null);
 	}
 	
 	JcCollection(String name, ValueElement predecessor, IOperatorOrFunction opf) {
@@ -137,5 +147,26 @@ public class JcCollection extends JcValue {
 	
 	Object getValue() {
 		return value;
+	}
+	
+	private static String fromPrimitiveList(List<?> list) {
+		StringBuilder sb = new StringBuilder();
+		sb.append('[');
+		if (list != null) {
+			int idx = 0;
+			for (Object val : list) {
+				if (idx > 0)
+					sb.append(", ");
+				if (val instanceof String) {
+					sb.append('\'');
+					sb.append(val.toString());
+					sb.append('\'');
+				} else
+					sb.append(val.toString());
+				idx++;
+			}
+		}
+		sb.append(']');
+		return sb.toString();
 	}
 }

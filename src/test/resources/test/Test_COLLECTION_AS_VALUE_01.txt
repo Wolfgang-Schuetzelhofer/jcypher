@@ -1,0 +1,13 @@
+----CAV_01:
+coalesce([], empty)
+------------------------------------------------------------
+
+----CAV_02:
+coalesce([1, 'Hallo', true], empty)
+------------------------------------------------------------
+
+----CAV_03:
+CYPHER planner=rule
+SET a.ratings = coalesce(a.ratings, [1, 'Hallo', true]) + 3
+SET a.ratings = coalesce(a.ratings, empty) + 3
+------------------------------------------------------------

@@ -102,9 +102,18 @@ public class TempTest extends AbstractTestSuite {
 //		result = dbAccess.execute(q);
 //		assertFalse(result.hasErrors());
 		
-		// query
+		// before literal lists:
+//		JcNode activeIn = new JcNode("a");
+//		JcCollection empty = new JcCollection("[]");
+//		q = new JcQuery();
+//		q.setClauses(new IClause[]{
+//				MATCH.node(activeIn).label("ActiveIn"),
+//				DO.SET(activeIn.property("ratings")).byExpression(JC.coalesce(activeIn.property("ratings"), empty).asCollection().add(3))
+//			});
+		
+		// after literal lists:
 		JcNode activeIn = new JcNode("a");
-		JcCollection empty = new JcCollection("[]");
+		JcCollection empty = new JcCollection(new ArrayList<>());
 		q = new JcQuery();
 		q.setClauses(new IClause[]{
 				MATCH.node(activeIn).label("ActiveIn"),
