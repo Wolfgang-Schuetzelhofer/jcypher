@@ -1,9 +1,13 @@
 Release Notes
 =======
 
+## 3.6.0
+**New**
+- Some improvements like simple construction of literal lists.
+- Code compatibility with Java 1.7 (JCypher since 3.5.0 however is built for Java 1.8. This is required, so that JCypher- embedded and- in-memory db access works with Neo4J 3.0.x ).
+
 ## 3.5.0
 **New**
-
 - Support for Neo4J 3.0.x including the BOLT protocol
 
 ## 3.4.1
