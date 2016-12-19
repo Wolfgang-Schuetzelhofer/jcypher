@@ -192,10 +192,7 @@ public class JSONContentHandler extends AContentHandler {
 	}
 	
 	private JsonValue getRestValue(JsonArray restArray, int colIdx) {
-		JsonValue obj = restArray.get(colIdx);
-		if (obj.getValueType() == ValueType.ARRAY && ((JsonArray)obj).size() > 0)
-			obj = ((JsonArray)obj).get(0);
-		return obj;
+		return restArray.get(colIdx);
 	}
 	
 	private JsonObject getRestObject(JsonArray restArray, int colIdx) {

@@ -112,7 +112,7 @@ public class CypherWriter {
 	}
 	
 	public static void toCypherExpression(JcQuery query, WriterContext context) {
-		if (!DBVersion.Neo4j_Version.equals(dBVersion_21x)) {
+		if (!DBVersion.Neo4j_Version.equals(dBVersion_21x) && Settings.writeRulePlanner.get()) {
 			context.buffer.append("CYPHER planner=");
 			context.buffer.append(Settings.plannerStrategy.name().toLowerCase());
 			Pretty.writePreClauseSeparator(context, context.buffer);
