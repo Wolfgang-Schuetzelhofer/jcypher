@@ -195,13 +195,6 @@ public class JSONContentHandler extends AContentHandler {
 		return restArray.get(colIdx);
 	}
 	
-	private JsonObject getRestObject(JsonArray restArray, int colIdx) {
-		JsonValue obj = getRestValue(restArray, colIdx);
-		if (obj.getValueType() == ValueType.OBJECT)
-			return (JsonObject) obj;
-		return null;
-	}
-	
 	private JsonArray getDataArray() {
 		return ((JsonObject)jsonResult.getJsonArray("results").get(
 				queryIndex)).getJsonArray("data");
@@ -285,6 +278,7 @@ public class JSONContentHandler extends AContentHandler {
 				JsonObject dataObject = (JsonObject) this.jsonValue;
 				JsonArray restArray = getRestArray(dataObject);
 				JsonValue obj = getRestValue(restArray, colIdx);
+				obj = this.handleArrayCase(obj);
 				if (obj.getValueType() == ValueType.OBJECT) {
 					JsonObject restObject = (JsonObject)obj;
 					if (restObject.containsKey("self")) {
@@ -305,9 +299,10 @@ public class JSONContentHandler extends AContentHandler {
 			public RelationInfo getRelationInfo(String colKey) {
 				JsonObject dataObject = (JsonObject) this.jsonValue;
 				JsonArray restArray = getRestArray(dataObject);
-				JsonObject restObject = getRestObject(restArray, getColumnIndex(colKey));
-				String startString = restObject.getString("start");
-				String endString = restObject.getString("end");
+				JsonValue restObject = getRestValue(restArray, getColumnIndex(colKey));
+				restObject = this.handleArrayCase(restObject);
+				String startString =  ((JsonObject)restObject).getString("start");
+				String endString = ((JsonObject)restObject).getString("end");
 				RelationInfo ri = RelationInfo.parse(startString, endString);
 				return ri;
 			}
@@ -321,6 +316,7 @@ public class JSONContentHandler extends AContentHandler {
 				JsonObject dataObject = (JsonObject) this.jsonValue;
 				JsonArray restArray = getRestArray(dataObject);
 				JsonValue restValue = getRestValue(restArray, colIdx);
+				restValue = this.handleArrayCase(restValue);
 				
 				if (restValue.getValueType() == ValueType.OBJECT) {
 					JsonObject pathObject = (JsonObject) restValue;
@@ -370,6 +366,12 @@ public class JSONContentHandler extends AContentHandler {
 							|| ResultSettings.includeNullValuesAndDuplicates.get().booleanValue())
 						vals.add((T) v);
 				}
+			}
+			
+			private JsonValue handleArrayCase(JsonValue obj) {
+				if (obj.getValueType() == ValueType.ARRAY && ((JsonArray)obj).size() > 0)
+					return ((JsonArray)obj).get(0);
+				return obj;
 			}
 		}
 	}
