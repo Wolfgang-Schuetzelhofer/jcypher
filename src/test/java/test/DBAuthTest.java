@@ -21,7 +21,7 @@ public class DBAuthTest {
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		DBType dbType = DBType.REMOTE;
 		
-		AuthToken auth =AuthTokens.basic("user", "password");
+		AuthToken auth = AuthTokens.basic("user", "password");
 		
 		IDBAccess dba = DBAccessFactory.createDBAccess(dbType, props, auth);
 		String bauth = ((RemoteDBAccess)dba).getAuth();
