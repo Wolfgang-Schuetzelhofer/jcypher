@@ -1,6 +1,11 @@
 Release Notes
 =======
 
+## 3.7.0
+**New**
+- Support for Neo4J 3.1.1.
+- Extended Authentication according to Neo4J's Bolt Driver specification
+
 ## 3.6.0
 **New**
 - Some improvements like simple construction of literal lists.
