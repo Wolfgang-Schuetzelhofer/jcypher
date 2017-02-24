@@ -33,7 +33,7 @@ public class DBAccessSettings {
 		// (not needed for in memory access)
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "bolt://localhost:7687");
 //		props.setProperty(DBProperties.SERVER_ROOT_URI, "http://localhost:7474");
-		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/02");
+		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/01");
 		
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 		// dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");

@@ -20,6 +20,8 @@ import iot.jcypher.database.IDBAccess;
 
 import java.util.Properties;
 
+import org.neo4j.driver.v1.AuthToken;
+
 public interface IDBAccessInit extends IDBAccess {
 
 	/**
@@ -34,4 +36,11 @@ public interface IDBAccessInit extends IDBAccess {
 	 * @param password
 	 */
 	public void setAuth(String userId, String password);
+	
+	/**
+	 * set authentication
+	 * @param userId
+	 * @param password
+	 */
+	public void setAuth(AuthToken authToken);
 }

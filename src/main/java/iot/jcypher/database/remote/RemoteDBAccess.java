@@ -32,6 +32,7 @@ import iot.jcypher.util.Base64CD;
 import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 
 import javax.json.Json;
@@ -46,6 +47,11 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.StatusType;
+
+import org.neo4j.driver.internal.security.InternalAuthToken;
+import org.neo4j.driver.internal.value.StringValue;
+import org.neo4j.driver.v1.AuthToken;
+import org.neo4j.driver.v1.Value;
 
 public class RemoteDBAccess extends AbstractRemoteDBAccess {
 
@@ -163,7 +169,23 @@ public class RemoteDBAccess extends AbstractRemoteDBAccess {
 		}
 	}
 	
-	String getAuth() {
+	@Override
+	public void setAuth(AuthToken authToken) {
+		if (authToken instanceof InternalAuthToken) {
+			Map<String, Value> map = ((InternalAuthToken)authToken).toMap();
+			Value scheme = map.get("scheme");
+			if (scheme != null) {
+				if ("basic".equals(scheme.asString())) {
+					String uid = map.get("principal") != null ? map.get("principal").asString() : null;
+					String pw = map.get("credentials") != null ? map.get("credentials").asString() : null;
+					if (uid != null && pw != null)
+						this.setAuth(uid, pw);
+				}
+			}
+		}
+	}
+
+	public String getAuth() { // public for testing
 		return this.auth;
 	}
 

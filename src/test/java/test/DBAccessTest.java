@@ -17,9 +17,13 @@
 package test;
 
 import static org.junit.Assert.assertFalse;
-import iot.jcypher.database.DBAccessFactory;
-import iot.jcypher.database.DBProperties;
-import iot.jcypher.database.DBType;
+
+import java.util.List;
+
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import iot.jcypher.database.DBVersion;
 import iot.jcypher.database.IDBAccess;
 import iot.jcypher.database.remote.BoltDBAccess;
@@ -35,14 +39,6 @@ import iot.jcypher.query.result.JcResultException;
 import iot.jcypher.query.values.JcNode;
 import iot.jcypher.query.values.JcRelation;
 import iot.jcypher.util.Util;
-
-import java.util.List;
-import java.util.Properties;
-
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import util.TestDataReader;
 
 //@Ignore

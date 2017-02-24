@@ -42,6 +42,7 @@ import javax.json.JsonArrayBuilder;
 import javax.json.JsonObject;
 import javax.json.JsonObjectBuilder;
 
+import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
@@ -192,6 +193,11 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 
 	@Override
 	public void setAuth(String userId, String password) {
+		// nop
+	}
+
+	@Override
+	public void setAuth(AuthToken authToken) {
 		// nop
 	}
 

@@ -19,10 +19,8 @@ package iot.jcypher.database.remote;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
-import javax.ws.rs.client.Client;
-
+import org.neo4j.driver.v1.AuthToken;
 import org.neo4j.driver.v1.AuthTokens;
 import org.neo4j.driver.v1.Driver;
 import org.neo4j.driver.v1.GraphDatabase;
@@ -31,7 +29,6 @@ import org.neo4j.driver.v1.StatementResult;
 import org.neo4j.driver.v1.Transaction;
 
 import iot.jcypher.database.DBProperties;
-import iot.jcypher.database.DBType;
 import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.database.util.QParamsUtil;
 import iot.jcypher.query.JcQuery;
@@ -48,8 +45,7 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 	private static final String bolt = "bolt";
 	
 	private ThreadLocal<BoltTransactionImpl> transaction = new ThreadLocal<BoltTransactionImpl>();
-	private String userId;
-	private String passWord;
+	private AuthToken authToken;
 	private Driver driver;
 	private Session session;
 	
@@ -141,10 +137,15 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 
 	@Override
 	public void setAuth(String userId, String password) {
-		this.userId = userId;
-		this.passWord = password;
+		if (userId != null && password != null)
+			this.authToken = AuthTokens.basic(userId, password);
 	}
 	
+	@Override
+	public void setAuth(AuthToken authToken) {
+		this.authToken = authToken;
+	}
+
 	void removeTx() {
 		this.transaction.remove();
 	}
@@ -152,8 +153,8 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 	private Driver getDriver() {
 		if (this.driver == null) {
 			String uri = this.properties.getProperty(DBProperties.SERVER_ROOT_URI);
-			if (this.userId != null && this.passWord != null)
-				this.driver = GraphDatabase.driver(uri, AuthTokens.basic(this.userId, this.passWord));
+			if (this.authToken != null)
+				this.driver = GraphDatabase.driver(uri, this.authToken);
 			else
 				this.driver = GraphDatabase.driver(uri);
 		}

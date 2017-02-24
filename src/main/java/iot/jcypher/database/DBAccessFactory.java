@@ -19,6 +19,8 @@ package iot.jcypher.database;
 import java.lang.reflect.Method;
 import java.util.Properties;
 
+import org.neo4j.driver.v1.AuthToken;
+
 import iot.jcypher.database.remote.BoltDBAccess;
 
 /**
@@ -36,14 +38,13 @@ public class DBAccessFactory {
 	 * <br/>See also: DBProperties interface for required and optional properties.
 	 * @return an instance of IDBAccess
 	 */
-	@SuppressWarnings("unchecked")
 	public static IDBAccess createDBAccess(DBType dbType, Properties properties) {
-		return createDBAccess(dbType, properties, null, null);
+		return createDBAccess(dbType, properties, null, null, null);
 	}
 	
 	/**
 	 * create an IDBAccess (an accessor) for a specific database,
-	 * supports authentication and authorization. 
+	 * supports authentication. 
 	 * @param dbType the type of database to access. Can be
 	 * <br/>DBType.REMOTE or DBType.EMBEDDED or DBType.IN_MEMORY
 	 * @param properties to configure the database connection.
@@ -53,9 +54,30 @@ public class DBAccessFactory {
 	 * @param password
 	 * @return an instance of IDBAccess
 	 */
-	@SuppressWarnings("unchecked")
 	public static IDBAccess createDBAccess(DBType dbType, Properties properties,
 			String userId, String password) {
+		return createDBAccess(dbType, properties, userId, password, null);
+	}
+	
+	/**
+	 * create an IDBAccess (an accessor) for a specific database,
+	 * supports authentication. 
+	 * @param dbType the type of database to access. Can be
+	 * <br/>DBType.REMOTE or DBType.EMBEDDED or DBType.IN_MEMORY
+	 * @param properties to configure the database connection.
+	 * <br/>The appropriate database access class will pick the properties it needs.
+	 * <br/>See also: DBProperties interface for required and optional properties.
+	 * @param authToken
+	 * @return an instance of IDBAccess
+	 */
+	public static IDBAccess createDBAccess(DBType dbType, Properties properties,
+			AuthToken authToken) {
+		return createDBAccess(dbType, properties, null, null, authToken);
+	}
+	
+	@SuppressWarnings("unchecked")
+	private static IDBAccess createDBAccess(DBType dbType, Properties properties,
+			String userId, String password, AuthToken authToken) {
 		Class<? extends IDBAccess> dbAccessClass = null;
 		IDBAccess dbAccess = null;
 		try {
@@ -97,6 +119,9 @@ public class DBAccessFactory {
 					if (userId != null && password != null) {
 						Method setAuth = dbAccessClass.getDeclaredMethod("setAuth", new Class[] {String.class, String.class});
 						setAuth.invoke(dbAccess, new Object[] {userId, password});
+					} else if (authToken != null) {
+						Method setAuth = dbAccessClass.getDeclaredMethod("setAuth", new Class[] {AuthToken.class});
+						setAuth.invoke(dbAccess, new Object[] {authToken});
 					}
 				}
 			} catch (Throwable e) {
