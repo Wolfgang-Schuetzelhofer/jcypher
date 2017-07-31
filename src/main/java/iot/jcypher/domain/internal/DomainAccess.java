@@ -1871,6 +1871,18 @@ public class DomainAccess implements IDomainAccess, IIntDomainAccess {
 			}
 
 			@Override
+			public IDBAccess removeShutdownHook() {
+				this.delegate.removeShutdownHook();
+				return this;
+			}
+
+			@Override
+			public IDBAccess addShutdownHook() {
+				this.delegate.addShutdownHook();
+				return this;
+			}
+
+			@Override
 			public void close() {
 				this.delegate.close();
 			}

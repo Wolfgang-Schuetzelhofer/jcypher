@@ -28,6 +28,14 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class InMemoryDBAccess extends AbstractEmbeddedDBAccess {
 
+	public InMemoryDBAccess() {
+		super();
+	}
+	
+	public InMemoryDBAccess(GraphDatabaseService gdbs) {
+		super(gdbs);
+	}
+
 	@Override
 	public void initialize(Properties properties) {
 		this.properties = properties;

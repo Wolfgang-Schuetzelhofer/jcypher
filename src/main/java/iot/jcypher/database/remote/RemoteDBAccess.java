@@ -66,6 +66,10 @@ public class RemoteDBAccess extends AbstractRemoteDBAccess {
 	private WebTarget transactionalTarget;
 	private Invocation.Builder invocationBuilder;
 	
+	public RemoteDBAccess() {
+		super();
+	}
+	
 	@Override
 	public List<JcQueryResult> execute(List<JcQuery> queries) {
 		WriterContext context = new WriterContext();
@@ -143,10 +147,7 @@ public class RemoteDBAccess extends AbstractRemoteDBAccess {
 	public synchronized void close() {
 		super.close();
 		
-		if (this.restClient != null) {
-			this.restClient.close();
-			this.restClient = null;
-		}
+		this.restClient = null;
 		this.transactionalTarget = null;
 		this.invocationBuilder = null;
 	}
@@ -189,10 +190,20 @@ public class RemoteDBAccess extends AbstractRemoteDBAccess {
 		return this.auth;
 	}
 
+	@Override
+	protected void shutDown() {
+		try {
+			if (this.restClient != null)
+				this.restClient.close();
+		} catch (Throwable e) {
+			// do nothing
+		}
+	}
+
 	synchronized Client getRestClient() {
 		if (this.restClient == null) {
 			this.restClient = ClientBuilder.newClient();
-			this.shutdownHook = registerShutdownHook(this.restClient);
+			this.shutdownHook = registerShutdownHook();
 		}
 		return this.restClient;
 	}
@@ -221,23 +232,5 @@ public class RemoteDBAccess extends AbstractRemoteDBAccess {
 				this.invocationBuilder = this.invocationBuilder.header(authHeader, this.auth);
 		}
 		return this.invocationBuilder;
-	}
-	
-	private static Thread registerShutdownHook(final Client client) {
-		// Registers a shutdown hook
-		// shuts down nicely when the VM exits (even if you "Ctrl-C" the
-		// running application).
-		Thread hook = new Thread() {
-			@Override
-			public void run() {
-				try {
-					client.close();
-				} catch (Throwable e) {
-					// do nothing
-				}
-			}
-		};
-		Runtime.getRuntime().addShutdownHook(hook);
-		return hook;
 	}
 }

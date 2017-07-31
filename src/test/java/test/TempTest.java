@@ -85,6 +85,156 @@ public class TempTest extends AbstractTestSuite {
 	private static List<Object> storedDomainObjects;
 	
 	@Test
+	public void test_16_edgar() {
+		IClause[] clauses;
+		JcQuery query;
+		String cypher;
+		
+		JcNode n = new JcNode("n");
+		
+		clauses = new IClause[]{
+				MATCH.node(n),
+				WHERE.valueOf(n.property("name")).EQUALS("RIK"),
+				DO.SET(n.property("plays")).to("piano"),
+				DO.SET(n.property("age")).to(23)
+		};
+		
+		clauses = new IClause[]{
+				MATCH.node(n),
+				WHERE.valueOf(n.property("name")).EQUALS("RIK"),
+				NATIVE.cypher("SET n = {plays: \"Piano\", age: 23}")
+		};
+		query = new JcQuery();
+		query.setClauses(clauses);
+		cypher = print(clauses, Format.PRETTY_1);
+		System.out.println(cypher);
+		return;
+	}
+	
+	@Test
+	public void test_15_munkelt() {
+		// add some sample data
+//		buildGraph();
+		
+		IClause[] clauses;
+		JcQuery query;
+		JcQueryResult result;
+		String cypher;
+		
+		JcNode n = new JcNode("n");
+		JcNode a = new JcNode("a");
+		JcNode b = new JcNode("b");
+		JcRelation p = new JcRelation("p");
+		JcRelation q = new JcRelation("q");
+		JcRelation r = new JcRelation("r");
+		
+		clauses = new IClause[]{
+				MATCH.node(a).relation(p).out().node(b),
+				MATCH.node(a).relation(q).out().node(b),
+			    WITH.DISTINCT().value(a),
+			    WITH.value(b),
+			    MATCH.node(a).relation(r).out().node(b),
+			    CREATE.node(n).label("Dummy").property("field").value(r.property("field")),
+			    CREATE.node(a).relation().out().type("Dummy").node(n),
+			    CREATE.node(n).relation().out().type("Dummy").node(b),
+			    DO.DELETE(r)
+		};
+//		clauses = new IClause[]{
+//				MATCH.node(a).relation(r).out().node(b),
+//				MATCH.node(a).relation(r1).out().node(b),
+//			    WITH.value(a),
+//			    WITH.value(b),
+//			    MATCH.node(a).relation(r2).out().node(b),
+//			    CREATE.node(n).label("Dummy").property("field").value(r2.property("field")),
+//			    CREATE.node(a).relation().out().type("Dummy").node(n),
+//			    CREATE.node(n).relation().out().type("Dummy").node(b),
+//			    DO.DELETE(r2)
+//		};
+		query = new JcQuery();
+		query.setClauses(clauses);
+		cypher = print(clauses, Format.PRETTY_1);
+		result = dbAccess.execute(query);
+		assertFalse(result.hasErrors());
+		List<GrNode> as = result.resultOf(a);
+		List<GrNode> bs = result.resultOf(b);
+		List<GrRelation> r2s = result.resultOf(r);
+		
+		return;
+	}
+	
+	private void buildGraph() {
+		IClause[] clauses;
+		JcQuery q;
+		JcQueryResult result;
+		String cypher;
+		dbAccess.clearDatabase();
+		
+		JcNode a = new JcNode("a");
+		JcNode b = new JcNode("b");
+		// add some sample data
+		clauses = new IClause[]{
+				CREATE.node(a).label("A"),
+				CREATE.node(b).label("B"),
+				CREATE.node(a).relation().out().type("ORG").property("field").value(1).node(b),
+				CREATE.node(a).relation().out().type("ORG").property("field").value(2).node(b),
+				CREATE.node(a).relation().out().type("ORG").property("field").value(3).node(b)
+		};
+		q = new JcQuery();
+		q.setClauses(clauses);
+		cypher = print(clauses, Format.PRETTY_1);
+		result = dbAccess.execute(q);
+		assertFalse(result.hasErrors());
+		
+		clauses = new IClause[]{
+				CREATE.node(a).label("A"),
+				CREATE.node(b).label("B"),
+				CREATE.node(a).relation().out().type("ORG").property("field").value(1).node(b),
+				CREATE.node(a).relation().out().type("ORG").property("field").value(2).node(b),
+				CREATE.node(a).relation().out().type("ORG").property("field").value(3).node(b)
+		};
+		q = new JcQuery();
+		q.setClauses(clauses);
+		cypher = print(clauses, Format.PRETTY_1);
+		result = dbAccess.execute(q);
+		assertFalse(result.hasErrors());
+		
+		clauses = new IClause[]{
+				CREATE.node(a).label("A"),
+				CREATE.node(b).label("B"),
+				CREATE.node(a).relation().out().type("ORG").property("field").value(1).node(b),
+				CREATE.node(a).relation().out().type("ORG").property("field").value(2).node(b)
+		};
+		q = new JcQuery();
+		q.setClauses(clauses);
+		cypher = print(clauses, Format.PRETTY_1);
+		result = dbAccess.execute(q);
+		assertFalse(result.hasErrors());
+		
+		clauses = new IClause[]{
+				CREATE.node(a).label("A"),
+				CREATE.node(b).label("B"),
+				CREATE.node(a).relation().out().type("ORG").property("field").value(1).node(b)
+		};
+		q = new JcQuery();
+		q.setClauses(clauses);
+		cypher = print(clauses, Format.PRETTY_1);
+		result = dbAccess.execute(q);
+		assertFalse(result.hasErrors());
+		
+		clauses = new IClause[]{
+				CREATE.node(a).label("A"),
+				CREATE.node(b).label("B")
+		};
+		q = new JcQuery();
+		q.setClauses(clauses);
+		cypher = print(clauses, Format.PRETTY_1);
+		result = dbAccess.execute(q);
+		assertFalse(result.hasErrors());
+		
+		return;
+	}
+	
+	@Test
 	public void test_15_maurits() {
 		IClause[] clauses;
 		JcQuery q;

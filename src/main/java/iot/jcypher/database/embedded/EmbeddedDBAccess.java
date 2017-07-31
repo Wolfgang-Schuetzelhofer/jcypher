@@ -29,6 +29,14 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 public class EmbeddedDBAccess extends AbstractEmbeddedDBAccess {
 
+	public EmbeddedDBAccess() {
+		super();
+	}
+	
+	public EmbeddedDBAccess(GraphDatabaseService gdbs) {
+		super(gdbs);
+	}
+
 	@Override
 	public void initialize(Properties properties) {
 		this.properties = properties;

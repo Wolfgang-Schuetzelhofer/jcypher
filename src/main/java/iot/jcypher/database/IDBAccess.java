@@ -77,4 +77,20 @@ public interface IDBAccess {
 	 * close the database connection
 	 */
 	public void close();
+	
+	/**
+	 * Removes the shutdown hook, which is added by default.
+	 * The shutdown hook disposes all DB resources when the VM exits (even if you "Ctrl-C" the
+	 * running application).
+	 * @return this
+	 */
+	public IDBAccess removeShutdownHook();
+	
+	/**
+	 * Adds a shutdown hook (only needed after a removeShutdownHook(), because a shutdown hook is added by default).
+	 * The shutdown hook disposes all DB resources when the VM exits (even if you "Ctrl-C" the
+	 * running application).
+	 * @return this
+	 */
+	public IDBAccess addShutdownHook();
 }

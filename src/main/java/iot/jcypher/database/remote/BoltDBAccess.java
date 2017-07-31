@@ -51,7 +51,11 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 	
 	public BoltDBAccess() {
 		super();
-		this.shutdownHook = registerShutdownHook(this);
+	}
+	
+	public BoltDBAccess(Driver driver) {
+		super();
+		this.driver = driver;
 	}
 
 	@Override
@@ -136,6 +140,14 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 	}
 
 	@Override
+	public synchronized void close() {
+		super.close();
+		
+		this.session = null;
+		this.driver = null;
+	}
+	
+	@Override
 	public void setAuth(String userId, String password) {
 		if (userId != null && password != null)
 			this.authToken = AuthTokens.basic(userId, password);
@@ -144,6 +156,22 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 	@Override
 	public void setAuth(AuthToken authToken) {
 		this.authToken = authToken;
+	}
+
+	@Override
+	protected void shutDown() {
+		try {
+			if (session != null)
+				session.close();
+		} catch (Throwable e) {
+			// do nothing
+		}
+		try {
+			if (driver != null)
+				driver.close();
+		} catch (Throwable e) {
+			// do nothing
+		}
 	}
 
 	void removeTx() {
@@ -157,6 +185,7 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 				this.driver = GraphDatabase.driver(uri, this.authToken);
 			else
 				this.driver = GraphDatabase.driver(uri);
+			this.shutdownHook = registerShutdownHook();
 		}
 		return this.driver;
 	}
@@ -177,31 +206,6 @@ public class BoltDBAccess extends AbstractRemoteDBAccess {
 			}
 		}
 		return ret;
-	}
-	
-	private static Thread registerShutdownHook(final BoltDBAccess bda) {
-		// Registers a shutdown hook
-		// shuts down nicely when the VM exits (even if you "Ctrl-C" the
-		// running application).
-		Thread hook = new Thread() {
-			@Override
-			public void run() {
-				try {
-					if (bda.session != null)
-						bda.session.close();
-				} catch (Throwable e) {
-					// do nothing
-				}
-				try {
-					if (bda.driver != null)
-						bda.driver.close();
-				} catch (Throwable e) {
-					// do nothing
-				}
-			}
-		};
-		Runtime.getRuntime().addShutdownHook(hook);
-		return hook;
 	}
 	
 	/*******************************************/

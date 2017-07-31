@@ -22,6 +22,7 @@ import java.util.Properties;
 
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
+import iot.jcypher.database.IDBAccess;
 import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
 import iot.jcypher.query.JcQuery;
@@ -32,6 +33,7 @@ public abstract class AbstractRemoteDBAccess implements IDBAccessInit {
 
 	protected Thread shutdownHook;
 	protected Properties properties;
+	private boolean registerShutdownHook = true;
 	
 	@Override
 	public JcQueryResult execute(JcQuery query) {
@@ -62,6 +64,7 @@ public abstract class AbstractRemoteDBAccess implements IDBAccessInit {
 			Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
 			this.shutdownHook = null;
 		}
+		shutDown();
 	}
 	
 	@Override
@@ -70,5 +73,50 @@ public abstract class AbstractRemoteDBAccess implements IDBAccessInit {
 		if (this.properties.getProperty(DBProperties.SERVER_ROOT_URI) == null)
 			throw new RuntimeException("missing property: '" +
 					DBProperties.SERVER_ROOT_URI + "' in database configuration");
+	}
+	
+	@Override
+	public IDBAccess removeShutdownHook() {
+		this.registerShutdownHook = false;
+		if (this.shutdownHook != null) {
+			Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
+			this.shutdownHook = null;
+		}
+		return this;
+	}
+
+	@Override
+	public IDBAccess addShutdownHook() {
+		this.registerShutdownHook = true;
+		if (this.shutdownHook == null) {
+			Thread hook = new Thread() {
+				@Override
+				public void run() {
+					shutDown();
+				}
+			};
+			Runtime.getRuntime().addShutdownHook(hook);
+			this.shutdownHook = hook;
+		}
+		return this;
+	}
+	
+	protected abstract void shutDown();
+	
+	protected Thread registerShutdownHook() {
+		// Registers a shutdown hook
+		// shuts down nicely when the VM exits (even if you "Ctrl-C" the
+		// running application).
+		Thread hook = null;
+		if (this.registerShutdownHook) {
+			hook = new Thread() {
+				@Override
+				public void run() {
+					shutDown();
+				}
+			};
+			Runtime.getRuntime().addShutdownHook(hook);
+		}
+		return hook;
 	}
 }

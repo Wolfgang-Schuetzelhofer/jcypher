@@ -16,6 +16,7 @@
 
 package iot.jcypher.database.embedded;
 
+import iot.jcypher.database.IDBAccess;
 import iot.jcypher.database.internal.DBUtil;
 import iot.jcypher.database.internal.IDBAccessInit;
 import iot.jcypher.database.util.QParamsUtil;
@@ -60,6 +61,16 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 	protected Properties properties;
 	private GraphDatabaseService graphDb;
 	private Thread shutdownHook;
+	private boolean registerShutdownHook = true;
+
+	public AbstractEmbeddedDBAccess() {
+		super();
+	}
+
+	public AbstractEmbeddedDBAccess(GraphDatabaseService gdbs) {
+		super();
+		this.graphDb = gdbs;
+	}
 
 	@Override
 	public JcQueryResult execute(JcQuery query) {
@@ -68,7 +79,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		List<JcQueryResult> qrList = execute(qList);
 		return qrList.get(0);
 	}
-	
+
 	@Override
 	public List<JcQueryResult> execute(List<JcQuery> queries) {
 		List<Statement> statements = new ArrayList<Statement>(queries.size());
@@ -81,15 +92,15 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			statements.add(new Statement(cypher, paramsMap));
 		}
 		JsonBuilderContext builderContext = new JsonBuilderContext();
-    	initJsonBuilderContext(builderContext);
-    	Throwable exception = null;
-    	GraphDatabaseService engine = null;
-    	try {
-    		engine = getGraphDB();
-    	} catch(Throwable e) {
-    		exception = e;
-    	}
-    	Result result = null;
+		initJsonBuilderContext(builderContext);
+		Throwable exception = null;
+		GraphDatabaseService engine = null;
+		try {
+			engine = getGraphDB();
+		} catch (Throwable e) {
+			exception = e;
+		}
+		Result result = null;
 		Transaction tx = null;
 		Throwable dbException = null;
 		if (engine != null) {
@@ -104,11 +115,11 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 						result = engine.execute(statement.cypher, statement.parameterMap);
 					else
 						result = engine.execute(statement.cypher);
-					
-			    	addInnerResultsAndDataArray(builderContext);
+
+					addInnerResultsAndDataArray(builderContext);
 					List<String> cols = result.columns();
 					addColumns(builderContext, cols);
-					while(result.hasNext()) {
+					while (result.hasNext()) {
 						// that is one row
 						Map<String, Object> row = result.next();
 						addRow(builderContext, row, cols);
@@ -124,18 +135,18 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 				if (etx == null && tx != null) {
 					try {
 						tx.close();
-					} catch(Throwable e1) {
+					} catch (Throwable e1) {
 						dbException = e1;
 					}
 				}
 			}
 		}
-		
+
 		if (dbException != null) {
 			addDBError(builderContext, dbException);
 		}
 		JsonObject jsonResult = builderContext.build();
-		
+
 		List<JcQueryResult> ret = new ArrayList<JcQueryResult>(queries.size());
 		for (int i = 0; i < queries.size(); i++) {
 			JcQueryResult qr = new JcQueryResult(jsonResult, i, this);
@@ -148,12 +159,12 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		}
 		return ret;
 	}
-	
+
 	@Override
 	public List<JcError> clearDatabase() {
 		return DBUtil.clearDatabase(this);
 	}
-	
+
 	@Override
 	public ITransaction beginTX() {
 		ETransactionImpl tx = this.transaction.get();
@@ -173,22 +184,16 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 	public boolean isDatabaseEmpty() {
 		return DBUtil.isDatabaseEmpty(this);
 	}
-	
+
 	@Override
 	public synchronized void close() {
 		if (this.shutdownHook != null) {
 			Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
 			this.shutdownHook = null;
 		}
-		
-		if (this.graphDb != null) {
-			try {
-				this.graphDb.shutdown();
-			} catch (Throwable e) {
-				// do nothing
-			}
-			this.graphDb = null;
-		}
+
+		shutDown();
+		this.graphDb = null;
 	}
 
 	@Override
@@ -201,8 +206,42 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		// nop
 	}
 
-	private void addDBError(JsonBuilderContext builderContext,
-			Throwable exception) {
+	@Override
+	public IDBAccess removeShutdownHook() {
+		this.registerShutdownHook = false;
+		if (this.shutdownHook != null) {
+			Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
+			this.shutdownHook = null;
+		}
+		return this;
+	}
+
+	@Override
+	public IDBAccess addShutdownHook() {
+		this.registerShutdownHook = true;
+		if (this.shutdownHook == null) {
+			Thread hook = new Thread() {
+				@Override
+				public void run() {
+					shutDown();
+				}
+			};
+			Runtime.getRuntime().addShutdownHook(hook);
+			this.shutdownHook = hook;
+		}
+		return this;
+	}
+
+	protected void shutDown() {
+		try {
+			if (this.graphDb != null)
+				this.graphDb.shutdown();
+		} catch (Throwable e) {
+			// do nothing
+		}
+	}
+
+	private void addDBError(JsonBuilderContext builderContext, Throwable exception) {
 		String code = exception.getClass().getSimpleName();
 		String msg = exception.getLocalizedMessage();
 		JsonObjectBuilder errorObject = Json.createObjectBuilder();
@@ -219,11 +258,11 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 	public synchronized GraphDatabaseService getGraphDB() {
 		if (this.graphDb == null) {
 			this.graphDb = createGraphDB();
-			this.shutdownHook = registerShutdownHook(this.graphDb);
+			this.shutdownHook = registerShutdownHook();
 		}
 		return this.graphDb;
 	}
-	
+
 	private void initJsonBuilderContext(JsonBuilderContext builderContext) {
 		builderContext.resultObject = Json.createObjectBuilder();
 		builderContext.resultsArray = Json.createArrayBuilder();
@@ -231,30 +270,28 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		builderContext.innerResultsObjects = new ArrayList<JsonObjectBuilder>();
 		builderContext.dataArrays = new ArrayList<JsonArrayBuilder>();
 	}
-	
+
 	private void addInnerResultsAndDataArray(JsonBuilderContext builderContext) {
 		builderContext.innerResultsObjects.add(Json.createObjectBuilder());
 		builderContext.dataArrays.add(Json.createArrayBuilder());
 	}
-	
+
 	private void addColumns(JsonBuilderContext builderContext, List<String> cols) {
 		JsonArrayBuilder columns = Json.createArrayBuilder();
 		for (String col : cols) {
 			columns.add(col);
 		}
-		builderContext.innerResultsObjects.get(
-				builderContext.innerResultsObjects.size() - 1).add("columns", columns);
+		builderContext.innerResultsObjects.get(builderContext.innerResultsObjects.size() - 1).add("columns", columns);
 	}
-	
-	private void addRow(JsonBuilderContext builderContext, Map<String, Object> row,
-			List<String> cols) {
-		
+
+	private void addRow(JsonBuilderContext builderContext, Map<String, Object> row, List<String> cols) {
+
 		JsonObjectBuilder rowObject = Json.createObjectBuilder();
 		JsonArrayBuilder restArray = Json.createArrayBuilder();
 		JsonObjectBuilder graphObject = Json.createObjectBuilder();
 		JsonArrayBuilder nodesArray = Json.createArrayBuilder();
 		JsonArrayBuilder relationsArray = Json.createArrayBuilder();
-		
+
 		Object restObject;
 		List<NodeHolder> nodes = new ArrayList<NodeHolder>();
 		List<RelationHolder> relations = new ArrayList<RelationHolder>();
@@ -266,11 +303,11 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			if (restObject == null)
 				writeLiteralValue(val, restArray);
 			else if (restObject instanceof JsonObjectBuilder)
-				restArray.add((JsonObjectBuilder)restObject);
-			 else if (restObject instanceof JsonArrayBuilder)
-					restArray.add((JsonArrayBuilder)restObject);
+				restArray.add((JsonObjectBuilder) restObject);
+			else if (restObject instanceof JsonArrayBuilder)
+				restArray.add((JsonArrayBuilder) restObject);
 		}
-		
+
 		Collections.sort(nodes);
 		Collections.sort(relations);
 		for (NodeHolder nh : nodes) {
@@ -279,28 +316,26 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		for (RelationHolder rh : relations) {
 			relationsArray.add(rh.relationObject);
 		}
-		
+
 		rowObject.add("rest", restArray);
 		graphObject.add("nodes", nodesArray);
 		graphObject.add("relationships", relationsArray);
 		rowObject.add("graph", graphObject);
-		builderContext.dataArrays.get(
-				builderContext.dataArrays.size() - 1).add(rowObject);
+		builderContext.dataArrays.get(builderContext.dataArrays.size() - 1).add(rowObject);
 	}
-	
-	private Object buildRestObject(Object val, List<NodeHolder> nodes,
-			List<RelationHolder> relations) {
+
+	private Object buildRestObject(Object val, List<NodeHolder> nodes, List<RelationHolder> relations) {
 		JsonObjectBuilder restObject = null;
 		JsonArrayBuilder jsarr = null;
-		
+
 		if (val instanceof Node) {
 			restObject = Json.createObjectBuilder();
-			Node node = (Node)val;
+			Node node = (Node) val;
 			restObject.add("self", "node/".concat(String.valueOf(node.getId())));
 			addNode(node, nodes);
 		} else if (val instanceof Relationship) {
 			restObject = Json.createObjectBuilder();
-			Relationship relation = (Relationship)val;
+			Relationship relation = (Relationship) val;
 			restObject.add("start", "node/".concat(String.valueOf(relation.getStartNode().getId())));
 			restObject.add("self", "relationship/".concat(String.valueOf(relation.getId())));
 			restObject.add("end", "node/".concat(String.valueOf(relation.getEndNode().getId())));
@@ -313,7 +348,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			}
 		} else if (val instanceof Path) {
 			restObject = Json.createObjectBuilder();
-			Path path = (Path)val;
+			Path path = (Path) val;
 			restObject.add("start", "node/".concat(String.valueOf(path.startNode().getId())));
 			JsonArrayBuilder pNodesArray = Json.createArrayBuilder();
 			Iterator<Node> nit = path.nodes().iterator();
@@ -340,30 +375,30 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			restObject.add("end", "node/".concat(String.valueOf(path.endNode().getId())));
 		} else if (val instanceof SeqWrapper<?>) {
 			jsarr = Json.createArrayBuilder();
-			int sz = ((SeqWrapper<?>)val).size();
+			int sz = ((SeqWrapper<?>) val).size();
 			boolean restFound = false;
 			for (int i = 0; i < sz; i++) {
-				Object obj = ((SeqWrapper<?>)val).get(i);
+				Object obj = ((SeqWrapper<?>) val).get(i);
 				Object ro = buildRestObject(obj, nodes, relations);
 				if (ro instanceof JsonObjectBuilder) {
-					jsarr.add((JsonObjectBuilder)ro);
+					jsarr.add((JsonObjectBuilder) ro);
 					restFound = true;
 				} else if (ro instanceof JsonArrayBuilder) {
-					jsarr.add((JsonArrayBuilder)ro);
+					jsarr.add((JsonArrayBuilder) ro);
 					restFound = true;
 				}
 			}
 			if (!restFound)
 				jsarr = null;
 		}
-		
+
 		if (restObject != null)
 			return restObject;
 		if (jsarr != null)
 			return jsarr;
 		return null;
 	}
-	
+
 	private static void writeLiteralValue(Object val, JsonArrayBuilder array) {
 		if (val == null)
 			array.addNull();
@@ -371,39 +406,39 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			array.add(val.toString());
 		else if (val instanceof Number) {
 			if (val instanceof Long)
-				array.add(((Long)val).longValue());
+				array.add(((Long) val).longValue());
 			else if (val instanceof Integer)
-				array.add(((Integer)val).intValue());
+				array.add(((Integer) val).intValue());
 			else if (val instanceof Double)
-				array.add(((Double)val).doubleValue());
+				array.add(((Double) val).doubleValue());
 			else if (val instanceof Float)
-				array.add(((Float)val).floatValue());
+				array.add(((Float) val).floatValue());
 		} else if (val instanceof Boolean) {
-			array.add(((Boolean)val).booleanValue());
+			array.add(((Boolean) val).booleanValue());
 		} else if (val != null && val.getClass().isArray()) {
 			JsonArrayBuilder jsarr = Json.createArrayBuilder();
 			if (val instanceof int[]) {
-				int[] arr = (int[])val;
+				int[] arr = (int[]) val;
 				for (int v : arr) {
 					writeLiteralValue(v, jsarr);
 				}
 			} else if (val instanceof long[]) {
-				long[] arr = (long[])val;
+				long[] arr = (long[]) val;
 				for (long v : arr) {
 					writeLiteralValue(v, jsarr);
 				}
 			} else if (val instanceof float[]) {
-				float[] arr = (float[])val;
+				float[] arr = (float[]) val;
 				for (float v : arr) {
 					writeLiteralValue(v, jsarr);
 				}
 			} else if (val instanceof double[]) {
-				double[] arr = (double[])val;
+				double[] arr = (double[]) val;
 				for (double v : arr) {
 					writeLiteralValue(v, jsarr);
 				}
 			} else {
-				Object[] arr = (Object[])val;
+				Object[] arr = (Object[]) val;
 				for (Object v : arr) {
 					writeLiteralValue(v, jsarr);
 				}
@@ -411,15 +446,15 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			array.add(jsarr);
 		} else if (val instanceof SeqWrapper<?>) {
 			JsonArrayBuilder jsarr = Json.createArrayBuilder();
-			int sz = ((SeqWrapper<?>)val).size();
+			int sz = ((SeqWrapper<?>) val).size();
 			for (int i = 0; i < sz; i++) {
-				Object obj = ((SeqWrapper<?>)val).get(i);
+				Object obj = ((SeqWrapper<?>) val).get(i);
 				writeLiteralValue(obj, jsarr);
 			}
 			array.add(jsarr);
 		}
 	}
-	
+
 	private void addNode(Node node, List<NodeHolder> nodes) {
 		if (node != null) {
 			NodeHolder nh = new NodeHolder(node);
@@ -429,29 +464,28 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			}
 		}
 	}
-	
+
 	void removeTx() {
 		this.transaction.remove();
 	}
-	
-	private static Thread registerShutdownHook(final GraphDatabaseService gDb) {
+
+	private Thread registerShutdownHook() {
 		// Registers a shutdown hook for the Neo4j instance so that it
 		// shuts down nicely when the VM exits (even if you "Ctrl-C" the
 		// running application).
-		Thread hook = new Thread() {
-			@Override
-			public void run() {
-				try {
-					gDb.shutdown();
-				} catch (Throwable e) {
-					// do nothing
+		Thread hook = null;
+		if (this.registerShutdownHook) {
+			hook = new Thread() {
+				@Override
+				public void run() {
+					shutDown();
 				}
-			}
-		};
-		Runtime.getRuntime().addShutdownHook(hook);
+			};
+			Runtime.getRuntime().addShutdownHook(hook);
+		}
 		return hook;
 	}
-	
+
 	/*************************************************/
 	private static class JsonBuilderContext {
 		private JsonObjectBuilder resultObject;
@@ -459,7 +493,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		private JsonArrayBuilder errorsArray;
 		private List<JsonObjectBuilder> innerResultsObjects;
 		private List<JsonArrayBuilder> dataArrays;
-		
+
 		private JsonObject build() {
 			for (int i = 0; i < this.innerResultsObjects.size(); i++) {
 				this.innerResultsObjects.get(i).add("data", this.dataArrays.get(i));
@@ -470,10 +504,10 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			return this.resultObject.build();
 		}
 	}
-	
+
 	/*************************************************/
 	private static class NodeHolder implements Comparable<NodeHolder> {
-		
+
 		private long id;
 		private JsonObjectBuilder nodeObject;
 
@@ -481,7 +515,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			super();
 			this.id = node.getId();
 		}
-		
+
 		private void init(Node node) {
 			JsonObjectBuilder nd = Json.createObjectBuilder();
 			nd.add("id", String.valueOf(node.getId()));
@@ -505,45 +539,45 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			nd.add("properties", props);
 			this.nodeObject = nd;
 		}
-		
+
 		private static void writeLiteral(String key, Object val, JsonObjectBuilder props) {
 			if (val instanceof String)
 				props.add(key, val.toString());
 			else if (val instanceof Number) {
 				if (val instanceof Long)
-					props.add(key, ((Long)val).longValue());
+					props.add(key, ((Long) val).longValue());
 				else if (val instanceof Integer)
-					props.add(key, ((Integer)val).intValue());
+					props.add(key, ((Integer) val).intValue());
 				else if (val instanceof Double)
-					props.add(key, ((Double)val).doubleValue());
+					props.add(key, ((Double) val).doubleValue());
 				else if (val instanceof Float)
-					props.add(key, ((Float)val).floatValue());
+					props.add(key, ((Float) val).floatValue());
 			} else if (val instanceof Boolean) {
-				props.add(key, ((Boolean)val).booleanValue());
+				props.add(key, ((Boolean) val).booleanValue());
 			} else if (val != null && val.getClass().isArray()) {
 				JsonArrayBuilder jsarr = Json.createArrayBuilder();
 				if (val instanceof int[]) {
-					int[] arr = (int[])val;
+					int[] arr = (int[]) val;
 					for (int v : arr) {
 						writeLiteralValue(v, jsarr);
 					}
 				} else if (val instanceof long[]) {
-					long[] arr = (long[])val;
+					long[] arr = (long[]) val;
 					for (long v : arr) {
 						writeLiteralValue(v, jsarr);
 					}
 				} else if (val instanceof float[]) {
-					float[] arr = (float[])val;
+					float[] arr = (float[]) val;
 					for (float v : arr) {
 						writeLiteralValue(v, jsarr);
 					}
 				} else if (val instanceof double[]) {
-					double[] arr = (double[])val;
+					double[] arr = (double[]) val;
 					for (double v : arr) {
 						writeLiteralValue(v, jsarr);
 					}
 				} else {
-					Object[] arr = (Object[])val;
+					Object[] arr = (Object[]) val;
 					for (Object v : arr) {
 						writeLiteralValue(v, jsarr);
 					}
@@ -560,7 +594,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		@Override
 		public boolean equals(Object obj) {
 			if (obj instanceof NodeHolder)
-				return ((NodeHolder)obj).id == this.id;
+				return ((NodeHolder) obj).id == this.id;
 			return false;
 		}
 
@@ -568,12 +602,12 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		public int compareTo(NodeHolder o) {
 			return Long.compare(this.id, o.id);
 		}
-		
+
 	}
-	
+
 	/*************************************************/
 	private static class RelationHolder implements Comparable<RelationHolder> {
-		
+
 		private long id;
 		private JsonObjectBuilder relationObject;
 
@@ -581,7 +615,7 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			super();
 			this.id = relation.getId();
 		}
-		
+
 		private RelationNodes init(Relationship relation) {
 			RelationNodes ret = new RelationNodes();
 			JsonObjectBuilder rel = Json.createObjectBuilder();
@@ -610,21 +644,21 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			this.relationObject = rel;
 			return ret;
 		}
-		
+
 		private void writeLiteral(String key, Object val, JsonObjectBuilder props) {
 			if (val instanceof String)
 				props.add(key, val.toString());
 			else if (val instanceof Number) {
 				if (val instanceof Long)
-					props.add(key, ((Long)val).longValue());
+					props.add(key, ((Long) val).longValue());
 				else if (val instanceof Integer)
-					props.add(key, ((Integer)val).intValue());
+					props.add(key, ((Integer) val).intValue());
 				else if (val instanceof Double)
-					props.add(key, ((Double)val).doubleValue());
+					props.add(key, ((Double) val).doubleValue());
 				else if (val instanceof Float)
-					props.add(key, ((Float)val).floatValue());
+					props.add(key, ((Float) val).floatValue());
 			} else if (val instanceof Boolean)
-				props.add(key, ((Boolean)val).booleanValue());
+				props.add(key, ((Boolean) val).booleanValue());
 		}
 
 		@Override
@@ -635,10 +669,10 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 		@Override
 		public boolean equals(Object obj) {
 			if (obj instanceof RelationHolder)
-				return ((RelationHolder)obj).id == this.id;
+				return ((RelationHolder) obj).id == this.id;
 			return false;
 		}
-		
+
 		@Override
 		public int compareTo(RelationHolder o) {
 			return Long.compare(this.id, o.id);
@@ -650,12 +684,12 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 			private Node endNode;
 		}
 	}
-	
+
 	/*******************************************/
 	private static class Statement {
 		private String cypher;
 		private Map<String, Object> parameterMap;
-		
+
 		private Statement(String cypher, Map<String, Object> parameterMap) {
 			super();
 			this.cypher = cypher;
