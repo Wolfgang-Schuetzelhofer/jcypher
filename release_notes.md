@@ -5,7 +5,7 @@ Release Notes
 **New**
 - Support for Neo4J 3.2.2.
 - Shutdown hooks in IDBAccess optional
-- Public constructors for IDBAccess implementations allow more customized configurations. You are encouraged but not required to use DBAccessFactory.
+- Public constructors for IDBAccess implementations allow more flexibly customizable configurations.  Although you are highly encouraged to use DBAccessFactory, you are no longer forced to do so.
 
 ## 3.7.0
 **New**
