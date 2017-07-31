@@ -1,6 +1,12 @@
 Release Notes
 =======
 
+## 3.8.0
+**New**
+- Support for Neo4J 3.2.2.
+- Shutdown hooks in IDBAccess optional
+- Public constructors for IDBAccess implementations allow more customized configurations. You are encouraged but not required to use DBAccessFactory.
+
 ## 3.7.0
 **New**
 - Support for Neo4J 3.1.1.

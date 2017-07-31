@@ -7,23 +7,23 @@
 		<dependency><!-- needed for embedded and in_memory database access -->
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j</artifactId>
-			<version>3.1.1</version>
+			<version>3.2.2</version>
 		</dependency>
 		<dependency><!-- needed for in memory database access -->
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j-kernel</artifactId>
 			<type>test-jar</type>
-			<version>3.1.1</version>
+			<version>3.2.2</version>
 		</dependency>
 		<dependency><!-- needed for embedded and in_memory database access -->
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j-io</artifactId>
-			<version>3.1.1</version>
+			<version>3.2.2</version>
 			<type>test-jar</type>
 		</dependency>
 		<dependency><!-- to use the BOLT protocol. Since Neo4J 3.0 -->
 			<groupId>org.neo4j.driver</groupId>
 			<artifactId>neo4j-java-driver</artifactId>
-			<version>1.1.0</version>
+			<version>1.2.1</version>
 		</dependency>
 </dependencies>
