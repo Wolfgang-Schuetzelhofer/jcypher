@@ -56,6 +56,18 @@ public class Set<T extends APIObject> extends APIObject {
 	
 	/**
 	 * <div color='red' style="font-size:24px;color:red"><b><i>JCYPHER LANGUAGE ELEMENT</i></b></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>set by an Expression which is constructed out of clauses which directly follow the <b>byExpression()</b></i></div>
+	 * <div color='red' style="font-size:18px;color:red"><i>e.g. <b>CASE .. WHEN ..</b></i></div>
+	 * <br/>
+	 */
+	public T byExpression() {
+		ModifyExpression mx = (ModifyExpression)this.astNode;
+		mx.setValue(null);
+		return this.connector;
+	}
+	
+	/**
+	 * <div color='red' style="font-size:24px;color:red"><b><i>JCYPHER LANGUAGE ELEMENT</i></b></div>
 	 * <div color='red' style="font-size:18px;color:red"><i>remove the property (set to <b>NULL</b>)</i></div>
 	 * <br/>
 	 */
