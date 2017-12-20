@@ -21,7 +21,7 @@ import iot.jcypher.database.internal.PlannerStrategy;
 public class Settings {
 
 	public static boolean strict = true;
-	public static final PlannerStrategy plannerStrategy = PlannerStrategy.RULE;
+	public static PlannerStrategy plannerStrategy = PlannerStrategy.RULE;
 	public static boolean TEST_MODE = false;
 	
 	public static ThreadLocal<Boolean> writeRulePlanner = new ThreadLocal<Boolean>() {

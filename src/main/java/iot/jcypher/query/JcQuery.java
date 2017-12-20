@@ -16,6 +16,7 @@
 
 package iot.jcypher.query;
 
+import iot.jcypher.database.internal.PlannerStrategy;
 import iot.jcypher.query.api.IClause;
 
 /**
@@ -25,6 +26,23 @@ public class JcQuery {
 
 	private boolean extractParams = true;
 	private IClause clauses[];
+	private PlannerStrategy plannerStrategy = null;
+
+	/**
+	 * Construct a JQuery object
+	 */
+	public JcQuery() {
+		super();
+	}
+
+	/**
+	 * Construct a JQuery object, set the planner strategy
+	 * @param plannerStrategy
+	 */
+	public JcQuery(PlannerStrategy plannerStrategy) {
+		super();
+		this.plannerStrategy = plannerStrategy;
+	}
 
 	/**
 	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>
@@ -69,5 +87,13 @@ public class JcQuery {
 	 */
 	public void setExtractParams(boolean extractParams) {
 		this.extractParams = extractParams;
+	}
+
+	public PlannerStrategy getPlannerStrategy() {
+		return plannerStrategy;
+	}
+
+	public void setPlannerStrategy(PlannerStrategy plannerStrategy) {
+		this.plannerStrategy = plannerStrategy;
 	}
 }

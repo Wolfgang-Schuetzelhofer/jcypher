@@ -21,7 +21,9 @@ import java.util.Properties;
 
 import org.neo4j.driver.v1.AuthToken;
 
+import iot.jcypher.database.internal.PlannerStrategy;
 import iot.jcypher.database.remote.BoltDBAccess;
+import iot.jcypher.domainquery.internal.Settings;
 
 /**
  * A Factory for creating accessors to Neo4j databases.
@@ -29,6 +31,24 @@ import iot.jcypher.database.remote.BoltDBAccess;
  */
 public class DBAccessFactory {
 
+	/**
+	 * Set the globally used planner strategy. This can be overridden on a per query basis.
+	 * <br/>Setting <b>PlannerStragey.DEFAULT</b> leaves the decision to the NEO4J query engine.
+	 * @param plannerStrategy
+	 */
+	public static void seGlobaltPlannerStrategy(PlannerStrategy plannerStrategy) {
+		if (plannerStrategy == null)
+			throw new RuntimeException("plannerStrategy must not be null.");
+		Settings.plannerStrategy = plannerStrategy;
+	}
+	
+	/**
+	 * @return the globally used planner strategy.
+	 */
+	public static PlannerStrategy getGlobalPlannerStrategy() {
+		return Settings.plannerStrategy;
+	}
+	
 	/**
 	 * create an IDBAccess (an accessor) for a specific database.
 	 * @param dbType the type of database to access. Can be

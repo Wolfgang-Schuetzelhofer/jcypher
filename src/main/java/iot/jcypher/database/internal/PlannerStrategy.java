@@ -17,5 +17,5 @@
 package iot.jcypher.database.internal;
 
 public enum PlannerStrategy {
-	COST, RULE
+	COST, RULE, DEFAULT
 }

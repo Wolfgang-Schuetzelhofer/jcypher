@@ -17,6 +17,7 @@
 package iot.jcypher.query.writer;
 
 import iot.jcypher.database.DBVersion;
+import iot.jcypher.database.internal.PlannerStrategy;
 import iot.jcypher.domainquery.internal.Settings;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryParameter;
@@ -113,9 +114,14 @@ public class CypherWriter {
 	
 	public static void toCypherExpression(JcQuery query, WriterContext context) {
 		if (!DBVersion.Neo4j_Version.equals(dBVersion_21x) && Settings.writeRulePlanner.get()) {
-			context.buffer.append("CYPHER planner=");
-			context.buffer.append(Settings.plannerStrategy.name().toLowerCase());
-			Pretty.writePreClauseSeparator(context, context.buffer);
+			PlannerStrategy ps = query.getPlannerStrategy();
+			if (ps == null)
+				ps = Settings.plannerStrategy;
+			if (ps != null && ps != PlannerStrategy.DEFAULT) {
+				context.buffer.append("CYPHER planner=");
+				context.buffer.append(ps.name().toLowerCase());
+				Pretty.writePreClauseSeparator(context, context.buffer);
+			}
 		}
 		toCypherExpression(query.getClauses(), 0, context);
 	}
