@@ -1,6 +1,12 @@
 Release Notes
 =======
 
+## 3.9.0
+**New**
+- Support for Neo4J 3.3.1.
+- Set planner rule globally or individually on a per query basis.
+- New - ...SET(...).byExpression() - to allow formulating the expression in form of Clauses (e.g. CASE .. WHEN ..)
+
 ## 3.8.0
 **New**
 - Support for Neo4J 3.2.2.

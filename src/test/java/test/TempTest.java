@@ -33,6 +33,7 @@ import iot.jcypher.database.DBAccessFactory;
 import iot.jcypher.database.DBProperties;
 import iot.jcypher.database.DBType;
 import iot.jcypher.database.IDBAccess;
+import iot.jcypher.database.internal.PlannerStrategy;
 import iot.jcypher.domainquery.internal.Settings;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
@@ -56,6 +57,7 @@ import iot.jcypher.query.factories.clause.ON_MATCH;
 import iot.jcypher.query.factories.clause.OPTIONAL_MATCH;
 import iot.jcypher.query.factories.clause.RETURN;
 import iot.jcypher.query.factories.clause.SEPARATE;
+import iot.jcypher.query.factories.clause.START;
 import iot.jcypher.query.factories.clause.WHEN;
 import iot.jcypher.query.factories.clause.WHERE;
 import iot.jcypher.query.factories.clause.WITH;
@@ -83,6 +85,75 @@ public class TempTest extends AbstractTestSuite {
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	
+	
+	@Test
+	public void test_17_suresh_2() {
+		IClause[] clauses;
+		JcQuery query;
+		String cypher;
+		
+		//DBAccessFactory.seGlobaltPlannerStrategy(PlannerStrategy.RULE);
+		
+		JcNode u = new JcNode("u");
+		JcNode r = new JcNode("r");
+		JcNode s_r = new JcNode("s_r");
+		
+		clauses = new IClause[]{
+				START.node(u).byId(12345),
+				MERGE.node(r).label("RELATION").property("NAME").value("T").property("CUSTID").value("123"),
+				MERGE.node(s_r).label("STATE_R").property("NAME").value("T").property("CUSTID").value("456")
+					.relation().out().type("SNAPSHOT").node(r),
+				ON_CREATE.SET(s_r.property("aa")).to(1),
+				ON_MATCH.SET(s_r.property("aa")).byExpression(),
+						CASE.result(),
+							WHEN.valueOf(s_r.property("aa")).IS_NULL(),
+								NATIVE.cypher("50"),
+							ELSE.perform(),
+								NATIVE.cypher("20"),
+						END.caseXpr(),
+				MERGE.node(u).relation().type("BELONGSTO").node(r)
+		};
+		query = new JcQuery(PlannerStrategy.DEFAULT);
+		//query = new JcQuery();
+		query.setClauses(clauses);
+		// You can at any time see to what CYPHER query this translates
+		cypher = Util.toCypher(query, Format.PRETTY_1);
+		//cypher = print(clauses, Format.PRETTY_1);
+		
+		System.out.println(cypher);
+		return;
+	}
+	
+	@Test
+	public void test_17_suresh() {
+		IClause[] clauses;
+		JcQuery query;
+		String cypher;
+		
+		JcNode user = new JcNode("user");
+		JcNumber id = new JcNumber("_id");
+		
+		clauses = new IClause[]{
+				MERGE.node(user)
+				.property("NAME").value("Suresh")
+				.property("MYID").value("123")
+				.label("User"),
+				RETURN.value(user.id()).AS(id)
+		};
+		query = new JcQuery();
+		query.setClauses(clauses);
+		cypher = print(clauses, Format.PRETTY_1);
+		BigDecimal idResult = null;
+		
+		JcQueryResult result = dbAccess.execute(query);
+		if (!result.hasErrors()) {
+			idResult = result.resultOf(id).get(0);
+		}
+		
+		System.out.println(cypher);
+		return;
+	}
 	
 	@Test
 	public void test_16_edgar() {
