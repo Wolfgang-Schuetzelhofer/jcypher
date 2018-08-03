@@ -88,12 +88,65 @@ public class TempTest extends AbstractTestSuite {
 	
 	
 	@Test
+	public void test_maryjis() {
+		IClause[] clauses;
+		JcQuery query;
+		String cypher;
+		JcQueryResult result;
+		boolean create = false;
+		
+		JcNode animal = new JcNode("a");
+		JcNode dog = new JcNode("d");
+		JcRelation animal_to_dog = new JcRelation("a2d");
+		
+		if (create) {
+			clauses = new IClause[]{
+					CREATE.node(animal).property("idKB").value(1),
+					CREATE.node(dog).property("idKB").value(2)
+			};
+			query = new JcQuery();
+			query.setClauses(clauses);
+			// You can at any time see to what CYPHER query this translates
+			//cypher = Util.toCypher(query, Format.PRETTY_1);
+			//System.out.println(cypher);
+			result = dbAccess.execute(query);
+			assertFalse(result.hasErrors());
+		}
+		
+		clauses = new IClause[]{
+				MATCH.node(animal).property("idKB").value(1),
+				MATCH.node(dog).property("idKB").value(2),
+				CREATE_UNIQUE.node(animal)
+					.relation(animal_to_dog).type("A2D").node(dog),
+				RETURN.value(animal_to_dog)
+		};
+		query = new JcQuery();
+		query.setClauses(clauses);
+		result = dbAccess.execute(query);
+		if (result.hasErrors()) {
+			Util.printResult(result, "Test", Format.PRETTY_1);
+		}
+		
+		List<GrRelation> a2dResults = result.resultOf(animal_to_dog);
+		GrRelation a2dResult = null;
+		GrNode a = null;
+		GrNode d = null;
+		if (a2dResults.size() == 1) {
+			a2dResult = a2dResults.get(0);
+			a = a2dResult.getStartNode();
+			d = a2dResult.getEndNode();
+		}
+		
+		return;
+	}
+	
+	@Test
 	public void test_17_suresh_2() {
 		IClause[] clauses;
 		JcQuery query;
 		String cypher;
 		
-		//DBAccessFactory.seGlobaltPlannerStrategy(PlannerStrategy.RULE);
+		DBAccessFactory.seGlobaltPlannerStrategy(PlannerStrategy.COST);
 		
 		JcNode u = new JcNode("u");
 		JcNode r = new JcNode("r");

@@ -22,6 +22,7 @@ import java.util.List;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ComparisonFailure;
 import org.junit.Test;
 
 import iot.jcypher.database.DBVersion;
@@ -130,12 +131,14 @@ public class DBAccessTest extends AbstractTestSuite {
 		setDoAssert(true);
 
 		TestDataReader tdr;
+		TestDataReader tdr2 = null;
 		if (dbAccess instanceof RemoteDBAccess) {
 			tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01_remote.txt");
 		} else {
-			if (!DBVersion.Neo4j_Version.equals("2.2.x") && !DBVersion.Neo4j_Version.equals("2.1.x"))
+			if (!DBVersion.Neo4j_Version.equals("2.2.x") && !DBVersion.Neo4j_Version.equals("2.1.x")) {
 				tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01_23x.txt");
-			else
+				tdr2 = new TestDataReader("/test/dbaccess/Test_DBACCESS_01_23x_altern.txt");
+			} else
 				tdr = new TestDataReader("/test/dbaccess/Test_DBACCESS_01.txt");
 		}
 		
@@ -169,8 +172,13 @@ public class DBAccessTest extends AbstractTestSuite {
 			resultString = Util.writePretty(result.getJsonResult());
 			print(resultString);
 			testId = "ACCESS_02";
-			if (!(dbAccess instanceof RemoteDBAccess))
-				assertQuery(testId, resultString, tdr.getTestData(testId));
+			if (!(dbAccess instanceof RemoteDBAccess)) {
+				try {
+					assertQuery(testId, resultString, tdr.getTestData(testId));
+				} catch (ComparisonFailure e) {
+					assertQuery(testId, resultString, tdr2.getTestData(testId));
+				}
+			}
 		}
 		
 		return;

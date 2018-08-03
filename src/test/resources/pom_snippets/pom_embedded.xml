@@ -2,7 +2,7 @@
 	<dependency>
 		<groupId>net.iot-solutions.graphdb</groupId>
 		<artifactId>jcypher</artifactId>
-		<version>3.9.0</version>
+		<version>4.0.0</version>
 		<exclusions>
 			<exclusion>
 				<groupId>org.neo4j</groupId>

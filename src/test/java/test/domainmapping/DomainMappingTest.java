@@ -56,6 +56,7 @@ import java.util.Properties;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.ComparisonFailure;
 import org.junit.Test;
 
 import test.AbstractTestSuite;
@@ -527,7 +528,11 @@ public class DomainMappingTest extends AbstractTestSuite{
 		}
 		
 		List<String> available = DomainInformation.availableDomains(dbAccess);
-		assertEquals("[TEST-1-DOMAIN, TEST-2-DOMAIN]", available.toString());
+		try {
+			assertEquals("[TEST-1-DOMAIN, TEST-2-DOMAIN]", available.toString());
+		} catch(ComparisonFailure e) {
+			assertEquals("[TEST-2-DOMAIN, TEST-1-DOMAIN]", available.toString());
+		}
 		
 		return;
 	}

@@ -233,7 +233,8 @@ public class CompareUtil {
 		if (o_1 == null) {
 			if (o_2 != null)
 				return ac.setResult(false);
-		}
+		} else if (o_2 == null)
+			return ac.setResult(false);
 		if (o_1.getClass() != o_2.getClass())
 			return ac.setResult(false);
 		else if (o_1 instanceof Area)
