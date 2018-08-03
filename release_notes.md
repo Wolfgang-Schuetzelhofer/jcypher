@@ -1,6 +1,10 @@
 Release Notes
 =======
 
+## 4.0.0
+**New**
+- Support for Neo4J 3.4.1.
+
 ## 3.9.0
 **New**
 - Support for Neo4J 3.3.1.

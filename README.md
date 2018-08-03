@@ -47,7 +47,7 @@ You may add JCypher as a Maven dependency:
 <dependency>
   <groupId>net.iot-solutions.graphdb</groupId>
    <artifactId>jcypher</artifactId>
-   <version>3.9.0</version>
+   <version>4.0.0</version>
 </dependency>
 ```
 ## JCypher on Maven Central
@@ -57,7 +57,7 @@ You may add JCypher as a Maven dependency:
 
 ## License & Copyright
 
-Copyright (c) 2014-2017 IoT-Solutions e.U.
+Copyright (c) 2014-2018 IoT-Solutions e.U.
 
 License:
 								Apache License
