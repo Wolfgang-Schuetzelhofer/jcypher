@@ -1034,9 +1034,9 @@ public class CypherWriter {
 				}
 				
 				if (r.getMinHops() == 0 && r.getMaxHops() == -1) // hops unbound
-					context.buffer.append('*');
+					context.buffer.append("*0..");
 				else if (r.getMinHops() == 0) {
-					context.buffer.append("*..");
+					context.buffer.append("*0..");
 					context.buffer.append(r.getMaxHops());
 				} else if (r.getMaxHops() == -1) {
 					context.buffer.append('*');
