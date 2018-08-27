@@ -292,7 +292,7 @@ public class JSONContentHandler extends AContentHandler {
 					ElementInfo ei = ElementInfo.nullElement();
 					return ei;
 				}
-				return null;
+				return ElementInfo.nullElement();
 			}
 
 			@Override
