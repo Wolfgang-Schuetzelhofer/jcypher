@@ -169,7 +169,7 @@ RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_0_1) AS id_0_1, id(n_1_0) AS id_1_0
 _OPTIONAL_
 OPTIONAL MATCH (n_0_0:Person)
 WHERE n_0_0.lastName = 'Smith' AND n_0_0.firstName = 'John'
-OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_1_0:Area)
-OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*]->(n_1_1:EArea)
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*1..]->(n_1_0:Area)
+OPTIONAL MATCH (n_0_0)-[:pointsOfContact]->()-[:c_content]->()-[:area]->()-[:partOf*1..]->(n_1_1:EArea)
 RETURN DISTINCT id(n_0_0) AS id_0_0, id(n_1_0) AS id_1_0, id(n_1_1) AS id_1_1
 ------------------------------------------------------------

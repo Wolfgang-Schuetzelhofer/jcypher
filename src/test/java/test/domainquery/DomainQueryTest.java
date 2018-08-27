@@ -474,7 +474,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<AbstractArea> j_smith_d_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
 				.TO(AbstractArea.class);
 		DomainObjectMatch<AbstractArea> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(AbstractArea.class);
 		DomainObjectMatch<AbstractArea> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
 		
 		DomainObjectMatch<PointOfContact> j_smith_FilteredPocs =
@@ -529,7 +529,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<Area> j_smith_d_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
 				.TO(Area.class);
 		DomainObjectMatch<Area> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(Area.class);
 		DomainObjectMatch<Area> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
 		q.WHERE(j_smith_all_Areas.atttribute("name")).EQUALS("San Francisco");
 		
@@ -1041,7 +1041,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		
 		DomainObjectMatch<Object> addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
 		DomainObjectMatch<AbstractArea> areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(AbstractArea.class);
 		
 		DomainObjectMatch<Person> num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
 				q.WHERE(addresses.COUNT()).EQUALS(4),
@@ -1388,7 +1388,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<Object> j_smith_PoCs =
 				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Object.class);
 		DomainObjectMatch<Object> j_smith_Areas = q.TRAVERSE_FROM(j_smith_PoCs).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(Object.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(Object.class);
 		
 		DomainObjectMatch<Object> j_smith_FilteredPoCs =
 				q.SELECT_FROM(j_smith_PoCs).ELEMENTS(
@@ -1444,7 +1444,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		j_smith_PoCs =
 				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Object.class);
 		j_smith_Areas = q.TRAVERSE_FROM(j_smith_PoCs).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(Object.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(Object.class);
 		q.WHERE(j_smith_Areas.atttribute("name")).EQUALS("Austria");
 		q.OR();
 		q.WHERE(j_smith_Areas.atttribute("region")).EQUALS("region_1");
@@ -1548,7 +1548,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<Address> j_smith_Addresses =
 				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(Address.class);
 		DomainObjectMatch<Area> j_smith_Areas = q.TRAVERSE_FROM(j_smith_Addresses).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(Area.class);
 		
 //		q.WHERE(j_smith_Areas).CONTAINS(europe); // must throw exception
 		
@@ -1618,7 +1618,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		DomainObjectMatch<PointOfContact> j_smith_PoCs =
 				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(PointOfContact.class);
 		j_smith_Areas = q.TRAVERSE_FROM(j_smith_PoCs).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(Area.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(Area.class);
 		
 		DomainObjectMatch<PointOfContact> j_smith_FilteredPoCs =
 				q.SELECT_FROM(j_smith_PoCs).ELEMENTS(
@@ -1658,7 +1658,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		j_smith_PoCs =
 				q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").TO(PointOfContact.class);
 		DomainObjectMatch<AbstractArea> j_smith_AbstAreas = q.TRAVERSE_FROM(j_smith_PoCs).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(AbstractArea.class);
 		
 		j_smith_FilteredPoCs =
 				q.SELECT_FROM(j_smith_PoCs).ELEMENTS(
@@ -2070,7 +2070,7 @@ public class DomainQueryTest extends AbstractTestSuite {
 		q.WHERE(j_smith.atttribute("firstName")).EQUALS("John");
 		
 		DomainObjectMatch<AbstractArea> jsAreas = q.TRAVERSE_FROM(j_smith).FORTH("pointsOfContact").FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(AbstractArea.class);
 		result = q.execute();
 		
 		List<AbstractArea> jsAreasResult = result.resultOf(jsAreas);

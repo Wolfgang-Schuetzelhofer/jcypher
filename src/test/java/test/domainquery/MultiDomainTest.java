@@ -191,7 +191,7 @@ public class MultiDomainTest extends AbstractTestSuite {
 		
 		DomainObjectMatch<Object> addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
 		DomainObjectMatch<AbstractArea> areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(AbstractArea.class);
 		
 		DomainObjectMatch<Person> num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
 				q.WHERE(addresses.COUNT()).EQUALS(4),
@@ -228,7 +228,7 @@ public class MultiDomainTest extends AbstractTestSuite {
 		
 		addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
 		areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(AbstractArea.class);
 		
 		num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
 				q.WHERE(addresses.COUNT()).EQUALS(4),
@@ -266,7 +266,7 @@ public class MultiDomainTest extends AbstractTestSuite {
 		
 		addresses = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").TO(Object.class);
 		areas = q.TRAVERSE_FROM(subjects).FORTH("pointsOfContact").FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO(AbstractArea.class);
+				.FORTH("partOf").DISTANCE(1, -1).TO(AbstractArea.class);
 		
 		num_addresses = q.SELECT_FROM(subjects).ELEMENTS(
 				q.WHERE(addresses.COUNT()).EQUALS(4),

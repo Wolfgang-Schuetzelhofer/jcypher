@@ -58,12 +58,12 @@ MATCH p = (michael{name:'Michael Douglas'})-->()
 MATCH
      (martin:Person{name:'Martin Sheen'}),
      (oliver:Person{name:'Oliver Stone'}),
-     p = shortestPath((martin)-[*..15]-(oliver))
+     p = shortestPath((martin)-[*0..15]-(oliver))
 ------------------------------------------------------------
 
 ----MATCH_16:
 MATCH
      (martin:Person{name:'Martin Sheen'}),
      (michael:Person{name:'Michael Douglas'}),
-     p = allShortestPaths((martin)-[*]-(michael))
+     p = allShortestPaths((martin)-[*0..]-(michael))
 ------------------------------------------------------------

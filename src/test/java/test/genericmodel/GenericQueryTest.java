@@ -324,7 +324,7 @@ public class GenericQueryTest extends AbstractTestSuite {
 				.TO_GENERIC("iot.jcypher.samples.domain.people.model.Area");
 		DomainObjectMatch<DomainObject> j_smith_Areas =
 				q.TRAVERSE_FROM(j_smith_AddressesMatch).FORTH("area")
-				.FORTH("partOf").DISTANCE(0, -1).TO_GENERIC("iot.jcypher.samples.domain.people.model.Area");
+				.FORTH("partOf").DISTANCE(1, -1).TO_GENERIC("iot.jcypher.samples.domain.people.model.Area");
 		@SuppressWarnings("unchecked")
 		DomainObjectMatch<DomainObject> j_smith_all_Areas = q.UNION(j_smith_d_Areas, j_smith_Areas);
 		

@@ -86,6 +86,24 @@ public class TempTest extends AbstractTestSuite {
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
 	
+	@Test
+	public void test_Krzysztof() {
+		IClause[] clauses;
+		JcQuery query;
+		String cypher;
+		
+		JcNode m = new JcNode("m");
+		
+		clauses = new IClause[]{
+				MATCH.node(m),
+				WHERE.has(m.label("BarrierArea")).OR().has(m.label("BarrierInstance")).OR().has(m.label("BarrierElement")),
+				RETURN.value(m)
+		};
+		query = new JcQuery();
+		query.setClauses(clauses);
+		cypher = print(query, Format.PRETTY_1);
+		return;
+	}
 	
 	@Test
 	public void test_maryjis() {
