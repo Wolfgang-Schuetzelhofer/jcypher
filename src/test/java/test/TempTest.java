@@ -87,6 +87,33 @@ public class TempTest extends AbstractTestSuite {
 	private static List<Object> storedDomainObjects;
 	
 	@Test
+	public void test_Krzysztof_2() {
+		IClause[] clauses;
+		JcQuery query;
+		String cypher;
+		
+		JcNode m = new JcNode("m");
+		JcNode n = new JcNode("n");
+		JcNumber id = new JcNumber("id");
+		JcString name = new JcString("name");
+		JcCollection labels = new JcCollection("labels");
+		clauses = new IClause[]{
+				MATCH.node(m),
+				MATCH.node(n),
+				WHERE.has(m.label("SomeLabel")),
+				WHERE.has(m.label("SomeOtherLabel")),
+				RETURN.DISTINCT().value(n.id()).AS(id),
+				SEPARATE.nextClause(),
+				RETURN.value(n.property("name")).AS(name),
+				RETURN.value(m.labels()).AS(labels)
+		};
+		query = new JcQuery();
+		query.setClauses(clauses);
+		cypher = print(query, Format.PRETTY_1);
+		return;
+	}
+	
+	@Test
 	public void test_Krzysztof() {
 		IClause[] clauses;
 		JcQuery query;

@@ -1,6 +1,10 @@
 Release Notes
 =======
 
+## 4.0.1
+**Fixed**
+- minHops(0) now works correctly. Previously it was translated to cypher *..  or * respectively for specifying a link's min cardinality to be zero. However in practice this returns a min cardinality of one. Now minHops(0) is translated to cypher *0.. which works correctly. This also changes the behaviour of Domain Query expression DISTANCE(min, max) with a min of 0. This works correctly now but has changed it's behaviour, so you might need to adopt some of your queries.
+
 ## 4.0.0
 **New**
 - Support for Neo4J 3.4.1.
