@@ -3,9 +3,7 @@ Release Notes
 
 ## 4.1.0
 **New**
-- Collections in the Query API are now aware of their component type.
-- This allows expressions like: **WHERE.valueOf(path.relations().last().type()).EQUALS("Some_Type")**
-- or: **WHERE.has(path.nodes().head().label("Some_Label"))**
+- Collections in the Query API are now aware of their component type. This allows expressions like: **WHERE.valueOf(path.relations().last().type()).EQUALS("Some_Type")** or: **WHERE.has(path.nodes().head().label("Some_Label"))**
 
 ## 4.0.1
 **Fixed**
