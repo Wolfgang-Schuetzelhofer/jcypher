@@ -83,8 +83,8 @@ public abstract class JcElement extends JcValue {
 	 * <div color='red' style="font-size:18px;color:red"><i>access a named collection property, return a <b>JcCollection</b></i></div>
 	 * <br/>
 	 */
-	public JcCollection collectionProperty(String name) {
-		JcCollection ret = new JcCollection(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
+	public JcCollection<JcValue> collectionProperty(String name) {
+		JcCollection<JcValue> ret = new JcCollection<JcValue>(name, this, OPERATOR.PropertyContainer.PROPERTY_ACCESS);
 		QueryRecorder.recordInvocationConditional(this, "collectionProperty", ret, QueryRecorder.literal(name));
 		return ret;
 	}

@@ -87,6 +87,100 @@ public class TempTest extends AbstractTestSuite {
 	private static List<Object> storedDomainObjects;
 	
 	@Test
+	public void test_RetrieveLabels() {
+		IClause[] clauses;
+		JcQuery query;
+		String cypher;
+		
+		JcNode n = new JcNode("n");
+		JcString labels = new JcString("labels");
+		
+		// initially clear database
+		dbAccess.clearDatabase();
+		
+		// create nodes
+		clauses = new IClause[]{
+				CREATE.node().label("Label_1").label("Label_11"),
+				CREATE.node().label("Label_2"),
+				CREATE.node().label("Label_3")
+		};
+		query = new JcQuery();
+		query.setClauses(clauses);
+		dbAccess.execute(query);
+		
+		// retrieve labels
+		clauses = new IClause[]{
+				MATCH.node(n),
+				RETURN.value(n.labels()).AS(labels)
+		};
+		query = new JcQuery();
+		query.setClauses(clauses);
+		JcQueryResult result = dbAccess.execute(query);
+		List<String> labsResult = result.resultOf(labels);
+		return;
+	}
+	
+	@Test
+	public void test_Krzysztof_3() {
+		IClause[] clauses;
+		JcQuery query;
+		String cypher;
+		
+		JcPath p = new JcPath("p");
+		JcNode n0 = new JcNode("n0");
+		JcNode n1 = new JcNode("n1");
+		JcNode n2 = new JcNode("n2");
+		JcRelation r0 = new JcRelation("r0");
+		JcRelation r1 = new JcRelation("r1");
+		JcNumber id = new JcNumber("id");
+		JcString name = new JcString("name");
+		JcCollection labels = new JcCollection("labels");
+		
+//		dbAccess.clearDatabase();
+//		
+//		clauses = new IClause[]{
+//				CREATE.node().label("Start1").relation().type("REL_10").out().node().label("Intern").relation().type("REL_11").out().node().label("End1"),
+//				CREATE.node().label("Start2").relation().type("REL_20").out().node().label("Intern").relation().type("REL_21").out().node().label("End2"),
+//				CREATE.node().label("Start3").relation().type("REL_30").out().node().label("Intern").relation().type("REL_31").out().node().label("End3")
+//		};
+//		query = new JcQuery();
+//		query.setClauses(clauses);
+//		cypher = print(query, Format.PRETTY_1);
+//		dbAccess.execute(query);
+		
+		JcNumber idx = new JcNumber(0);
+		clauses = new IClause[]{
+				MATCH.path(p).node(n0).relation(r0).out().minHops(0).maxHopsUnbound().node(n1),
+				WHERE.valueOf(p.relations().get(idx).type()).EQUALS("REL_21"),
+				RETURN.value(p)
+		};
+		
+		clauses = new IClause[]{
+				MATCH.path(p).node(n0).relation(r0).out().minHops(0).maxHopsUnbound().node(n1),
+				WHERE.has(p.nodes().get(idx).label("Start1")),
+				RETURN.value(p)
+		};
+//		clauses = new IClause[]{
+//				MATCH.node(n0).relation(r0).minHops(0).maxHops(1).out()
+//					.node(n1).relation(r1).minHops(0).maxHops(1).out().node(n2),
+//				WHERE.valueOf(n1.property("name")).EQUALS("Hans"),
+//				WHERE.valueOf(n0.id()).EQUALS(560725),
+//				NATIVE.cypher("RETURN DISTINCT id(n0), n0.name, type(r0[0]), id(n1), n1.name, type(r1[0]), id(n2), n2.name")
+//		};
+//		clauses = new IClause[]{
+//				MATCH.node(n).label("JcTestPerson")
+//                	.relation(r).out().minHops(0)
+//                	.node(m),
+//		};
+		query = new JcQuery();
+		query.setClauses(clauses);
+		cypher = print(query, Format.PRETTY_1);
+		JcQueryResult result = dbAccess.execute(query);
+		List<GrPath> pRes = result.resultOf(p);
+		return;
+	}
+	
+	@Test
 	public void test_Krzysztof_2() {
 		IClause[] clauses;
 		JcQuery query;

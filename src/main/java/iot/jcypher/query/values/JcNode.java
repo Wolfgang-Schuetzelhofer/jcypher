@@ -52,8 +52,8 @@ public class JcNode extends JcElement {
 	 * <div color='red' style="font-size:18px;color:red"><i>return all labels of a node, return a <b>JcCollection</b></i></div>
 	 * <br/>
 	 */
-	public JcCollection labels() {
-		return new JcCollection(null, this,
+	public JcCollection<JcValue> labels() {
+		return new JcCollection<JcValue>(null, this,
 				new FunctionInstance(FUNCTION.Node.LABELS, 1));
 	}
 }

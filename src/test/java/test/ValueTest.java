@@ -599,6 +599,77 @@ public class ValueTest extends AbstractTestSuite {
 	}
 	
 	@Test
+	public void testCollections_02() {
+		String result;
+		String testId;
+		setDoPrint(true);
+		setDoAssert(true);
+
+		TestDataReader tdr = new TestDataReader("/test/value/Test_COLLECTION_01.txt");
+		
+		JcNumber idx = new JcNumber(1);
+		JcPath p = new JcPath("p");
+		ValueElement xpr;
+		
+		/*******************************/
+		xpr = p.relations().head().type();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLECTION_04";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = p.relations().last().type();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLECTION_05";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = p.relations().get(1).type();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLECTION_06";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = p.relations().get(idx).type();
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLECTION_07";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = p.nodes().head().label("Lab_1");
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLECTION_08";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = p.nodes().last().label("Lab_1");
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLECTION_09";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = p.nodes().get(1).label("Lab_1");
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLECTION_10";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+		/*******************************/
+		xpr = p.nodes().get(idx).label("Lab_1");
+		
+		result = print(xpr, Format.PRETTY_1);
+		testId = "COLLECTION_11";
+		assertQuery(testId, result, tdr.getTestData(testId));
+		
+	}
+	
+	@Test
 	public void testMathFunctions_01() {
 		String result;
 		String testId;

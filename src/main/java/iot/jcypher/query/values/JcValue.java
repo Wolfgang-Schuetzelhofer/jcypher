@@ -45,8 +45,8 @@ public class JcValue extends ValueElement {
 	 * <div color='red' style="font-size:18px;color:red"><i>return a JcCollection representing elements of the receivers type</i></div>
 	 * <br/>
 	 */
-	public JcCollection asCollection() {
-		JcCollection ret = new JcCollection(null, this, null);
+	public JcCollection<JcValue> asCollection() {
+		JcCollection<JcValue> ret = new JcCollection<JcValue>(null, this, null);
 		QueryRecorder.recordInvocationConditional(this, "asCollection", ret);
 		return ret;
 	}

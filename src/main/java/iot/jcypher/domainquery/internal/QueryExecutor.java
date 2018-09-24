@@ -1799,7 +1799,7 @@ public class QueryExecutor implements IASTObjectsContainer {
 						collectClauses.add(createWhereIn(WHERE.BR_OPEN(), unionNode, nodes, false));
 					} else
 						unionNode = nodes.get(0);
-					JcCollection unionColl = new JcCollection(ValueAccess.getName(unionNode));
+					JcCollection<JcValue> unionColl = new JcCollection<JcValue>(ValueAccess.getName(unionNode));
 					
 					String tempName = APIAccess.getBaseNodeName(cpt.domainObjectMatch).concat(tmpNodePostPrefix);
 					JcNode tempNode = new JcNode(tempName);

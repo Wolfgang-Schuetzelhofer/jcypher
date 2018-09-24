@@ -38,9 +38,9 @@ public class JcPath extends JcValue {
 	 * <div color='red' style="font-size:18px;color:red"><i>return all nodes of a path, return a <b>JcCollection</b></i></div>
 	 * <br/>
 	 */
-	public JcCollection nodes() {
-		return new JcCollection(null, this,
-				new FunctionInstance(FUNCTION.Path.NODES, 1));
+	public JcCollection<JcNode> nodes() {
+		return new JcCollection<JcNode>(null, this,
+				new FunctionInstance(FUNCTION.Path.NODES, 1), JcNode.class);
 	}
 	
 	/**
@@ -48,9 +48,9 @@ public class JcPath extends JcValue {
 	 * <div color='red' style="font-size:18px;color:red"><i>return all relations of a path, return a <b>JcCollection</b></i></div>
 	 * <br/>
 	 */
-	public JcCollection relations() {
-		return new JcCollection(null, this,
-				new FunctionInstance(FUNCTION.Path.RELATIONS, 1));
+	public JcCollection<JcRelation> relations() {
+		return new JcCollection<JcRelation>(null, this,
+				new FunctionInstance(FUNCTION.Path.RELATIONS, 1), JcRelation.class);
 	}
 
 	/**

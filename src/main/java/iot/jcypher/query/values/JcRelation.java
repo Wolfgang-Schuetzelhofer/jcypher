@@ -23,6 +23,10 @@ public class JcRelation extends JcElement {
 	JcRelation() {
 		super();
 	}
+	
+	JcRelation(String name, ValueElement predecessor, IOperatorOrFunction opf) {
+		super(name, predecessor, opf);
+	}
 
 	/**
 	 * <div color='red' style="font-size:24px;color:red"><b><i><u>JCYPHER</u></i></b></div>

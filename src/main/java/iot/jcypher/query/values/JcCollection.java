@@ -23,9 +23,11 @@ import iot.jcypher.domainquery.internal.QueryRecorder;
 import iot.jcypher.query.values.functions.FUNCTION;
 import iot.jcypher.query.values.operators.OPERATOR;
 
-public class JcCollection extends JcValue {
+public class JcCollection<T extends JcValue> extends JcValue {
 	
 	private Object value;
+	private Class<T> type;
+	
 	JcCollection() {
 		super();
 	}
@@ -53,6 +55,11 @@ public class JcCollection extends JcValue {
 		super(name, predecessor, opf);
 	}
 	
+	JcCollection(String name, ValueElement predecessor, IOperatorOrFunction opf, Class<T> typ) {
+		super(name, predecessor, opf);
+		this.type = typ;
+	}
+	
 	JcCollection(String name, Object val, ValueElement predecessor, IOperatorOrFunction opf) {
 		super(name, predecessor, opf);
 		this.value = val;
@@ -77,8 +84,8 @@ public class JcCollection extends JcValue {
 	 * <div color='red' style="font-size:18px;color:red"><i>like ...<b>add(a.property("value"));</b>.</i></div>
 	 * <br/>
 	 */
-	public JcCollection add(Object value) {
-		JcCollection ret = new JcCollection(null, value, this,
+	public JcCollection<JcValue> add(Object value) {
+		JcCollection<JcValue> ret = new JcCollection<JcValue>(null, value, this,
 				OPERATOR.Collection.ADD);
 		QueryRecorder.recordInvocationConditional(this, "add", ret, QueryRecorder.placeHolder(value));
 		return ret;
@@ -89,8 +96,8 @@ public class JcCollection extends JcValue {
 	 * <div color='red' style="font-size:18px;color:red"><i>add all elements of a collection to this collection, return a <b>JcCollection</b></i></div>
 	 * <br/>
 	 */
-	public JcCollection addAll(Collection<?> coll) {
-		JcCollection ret = new JcCollection(null, coll, this,
+	public JcCollection<JcValue> addAll(Collection<?> coll) {
+		JcCollection<JcValue> ret = new JcCollection<JcValue>(null, coll, this,
 				OPERATOR.Collection.ADD_ALL);
 		QueryRecorder.recordInvocationConditional(this, "addAll", ret, QueryRecorder.literal(coll));
 		return ret;
@@ -101,8 +108,16 @@ public class JcCollection extends JcValue {
 	 * <div color='red' style="font-size:18px;color:red"><i>access the element of the collection at the given index, return a <b>JcProperty</b></i></div>
 	 * <br/>
 	 */
-	public JcProperty get(int index) {
-		JcProperty ret = new JcProperty(null, this, OPERATOR.Collection.GET);
+	@SuppressWarnings("unchecked")
+	public T get(int index) {
+		T ret;
+		if (JcRelation.class.equals(type)) {
+			ret = (T) new JcRelation(null, this, OPERATOR.Collection.GET);
+		} else if (JcNode.class.equals(type)) {
+			ret = (T) new JcNode(null, this, OPERATOR.Collection.GET);
+		} else {
+			ret = (T) new JcValue(null, this, OPERATOR.Collection.GET);
+		}
 		ret.setHint(ValueAccess.hintKey_opValue, index);
 		QueryRecorder.recordInvocationConditional(this, "get", ret, QueryRecorder.literal(index));
 		return ret;
@@ -114,8 +129,16 @@ public class JcCollection extends JcValue {
 	 * <div color='red' style="font-size:18px;color:red"><i>e.g. ...<b>get(a.numberProperty("index"));</b>.</i></div>
 	 * <br/>
 	 */
-	public JcProperty get(JcNumber indexExpression) {
-		JcProperty ret = new JcProperty(null, this, OPERATOR.Collection.GET);
+	@SuppressWarnings("unchecked")
+	public T get(JcNumber indexExpression) {
+		T ret;
+		if (JcRelation.class.equals(type)) {
+			ret = (T) new JcRelation(null, this, OPERATOR.Collection.GET);
+		} else if (JcNode.class.equals(type)) {
+			ret = (T) new JcNode(null, this, OPERATOR.Collection.GET);
+		} else {
+			ret = (T) new JcValue(null, this, OPERATOR.Collection.GET);
+		}
 		ret.setHint(ValueAccess.hintKey_opValue, indexExpression);
 		QueryRecorder.recordInvocationConditional(this, "get", ret, QueryRecorder.placeHolder(indexExpression));
 		return ret;
@@ -126,9 +149,19 @@ public class JcCollection extends JcValue {
 	 * <div color='red' style="font-size:18px;color:red"><i>return the first element of a collection</i></div>
 	 * <br/>
 	 */
-	public ValueElement head() {
-		ValueElement ret = new ValueElement(this, 
-				new FunctionInstance(FUNCTION.Collection.HEAD, 1));
+	@SuppressWarnings("unchecked")
+	public T head() {
+		T ret;
+		if (JcRelation.class.equals(type)) {
+			ret = (T) new JcRelation(null, this, 
+					new FunctionInstance(FUNCTION.Collection.HEAD, 1));
+		} else if (JcNode.class.equals(type)) {
+			ret = (T) new JcNode(null, this, 
+					new FunctionInstance(FUNCTION.Collection.HEAD, 1));
+		} else {
+			ret = (T) new JcValue(null, this, 
+					new FunctionInstance(FUNCTION.Collection.HEAD, 1));
+		}
 		QueryRecorder.recordInvocationConditional(this, "head", ret);
 		return ret;
 	}
@@ -138,9 +171,19 @@ public class JcCollection extends JcValue {
 	 * <div color='red' style="font-size:18px;color:red"><i>return the last element of a collection</i></div>
 	 * <br/>
 	 */
-	public ValueElement last() {
-		ValueElement ret = new ValueElement(this, 
-				new FunctionInstance(FUNCTION.Collection.LAST, 1));
+	@SuppressWarnings("unchecked")
+	public T last() {
+		T ret;
+		if (JcRelation.class.equals(type)) {
+			ret = (T) new JcRelation(null, this, 
+					new FunctionInstance(FUNCTION.Collection.LAST, 1));
+		} else if (JcNode.class.equals(type)) {
+			ret = (T) new JcNode(null, this, 
+					new FunctionInstance(FUNCTION.Collection.LAST, 1));
+		} else {
+			ret = (T) new JcValue(null, this, 
+					new FunctionInstance(FUNCTION.Collection.LAST, 1));
+		}
 		QueryRecorder.recordInvocationConditional(this, "last", ret);
 		return ret;
 	}
