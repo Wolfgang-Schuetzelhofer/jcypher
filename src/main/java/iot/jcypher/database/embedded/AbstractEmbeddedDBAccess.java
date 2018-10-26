@@ -444,6 +444,14 @@ public abstract class AbstractEmbeddedDBAccess implements IDBAccessInit {
 				}
 			}
 			array.add(jsarr);
+		}  else if (val instanceof Iterable) {
+			JsonArrayBuilder jsarr = Json.createArrayBuilder();
+			Iterable iterable = (Iterable) val;
+			Iterator<Object> it = iterable.iterator();
+			while (it.hasNext()) {
+				writeLiteralValue(it.next(), jsarr);
+			}
+			array.add(jsarr);
 		} else if (val instanceof SeqWrapper<?>) {
 			JsonArrayBuilder jsarr = Json.createArrayBuilder();
 			int sz = ((SeqWrapper<?>) val).size();
