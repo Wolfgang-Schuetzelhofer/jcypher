@@ -114,7 +114,9 @@ public class TempTest extends AbstractTestSuite {
 				RETURN.value(n.labels()).AS(labels)
 		};
 		query = new JcQuery();
+		query.setPlannerStrategy(PlannerStrategy.COST);
 		query.setClauses(clauses);
+		print(query, Format.PRETTY_1);
 		JcQueryResult result = dbAccess.execute(query);
 		List<String> labsResult = result.resultOf(labels);
 		return;
@@ -1360,7 +1362,7 @@ public class TempTest extends AbstractTestSuite {
 		props.setProperty(DBProperties.SERVER_ROOT_URI, "bolt://localhost:7687");
 		props.setProperty(DBProperties.DATABASE_DIR, "C:/NEO4J_DBS/02");
 		
-		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props);
+		dbAccess = DBAccessFactory.createDBAccess(DBType.IN_MEMORY, props);
 //		dbAccess = DBAccessFactory.createDBAccess(DBType.REMOTE, props, "neo4j", "jcypher");
 		
 		// init db
