@@ -1,6 +1,10 @@
 Release Notes
 =======
 
+## 4.1.1
+**Fixed**
+- Issue with labels retrieval when using AbstractEmbeddedDBAccess and forcing PlannerStrategy.COST.
+
 ## 4.1.0
 **New**
 - Collections in the Query API are now aware of their component type. This allows expressions like: **WHERE.valueOf(path.relations().last().type()).EQUALS("Some_Type")** or: **WHERE.has(path.nodes().head().label("Some_Label"))**
