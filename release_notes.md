@@ -1,7 +1,7 @@
 Release Notes
 =======
 
-## 4.1.2
+## 4.2.0
 - Support for Neo4j 3.5.x (required adaptations for in memory db usage).
 
 ## 4.1.1
