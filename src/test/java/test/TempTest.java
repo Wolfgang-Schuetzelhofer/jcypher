@@ -38,6 +38,7 @@ import iot.jcypher.domainquery.internal.Settings;
 import iot.jcypher.graph.GrNode;
 import iot.jcypher.graph.GrPath;
 import iot.jcypher.graph.GrRelation;
+import iot.jcypher.graph.Graph;
 import iot.jcypher.query.JcQuery;
 import iot.jcypher.query.JcQueryResult;
 import iot.jcypher.query.api.IClause;
@@ -85,6 +86,91 @@ public class TempTest extends AbstractTestSuite {
 	public static IDBAccess dbAccess;
 	public static String domainName;
 	private static List<Object> storedDomainObjects;
+	
+	@Test
+	public void test_GenericGraphModel() {
+		List<JcError> errors;
+		GrNode keanu;
+		GrRelation actsInMatrix1, actsInMatrix2;
+		GrNode matrix1, matrix2;
+		
+		boolean create = false;
+		if (create) {
+			// create
+			Graph graph = Graph.create(dbAccess);
+			
+			matrix1 = graph.createNode();
+			matrix1.addLabel("Movie");
+			matrix1.addProperty("title", "The Matrix");
+			matrix1.addProperty("year", "1999-03-31");
+			
+			matrix2 = graph.createNode();
+			matrix2.addLabel("Movie");
+			matrix2.addProperty("title", "The Matrix Reloaded");
+			matrix2.addProperty("year", "2003-05-07");
+			
+			keanu = graph.createNode();
+			keanu.addLabel("Actor");
+			keanu.addProperty("name", "Keanu Reeves");
+			
+			actsInMatrix1 = graph.createRelation("ACTS_IN", keanu, matrix1);
+			actsInMatrix1.addProperty("role", "Neo");
+			
+			errors = graph.store();
+			if (!errors.isEmpty()) {
+				printErrors(errors);
+				return;
+			}
+			// end create
+		}
+		keanu = null;
+		actsInMatrix1 = null;
+		matrix1 = null;
+		matrix2 = null;
+		
+		// read graph from db
+		JcNode n = new JcNode("n");
+		JcRelation rel = new JcRelation("rel");
+		JcNode movs = new JcNode("movs");
+		IClause[] clauses = new IClause[]{
+				MATCH.node(n).label("Actor").relation(rel).type("ACTS_IN").node().label("Movie"),
+				MATCH.node(movs).label("Movie"),
+				RETURN.value(rel),
+				RETURN.value(n),
+				RETURN.value(movs)
+		};
+		JcQuery query = new JcQuery();
+		query.setClauses(clauses);
+		print(query, Format.PRETTY_1);
+		JcQueryResult result = dbAccess.execute(query);
+		if (result.hasErrors()) {
+			printErrors(result);
+			return;
+		}
+		keanu = result.resultOf(n).get(0);
+		actsInMatrix1 = result.resultOf(rel).get(0);
+		List<GrNode> movies = result.resultOf(movs);
+		if (movies.get(0).getProperty("title").getValue().equals("The Matrix")) {
+			matrix1 = movies.get(0);
+			matrix2 = movies.get(1);
+		} else {
+			matrix1 = movies.get(1);
+			matrix2 = movies.get(0);
+		}
+		
+		// here you do the change of relations (remove add)
+		Graph graph = result.getGraph();
+		actsInMatrix2 = graph.createRelation("ACTS_IN", keanu, matrix2);
+		actsInMatrix2.addProperty("role", actsInMatrix1.getProperty("role"));
+		actsInMatrix1.remove();
+		
+		// now you simply store all changes done to the graph
+		errors = graph.store();
+		if (!errors.isEmpty()) {
+			printErrors(errors);
+			return;
+		}
+	}
 	
 	@Test
 	public void test_RetrieveLabels() {
